@@ -18,4 +18,7 @@ public class JPAConstants {
     public static final String JAKARTA_PERSISTANCE_GENERATED_VALUE = JAKARTA_PERSISTENCE_PACKAGE + ".GeneratedValue";
     public static final String JAKARTA_PERSISTANCE_GENERATION_TYPE = JAKARTA_PERSISTENCE_PACKAGE + ".GenerationType";
 
+    public static final String SPRING_DATA_PACKAGE = "org.springframework.data";
+    public static final String SPRING_DATA_PACKAGE_JPA_REPOSITORY = SPRING_DATA_PACKAGE + ".jpa.repository.JpaRepository";
+
 }
