@@ -23,17 +23,18 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 
 public class SpringCrudGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringCrudGenerator.class);
 
-    public void generate(final ModelDefinition modelDefinition) {
+    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
         LOGGER.info("Generating model: {}", modelDefinition.getName());
         
-        this.generateJpaEntity(modelDefinition);
+        this.generateJpaEntity(modelDefinition, outputDir);
     }
 
     /**
@@ -41,7 +42,9 @@ public class SpringCrudGenerator {
      *
      * @param model The model definition containing the class name, table name, and field definitions.
      */
-    private void generateJpaEntity(final ModelDefinition model) {
+    private void generateJpaEntity(final ModelDefinition model, final String outputDir) {
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         
         final String className = model.getName();
         final String tableName = model.getTableName();
@@ -49,7 +52,7 @@ public class SpringCrudGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, "com.example.generated"))
+        sb.append(String.format(PACKAGE, packagePath + ".models"))
                 .append(String.format(IMPORT, JAVA_UTIL_OBJECTS))
                 .append("\n")
                 .append(String.format(IMPORT, JAKARTA_PERSISTANCE_ENTITY))
@@ -83,17 +86,12 @@ public class SpringCrudGenerator {
 
         sb.append("}\n");
 
-        final String packagePath = "output/";
-        final File outputDir = new File(packagePath);
-        if (!outputDir.exists()) {
-            outputDir.mkdirs();
-        }
-
-        try (FileWriter writer = new FileWriter("output/" + className + ".java")) {
+        try (FileWriter writer = new FileWriter(outputDir + File.separator + "models" + File.separator + className + ".java")) {
             writer.write(sb.toString());
-            System.out.println("Glass generated at: output/" + className + ".java");
+            LOGGER.info("Generated entity class: {}", className);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to write entity class file for {}: {}", className, e.getMessage());
+            throw new RuntimeException("Failed to write entity class file", e);
         }
     }
 
