@@ -82,6 +82,16 @@ public class SpringCrudGenerator {
         }
     }
 
+    /**
+     * Generates the getters and setters for the given model as a string.
+     *
+     * The generated code will contain a getter and setter for each field of the model.
+     * The getter will return the value of the field, while the setter will set the value
+     * of the field and return the instance of the class to allow for method chaining.
+     *
+     * @param model The model definition for which the getters and setters are to be generated.
+     * @return A string representation of the getters and setters.
+     */
     private String generateGettersAndSetters(final ModelDefinition model) {
 
         final StringBuilder sb = new StringBuilder();
