@@ -12,10 +12,17 @@
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
+    <jackson-dataformat-yaml.version>2.19.2</jackson-dataformat-yaml.version>
     <slf4j-api.version>2.0.17</slf4j-api.version>
   </properties>
 
   <dependencies>
+    <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-yaml</artifactId>
+        <version>${jackson-dataformat-yaml.version}</version>
+    </dependency>
+
     <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>

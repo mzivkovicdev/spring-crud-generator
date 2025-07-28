@@ -1,33 +1,35 @@
 package com.markozivkovic.codegen;
 
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
 
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.ModelDefinition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.markozivkovic.codegen.model.CrudSpecification;
 
 /**
  * Hello world!
  *
  */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        FieldDefinition id = new FieldDefinition();
-        id.setName("id");
-        id.setType("Long");
-        id.setId(true);
+public class App {
 
-        FieldDefinition name = new FieldDefinition();
-        name.setName("name");
-        name.setType("String");
+    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
-        ModelDefinition user = new ModelDefinition();
-        user.setName("UserModel");
-        user.setTableName("users");
-        user.setFields(List.of(id, name));
-
-        SpringCrudGenerator generator = new SpringCrudGenerator();
-        generator.generate(user);
+    public static void main(final String[] args ) {
+        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        try {
+            final CrudSpecification spec = mapper.readValue(
+                    new File("src/main/resources/crud-spec.yaml"), CrudSpecification.class
+            );
+            final SpringCrudGenerator generator = new SpringCrudGenerator();
+            spec.getEntities().stream().forEach(entity -> {
+                    generator.generate(entity);
+            });
+        } catch (IOException e) {
+            LOGGER.error("Error occurred during generating files. ", e);
+        }
     }
 }

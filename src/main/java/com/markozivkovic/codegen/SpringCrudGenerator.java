@@ -1,5 +1,16 @@
 package com.markozivkovic.codegen;
 
+import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_ANNOTATION;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATED_VALUE;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATION_TYPE;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ID;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_TABLE;
+import static com.markozivkovic.codegen.constants.JPAConstants.TABLE_ANNOTATION;
+import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
+import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -38,16 +49,20 @@ public class SpringCrudGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("package com.example.generated;\n\n");
-        sb.append("import java.util.Objects;\n\n");
-        sb.append("import jakarta.persistence.Entity;\n");
-        sb.append("import jakarta.persistence.GeneratedValue;\n");
-        sb.append("import jakarta.persistence.GenerationType;\n");
-        sb.append("import jakarta.persistence.Id;\n");
-        sb.append("import jakarta.persistence.Table;\n");
-        sb.append("\n");
-        sb.append("@Entity\n");
-        sb.append("@Table(name = \"" + tableName + "\")\n");
+        sb.append(String.format(PACKAGE, "com.example.generated"))
+                .append(String.format(IMPORT, JAVA_UTIL_OBJECTS))
+                .append("\n")
+                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_ENTITY))
+                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_GENERATED_VALUE))
+                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_GENERATION_TYPE))
+                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_ID))
+                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_TABLE))
+                .append("\n")
+                .append(ENTITY_ANNOTATION)
+                .append("\n")
+                .append(String.format(TABLE_ANNOTATION, tableName))
+                .append("\n");
+
         sb.append("public class " + className + " {\n\n");
 
         fields.stream().forEach(field -> {
