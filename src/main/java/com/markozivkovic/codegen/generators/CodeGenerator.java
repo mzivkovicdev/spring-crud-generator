@@ -10,6 +10,6 @@ public interface CodeGenerator {
      * @param modelDefinition the model definition containing the details for code generation
      * @param outputDir       the directory where the generated code will be written
      */
-    void generate(ModelDefinition modelDefinition, String outputDir);
+    void generate(final ModelDefinition modelDefinition, final String outputDir);
 
 }

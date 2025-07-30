@@ -5,22 +5,21 @@ import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
+import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
 public class JpaRepositoryGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaRepositoryGenerator.class);
-    private static final String REPOSITORIES_PACKAGE = ".repositories";
+    
+    private static final String REPOSITORIES = "repositories";
+    private static final String REPOSITORIES_PACKAGE = "." + REPOSITORIES;
     private static final String MODELS_PACKAGE = ".models";
 
     /**
@@ -64,13 +63,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
                 .append("\n\n")
                 .append("}");
 
-        try (final FileWriter writer = new FileWriter(outputDir + File.separator + "repositories" + File.separator + className + ".java")) {
-            writer.write(sb.toString());
-            LOGGER.info("Generated entity class: {}", className);
-        } catch (IOException e) {
-            LOGGER.error("Failed to write entity class file for {}: {}", className, e.getMessage());
-            throw new RuntimeException("Failed to write entity class file", e);
-        }
+        FileWriterUtils.writeToFile(outputDir, REPOSITORIES, className, sb.toString());
         
         LOGGER.info("JPA repository generation completed for model: {}", modelDefinition.getName());
     }

@@ -69,21 +69,17 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         sb.append(String.format(PACKAGE, packagePath + MODELS_PACKAGE));
 
-        final boolean localDate = FieldUtils.isAnyFieldLocalDate(fields);
-        final boolean localDateTime = FieldUtils.isAnyFieldLocalDateTime(fields);
-        final boolean uuid = FieldUtils.isAnyFieldUUID(fields);
-        
-        if (localDate) {
+        if (FieldUtils.isAnyFieldLocalDate(fields)) {
             sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE));
         }
 
-        if (localDateTime) {
+        if (FieldUtils.isAnyFieldLocalDateTime(fields)) {
             sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE_TIME));
         }
 
         sb.append(String.format(IMPORT, JAVA_UTIL_OBJECTS));
 
-        if (uuid) {
+        if (FieldUtils.isAnyFieldUUID(fields)) {
             sb.append(String.format(IMPORT, JAVA_UTIL_UUID));
         }
                 
@@ -109,7 +105,9 @@ public class JpaEntityGenerator implements CodeGenerator {
             sb.append("    private " + field.getType() + " " + field.getName() + ";\n\n");
         });
 
-        sb.append(this.generateGettersAndSetters(model))
+        sb.append(this.generateDefaultConstructor(model))
+            .append(this.generateConstructor(model))
+            .append(this.generateGettersAndSetters(model))
             .append(this.generateEqualsMethod(model))
             .append("\n")
             .append(this.generateHashCodeMethod(model))
@@ -126,6 +124,56 @@ public class JpaEntityGenerator implements CodeGenerator {
             LOGGER.error("Failed to write entity class file for {}: {}", className, e.getMessage());
             throw new RuntimeException("Failed to write entity class file", e);
         }
+    }
+
+    /**
+     * Generates the default constructor as a string for the given model.
+     * The generated constructor has no parameters and does not initialize any fields.
+     * 
+     * @param model The model definition for which the default constructor is to be generated.
+     * @return A string representation of the default constructor.
+     */
+    public String generateDefaultConstructor(final ModelDefinition modelDefinition) {
+
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("    public %s() {", modelDefinition.getName()))
+                .append("\n")
+                .append("    }")
+                .append("\n\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * Generates a constructor for the given model as a string.
+     * 
+     * The generated constructor takes parameters for each field of the model
+     * and initializes the corresponding fields with these parameters.
+     *
+     * @param modelDefinition The model definition for which the constructor
+     *                        is to be generated.
+     * @return A string representation of the constructor.
+     */
+    public String generateConstructor(final ModelDefinition modelDefinition) {
+
+        final StringBuilder sb = new StringBuilder();
+
+        final List<String> inputFields = FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields());
+        final List<String> nonIdFields = FieldUtils.extractNonIdFieldNames(modelDefinition.getFields());
+
+        sb.append(String.format("    public %s(%s) {", modelDefinition.getName(), String.join(", ", inputFields)))
+                .append("\n");
+
+        nonIdFields.stream().forEach(field -> {
+            sb.append(String.format("        this.%s = %s;", field, field))
+                    .append("\n");
+        });
+
+        sb.append("    }")
+                .append("\n\n");
+
+        return sb.toString();
     }
 
     /**

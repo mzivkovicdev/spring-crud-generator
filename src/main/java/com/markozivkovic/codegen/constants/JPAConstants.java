@@ -20,5 +20,8 @@ public class JPAConstants {
 
     public static final String SPRING_DATA_PACKAGE = "org.springframework.data";
     public static final String SPRING_DATA_PACKAGE_JPA_REPOSITORY = SPRING_DATA_PACKAGE + ".jpa.repository.JpaRepository";
+    public static final String SPRING_DATA_PACKAGE_DOMAIN = SPRING_DATA_PACKAGE + ".domain";
+    public static final String SPRING_DATA_PACKAGE_DOMAIN_PAGE = SPRING_DATA_PACKAGE_DOMAIN + ".Page";
+    public static final String SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST = SPRING_DATA_PACKAGE_DOMAIN + ".PageRequest";
 
 }
