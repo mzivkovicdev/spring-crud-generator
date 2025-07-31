@@ -10,6 +10,7 @@ import com.markozivkovic.codegen.model.ModelDefinition;
 
 public class TemplateContextUtils {
 
+    private static final String FIELDS = "fields";
     private static final String FIELD_NAMES = "fieldNames";
     private static final String JAVADOC_FIELDS = "javadocFields";
     private static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
@@ -21,6 +22,7 @@ public class TemplateContextUtils {
     private static final String TRANSACTIONAL_ANNOTATION = "transactionalAnnotation";
     private static final String INPUT_ARGS = "inputArgs";
     private static final String CLASS_NAME = "className";
+    private static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
 
     private TemplateContextUtils() {
         
@@ -149,6 +151,24 @@ public class TemplateContextUtils {
         context.put(ID_TYPE, idField.getType());
         
         return context;
+    }
+
+    /**
+     * Creates a template context for the JPA model of a given model definition.
+     * 
+     * @param modelDefinition the model definition containing class and field details
+     * @return a map representing the context for the JPA model
+     */
+    public static Map<String, Object> computeJpaModelContext(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(FIELDS, modelDefinition.getFields());
+        context.put(FIELD_NAMES, FieldUtils.extractFieldNames(modelDefinition.getFields()));
+        context.put(CLASS_NAME, modelDefinition.getName());
+        context.put(INPUT_ARGS, FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields()));
+        context.put(NON_ID_FIELD_NAMES, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+
+        return context;  
     }
     
 }

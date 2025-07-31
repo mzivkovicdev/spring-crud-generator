@@ -32,10 +32,6 @@ public class CrudGeneratorMojo extends AbstractMojo {
         if (Objects.isNull(outputDir)) {
             throw new MojoExecutionException("outputDir must be specified");
         }
-
-        if (!inputSpecFile.endsWith(".yml") || !inputSpecFile.endsWith(".yaml")) {
-            throw new MojoExecutionException("inputSpecFile must be a YAML file");
-        }
         
         try {
             final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
