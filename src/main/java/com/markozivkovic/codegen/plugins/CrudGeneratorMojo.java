@@ -1,6 +1,7 @@
 package com.markozivkovic.codegen.plugins;
 
 import java.io.File;
+import java.util.Objects;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -24,8 +25,13 @@ public class CrudGeneratorMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException {
 
-        this.getLog().info(String.format("Generating code from: %s", this.inputSpecFile));
-        this.getLog().info(String.format("Output directory: %s", this.outputDir));
+        if (Objects.isNull(inputSpecFile)) {
+            throw new MojoExecutionException("inputSpecFile must be specified");
+        }
+        
+        if (Objects.isNull(outputDir)) {
+            throw new MojoExecutionException("outputDir must be specified");
+        }
         
         try {
             final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
