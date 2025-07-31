@@ -5,6 +5,8 @@ import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +14,9 @@ import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
+import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class JpaRepositoryGenerator implements CodeGenerator {
 
@@ -55,13 +59,16 @@ public class JpaRepositoryGenerator implements CodeGenerator {
                     .append("\n");
         }
 
+        final Map<String, Object> context = TemplateContextUtils.computeJpaInterfaceContext(modelDefinition);
+        final String jpaInterface = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "repository/repository-interface-template.ftl", context
+        );
+
         sb.append(String.format(IMPORT, SPRING_DATA_PACKAGE_JPA_REPOSITORY))
                 .append("\n")
                 .append(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()))
                 .append("\n")
-                .append(String.format("public interface %s extends JpaRepository<%s, %s> {", className, modelDefinition.getName(), idField.getType()))
-                .append("\n\n")
-                .append("}");
+                .append(jpaInterface);
 
         FileWriterUtils.writeToFile(outputDir, REPOSITORIES, className, sb.toString());
         
