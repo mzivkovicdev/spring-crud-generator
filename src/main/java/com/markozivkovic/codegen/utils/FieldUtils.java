@@ -7,6 +7,8 @@ import com.markozivkovic.codegen.model.FieldDefinition;
 
 public class FieldUtils {
 
+    private static final String BIG_INTEGER = "BigInteger";
+    private static final String BIG_DECIMAL = "BigDecimal";
     private static final String UUID = "UUID";
     private static final String LOCAL_DATE = "LocalDate";
     private static final String LOCAL_DATE_TIME = "LocalDateTime";
@@ -49,6 +51,30 @@ public class FieldUtils {
     public static boolean isAnyFieldLocalDateTime(final List<FieldDefinition> fields) {
 
         return fields.stream().anyMatch(field -> LOCAL_DATE_TIME.equalsIgnoreCase(field.getType()));
+    }
+
+    /**
+     * Returns true if any field in the given list of fields is of type BigDecimal,
+     * false otherwise.
+     * 
+     * @param fields The list of fields to check.
+     * @return True if any field is of type BigDecimal, false otherwise.
+     */
+    public static boolean isAnyFieldBigDecimal(final List<FieldDefinition> fields) {
+
+        return fields.stream().anyMatch(field -> BIG_DECIMAL.equalsIgnoreCase(field.getType()));
+    }
+
+    /**
+     * Returns true if any field in the given list of fields is of type BigInteger,
+     * false otherwise.
+     * 
+     * @param fields The list of fields to check.
+     * @return True if any field is of type BigInteger, false otherwise.
+     */
+    public static boolean isAnyFieldBigInteger(final List<FieldDefinition> fields) {
+
+        return fields.stream().anyMatch(field -> BIG_INTEGER.equalsIgnoreCase(field.getType()));
     }
 
     /**
@@ -162,6 +188,21 @@ public class FieldUtils {
         
         return fields.stream()
                 .map(field -> String.format("final %s %s", field.getType(), field.getName()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword.
+     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
+     * <name> is the name of the field.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a constructor or method without the final keyword.
+     */
+    public static List<String> generateInputArgsWithoutFinal(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .map(field -> String.format("%s %s", field.getType(), field.getName()))
                 .collect(Collectors.toList());
     }
 

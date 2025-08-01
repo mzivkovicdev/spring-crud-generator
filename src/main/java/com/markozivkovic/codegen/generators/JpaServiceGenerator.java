@@ -3,26 +3,22 @@ package com.markozivkovic.codegen.generators;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
 import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE_TIME;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
 import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
@@ -49,25 +45,11 @@ public class JpaServiceGenerator implements CodeGenerator {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String className = modelDefinition.getName() + "Service";
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final List<FieldDefinition> fields = modelDefinition.getFields();
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + SERVICES_PACKAGE));
-
-        if (FieldUtils.isAnyFieldLocalDate(fields)) {
-            sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE));
-        }
-
-        if (FieldUtils.isAnyFieldLocalDateTime(fields)) {
-            sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE_TIME));
-        }
-
-        if (FieldUtils.isIdFieldUUID(idField)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID))
-                    .append("\n");
-        }
+        sb.append(ImportUtils.getBaseImport(modelDefinition, false));
         
         sb.append(String.format(IMPORT, SL4J_LOGGER))
                 .append(String.format(IMPORT, SL4J_LOGGER_FACTORY))

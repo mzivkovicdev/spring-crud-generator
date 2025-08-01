@@ -170,5 +170,20 @@ public class TemplateContextUtils {
 
         return context;  
     }
+
+    /**
+     * Creates a template context for a transfer object of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @return a template context for the transfer object
+     */
+    public static Map<String, Object> computeTransferObjectContext(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, modelDefinition.getName());
+        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinal(modelDefinition.getFields()));
+    
+        return context;
+    }
     
 }
