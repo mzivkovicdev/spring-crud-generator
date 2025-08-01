@@ -13,6 +13,10 @@ public class JavaConstants {
     public static final String JAVA_UTIL_OBJECTS = JAVA_UTIL + ".Objects";
     public static final String JAVA_UTIL_UUID = JAVA_UTIL + ".UUID";
 
+    public static final String JAVA_MATH = "java.math";
+    public static final String JAVA_MATH_BIG_DECIMAL = JAVA_MATH + ".BigDecimal";
+    public static final String JAVA_MATH_BIG_INTEGER = JAVA_MATH + ".BigInteger";
+
     public static final String JAVA_TIME = "java.time";
     public static final String JAVA_TIME_LOCAL_DATE = JAVA_TIME + ".LocalDate";
     public static final String JAVA_TIME_LOCAL_DATE_TIME = JAVA_TIME + ".LocalDateTime";

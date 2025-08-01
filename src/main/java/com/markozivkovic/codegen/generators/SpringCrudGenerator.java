@@ -14,11 +14,13 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String JPA_MODEL = "jpa-model";
     private static final String JPA_REPOSITORY = "jpa-repository";
     private static final String JPA_SERVICE = "jpa-service";
+    private static final String TRANSFER_OBJECT = "transfer-object";
 
     private static final Map<String, CodeGenerator> GENERATORS = Map.of(
             JPA_MODEL, new JpaEntityGenerator(),
             JPA_REPOSITORY, new JpaRepositoryGenerator(),
-            JPA_SERVICE, new JpaServiceGenerator()
+            JPA_SERVICE, new JpaServiceGenerator(),
+            TRANSFER_OBJECT, new TransferObjectGenerator()
     );
 
     @Override

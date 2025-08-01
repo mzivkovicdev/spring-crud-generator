@@ -8,25 +8,17 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTAN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_TABLE;
 import static com.markozivkovic.codegen.constants.JPAConstants.TABLE_ANNOTATION;
 import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE_TIME;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
-import com.markozivkovic.codegen.utils.FieldUtils;
+import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
@@ -37,7 +29,8 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class JpaEntityGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaEntityGenerator.class);
-    private static final String MODELS_PACKAGE = ".models";
+    private static final String MODELS = "models";
+    private static final String MODELS_PACKAGE = "." + MODELS;
     
     /**
      * Generates a JPA entity class based on the provided model definition.
@@ -49,7 +42,11 @@ public class JpaEntityGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
+        LOGGER.info("Generator JPA entity for model: {}", modelDefinition.getName());
+       
         this.generateJpaEntity(modelDefinition, outputDir);
+        
+        LOGGER.info("Generator JPA entity finished for model: {}", modelDefinition.getName());
     }
 
     /**
@@ -63,28 +60,13 @@ public class JpaEntityGenerator implements CodeGenerator {
         
         final String className = model.getName();
         final String tableName = model.getTableName();
-        final List<FieldDefinition> fields = model.getFields();
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + MODELS_PACKAGE));
-
-        if (FieldUtils.isAnyFieldLocalDate(fields)) {
-            sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE));
-        }
-
-        if (FieldUtils.isAnyFieldLocalDateTime(fields)) {
-            sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE_TIME));
-        }
-
-        sb.append(String.format(IMPORT, JAVA_UTIL_OBJECTS));
-
-        if (FieldUtils.isAnyFieldUUID(fields)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID));
-        }
+        sb.append(ImportUtils.getBaseImport(model, true));
                 
-        sb.append("\n")
-                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_ENTITY))
+        sb.append(String.format(IMPORT, JAKARTA_PERSISTANCE_ENTITY))
                 .append(String.format(IMPORT, JAKARTA_PERSISTANCE_GENERATED_VALUE))
                 .append(String.format(IMPORT, JAKARTA_PERSISTANCE_GENERATION_TYPE))
                 .append(String.format(IMPORT, JAKARTA_PERSISTANCE_ID))
@@ -122,13 +104,7 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         sb.append("}\n");
 
-        try (final FileWriter writer = new FileWriter(outputDir + File.separator + "models" + File.separator + className + ".java")) {
-            writer.write(sb.toString());
-            LOGGER.info("Generated entity class: {}", className);
-        } catch (IOException e) {
-            LOGGER.error("Failed to write entity class file for {}: {}", className, e.getMessage());
-            throw new RuntimeException("Failed to write entity class file", e);
-        }
+        FileWriterUtils.writeToFile(outputDir, MODELS, className, sb.toString());
     }
 
 }
