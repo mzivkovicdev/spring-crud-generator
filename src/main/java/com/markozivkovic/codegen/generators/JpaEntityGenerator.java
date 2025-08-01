@@ -1,13 +1,7 @@
 package com.markozivkovic.codegen.generators;
 
 import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_ANNOTATION;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATED_VALUE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATION_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ID;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_TABLE;
 import static com.markozivkovic.codegen.constants.JPAConstants.TABLE_ANNOTATION;
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
 import java.util.Map;
@@ -29,6 +23,7 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class JpaEntityGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaEntityGenerator.class);
+
     private static final String MODELS = "models";
     private static final String MODELS_PACKAGE = "." + MODELS;
     
@@ -66,12 +61,9 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath + MODELS_PACKAGE));
         sb.append(ImportUtils.getBaseImport(model, true));
                 
-        sb.append(String.format(IMPORT, JAKARTA_PERSISTANCE_ENTITY))
-                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_GENERATED_VALUE))
-                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_GENERATION_TYPE))
-                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_ID))
-                .append(String.format(IMPORT, JAKARTA_PERSISTANCE_TABLE))
+        sb.append(ImportUtils.computeJakartaBaseImport(model))
                 .append("\n")
+                .append(ImportUtils.computeEnumsImport(model, outputDir))
                 .append(ENTITY_ANNOTATION)
                 .append("\n")
                 .append(String.format(TABLE_ANNOTATION, tableName))

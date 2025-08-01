@@ -10,6 +10,8 @@ import com.markozivkovic.codegen.model.ModelDefinition;
 
 public class TemplateContextUtils {
 
+    private static final String ENUM_NAME = "enumName";
+    private static final String VALUES = "values";
     private static final String FIELDS = "fields";
     private static final String FIELD_NAMES = "fieldNames";
     private static final String JAVADOC_FIELDS = "javadocFields";
@@ -26,6 +28,21 @@ public class TemplateContextUtils {
 
     private TemplateContextUtils() {
         
+    }
+
+    /**
+     * Creates a template context for the enum class of a model.
+     * 
+     * @param enumName the name of the enum
+     * @param enumValues the values of the enum
+     * @return a template context for the enum class
+     */
+    public static Map<String, Object> createEnumContext(final String enumName, final List<String> enumValues) {
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(ENUM_NAME, enumName);
+        context.put(VALUES, enumValues);
+        return context;
     }
 
     /**
