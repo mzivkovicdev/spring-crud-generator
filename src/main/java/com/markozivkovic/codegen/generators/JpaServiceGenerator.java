@@ -27,7 +27,7 @@ public class JpaServiceGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaServiceGenerator.class);
 
-    private  static final String SERVICES = "services";
+    private static final String SERVICES = "services";
     private static final String REPOSITORIES_PACKAGE = ".repositories";
     private static final String MODELS_PACKAGE = ".models";
     private static final String SERVICES_PACKAGE = "." + SERVICES;
