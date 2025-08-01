@@ -11,6 +11,7 @@ import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
+import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
@@ -28,7 +29,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         LOGGER.info("Generator transfer object for model: {}", modelDefinition.getName());
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String transferObjName = modelDefinition.getName() + "TO";
+        final String transferObjName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_PACKAGE));

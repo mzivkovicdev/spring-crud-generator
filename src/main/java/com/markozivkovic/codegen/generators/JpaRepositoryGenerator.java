@@ -15,6 +15,7 @@ import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
@@ -47,7 +48,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
         }
         
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String className = modelDefinition.getName() + "Repository";
+        final String className = String.format("%sRepository", ModelNameUtils.stripSuffix(modelDefinition.getName()));
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         final StringBuilder sb = new StringBuilder();
