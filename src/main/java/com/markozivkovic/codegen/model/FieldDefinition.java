@@ -1,6 +1,10 @@
 package com.markozivkovic.codegen.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+
+import com.markozivkovic.codegen.utils.FieldUtils;
 
 public class FieldDefinition {
     
@@ -8,17 +12,19 @@ public class FieldDefinition {
     private String type;
     private String description;
     private boolean id;
+    private List<String> values = new ArrayList<>();
 
     public FieldDefinition() {
 
     }
 
     public FieldDefinition(final String name, final String type, final String description,
-            final boolean id) {
+            final boolean id, final List<String> values) {
         this.name = name;
         this.type = type;
         this.description = description;
         this.id = id;
+        this.values = values;
     }
 
     public String getName() {
@@ -61,6 +67,19 @@ public class FieldDefinition {
         return this;
     }
 
+    public List<String> getValues() {
+        return this.values;
+    }
+
+    public FieldDefinition setValues(final List<String> values) {
+        this.values = values;
+        return this;
+    }
+
+    public String getResolvedType() {
+        return FieldUtils.computeResolvedType(this.type, this.name);
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -72,12 +91,13 @@ public class FieldDefinition {
         return Objects.equals(name, fieldDefinition.name) &&
                 Objects.equals(type, fieldDefinition.type) &&
                 Objects.equals(description, fieldDefinition.description) &&
-                id == fieldDefinition.id;
+                id == fieldDefinition.id &&
+                Objects.equals(values, fieldDefinition.values);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, description, id);
+        return Objects.hash(name, type, description, id, values);
     }
 
     @Override
@@ -87,6 +107,7 @@ public class FieldDefinition {
             ", type='" + getType() + "'" +
             ", description='" + getDescription() + "'" +
             ", id='" + isId() + "'" +
+            ", values='" + getValues() + "'" +
             "}";
     }
 

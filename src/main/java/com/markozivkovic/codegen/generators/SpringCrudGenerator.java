@@ -11,6 +11,7 @@ public class SpringCrudGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringCrudGenerator.class);
 
+    private static final String ENUM = "enum";
     private static final String JPA_MODEL = "jpa-model";
     private static final String JPA_REPOSITORY = "jpa-repository";
     private static final String JPA_SERVICE = "jpa-service";
@@ -18,6 +19,7 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String MAPPER = "mapper";
 
     private static final Map<String, CodeGenerator> GENERATORS = Map.of(
+            ENUM, new EnumGenerator(),
             JPA_MODEL, new JpaEntityGenerator(),
             JPA_REPOSITORY, new JpaRepositoryGenerator(),
             JPA_SERVICE, new JpaServiceGenerator(),

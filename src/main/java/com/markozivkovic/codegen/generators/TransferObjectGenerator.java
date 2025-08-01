@@ -35,7 +35,10 @@ public class TransferObjectGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_PACKAGE));
 
         final String imports = ImportUtils.getBaseImport(modelDefinition, false);
-        sb.append(imports);
+        final String enumsImport = ImportUtils.computeEnumsImport(modelDefinition, outputDir);
+
+        sb.append(imports)
+                .append(enumsImport);
 
         final Map<String, Object> toContext = TemplateContextUtils.computeTransferObjectContext(modelDefinition);
         final String transferObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("transferobject/transfer-object-template.ftl", toContext);

@@ -1,6 +1,7 @@
 package com.markozivkovic.codegen.utils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
@@ -12,9 +13,29 @@ public class FieldUtils {
     private static final String UUID = "UUID";
     private static final String LOCAL_DATE = "LocalDate";
     private static final String LOCAL_DATE_TIME = "LocalDateTime";
+    private static final String ENUM = "Enum";
 
     private FieldUtils() {
         
+    }
+
+    /**
+     * Returns true if any field in the given list of fields is of type Enum,
+     * false otherwise.
+     * 
+     * @param fields The list of fields to check.
+     * @return True if any field is of type Enum, false otherwise.
+     */
+    public static boolean isAnyFieldEnum(final List<FieldDefinition> fields) {
+
+        return fields.stream().anyMatch(field -> ENUM.equalsIgnoreCase(field.getType()));
+    }
+
+    public static List<FieldDefinition> extractEnumFields(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> ENUM.equalsIgnoreCase(field.getType()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -172,7 +193,7 @@ public class FieldUtils {
         
         return fields.stream()
                 .filter(field -> !field.getName().equals(id.getName()))
-                .map(field -> String.format("final %s %s", field.getType(), field.getName()))
+                .map(field -> String.format("final %s %s", field.getResolvedType(), field.getName()))
                 .collect(Collectors.toList());
     }
 
@@ -187,7 +208,7 @@ public class FieldUtils {
     public static List<String> generateInputArgs(final List<FieldDefinition> fields) {
         
         return fields.stream()
-                .map(field -> String.format("final %s %s", field.getType(), field.getName()))
+                .map(field -> String.format("final %s %s", field.getResolvedType(), field.getName()))
                 .collect(Collectors.toList());
     }
 
@@ -202,7 +223,7 @@ public class FieldUtils {
     public static List<String> generateInputArgsWithoutFinal(final List<FieldDefinition> fields) {
         
         return fields.stream()
-                .map(field -> String.format("%s %s", field.getType(), field.getName()))
+                .map(field -> String.format("%s %s", field.getResolvedType(), field.getName()))
                 .collect(Collectors.toList());
     }
 
@@ -226,6 +247,22 @@ public class FieldUtils {
     public static boolean isAnyFieldId(final List<FieldDefinition> fields) {
 
         return fields.stream().anyMatch(FieldDefinition::isId);
+    }
+
+    /**
+     * Computes the resolved type given the type and name of a field.
+     * 
+     * @param type The type of the field.
+     * @param name The name of the field.
+     * @return The resolved type of the field.
+     */
+    public static String computeResolvedType(final String type, final String name) {
+        
+        if (ENUM.equalsIgnoreCase(type) && Objects.nonNull(name)) {
+            return StringUtils.capitalize(name) + ENUM;
+        }
+        
+        return type;
     }
     
 }
