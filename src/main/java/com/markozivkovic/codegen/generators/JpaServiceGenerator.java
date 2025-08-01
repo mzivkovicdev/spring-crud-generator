@@ -19,6 +19,7 @@ import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
+import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
@@ -44,7 +45,8 @@ public class JpaServiceGenerator implements CodeGenerator {
         }
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String className = modelDefinition.getName() + "Service";
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String className = String.format("%sService", modelWithoutSuffix);
 
         final StringBuilder sb = new StringBuilder();
 
@@ -59,7 +61,7 @@ public class JpaServiceGenerator implements CodeGenerator {
                 .append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL))
                 .append("\n")
                 .append(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()))
-                .append(String.format(IMPORT, packagePath + REPOSITORIES_PACKAGE + "." + modelDefinition.getName() + "Repository"))
+                .append(String.format(IMPORT, packagePath + REPOSITORIES_PACKAGE + "." + modelWithoutSuffix + "Repository"))
                 .append("\n");
 
         sb.append(generateServiceClass(modelDefinition));

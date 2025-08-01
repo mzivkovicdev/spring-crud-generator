@@ -28,11 +28,17 @@ public class TemplateContextUtils {
         
     }
 
+    /**
+     * Creates a template context for a service class of a model.
+     * 
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a template context for the service class
+     */
     public static Map<String, Object> createServiceClassContext(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = new HashMap<>();
-        context.put("className", modelDefinition.getName() + "Service");
-        context.put("modelName", modelDefinition.getName());
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
+        context.put(MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         return context;
     }
@@ -146,7 +152,7 @@ public class TemplateContextUtils {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, modelDefinition.getName() + "Repository");
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Repository");
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_TYPE, idField.getType());
         
@@ -180,7 +186,7 @@ public class TemplateContextUtils {
     public static Map<String, Object> computeTransferObjectContext(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, modelDefinition.getName());
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinal(modelDefinition.getFields()));
     
         return context;
