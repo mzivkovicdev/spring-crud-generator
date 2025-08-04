@@ -14,6 +14,7 @@ import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.StringUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 /**
@@ -54,17 +55,24 @@ public class JpaEntityGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         
         final String className = model.getName();
-        final String tableName = model.getTableName();
+        final String tableName = model.getStorageName();
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + MODELS_PACKAGE));
         sb.append(ImportUtils.getBaseImport(model, true));
                 
-        sb.append(ImportUtils.computeJakartaBaseImport(model))
-                .append("\n")
-                .append(ImportUtils.computeEnumsImport(model, outputDir))
-                .append(ENTITY_ANNOTATION)
+        sb.append(ImportUtils.computeJakartaImports(model))
+                .append("\n");
+
+        final String enumImports = ImportUtils.computeEnumsImport(model, outputDir);
+        
+        if (StringUtils.isNotBlank(enumImports)) {
+            sb.append(ImportUtils.computeEnumsImport(model, outputDir))
+                .append("\n");
+        }
+
+        sb.append(ENTITY_ANNOTATION)
                 .append("\n")
                 .append(String.format(TABLE_ANNOTATION, tableName))
                 .append("\n");

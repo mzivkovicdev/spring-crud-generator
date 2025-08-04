@@ -13,6 +13,7 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.StringUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class TransferObjectGenerator implements CodeGenerator {
@@ -35,10 +36,14 @@ public class TransferObjectGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_PACKAGE));
 
         final String imports = ImportUtils.getBaseImport(modelDefinition, false);
-        final String enumsImport = ImportUtils.computeEnumsImport(modelDefinition, outputDir);
+        sb.append(imports);
 
-        sb.append(imports)
-                .append(enumsImport);
+        final String enumImports = ImportUtils.computeEnumsImport(modelDefinition, outputDir);
+        
+        if (StringUtils.isNotBlank(enumImports)) {
+            sb.append(ImportUtils.computeEnumsImport(modelDefinition, outputDir))
+                .append("\n");
+        }
 
         final Map<String, Object> toContext = TemplateContextUtils.computeTransferObjectContext(modelDefinition);
         final String transferObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("transferobject/transfer-object-template.ftl", toContext);
