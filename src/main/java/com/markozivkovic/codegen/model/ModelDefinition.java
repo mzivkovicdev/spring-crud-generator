@@ -6,7 +6,7 @@ import java.util.Objects;
 public class ModelDefinition {
     
     private String name;
-    private String tableName;
+    private String storageName;
     private String description;
     private List<FieldDefinition> fields; 
 
@@ -14,10 +14,10 @@ public class ModelDefinition {
 
     }
 
-    public ModelDefinition(final String name, final String tableName, final String description,
+    public ModelDefinition(final String name, final String storageName, final String description,
             final List<FieldDefinition> fields) {
         this.name = name;
-        this.tableName = tableName;
+        this.storageName = storageName;
         this.description = description;
         this.fields = fields;
     }
@@ -31,12 +31,12 @@ public class ModelDefinition {
         return this;
     }
 
-    public String getTableName() {
-        return this.tableName;
+    public String getStorageName() {
+        return this.storageName;
     }
 
-    public ModelDefinition setTableName(final String tableName) {
-        this.tableName = tableName;
+    public ModelDefinition setStorageName(final String tableName) {
+        this.storageName = tableName;
         return this;
     }
 
@@ -67,21 +67,21 @@ public class ModelDefinition {
         }
         final ModelDefinition modelDefinition = (ModelDefinition) o;
         return Objects.equals(name, modelDefinition.name) &&
-                Objects.equals(tableName, modelDefinition.tableName) &&
+                Objects.equals(storageName, modelDefinition.storageName) &&
                 Objects.equals(description, modelDefinition.description) &&
                 Objects.equals(fields, modelDefinition.fields);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, tableName, description, fields);
+        return Objects.hash(name, storageName, description, fields);
     }
 
     @Override
     public String toString() {
         return "{" +
             " name='" + getName() + "'" +
-            ", tableName='" + getTableName() + "'" +
+            ", storageName='" + getStorageName() + "'" +
             ", description='" + getDescription() + "'" +
             ", fields='" + getFields() + "'" +
             "}";

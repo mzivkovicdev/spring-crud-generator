@@ -13,18 +13,20 @@ public class FieldDefinition {
     private String description;
     private boolean id;
     private List<String> values = new ArrayList<>();
+    private RelationDefinition relation;
 
     public FieldDefinition() {
 
     }
 
     public FieldDefinition(final String name, final String type, final String description,
-            final boolean id, final List<String> values) {
+            final boolean id, final List<String> values, final RelationDefinition relation) {
         this.name = name;
         this.type = type;
         this.description = description;
         this.id = id;
         this.values = values;
+        this.relation = relation;
     }
 
     public String getName() {
@@ -80,6 +82,15 @@ public class FieldDefinition {
         return FieldUtils.computeResolvedType(this.type, this.name);
     }
 
+    public RelationDefinition getRelation() {
+        return this.relation;
+    }
+
+    public FieldDefinition setRelation(final RelationDefinition relation) {
+        this.relation = relation;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -92,12 +103,13 @@ public class FieldDefinition {
                 Objects.equals(type, fieldDefinition.type) &&
                 Objects.equals(description, fieldDefinition.description) &&
                 id == fieldDefinition.id &&
-                Objects.equals(values, fieldDefinition.values);
+                Objects.equals(values, fieldDefinition.values) &&
+                Objects.equals(relation, fieldDefinition.relation);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, description, id, values);
+        return Objects.hash(name, type, description, id, values, relation);
     }
 
     @Override
@@ -108,6 +120,7 @@ public class FieldDefinition {
             ", description='" + getDescription() + "'" +
             ", id='" + isId() + "'" +
             ", values='" + getValues() + "'" +
+            ", relation='" + getRelation() + "'" +
             "}";
     }
 

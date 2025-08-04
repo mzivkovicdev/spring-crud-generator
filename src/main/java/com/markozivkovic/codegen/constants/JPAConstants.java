@@ -26,4 +26,12 @@ public class JPAConstants {
     public static final String SPRING_DATA_PACKAGE_DOMAIN_PAGE = SPRING_DATA_PACKAGE_DOMAIN + ".Page";
     public static final String SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST = SPRING_DATA_PACKAGE_DOMAIN + ".PageRequest";
 
+    public static final String JAKARTA_PERSISTENCE_FETCH_TYPE = JAKARTA_PERSISTENCE_PACKAGE + ".FetchType";
+    public static final String JAKARTA_PERSISTENCE_CASCADE_TYPE = JAKARTA_PERSISTENCE_PACKAGE + ".CascadeType";
+    public static final String JAKARTA_PERSISTENCE_JOIN_COLUMN = JAKARTA_PERSISTENCE_PACKAGE + ".JoinColumn";
+    public static final String JAKARTA_PERSISTENCE_ONE_TO_ONE = JAKARTA_PERSISTENCE_PACKAGE + ".OneToOne";
+    public static final String JAKARTA_PERSISTENCE_MANY_TO_MANY = JAKARTA_PERSISTENCE_PACKAGE + ".ManyToMany";
+    public static final String JAKARTA_PERSISTENCE_ONE_TO_MANY = JAKARTA_PERSISTENCE_PACKAGE + ".OneToMany";
+    public static final String JAKARTA_PERSISTENCE_MANY_TO_ONE = JAKARTA_PERSISTENCE_PACKAGE + ".ManyToOne";
+
 }

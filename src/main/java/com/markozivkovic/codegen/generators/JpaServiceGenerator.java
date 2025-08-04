@@ -28,8 +28,6 @@ public class JpaServiceGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaServiceGenerator.class);
 
     private static final String SERVICES = "services";
-    private static final String REPOSITORIES_PACKAGE = ".repositories";
-    private static final String MODELS_PACKAGE = ".models";
     private static final String SERVICES_PACKAGE = "." + SERVICES;
     
     @Override
@@ -47,7 +45,6 @@ public class JpaServiceGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sService", modelWithoutSuffix);
-        final String enumsImport = ImportUtils.computeEnumsImport(modelDefinition, outputDir);
 
         final StringBuilder sb = new StringBuilder();
 
@@ -61,9 +58,7 @@ public class JpaServiceGenerator implements CodeGenerator {
                 .append(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE))
                 .append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL))
                 .append("\n")
-                .append(enumsImport)
-                .append(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()))
-                .append(String.format(IMPORT, packagePath + REPOSITORIES_PACKAGE + "." + modelWithoutSuffix + "Repository"))
+                .append(ImportUtils.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir))
                 .append("\n");
 
         sb.append(generateServiceClass(modelDefinition));

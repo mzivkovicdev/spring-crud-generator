@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
+import com.markozivkovic.codegen.model.RelationDefinition;
 
 public class FieldUtils {
 
@@ -14,9 +15,106 @@ public class FieldUtils {
     private static final String LOCAL_DATE = "LocalDate";
     private static final String LOCAL_DATE_TIME = "LocalDateTime";
     private static final String ENUM = "Enum";
+    private static final String ONE_TO_ONE = "OneToOne";
+    private static final String ONE_TO_MANY = "OneToMany";
+    private static final String MANY_TO_ONE = "ManyToOne";
+    private static final String MANY_TO_MANY = "ManyToMany";
 
     private FieldUtils() {
         
+    }
+
+    /**
+     * Determines if any of the given fields have a relation with a non-null cascade type defined.
+     *
+     * @param fields The list of fields to check.
+     * @return true if any of the fields have a relation with a non-null cascade type, false otherwise.
+     */
+    public static boolean isCascadeTypeDefined(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                    .filter(field -> Objects.nonNull(field.getRelation()))
+                    .anyMatch(field -> Objects.nonNull(field.getRelation().getCascade()));
+    }
+
+    /**
+     * Determines if any of the given fields have a relation with a non-null fetch type defined.
+     *
+     * @param fields The list of fields to check.
+     * @return true if any of the fields have a relation with a non-null fetch type, false otherwise.
+     */
+    public static boolean isFetchTypeDefined(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                    .filter(field -> Objects.nonNull(field.getRelation()))
+                    .anyMatch(field -> Objects.nonNull(field.getRelation().getFetch()));
+    }
+
+    /**
+     * Determines if any of the given fields have a relation of type {@link RelationDefinition#ONE_TO_ONE}.
+     *
+     * @param fields The list of fields to check.
+     * @return true if any of the fields have a one-to-one relation, false otherwise.
+     */
+    public static boolean isAnyRelationOneToOne(final List<FieldDefinition> fields) {
+
+        final List<String> relations = extractRelations(fields);
+
+        return relations.stream().anyMatch(relation -> ONE_TO_ONE.equalsIgnoreCase(relation));
+    }
+
+    /**
+     * Determines if any of the given fields have a relation of type {@link RelationDefinition#ONE_TO_MANY}.
+     *
+     * @param fields The list of fields to check.
+     * @return true if any of the fields have a one-to-many relation, false otherwise.
+     */
+    public static boolean isAnyRelationOneToMany(final List<FieldDefinition> fields) {
+
+        final List<String> relations = extractRelations(fields);
+
+        return relations.stream().anyMatch(relation -> ONE_TO_MANY.equalsIgnoreCase(relation));
+    }
+
+    /**
+     * Determines if any of the given fields have a relation of type {@link RelationDefinition#MANY_TO_ONE}.
+     *
+     * @param fields The list of fields to check.
+     * @return true if any of the fields have a many-to-one relation, false otherwise.
+     */
+    public static boolean isAnyRelationManyToOne(final List<FieldDefinition> fields) {
+
+        final List<String> relations = extractRelations(fields);
+
+        return relations.stream().anyMatch(relation -> MANY_TO_ONE.equalsIgnoreCase(relation));
+    }
+
+    /**
+     * Determines if any of the given fields have a relation of type {@link RelationDefinition#MANY_TO_MANY}.
+     *
+     * @param fields The list of fields to check.
+     * @return true if any of the fields have a many-to-many relation, false otherwise.
+     */
+    public static boolean isAnyRelationManyToMany(final List<FieldDefinition> fields) {
+
+        final List<String> relations = extractRelations(fields);
+
+        return relations.stream().anyMatch(relation -> MANY_TO_MANY.equalsIgnoreCase(relation));
+    }
+
+    /**
+     * Extracts the types of all relations from the given list of fields.
+     *
+     * @param fields The list of fields to extract relations from.
+     * @return A list of types of relations in the given list of fields.
+     */
+    public static List<String> extractRelations(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .map(FieldDefinition::getRelation)
+                .map(RelationDefinition::getType)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -223,7 +321,13 @@ public class FieldUtils {
     public static List<String> generateInputArgsWithoutFinal(final List<FieldDefinition> fields) {
         
         return fields.stream()
-                .map(field -> String.format("%s %s", field.getResolvedType(), field.getName()))
+                .map(field -> {
+
+                    if (Objects.nonNull(field.getRelation())) {
+                        return String.format("%sTO %s", ModelNameUtils.stripSuffix(field.getType()), field.getName());
+                    }
+                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                })
                 .collect(Collectors.toList());
     }
 
