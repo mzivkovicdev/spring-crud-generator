@@ -1,4 +1,5 @@
 package com.markozivkovic.codegen.model;
+
 import java.util.Objects;
 
 public class RelationDefinition {
@@ -57,13 +58,13 @@ public class RelationDefinition {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (o == this)
             return true;
         if (!(o instanceof RelationDefinition)) {
             return false;
         }
-        RelationDefinition relationDefinition = (RelationDefinition) o;
+        final RelationDefinition relationDefinition = (RelationDefinition) o;
         return Objects.equals(type, relationDefinition.type) &&
                 Objects.equals(joinColumn, relationDefinition.joinColumn) &&
                 Objects.equals(fetch, relationDefinition.fetch) &&
