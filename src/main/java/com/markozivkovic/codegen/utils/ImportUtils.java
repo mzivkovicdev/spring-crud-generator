@@ -10,6 +10,7 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTAN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_CASCADE_TYPE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_FETCH_TYPE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_COLUMN;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_TABLE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_MANY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_ONE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_MANY;
@@ -33,6 +34,8 @@ import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 
 public class ImportUtils {
+
+    private static final String MANY_TO_MANY = "ManyToMany";
 
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
@@ -104,6 +107,7 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
         final List<FieldDefinition> fields = modelDefinition.getFields();
+        final List<String> relations = FieldUtils.extractRelations(fields);
 
         imports.addAll(Set.of(
             JAKARTA_PERSISTANCE_ENTITY, JAKARTA_PERSISTANCE_GENERATED_VALUE, JAKARTA_PERSISTANCE_GENERATION_TYPE,
@@ -115,10 +119,8 @@ public class ImportUtils {
             imports.add(JAKARTA_PERSISTANCE_ENUMERATED);
         }
 
-        if (!FieldUtils.extractRelations(fields).isEmpty()) {
-            imports.add(JAKARTA_PERSISTENCE_JOIN_COLUMN);
-        }
-
+        addIf(!relations.isEmpty(), imports, JAKARTA_PERSISTENCE_JOIN_COLUMN);
+        addIf(relations.contains(MANY_TO_MANY), imports, JAKARTA_PERSISTENCE_JOIN_TABLE);
         addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_MANY);
         addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_ONE);
         addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, JAKARTA_PERSISTENCE_ONE_TO_MANY);
