@@ -136,9 +136,9 @@ public class TemplateContextUtils {
 
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
-        context.put(INPUT_FIELDS, FieldUtils.generateInputArgs(modelDefinition.getFields()));
-        context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
-        context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadoc(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
+        context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
+        context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
         context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
 
         return context;

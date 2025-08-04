@@ -231,6 +231,25 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts the names of all fields from the given list that are not marked as ID fields
+     * and do not have a relation.
+     * 
+     * @param fields The list of fields to extract non-ID non-relation field names from.
+     * @return A list of names of fields that are not marked as ID fields and do not have a
+     *         relation.
+     */
+    public static List<String> extractNonIdNonRelationFieldNames(final List<FieldDefinition> fields) {
+        
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Extracts the names of all fields from the given list that are not marked as ID fields, and
      * formats them as Javadoc @param tags.
      * 
@@ -256,10 +275,11 @@ public class FieldUtils {
      * @param fields The list of fields to extract names and descriptions from.
      * @return A list of Javadoc @param tags for fields that have a description.
      */
-    public static List<String> extractFieldForJavadoc(final List<FieldDefinition> fields) {
+    public static List<String> extractFieldForJavadocWithoutRelations(final List<FieldDefinition> fields) {
         
         return fields.stream()
                 .filter(field -> StringUtils.isNotBlank(field.getDescription()))
+                .filter(field -> Objects.isNull(field.getRelation()))
                 .map(field -> String.format("@param %s %s", field.getName(), field.getDescription()))
                 .collect(Collectors.toList());
     }
@@ -291,7 +311,15 @@ public class FieldUtils {
         
         return fields.stream()
                 .filter(field -> !field.getName().equals(id.getName()))
-                .map(field -> String.format("final %s %s", field.getResolvedType(), field.getName()))
+                .map(field -> {
+                    if (Objects.nonNull(field.getRelation()) &&
+                        (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || 
+                        Objects.equals(field.getRelation().getType(), MANY_TO_MANY)
+                    )) {
+                        return String.format("final List<%s> %s", field.getResolvedType(), field.getName());
+                    }
+                    return String.format("final %s %s", field.getResolvedType(), field.getName());
+                })
                 .collect(Collectors.toList());
     }
 
@@ -303,9 +331,10 @@ public class FieldUtils {
      * @param fields The list of fields to generate the input arguments from.
      * @return A list of strings representing the input arguments for a constructor or method.
      */
-    public static List<String> generateInputArgs(final List<FieldDefinition> fields) {
+    public static List<String> generateInputArgsWithoutRelations(final List<FieldDefinition> fields) {
         
         return fields.stream()
+                .filter(field -> Objects.isNull(field.getRelation()))
                 .map(field -> String.format("final %s %s", field.getResolvedType(), field.getName()))
                 .collect(Collectors.toList());
     }
@@ -324,7 +353,13 @@ public class FieldUtils {
                 .map(field -> {
 
                     if (Objects.nonNull(field.getRelation())) {
-                        return String.format("%sTO %s", ModelNameUtils.stripSuffix(field.getType()), field.getName());
+                        final String inputArg;
+                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                            inputArg = String.format("List<%sTO> %s", ModelNameUtils.stripSuffix(field.getType()), field.getName());
+                        } else {
+                            inputArg = String.format("%sTO %s", ModelNameUtils.stripSuffix(field.getType()), field.getName());
+                        }
+                        return inputArg;
                     }
                     return String.format("%s %s", field.getResolvedType(), field.getName());
                 })
