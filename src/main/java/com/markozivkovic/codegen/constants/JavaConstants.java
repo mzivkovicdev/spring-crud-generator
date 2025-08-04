@@ -12,6 +12,7 @@ public class JavaConstants {
     public static final String JAVA_UTIL = "java.util";
     public static final String JAVA_UTIL_OBJECTS = JAVA_UTIL + ".Objects";
     public static final String JAVA_UTIL_UUID = JAVA_UTIL + ".UUID";
+    public static final String JAVA_UTIL_LIST = JAVA_UTIL + ".List";
 
     public static final String JAVA_MATH = "java.math";
     public static final String JAVA_MATH_BIG_DECIMAL = JAVA_MATH + ".BigDecimal";
