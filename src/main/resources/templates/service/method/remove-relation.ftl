@@ -8,9 +8,16 @@
 
         final ${modelName} entity = this.getById(id);
 
-        if (!entity.get${rel.collectionField?cap_first}().remove(${rel.elementParam})) {
+        <#if rel.isCollection?? && rel.isCollection>
+        if (!entity.get${rel.relationField?cap_first}().remove(${rel.elementParam})) {
             throw new RuntimeException("Not possible to remove ${rel.elementParam}");
         }
+        <#else>
+        if (!entity.get${rel.relationField?cap_first}().equals(${rel.elementParam})) {
+            throw new RuntimeException("Not possible to remove ${rel.elementParam}");
+        }
+        entity.set${rel.relationField?cap_first}(null);
+        </#if>
 
         return this.repository.saveAndFlush(entity);
     }

@@ -58,7 +58,7 @@ public class FieldUtils {
      */
     public static boolean isAnyRelationOneToOne(final List<FieldDefinition> fields) {
 
-        final List<String> relations = extractRelations(fields);
+        final List<String> relations = extractRelationTypes(fields);
 
         return relations.stream().anyMatch(relation -> ONE_TO_ONE.equalsIgnoreCase(relation));
     }
@@ -71,7 +71,7 @@ public class FieldUtils {
      */
     public static boolean isAnyRelationOneToMany(final List<FieldDefinition> fields) {
 
-        final List<String> relations = extractRelations(fields);
+        final List<String> relations = extractRelationTypes(fields);
 
         return relations.stream().anyMatch(relation -> ONE_TO_MANY.equalsIgnoreCase(relation));
     }
@@ -84,7 +84,7 @@ public class FieldUtils {
      */
     public static boolean isAnyRelationManyToOne(final List<FieldDefinition> fields) {
 
-        final List<String> relations = extractRelations(fields);
+        final List<String> relations = extractRelationTypes(fields);
 
         return relations.stream().anyMatch(relation -> MANY_TO_ONE.equalsIgnoreCase(relation));
     }
@@ -97,7 +97,7 @@ public class FieldUtils {
      */
     public static boolean isAnyRelationManyToMany(final List<FieldDefinition> fields) {
 
-        final List<String> relations = extractRelations(fields);
+        final List<String> relations = extractRelationTypes(fields);
 
         return relations.stream().anyMatch(relation -> MANY_TO_MANY.equalsIgnoreCase(relation));
     }
@@ -108,7 +108,7 @@ public class FieldUtils {
      * @param fields The list of fields to extract relations from.
      * @return A list of types of relations in the given list of fields.
      */
-    public static List<String> extractRelations(final List<FieldDefinition> fields) {
+    public static List<String> extractRelationTypes(final List<FieldDefinition> fields) {
 
         return fields.stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
@@ -128,6 +128,19 @@ public class FieldUtils {
         return fields.stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
                 .filter(field -> MANY_TO_MANY.equalsIgnoreCase(field.getRelation().getType()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that have a many-to-many relation.
+     *
+     * @param fields The list of fields to extract many-to-many relation names from.
+     * @return A list of names of fields that have a many-to-many relation.
+     */
+    public static List<FieldDefinition> extractRelationFields(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
                 .collect(Collectors.toList());
     }
 

@@ -107,7 +107,7 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
         final List<FieldDefinition> fields = modelDefinition.getFields();
-        final List<String> relations = FieldUtils.extractRelations(fields);
+        final List<String> relations = FieldUtils.extractRelationTypes(fields);
 
         imports.addAll(Set.of(
             JAKARTA_PERSISTANCE_ENTITY, JAKARTA_PERSISTANCE_GENERATED_VALUE, JAKARTA_PERSISTANCE_GENERATION_TYPE,

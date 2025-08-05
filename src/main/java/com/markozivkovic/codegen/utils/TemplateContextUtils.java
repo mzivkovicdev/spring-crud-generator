@@ -64,14 +64,14 @@ public class TemplateContextUtils {
 
     public static Map<String, Object> createAddRelationMethodContext(final ModelDefinition modelDefinition) {
 
-        if (!FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()) ||
-                !FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields())) {
+        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             return Map.of();
         }
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
         final Map<String, Object> model = new HashMap<>();
         final List<Map<String, Object>> relations = new ArrayList<>();
@@ -80,13 +80,14 @@ public class TemplateContextUtils {
         model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
         model.put(ID_TYPE, idField.getType());
         
-        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+        relationFields.forEach(field -> {
             final Map<String, Object> relation = new HashMap<>();
             
             final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(field.getName()));
             relation.put("relationClassName", field.getType());
             relation.put("elementParam", field.getName());
-            relation.put("collectionField", strippedFieldName);
+            relation.put("relationField", strippedFieldName);
+            relation.put("isCollection", manyToManyFields.contains(field) || oneToManyFields.contains(field));
             relation.put("methodName", String.format("add%s", strippedFieldName));
             
             relations.add(relation);
@@ -100,14 +101,14 @@ public class TemplateContextUtils {
 
     public static Map<String, Object> createRemoveRelationMethodContext(final ModelDefinition modelDefinition) {
 
-        if (!FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()) ||
-                !FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields())) {
+        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             return Map.of();
         }
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
         final Map<String, Object> model = new HashMap<>();
         final List<Map<String, Object>> relations = new ArrayList<>();
@@ -116,13 +117,14 @@ public class TemplateContextUtils {
         model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
         model.put(ID_TYPE, idField.getType());
         
-        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+        relationFields.forEach(field -> {
             final Map<String, Object> relation = new HashMap<>();
             
             final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(field.getName()));
             relation.put("relationClassName", field.getType());
             relation.put("elementParam", field.getName());
-            relation.put("collectionField", strippedFieldName);
+            relation.put("relationField", strippedFieldName);
+            relation.put("isCollection", manyToManyFields.contains(field) || oneToManyFields.contains(field));
             relation.put("methodName", String.format("remove%s", strippedFieldName));
             
             relations.add(relation);
