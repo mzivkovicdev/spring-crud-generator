@@ -10,6 +10,7 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTAN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_CASCADE_TYPE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_FETCH_TYPE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_COLUMN;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_TABLE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_MANY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_ONE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_MANY;
@@ -19,6 +20,7 @@ import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_DE
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_INTEGER;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE_TIME;
+import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_LIST;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 
@@ -32,6 +34,8 @@ import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 
 public class ImportUtils {
+
+    private static final String MANY_TO_MANY = "ManyToMany";
 
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
@@ -53,30 +57,26 @@ public class ImportUtils {
         final StringBuilder sb = new StringBuilder();
 
         final List<FieldDefinition> fields = modelDefinition.getFields();
+        final Set<String> imports = new LinkedHashSet<>();
 
-        if (FieldUtils.isAnyFieldBigDecimal(fields)) {
-            sb.append(String.format(IMPORT, JAVA_MATH_BIG_DECIMAL));
-        }
+        addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, JAVA_MATH_BIG_DECIMAL);
+        addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, JAVA_MATH_BIG_INTEGER);
+        addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, JAVA_TIME_LOCAL_DATE);
+        addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, JAVA_TIME_LOCAL_DATE_TIME);
+        addIf(importObjects, imports, JAVA_UTIL_OBJECTS);
+        addIf(FieldUtils.isAnyFieldUUID(fields), imports, JAVA_UTIL_UUID);
+        
+        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
+                FieldUtils.isAnyRelationManyToMany(fields);
 
-        if (FieldUtils.isAnyFieldBigInteger(fields)) {
-            sb.append(String.format(IMPORT, JAVA_MATH_BIG_INTEGER));
-        }
+        addIf(hasLists, imports, JAVA_UTIL_LIST);
 
-        if (FieldUtils.isAnyFieldLocalDate(fields)) {
-            sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE));
-        }
+        final String sortedImports = imports.stream()
+                .map(imp -> String.format(IMPORT, imp))
+                .sorted()
+                .collect(Collectors.joining());
 
-        if (FieldUtils.isAnyFieldLocalDateTime(fields)) {
-            sb.append(String.format(IMPORT, JAVA_TIME_LOCAL_DATE_TIME));
-        }
-
-        if (importObjects) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_OBJECTS));
-        }
-
-        if (FieldUtils.isAnyFieldUUID(fields)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID));
-        }
+        sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
             sb.append("\n");
@@ -107,6 +107,7 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
         final List<FieldDefinition> fields = modelDefinition.getFields();
+        final List<String> relations = FieldUtils.extractRelationTypes(fields);
 
         imports.addAll(Set.of(
             JAKARTA_PERSISTANCE_ENTITY, JAKARTA_PERSISTANCE_GENERATED_VALUE, JAKARTA_PERSISTANCE_GENERATION_TYPE,
@@ -118,10 +119,8 @@ public class ImportUtils {
             imports.add(JAKARTA_PERSISTANCE_ENUMERATED);
         }
 
-        if (!FieldUtils.extractRelations(fields).isEmpty()) {
-            imports.add(JAKARTA_PERSISTENCE_JOIN_COLUMN);
-        }
-
+        addIf(!relations.isEmpty(), imports, JAKARTA_PERSISTENCE_JOIN_COLUMN);
+        addIf(relations.contains(MANY_TO_MANY), imports, JAKARTA_PERSISTENCE_JOIN_TABLE);
         addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_MANY);
         addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_ONE);
         addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, JAKARTA_PERSISTENCE_ONE_TO_MANY);

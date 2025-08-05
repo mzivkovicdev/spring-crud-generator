@@ -1,5 +1,6 @@
 package com.markozivkovic.codegen.utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,13 @@ import com.markozivkovic.codegen.model.ModelDefinition;
 
 public class TemplateContextUtils {
 
+    private static final String METHOD_NAME = "methodName";
+    private static final String IS_COLLECTION = "isCollection";
+    private static final String RELATION_FIELD = "relationField";
+    private static final String ELEMENT_PARAM = "elementParam";
+    private static final String RELATION_CLASS_NAME = "relationClassName";
+    private static final String RELATIONS = "relations";
+    private static final String MODEL = "model";
     private static final String ENUM_NAME = "enumName";
     private static final String VALUES = "values";
     private static final String FIELDS = "fields";
@@ -58,6 +66,94 @@ public class TemplateContextUtils {
         context.put(MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         return context;
+    }
+
+    /**
+     * Creates a template context for the addRelation method of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the addRelation method
+     */
+    public static Map<String, Object> createAddRelationMethodContext(final ModelDefinition modelDefinition) {
+
+        return computeRelationMethodContext(modelDefinition, true);
+    }
+
+    /**
+     * Creates a template context for the removeRelation method of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the removeRelation method
+     */
+    public static Map<String, Object> createRemoveRelationMethodContext(final ModelDefinition modelDefinition) {
+
+        return computeRelationMethodContext(modelDefinition, false);
+    }
+
+    /**
+     * Computes a template context for a relation field, given the original field
+     * definition, the ID field definition, the many-to-many fields, the one-to-many
+     * fields and whether the relation is an add or a remove relation.
+     * 
+     * @param field the field definition
+     * @param idField the ID field definition
+     * @param manyToManyFields the many-to-many fields
+     * @param oneToManyFields the one-to-many fields
+     * @param isAddRelation whether the relation is an add or a remove relation
+     * @return a template context for the relation field
+     */
+    private static Map<String, Object> computeRelationContext(final FieldDefinition field, final FieldDefinition idField,
+            final List<FieldDefinition> manyToManyFields, final List<FieldDefinition> oneToManyFields,
+            final Boolean isAddRelation) {
+
+        final Map<String, Object> relation = new HashMap<>();
+        final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(field.getName()));
+        final String methodName = isAddRelation ? String.format("add%s", strippedFieldName) :
+                String.format("remove%s", strippedFieldName);
+        
+        relation.put(RELATION_CLASS_NAME, field.getType());
+        relation.put(ELEMENT_PARAM, field.getName());
+        relation.put(RELATION_FIELD, strippedFieldName);
+        relation.put(IS_COLLECTION, manyToManyFields.contains(field) || oneToManyFields.contains(field));
+        relation.put(JAVADOC_FIELDS, FieldUtils.computeJavadocForFields(idField, field));
+        relation.put(METHOD_NAME, methodName);
+
+        return relation;
+    }
+
+    /**
+     * Computes a template context for a relation method of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @param isAddRelation whether the relation is an add or a remove relation
+     * @return a template context for the relation method
+     */
+    private static Map<String, Object> computeRelationMethodContext(final ModelDefinition modelDefinition, final Boolean isAddRelation) {
+
+        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+
+        final Map<String, Object> model = new HashMap<>();
+        final List<Map<String, Object>> relations = new ArrayList<>();
+
+        model.put(MODEL_NAME, modelDefinition.getName());
+        model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        model.put(ID_TYPE, idField.getType());
+        
+        relationFields.forEach(field -> 
+            relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, isAddRelation))
+        );
+
+        return Map.of(
+                MODEL, model,
+                RELATIONS, relations
+        );
     }
 
     /**
@@ -136,9 +232,9 @@ public class TemplateContextUtils {
 
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
-        context.put(INPUT_FIELDS, FieldUtils.generateInputArgs(modelDefinition.getFields()));
-        context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
-        context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadoc(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
+        context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
+        context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
         context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
 
         return context;
