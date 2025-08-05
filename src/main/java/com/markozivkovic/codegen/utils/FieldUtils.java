@@ -118,6 +118,34 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts the names of all fields from the given list that have a many-to-many relation.
+     *
+     * @param fields The list of fields to extract many-to-many relation names from.
+     * @return A list of names of fields that have a many-to-many relation.
+     */
+    public static List<FieldDefinition> extractManyToManyRelations(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .filter(field -> MANY_TO_MANY.equalsIgnoreCase(field.getRelation().getType()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that have a one-to-many relation.
+     *
+     * @param fields The list of fields to extract one-to-many relation names from.
+     * @return A list of names of fields that have a one-to-many relation.
+     */
+    public static List<FieldDefinition> extractOneToManyRelations(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .filter(field -> ONE_TO_MANY.equalsIgnoreCase(field.getRelation().getType()))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Returns true if any field in the given list of fields is of type Enum,
      * false otherwise.
      * 
@@ -129,6 +157,12 @@ public class FieldUtils {
         return fields.stream().anyMatch(field -> ENUM.equalsIgnoreCase(field.getType()));
     }
 
+    /**
+     * Extracts all fields from the given list of fields that are of type Enum.
+     * 
+     * @param fields The list of fields to extract Enum fields from.
+     * @return A list of fields that are of type Enum.
+     */
     public static List<FieldDefinition> extractEnumFields(final List<FieldDefinition> fields) {
 
         return fields.stream()

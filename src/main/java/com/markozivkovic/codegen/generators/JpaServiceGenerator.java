@@ -90,8 +90,50 @@ public class JpaServiceGenerator implements CodeGenerator {
         context.put("createMethod", generateCreateMethod(modelDefinition));
         context.put("updateMethod", generateUpdateByIdMethod(modelDefinition));
         context.put("deleteMethod", generateDeleteByIdMethod(modelDefinition));
+        context.put("addRelationMethod", addRelationMethod(modelDefinition));
+        context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/service-class-template.ftl", context);
+    }
+
+    /**
+     * Generates the removeRelation method as a string for the given model definition.
+     * This method is responsible for removing a relation from a model entity and 
+     * throws an exception if the removal is not possible.
+     * 
+     * @param modelDefinition The model definition for which the removeRelation method
+     *                        is to be generated.
+     * @return A string representation of the removeRelation method, or null 
+     *         if the context is empty.
+     */
+    private String removeRelationMethod(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = TemplateContextUtils.createRemoveRelationMethodContext(modelDefinition);
+        if (context.isEmpty()) {
+            return null;
+        }
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/remove-relation.ftl", context);
+    }
+
+    /**
+     * Generates the addRelation method as a string for the given model definition.
+     * This method is responsible for adding a new relation to a model entity and 
+     * throws an exception if the addition is not possible.
+     * 
+     * @param modelDefinition The model definition for which the addRelation method
+     *                        is to be generated.
+     * @return A string representation of the addRelation method, or an empty string 
+     *         if the context is empty.
+     */
+    private String addRelationMethod(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = TemplateContextUtils.createAddRelationMethodContext(modelDefinition);
+        if (context.isEmpty()) {
+            return null;
+        }
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/add-relation.ftl", context);
     }
 
     /**

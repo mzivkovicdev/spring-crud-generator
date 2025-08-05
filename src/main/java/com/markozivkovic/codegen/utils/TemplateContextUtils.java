@@ -1,8 +1,10 @@
 package com.markozivkovic.codegen.utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.TransactionConstants;
 import com.markozivkovic.codegen.model.FieldDefinition;
@@ -58,6 +60,78 @@ public class TemplateContextUtils {
         context.put(MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         return context;
+    }
+
+    public static Map<String, Object> createAddRelationMethodContext(final ModelDefinition modelDefinition) {
+
+        if (!FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()) ||
+                !FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields())) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        final Map<String, Object> model = new HashMap<>();
+        final List<Map<String, Object>> relations = new ArrayList<>();
+
+        model.put(MODEL_NAME, modelDefinition.getName());
+        model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        model.put(ID_TYPE, idField.getType());
+        
+        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+            final Map<String, Object> relation = new HashMap<>();
+            
+            final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(field.getName()));
+            relation.put("relationClassName", field.getType());
+            relation.put("elementParam", field.getName());
+            relation.put("collectionField", strippedFieldName);
+            relation.put("methodName", String.format("add%s", strippedFieldName));
+            
+            relations.add(relation);
+        });
+
+        return Map.of(
+            "model", model,
+            "relations", relations
+        );
+    }
+
+    public static Map<String, Object> createRemoveRelationMethodContext(final ModelDefinition modelDefinition) {
+
+        if (!FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()) ||
+                !FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields())) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        final Map<String, Object> model = new HashMap<>();
+        final List<Map<String, Object>> relations = new ArrayList<>();
+
+        model.put(MODEL_NAME, modelDefinition.getName());
+        model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        model.put(ID_TYPE, idField.getType());
+        
+        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+            final Map<String, Object> relation = new HashMap<>();
+            
+            final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(field.getName()));
+            relation.put("relationClassName", field.getType());
+            relation.put("elementParam", field.getName());
+            relation.put("collectionField", strippedFieldName);
+            relation.put("methodName", String.format("remove%s", strippedFieldName));
+            
+            relations.add(relation);
+        });
+
+        return Map.of(
+            "model", model,
+            "relations", relations
+        );
     }
 
     /**
