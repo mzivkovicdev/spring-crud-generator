@@ -1,5 +1,6 @@
 package com.markozivkovic.codegen.utils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -328,6 +329,20 @@ public class FieldUtils {
                 .filter(field -> StringUtils.isNotBlank(field.getDescription()))
                 .filter(field -> Objects.isNull(field.getRelation()))
                 .map(field -> String.format("@param %s %s", field.getName(), field.getDescription()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Computes a list of Javadoc @param tags from the given array of FieldDefinition objects.
+     * 
+     * @param field The array of FieldDefinition objects to compute the Javadoc @param tags from.
+     * @return A list of Javadoc @param tags from the given array of FieldDefinition objects.
+     */
+    public static List<String> computeJavadocForFields(final FieldDefinition... field) {
+
+        return Arrays.stream(field)
+                .filter(fieldDefinition -> StringUtils.isNotBlank(fieldDefinition.getDescription()))
+                .map(fieldDefinition -> String.format("@param %s %s", fieldDefinition.getName(), fieldDefinition.getDescription()))
                 .collect(Collectors.toList());
     }
 

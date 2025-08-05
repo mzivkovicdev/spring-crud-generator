@@ -3,6 +3,16 @@
 <#assign idType = model.idType>
 <#list relations as rel>
     
+    <#assign javadocFields = rel.javadocFields>
+    <#if javadocFields?has_content>
+    /**
+     * Remove {@link ${rel.relationClassName}} from {@link ${modelName}}
+     *
+     <#list javadocFields as docField>
+     * ${docField}
+     </#list>
+     * @return Removed {@link ${rel.relationClassName}} from {@link ${modelName}}
+     */</#if>
     ${transactionalAnnotation}
     public ${modelName} ${rel.methodName}(final ${idType} id, final ${rel.relationClassName} ${rel.elementParam}) {
 
