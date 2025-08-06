@@ -33,6 +33,7 @@ public class TemplateContextUtils {
     private static final String INPUT_ARGS = "inputArgs";
     private static final String CLASS_NAME = "className";
     private static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
+    private static final String STRIPPED_MODEL_NAME = "strippedModelName";
 
     private TemplateContextUtils() {
         
@@ -302,6 +303,117 @@ public class TemplateContextUtils {
         context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinal(modelDefinition.getFields()));
     
+        return context;
+    }
+
+    /**
+     * Creates a template context for a controller class of a model.
+     * 
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a template context for the controller class
+     */
+    public static Map<String, Object> computeControllerClassContext(final ModelDefinition modelDefinition) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Controller");
+        context.put(STRIPPED_MODEL_NAME, strippedModelName);
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for a create endpoint of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the create endpoint
+     */
+    public static Map<String, Object> computeCreateEndpointContext(final ModelDefinition modelDefinition) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final Map<String, Object> context = new HashMap<>();
+
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, strippedModelName);
+        context.put(INPUT_FIELDS, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for a get by ID endpoint of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the get by ID endpoint
+     */
+    public static Map<String, Object> computeGetByIdEndpointContext(final ModelDefinition modelDefinition) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, strippedModelName);
+        context.put(ID_TYPE, idField.getType());
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for a get all endpoint of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the get all endpoint
+     */
+    public static Map<String, Object> computeGetAllEndpointContext(final ModelDefinition modelDefinition) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, strippedModelName);
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for an update endpoint of a model.
+     * 
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a template context for the update endpoint
+     */
+    public static Map<String, Object> computeUpdateEndpointContext(final ModelDefinition modelDefinition) {
+        
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        final Map<String, Object> context = new HashMap<>();
+
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, strippedModelName);
+        context.put(INPUT_FIELDS, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+        context.put(ID_TYPE, idField.getType());
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for a delete endpoint of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the delete endpoint
+     */
+    public static Map<String, Object> computeDeleteEndpointContext(final ModelDefinition modelDefinition) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        
+        final Map<String, Object> context = new HashMap<>();
+
+        context.put(MODEL_NAME, strippedModelName);
+        context.put(ID_TYPE, idField.getType());
+
         return context;
     }
     

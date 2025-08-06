@@ -17,6 +17,7 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String JPA_SERVICE = "jpa-service";
     private static final String TRANSFER_OBJECT = "transfer-object";
     private static final String MAPPER = "mapper";
+    private static final String CONTROLLER = "controller";
 
     private static final Map<String, CodeGenerator> GENERATORS = Map.of(
             ENUM, new EnumGenerator(),
@@ -24,7 +25,8 @@ public class SpringCrudGenerator implements CodeGenerator {
             JPA_REPOSITORY, new JpaRepositoryGenerator(),
             JPA_SERVICE, new JpaServiceGenerator(),
             TRANSFER_OBJECT, new TransferObjectGenerator(),
-            MAPPER, new MapperGenerator()
+            MAPPER, new MapperGenerator(),
+            CONTROLLER, new RestControllerGenerator()
     );
 
     @Override
