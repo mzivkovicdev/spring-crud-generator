@@ -77,6 +77,9 @@ public class JpaServiceGenerator implements CodeGenerator {
      *     <li>create: creates a new model instance</li>
      *     <li>update: updates an existing model instance</li>
      *     <li>delete: deletes a model instance</li>
+     *     <li>addRelation: adds a relation to a model instance</li>
+     *     <li>removeRelation: removes a relation from a model instance</li>
+     *     <li>getAllByIds: retrieves all model instances by their IDs</li>
      * </ul>
      * 
      * @param modelDefinition the model definition containing the class name and field definitions
@@ -92,8 +95,27 @@ public class JpaServiceGenerator implements CodeGenerator {
         context.put("deleteMethod", generateDeleteByIdMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
+        context.put("getAllByIds", getAllByIdsMethod(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/service-class-template.ftl", context);
+    }
+
+    /**
+     * Generates the getAllByIds method as a string for the given model definition.
+     * 
+     * @param modelDefinition The model definition for which the getAllByIds method
+     *                        is to be generated.
+     * @return A string representation of the getAllByIds method, or null if the context
+     *         is empty.
+     */
+    private String getAllByIdsMethod(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = TemplateContextUtils.createGetAllByIdsMethodContext(modelDefinition);
+        if (context.isEmpty()) {
+            return null;
+        }
+        
+        return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-all-by-ids.ftl", context);
     }
 
     /**
