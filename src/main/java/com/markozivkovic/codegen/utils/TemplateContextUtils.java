@@ -256,6 +256,32 @@ public class TemplateContextUtils {
     }
 
     /**
+     * Creates a template context for the getAllByIds method of a model.
+     *
+     * @param modelDefinition the model definition
+     * @return a template context for the getAllByIds method
+     */
+    public static Map<String, Object> createGetAllByIdsMethodContext(final ModelDefinition modelDefinition) {
+        
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        if (manyToManyFields.isEmpty() && oneToManyFields.isEmpty()) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(ID_TYPE, idField.getType());
+        context.put(ID_DESCRIPTION, idField.getDescription());
+        context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
+        
+        return context;
+    }
+
+    /**
      * Creates a template context for the JPA interface of a model.
      * 
      * @param modelDefinition the model definition
