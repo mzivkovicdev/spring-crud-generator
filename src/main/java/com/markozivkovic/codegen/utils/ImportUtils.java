@@ -35,12 +35,17 @@ import com.markozivkovic.codegen.model.ModelDefinition;
 
 public class ImportUtils {
 
+    private static final String PAGE_TO = "PageTO";
+
     private static final String MANY_TO_MANY = "ManyToMany";
 
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String REPOSITORIES_PACKAGE = ".repositories";
     private static final String MODELS_PACKAGE = ".models";
+    private static final String TRANSFER_OBJECTS_PACKAGE = ".transferobjects";
+    private static final String SERVICES_PACKAGE = ".services";
+    private static final String MAPPERS_PACKAGE = ".mappers";
     
     private ImportUtils() {
 
@@ -195,6 +200,33 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + REPOSITORIES_PACKAGE + "." + modelWithoutSuffix + "Repository"));
 
         relationModels.forEach(relation -> imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + relation)));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+
+    /**
+     * Computes the necessary imports for the given model definition, including the model itself, the related service,
+     * the related transfer object, the page transfer object, and the related mapper.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @return A string containing the necessary import statements for the given model.
+     */
+    public static String computeControllerImports(final ModelDefinition modelDefinition, final String outputDir) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + modelWithoutSuffix + "TO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        imports.add(String.format(IMPORT, packagePath + MAPPERS_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
 
         return imports.stream()
                 .sorted()
