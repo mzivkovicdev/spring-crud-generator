@@ -126,9 +126,54 @@ public class FieldUtils {
      */
     public static List<FieldDefinition> extractManyToManyRelations(final List<FieldDefinition> fields) {
         
+        return extractRelationsByType(fields, MANY_TO_MANY);
+    }
+
+    /**
+     * Extracts all fields from the given list that have a many-to-one relation.
+     *
+     * @param fields The list of fields to extract many-to-one relations from.
+     * @return A list of fields that have a many-to-one relation.
+     */
+    public static List<FieldDefinition> extractManyToOneRelations(final List<FieldDefinition> fields) {
+        
+        return extractRelationsByType(fields, MANY_TO_ONE);
+    }
+
+    /**
+     * Extracts all fields from the given list that have a one-to-one relation.
+     *
+     * @param fields The list of fields to extract one-to-one relations from.
+     * @return A list of fields that have a one-to-one relation.
+     */
+    public static List<FieldDefinition> extractOneToOneRelations(final List<FieldDefinition> fields) {
+        
+        return extractRelationsByType(fields, ONE_TO_ONE);
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that have a one-to-many relation.
+     *
+     * @param fields The list of fields to extract one-to-many relation names from.
+     * @return A list of names of fields that have a one-to-many relation.
+     */
+    public static List<FieldDefinition> extractOneToManyRelations(final List<FieldDefinition> fields) {
+        
+        return extractRelationsByType(fields, ONE_TO_MANY);
+    }
+
+    /**
+     * Extracts all fields from the given list that have a relation of type {@code type}.
+     *
+     * @param fields The list of fields to extract relations from.
+     * @param type The type of relation to extract.
+     * @return A list of fields that have a relation of type {@code type}.
+     */
+    private static List<FieldDefinition> extractRelationsByType(final List<FieldDefinition> fields, final String type) {
+        
         return fields.stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> MANY_TO_MANY.equalsIgnoreCase(field.getRelation().getType()))
+                .filter(field -> type.equalsIgnoreCase(field.getRelation().getType()))
                 .collect(Collectors.toList());
     }
 
@@ -142,20 +187,6 @@ public class FieldUtils {
         
         return fields.stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Extracts the names of all fields from the given list that have a one-to-many relation.
-     *
-     * @param fields The list of fields to extract one-to-many relation names from.
-     * @return A list of names of fields that have a one-to-many relation.
-     */
-    public static List<FieldDefinition> extractOneToManyRelations(final List<FieldDefinition> fields) {
-        
-        return fields.stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> ONE_TO_MANY.equalsIgnoreCase(field.getRelation().getType()))
                 .collect(Collectors.toList());
     }
 

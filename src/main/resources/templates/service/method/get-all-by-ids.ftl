@@ -10,3 +10,4 @@
 
         return this.repository.findAllById(ids);
     }
+    
