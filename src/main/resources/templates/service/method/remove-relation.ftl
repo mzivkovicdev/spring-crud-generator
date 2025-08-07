@@ -14,7 +14,7 @@
      * @return Removed {@link ${rel.relationClassName}} from {@link ${modelName}}
      */</#if>
     ${transactionalAnnotation}
-    public ${modelName} ${rel.methodName}(final ${idType} id, final ${rel.relationClassName} ${rel.elementParam}) {
+    public ${modelName} ${rel.methodName}(final ${idType} id<#if rel.isCollection?? && rel.isCollection>, final ${rel.relationClassName} ${rel.elementParam}</#if>) {
 
         final ${modelName} entity = this.getById(id);
 
@@ -23,7 +23,7 @@
             throw new RuntimeException("Not possible to remove ${rel.elementParam}");
         }
         <#else>
-        if (!entity.get${rel.relationField?cap_first}().equals(${rel.elementParam})) {
+        if (entity.get${rel.relationField?cap_first}() == null) {
             throw new RuntimeException("Not possible to remove ${rel.elementParam}");
         }
         entity.set${rel.relationField?cap_first}(null);

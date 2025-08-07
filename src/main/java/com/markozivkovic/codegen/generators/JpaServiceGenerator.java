@@ -96,6 +96,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
         context.put("getAllByIds", getAllByIdsMethod(modelDefinition));
+        context.put("getReferenceById", getReferenceByIdMethod(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/service-class-template.ftl", context);
     }
@@ -116,6 +117,25 @@ public class JpaServiceGenerator implements CodeGenerator {
         }
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-all-by-ids.ftl", context);
+    }
+
+    /**
+     * Generates the getReferenceById method as a string for the given model definition.
+     * 
+     * @param modelDefinition The model definition for which the getReferenceById method
+     *                        is to be generated.
+     * @return A string representation of the getReferenceById method, or null if the context
+     *         is empty.
+     */
+    private String getReferenceByIdMethod(ModelDefinition modelDefinition) {
+
+        final Map<String, Object> context = TemplateContextUtils.createGetReferenceByIdMethodContext(modelDefinition);
+
+        if (context.isEmpty()) {
+            return null;
+        }
+        
+        return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-reference-by-id.ftl", context);
     }
 
     /**
