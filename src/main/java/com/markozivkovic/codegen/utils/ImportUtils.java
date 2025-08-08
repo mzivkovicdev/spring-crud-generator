@@ -206,6 +206,36 @@ public class ImportUtils {
                 .collect(Collectors.joining());
     }
 
+    /**
+     * Computes the necessary imports for the given model definition, including the enums if any exist, the model itself,
+     * the related service, and any related models.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @return A string containing the necessary import statements for the given model.
+     */
+    public static String computeModelsEnumsAndServiceImports(final ModelDefinition modelDefinition, final String outputDir) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final List<FieldDefinition> relationModels = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final String enumsImport = computeEnumsImport(modelDefinition, outputDir);
+
+        imports.add(enumsImport);
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+
+        relationModels.forEach(relation -> {
+            imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + relation.getType()));
+            imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + ModelNameUtils.stripSuffix(relation.getType()) + "Service"));
+        });
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
 
     /**
      * Computes the necessary imports for the given model definition, including the model itself, the related service,

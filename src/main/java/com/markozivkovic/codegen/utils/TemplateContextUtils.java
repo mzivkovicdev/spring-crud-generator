@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.TransactionConstants;
 import com.markozivkovic.codegen.model.FieldDefinition;
@@ -16,6 +17,7 @@ public class TemplateContextUtils {
     private static final String RELATION_FIELD = "relationField";
     private static final String ELEMENT_PARAM = "elementParam";
     private static final String RELATION_CLASS_NAME = "relationClassName";
+    private static final String STRIPPED_RELATION_CLASS_NAME = "strippedRelationClassName";
     private static final String RELATIONS = "relations";
     private static final String MODEL = "model";
     private static final String ENUM_NAME = "enumName";
@@ -34,6 +36,9 @@ public class TemplateContextUtils {
     private static final String CLASS_NAME = "className";
     private static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     private static final String STRIPPED_MODEL_NAME = "strippedModelName";
+    private static final String SERVICE_CLASSES = "serviceClasses";
+    private static final String RELATION_ID_TYPE = "relationIdType";
+    private static final String MODEL_SERVICE = "modelService";
 
     private TemplateContextUtils() {
         
@@ -77,7 +82,7 @@ public class TemplateContextUtils {
      */
     public static Map<String, Object> createAddRelationMethodContext(final ModelDefinition modelDefinition) {
 
-        return computeRelationMethodContext(modelDefinition, true);
+        return computeRelationMethodContext(modelDefinition, true, List.of());
     }
 
     /**
@@ -88,7 +93,7 @@ public class TemplateContextUtils {
      */
     public static Map<String, Object> createRemoveRelationMethodContext(final ModelDefinition modelDefinition) {
 
-        return computeRelationMethodContext(modelDefinition, false);
+        return computeRelationMethodContext(modelDefinition, false, List.of());
     }
 
     /**
@@ -105,14 +110,23 @@ public class TemplateContextUtils {
      */
     private static Map<String, Object> computeRelationContext(final FieldDefinition field, final FieldDefinition idField,
             final List<FieldDefinition> manyToManyFields, final List<FieldDefinition> oneToManyFields,
-            final Boolean isAddRelation) {
+            final Boolean isAddRelation, final List<ModelDefinition> entities) {
 
         final Map<String, Object> relation = new HashMap<>();
         final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(field.getName()));
         final String methodName = isAddRelation ? String.format("add%s", strippedFieldName) :
                 String.format("remove%s", strippedFieldName);
+
+        entities.stream()
+                .filter(entity -> entity.getName().equals(field.getType()))
+                .findFirst()
+                .ifPresent(entity -> {
+                    final FieldDefinition entityIdField = FieldUtils.extractIdField(entity.getFields());
+                    relation.put(RELATION_ID_TYPE, entityIdField.getType());
+                });
         
         relation.put(RELATION_CLASS_NAME, field.getType());
+        relation.put(STRIPPED_RELATION_CLASS_NAME, ModelNameUtils.stripSuffix(field.getType()));
         relation.put(ELEMENT_PARAM, field.getName());
         relation.put(RELATION_FIELD, strippedFieldName);
         relation.put(IS_COLLECTION, manyToManyFields.contains(field) || oneToManyFields.contains(field));
@@ -129,7 +143,8 @@ public class TemplateContextUtils {
      * @param isAddRelation whether the relation is an add or a remove relation
      * @return a template context for the relation method
      */
-    private static Map<String, Object> computeRelationMethodContext(final ModelDefinition modelDefinition, final Boolean isAddRelation) {
+    private static Map<String, Object> computeRelationMethodContext(final ModelDefinition modelDefinition, final Boolean isAddRelation,
+            final List<ModelDefinition> entities) {
 
         if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             return Map.of();
@@ -146,9 +161,10 @@ public class TemplateContextUtils {
         model.put(MODEL_NAME, modelDefinition.getName());
         model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
         model.put(ID_TYPE, idField.getType());
+        model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
         
         relationFields.forEach(field -> 
-            relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, isAddRelation))
+            relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, isAddRelation, entities))
         );
 
         return Map.of(
@@ -356,6 +372,102 @@ public class TemplateContextUtils {
         context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinal(modelDefinition.getFields()));
     
         return context;
+    }
+
+    /**
+     * Computes a template context for a business service class of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @return a template context for the business service class
+     */
+    public static Map<String, Object> computeBusinessServiceContext(final ModelDefinition modelDefinition) {
+        
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+       
+        final List<String> serviceClasses = relationFields.stream()
+                .map(FieldDefinition::getType)
+                .map(ModelNameUtils::stripSuffix)
+                .map(modelName -> String.format("%sService", modelName))
+                .collect(Collectors.toList());
+                
+        serviceClasses.add(String.format("%sService", strippedModelName));
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, String.format("%sBusinessService", strippedModelName));
+        context.put(SERVICE_CLASSES, serviceClasses);
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for the addRelation method of a model's service.
+     *
+     * @param modelDefinition the model definition containing the class and field details
+     * @param entities a list of model definitions representing entities related to the model
+     * @return a map representing the context for the addRelation method, or an empty map if no relation types are present
+     */
+    public static Map<String, Object> computeAddRelationMethodServiceContext(final ModelDefinition modelDefinition,
+            final List<ModelDefinition> entities) {
+        
+        return computeRelationMethodContext(modelDefinition, true, entities);
+    }
+
+    /**
+     * Computes a template context for the removeRelation method of a model's service.
+     *
+     * @param modelDefinition the model definition containing the class and field details
+     * @param entities a list of model definitions representing entities related to the model
+     * @return a map representing the context for the removeRelation method, or an empty map if no relation types are present
+     */
+    public static Map<String, Object> computeRemoveRelationMethodServiceContext(final ModelDefinition modelDefinition,
+            final List<ModelDefinition> entities) {
+        
+        return computeRelationMethodContext(modelDefinition, false, entities);
+    }
+
+    /**
+     * Computes a template context for the create resource method of a model's service.
+     *
+     * @param modelDefinition the model definition containing the class and field details
+     * @param entities a list of model definitions representing entities related to the model
+     * @return a map representing the context for the create resource method, or an empty map if no relation types are present
+     */
+    public static Map<String, Object> computeCreateResourceMethodServiceContext(final ModelDefinition modelDefinition,
+            final List<ModelDefinition> entities) {
+
+        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final String inputArgs = FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields(), entities).stream()
+                .collect(Collectors.joining(", "));
+
+        final String fieldNames = FieldUtils.generateInputArgsBusinessService(modelDefinition.getFields()).stream()
+                .collect(Collectors.joining(", "));
+
+        final Map<String, Object> model = new HashMap<>();
+        final List<Map<String, Object>> relations = new ArrayList<>();
+
+        model.put(MODEL_NAME, modelDefinition.getName());
+        model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
+        model.put(INPUT_ARGS, inputArgs);
+        model.put(FIELD_NAMES, fieldNames);
+
+        relationFields.forEach(field -> {
+            relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, true, entities));
+        });
+
+        return Map.of(
+            MODEL, model,
+            RELATIONS, relations
+        );
     }
 
     /**

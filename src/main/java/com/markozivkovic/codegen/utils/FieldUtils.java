@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
+import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.RelationDefinition;
 
 public class FieldUtils {
@@ -387,6 +388,82 @@ public class FieldUtils {
 
         return fields.stream()
                 .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a business service method.
+     * The generated list of strings is in the format "<name>" where <name> is the name of the field.
+     * If the field has a relation, the name is the camel-cased version of the type of the related
+     * entity, and if the relation is many-to-many or one-to-many, the name is in the plural form.
+     * The generated list does not include the ID field.
+     * 
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a business service method.
+     */
+    public static List<String> generateInputArgsBusinessService(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .map(field -> {
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String name = StringUtils.uncapitalize(
+                                field.getType()
+                        );
+                        final String arg;
+                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                            arg = String.format("%ss", name);
+                        } else {
+                            arg = String.format("%s", name);
+                        }
+                        return arg;
+                    }
+                    return String.format("%s", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method,
+     * excluding the ID field. The generated list of strings is in the format "final <type> <name>"
+     * where <type> is the type of the field and <name> is the name of the field. If the field
+     * has a relation, the name is formatted as "<modelName>Id" for a one-to-one or many-to-one
+     * relation, and as "<modelName>Ids" for a many-to-many or one-to-many relation. The ID field
+     * is excluded from the list.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @param entities The list of model definitions to resolve related model types.
+     * @return A list of strings representing the input arguments for a constructor or method,
+     * excluding the ID field.
+     * @throws IllegalArgumentException If no ID field is found in the provided fields.
+     */
+    public static List<String> generateInputArgsExcludingId(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
+
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .map(field -> {
+                    if (Objects.nonNull(field.getRelation())) {
+                        final ModelDefinition modelDefinition = entities.stream()
+                                .filter(model -> model.getName().equals(field.getType()))
+                                .findFirst()
+                                .orElseThrow();
+
+                        final FieldDefinition relationId = extractIdField(modelDefinition.getFields());
+                        final String modelName = StringUtils.uncapitalize(
+                                ModelNameUtils.stripSuffix(modelDefinition.getName())
+                        );
+                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                            return String.format("final List<%s> %s", relationId.getType(), String.format("%sIds", modelName));
+                        } else {
+                            return String.format("final %s %s", relationId.getType(), String.format("%sId", modelName));
+                        }
+                    }
+                    return String.format("final %s %s", field.getResolvedType(), field.getName());
+                })
                 .collect(Collectors.toList());
     }
 
