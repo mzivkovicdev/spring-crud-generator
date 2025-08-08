@@ -9,6 +9,7 @@ import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FA
 import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -29,6 +30,12 @@ public class JpaServiceGenerator implements CodeGenerator {
 
     private static final String SERVICES = "services";
     private static final String SERVICES_PACKAGE = "." + SERVICES;
+
+    private final List<ModelDefinition> entites;
+
+    public JpaServiceGenerator(final List<ModelDefinition> entites) {
+        this.entites = entites;
+    }
     
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
@@ -49,7 +56,9 @@ public class JpaServiceGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + SERVICES_PACKAGE));
-        sb.append(ImportUtils.getBaseImport(modelDefinition, false));
+        sb.append(ImportUtils.getBaseImport(
+                modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites))
+        );
         
         sb.append(String.format(IMPORT, SL4J_LOGGER))
                 .append(String.format(IMPORT, SL4J_LOGGER_FACTORY))
@@ -80,6 +89,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      *     <li>addRelation: adds a relation to a model instance</li>
      *     <li>removeRelation: removes a relation from a model instance</li>
      *     <li>getAllByIds: retrieves all model instances by their IDs</li>
+     *     <li>getReferenceById: retrieves a reference to a model instance by its ID</li>
      * </ul>
      * 
      * @param modelDefinition the model definition containing the class name and field definitions
@@ -111,10 +121,10 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String getAllByIdsMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.createGetAllByIdsMethodContext(modelDefinition);
-        if (context.isEmpty()) {
+        if (!FieldUtils.hasCollectionRelation(modelDefinition, entites)) {
             return null;
         }
+        final Map<String, Object> context = TemplateContextUtils.createGetAllByIdsMethodContext(modelDefinition);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-all-by-ids.ftl", context);
     }
@@ -129,11 +139,11 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String getReferenceByIdMethod(ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.createGetReferenceByIdMethodContext(modelDefinition);
-
-        if (context.isEmpty()) {
+        if (!FieldUtils.hasRelation(modelDefinition, entites)) {
             return null;
         }
+
+        final Map<String, Object> context = TemplateContextUtils.createGetReferenceByIdMethodContext(modelDefinition);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-reference-by-id.ftl", context);
     }

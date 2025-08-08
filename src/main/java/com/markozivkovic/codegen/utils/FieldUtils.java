@@ -131,28 +131,6 @@ public class FieldUtils {
     }
 
     /**
-     * Extracts all fields from the given list that have a many-to-one relation.
-     *
-     * @param fields The list of fields to extract many-to-one relations from.
-     * @return A list of fields that have a many-to-one relation.
-     */
-    public static List<FieldDefinition> extractManyToOneRelations(final List<FieldDefinition> fields) {
-        
-        return extractRelationsByType(fields, MANY_TO_ONE);
-    }
-
-    /**
-     * Extracts all fields from the given list that have a one-to-one relation.
-     *
-     * @param fields The list of fields to extract one-to-one relations from.
-     * @return A list of fields that have a one-to-one relation.
-     */
-    public static List<FieldDefinition> extractOneToOneRelations(final List<FieldDefinition> fields) {
-        
-        return extractRelationsByType(fields, ONE_TO_ONE);
-    }
-
-    /**
      * Extracts the names of all fields from the given list that have a one-to-many relation.
      *
      * @param fields The list of fields to extract one-to-many relation names from.
@@ -389,6 +367,39 @@ public class FieldUtils {
         return fields.stream()
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Checks if any field within the provided list of model definitions has a one-to-many or
+     * many-to-many relation to the specified model definition.
+     *
+     * @param modelDefinition The model definition to check for a relation.
+     * @param entities The list of model definitions to search for a relation.
+     * @return true if a relation to the given model definition is found, false otherwise.
+     */
+    public static boolean hasCollectionRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entites) {
+
+        return entites.stream()
+                .flatMap(entity -> entity.getFields().stream())
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .filter(field -> field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) || field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY))
+                .anyMatch(field -> field.getType().equals(modelDefinition.getName()));
+    }
+
+    /**
+     * Checks if any field within the provided list of model definitions has a relation
+     * to the specified model definition.
+     * 
+     * @param modelDefinition The model definition to check for a relation.
+     * @param entities The list of model definitions to search for a relation.
+     * @return true if a relation to the given model definition is found, false otherwise.
+     */
+    public static boolean hasRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entites) {
+
+        return entites.stream()
+                .flatMap(entity -> entity.getFields().stream())
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .anyMatch(field -> field.getType().equals(modelDefinition.getName()));
     }
 
     /**

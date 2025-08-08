@@ -278,13 +278,6 @@ public class TemplateContextUtils {
      * @return a template context for the getAllByIds method
      */
     public static Map<String, Object> createGetAllByIdsMethodContext(final ModelDefinition modelDefinition) {
-        
-        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
-
-        if (manyToManyFields.isEmpty() && oneToManyFields.isEmpty()) {
-            return Map.of();
-        }
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
@@ -304,13 +297,6 @@ public class TemplateContextUtils {
      * @return a template context for the getReferenceById method
      */
     public static Map<String, Object> createGetReferenceByIdMethodContext(final ModelDefinition modelDefinition) {
-        
-        final List<FieldDefinition> manyToOneFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToOneFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
-
-        if (manyToOneFields.isEmpty() && oneToOneFields.isEmpty()) {
-            return Map.of();
-        }
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final Map<String, Object> context = new HashMap<>();

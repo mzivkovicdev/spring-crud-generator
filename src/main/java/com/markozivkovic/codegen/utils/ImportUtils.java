@@ -55,9 +55,24 @@ public class ImportUtils {
      * Generates a string of import statements based on the fields present in the given model definition.
      *
      * @param modelDefinition The model definition containing field information used to determine necessary imports.
+     * @param importObjects   Whether to include the java.util.Objects import.
      * @return A string containing the necessary import statements for the model.
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects) {
+
+        return getBaseImport(modelDefinition, importObjects, false);
+    }
+
+    /**
+     * Generates a string of import statements based on the fields present in the given model definition, with options to include
+     * the java.util.Objects class and the java.util.List interface.
+     *
+     * @param modelDefinition The model definition containing field information used to determine necessary imports.
+     * @param importObjects   Whether to include the java.util.Objects import.
+     * @param importList      Whether to include the java.util.List import.
+     * @return A string containing the necessary import statements for the model.
+     */
+    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList) {
 
         final StringBuilder sb = new StringBuilder();
 
@@ -74,7 +89,7 @@ public class ImportUtils {
         final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
                 FieldUtils.isAnyRelationManyToMany(fields);
 
-        addIf(hasLists, imports, JAVA_UTIL_LIST);
+        addIf(hasLists || importList, imports, JAVA_UTIL_LIST);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
