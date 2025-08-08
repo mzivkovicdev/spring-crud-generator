@@ -19,7 +19,7 @@
     ${transactionalAnnotation}
     public ${modelName} ${rel.methodName}(final ${idType} id, final ${rel.relationIdType} ${relationField}Id) {
 
-        final ${rel.relationClassName} entity = this.${relationServiceClass}.getById(${relationField}Id);
+        final ${rel.relationClassName} entity = this.${relationServiceClass}.getReferenceById(${relationField}Id);
 
         LOGGER.info("Removing ${rel.relationClassName} with ID {} from ${modelName} with ID {}", ${relationField}Id, id);
 

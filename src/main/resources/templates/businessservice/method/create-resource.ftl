@@ -14,7 +14,7 @@
         <#if rel.isCollection?? && rel.isCollection>
         final List<${relationClassName}> ${rel.relationClassName?uncap_first}s = this.${relationServiceClass}.getAllByIds(${relationField}Ids);
         <#else>
-        final ${relationClassName} ${rel.relationClassName?uncap_first} = this.${relationServiceClass}.getById(${relationField}Id);
+        final ${relationClassName} ${rel.relationClassName?uncap_first} = this.${relationServiceClass}.getReferenceById(${relationField}Id);
         </#if>
         </#list>
 
