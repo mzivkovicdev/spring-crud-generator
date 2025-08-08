@@ -4,6 +4,7 @@ import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -26,6 +27,12 @@ public class RestControllerGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerGenerator.class);
 
+    private final List<ModelDefinition> entites;
+
+    public RestControllerGenerator(final List<ModelDefinition> entites) {
+        this.entites = entites;
+    }
+
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
@@ -34,18 +41,13 @@ public class RestControllerGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sController", modelWithoutSuffix);
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
-        
-        if (FieldUtils.isIdFieldUUID(idField)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID))
-                    .append("\n");
-        }
-
-        sb.append(generateControllerClass(modelDefinition, outputDir));
+        sb.append(ImportUtils.computeControllerBaseImports(modelDefinition, entites))
+            .append("\n")
+            .append(generateControllerClass(modelDefinition, outputDir));
 
         FileWriterUtils.writeToFile(outputDir, CONTROLLERS, className, sb.toString());
     }
@@ -69,7 +71,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir) {
 
         final Map<String, Object> context = TemplateContextUtils.computeControllerClassContext(modelDefinition);
-        context.put("projectImports", ImportUtils.computeControllerImports(modelDefinition, outputDir));
+        context.put("projectImports", ImportUtils.computeControllerProjectImports(modelDefinition, outputDir));
 
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition));
         context.put("getResource", generateGetResourceEndpoint(modelDefinition));
@@ -89,7 +91,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeCreateEndpointContext(modelDefinition);
+        final Map<String, Object> context = TemplateContextUtils.computeCreateEndpointContext(modelDefinition, entites);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-resource.ftl", context);
     }

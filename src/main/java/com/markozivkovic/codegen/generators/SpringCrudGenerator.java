@@ -32,7 +32,7 @@ public class SpringCrudGenerator implements CodeGenerator {
                 BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
                 TRANSFER_OBJECT, new TransferObjectGenerator(),
                 MAPPER, new MapperGenerator(),
-                CONTROLLER, new RestControllerGenerator()
+                CONTROLLER, new RestControllerGenerator(entites)
         );
     }
 
