@@ -473,6 +473,7 @@ public class TemplateContextUtils {
         final Map<String, Object> context = new HashMap<>();
         context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Controller");
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
+        context.put(RELATIONS, !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
 
         return context;
     }
@@ -526,6 +527,7 @@ public class TemplateContextUtils {
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
         context.put(INPUT_FIELDS, inputFields);
+        context.put(RELATIONS, !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
 
         return context;
     }

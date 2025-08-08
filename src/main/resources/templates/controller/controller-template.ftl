@@ -1,6 +1,8 @@
 <#assign uncapModelName = strippedModelName?uncap_first>
 <#assign serviceField = strippedModelName?uncap_first + "Service">
 <#assign serviceClass = strippedModelName?cap_first + "Service">
+<#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
+<#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign mapperClass = strippedModelName?cap_first + "Mapper">
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 import org.mapstruct.factory.Mappers;
@@ -24,9 +26,13 @@ public class ${className} {
     private final ${mapperClass} ${mapperClass?uncap_first} = Mappers.getMapper(${mapperClass}.class);
 
     private final ${serviceClass} ${serviceField};
+    <#if relations>
+    private final ${businessServiceClass} ${businessServiceField};
+    </#if>
 
-    public ${className}(final ${serviceClass} ${serviceField}) {
-        this.${serviceField} = ${serviceField};
+    public ${className}(final ${serviceClass} ${serviceField}<#if relations>, final ${businessServiceClass} ${businessServiceField}</#if>) {
+        this.${serviceField} = ${serviceField};<#if relations>
+        this.${businessServiceField} = ${businessServiceField};</#if>
     }
 
     <#if createResource?? && createResource?has_content>${createResource}</#if>

@@ -41,18 +41,13 @@ public class RestControllerGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sController", modelWithoutSuffix);
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
-        
-        if (FieldUtils.isIdFieldUUID(idField)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID))
-                    .append("\n");
-        }
-
-        sb.append(generateControllerClass(modelDefinition, outputDir));
+        sb.append(ImportUtils.computeControllerBaseImports(modelDefinition, entites))
+            .append("\n")
+            .append(generateControllerClass(modelDefinition, outputDir));
 
         FileWriterUtils.writeToFile(outputDir, CONTROLLERS, className, sb.toString());
     }
@@ -76,7 +71,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir) {
 
         final Map<String, Object> context = TemplateContextUtils.computeControllerClassContext(modelDefinition);
-        context.put("projectImports", ImportUtils.computeControllerImports(modelDefinition, outputDir));
+        context.put("projectImports", ImportUtils.computeControllerProjectImports(modelDefinition, outputDir));
 
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition));
         context.put("getResource", generateGetResourceEndpoint(modelDefinition));

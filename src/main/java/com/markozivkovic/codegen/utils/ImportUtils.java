@@ -22,6 +22,7 @@ import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE_TIME;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_LIST;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
+import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_STREAM_COLLECTORS;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 
 import java.util.LinkedHashSet;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
@@ -45,6 +47,7 @@ public class ImportUtils {
     private static final String MODELS_PACKAGE = ".models";
     private static final String TRANSFER_OBJECTS_PACKAGE = ".transferobjects";
     private static final String SERVICES_PACKAGE = ".services";
+    private static final String BUSINESS_SERVICES_PACKAGE = ".businessservices";
     private static final String MAPPERS_PACKAGE = ".mappers";
     
     private ImportUtils() {
@@ -253,6 +256,51 @@ public class ImportUtils {
     }
 
     /**
+     * Computes the necessary imports for the given model definition, including UUID if any model has a UUID as its ID,
+     * and List and Collectors if any model has a many-to-many or one-to-many relation.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param entities        the list of all model definitions
+     * @return A string containing the necessary import statements for the given model.
+     */
+    public static String computeControllerBaseImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
+
+        if (FieldUtils.isIdFieldUUID(idField)) {
+            imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+        }
+
+        if (!manyToManyFields.isEmpty() || !oneToManyFields.isEmpty()) {
+            imports.add(String.format(IMPORT, JAVA_UTIL_LIST));
+            imports.add(String.format(IMPORT, JAVA_UTIL_STREAM_COLLECTORS));
+        }
+
+        relations.forEach(realtionField -> {
+
+            final ModelDefinition relationModel = entities.stream()
+                    .filter(entity -> entity.getName().equals(realtionField.getType()))
+                    .findFirst()
+                    .orElseThrow();
+
+            final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
+
+            if (FieldUtils.isIdFieldUUID(relationIdField)) {
+                imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+            }
+        });
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
      * Computes the necessary imports for the given model definition, including the model itself, the related service,
      * the related transfer object, the page transfer object, and the related mapper.
      *
@@ -260,12 +308,24 @@ public class ImportUtils {
      * @param outputDir       the directory where the generated code will be written
      * @return A string containing the necessary import statements for the given model.
      */
-    public static String computeControllerImports(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeControllerProjectImports(final ModelDefinition modelDefinition, final String outputDir) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + relationModel + "TO"));    
+        });
+
+        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
 
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
         imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
