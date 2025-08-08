@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.TransactionConstants;
@@ -14,6 +15,7 @@ public class TemplateContextUtils {
 
     private static final String METHOD_NAME = "methodName";
     private static final String IS_COLLECTION = "isCollection";
+    private static final String IS_RELATION = "isRelation";
     private static final String RELATION_FIELD = "relationField";
     private static final String ELEMENT_PARAM = "elementParam";
     private static final String RELATION_CLASS_NAME = "relationClassName";
@@ -22,7 +24,9 @@ public class TemplateContextUtils {
     private static final String MODEL = "model";
     private static final String ENUM_NAME = "enumName";
     private static final String VALUES = "values";
+    private static final String FIELD = "field";
     private static final String FIELDS = "fields";
+    private static final String FIELD_TYPE = "fieldType";
     private static final String FIELD_NAMES = "fieldNames";
     private static final String JAVADOC_FIELDS = "javadocFields";
     private static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
@@ -477,16 +481,51 @@ public class TemplateContextUtils {
      * Computes a template context for a create endpoint of a model.
      * 
      * @param modelDefinition the model definition
+     * @param entities a list of model definitions representing entities related to the model
      * @return a template context for the create endpoint
      */
-    public static Map<String, Object> computeCreateEndpointContext(final ModelDefinition modelDefinition) {
+    public static Map<String, Object> computeCreateEndpointContext(final ModelDefinition modelDefinition,
+            final List<ModelDefinition> entities) {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final Map<String, Object> context = new HashMap<>();
+        
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<Map<String, Object>> inputFields = new ArrayList<>();
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        modelDefinition.getFields().stream()
+            .filter(field -> !field.equals(idField))
+            .forEach(field -> {
+
+                final boolean isRelation = Objects.nonNull(field.getRelation());
+                final boolean isCollection = isRelation && (manyToManyFields.contains(field) || oneToManyFields.contains(field));
+                final String relationIdType;
+
+                if (isRelation) {
+                    relationIdType = entities.stream()
+                            .filter(entity -> entity.getName().equals(field.getType()))
+                            .findFirst()
+                            .map(entity -> FieldUtils.extractIdField(entity.getFields()).getType())
+                            .orElseThrow();
+                } else {
+                    relationIdType = "";
+                }
+                
+                inputFields.add(Map.of(
+                    FIELD, field.getName(),
+                    FIELD_TYPE, field.getType(),
+                    STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(field.getType()),
+                    IS_COLLECTION, isCollection,
+                    IS_RELATION, isRelation,
+                    RELATION_ID_TYPE, relationIdType
+                ));
+        });
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
-        context.put(INPUT_FIELDS, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, inputFields);
 
         return context;
     }
@@ -542,7 +581,7 @@ public class TemplateContextUtils {
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
-        context.put(INPUT_FIELDS, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
         context.put(ID_TYPE, idField.getType());
 
         return context;

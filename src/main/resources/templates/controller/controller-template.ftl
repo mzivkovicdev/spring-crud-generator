@@ -21,7 +21,7 @@ ${projectImports}
 @RequestMapping("/api/v1/${uncapModelName}s")
 public class ${className} {
 
-    private final ${mapperClass} mapper = Mappers.getMapper(${mapperClass}.class);
+    private final ${mapperClass} ${mapperClass?uncap_first} = Mappers.getMapper(${mapperClass}.class);
 
     private final ${serviceClass} ${serviceField};
 

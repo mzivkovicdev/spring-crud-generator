@@ -4,6 +4,7 @@ import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -25,6 +26,12 @@ public class RestControllerGenerator implements CodeGenerator {
     private static final String CONTROLLERS_PACKAGE = "." + CONTROLLERS;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerGenerator.class);
+
+    private final List<ModelDefinition> entites;
+
+    public RestControllerGenerator(final List<ModelDefinition> entites) {
+        this.entites = entites;
+    }
 
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
@@ -89,7 +96,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeCreateEndpointContext(modelDefinition);
+        final Map<String, Object> context = TemplateContextUtils.computeCreateEndpointContext(modelDefinition, entites);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-resource.ftl", context);
     }
