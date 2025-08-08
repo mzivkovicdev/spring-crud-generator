@@ -18,6 +18,17 @@ public class StringUtils {
     }
 
     /**
+     * Returns a new string with the first character of the given string converted to lowercase.
+     *
+     * @param str The string to uncapitalize.
+     * @return A new string with the first character in lowercase.
+     */
+    public static String uncapitalize(final String str) {
+        if (!isNotBlank(str)) return str;
+        return str.substring(0, 1).toLowerCase() + str.substring(1);
+    }
+
+    /**
      * Checks if a String is not empty (""), not null and not whitespace only.
      * 
      * @param str the String to check, may be null

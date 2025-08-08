@@ -39,7 +39,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
                     new File(inputSpecFile), CrudSpecification.class
             );
 
-            final SpringCrudGenerator generator = new SpringCrudGenerator();
+            final SpringCrudGenerator generator = new SpringCrudGenerator(spec.getEntities());
 
             spec.getEntities().stream().forEach(entity -> {
                     generator.generate(entity, outputDir);

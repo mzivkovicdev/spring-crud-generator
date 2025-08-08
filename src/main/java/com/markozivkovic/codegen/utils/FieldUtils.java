@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
+import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.RelationDefinition;
 
 public class FieldUtils {
@@ -127,28 +128,6 @@ public class FieldUtils {
     public static List<FieldDefinition> extractManyToManyRelations(final List<FieldDefinition> fields) {
         
         return extractRelationsByType(fields, MANY_TO_MANY);
-    }
-
-    /**
-     * Extracts all fields from the given list that have a many-to-one relation.
-     *
-     * @param fields The list of fields to extract many-to-one relations from.
-     * @return A list of fields that have a many-to-one relation.
-     */
-    public static List<FieldDefinition> extractManyToOneRelations(final List<FieldDefinition> fields) {
-        
-        return extractRelationsByType(fields, MANY_TO_ONE);
-    }
-
-    /**
-     * Extracts all fields from the given list that have a one-to-one relation.
-     *
-     * @param fields The list of fields to extract one-to-one relations from.
-     * @return A list of fields that have a one-to-one relation.
-     */
-    public static List<FieldDefinition> extractOneToOneRelations(final List<FieldDefinition> fields) {
-        
-        return extractRelationsByType(fields, ONE_TO_ONE);
     }
 
     /**
@@ -387,6 +366,115 @@ public class FieldUtils {
 
         return fields.stream()
                 .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Checks if any field within the provided list of model definitions has a one-to-many or
+     * many-to-many relation to the specified model definition.
+     *
+     * @param modelDefinition The model definition to check for a relation.
+     * @param entities The list of model definitions to search for a relation.
+     * @return true if a relation to the given model definition is found, false otherwise.
+     */
+    public static boolean hasCollectionRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entites) {
+
+        return entites.stream()
+                .flatMap(entity -> entity.getFields().stream())
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .filter(field -> field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) || field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY))
+                .anyMatch(field -> field.getType().equals(modelDefinition.getName()));
+    }
+
+    /**
+     * Checks if any field within the provided list of model definitions has a relation
+     * to the specified model definition.
+     * 
+     * @param modelDefinition The model definition to check for a relation.
+     * @param entities The list of model definitions to search for a relation.
+     * @return true if a relation to the given model definition is found, false otherwise.
+     */
+    public static boolean hasRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entites) {
+
+        return entites.stream()
+                .flatMap(entity -> entity.getFields().stream())
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .anyMatch(field -> field.getType().equals(modelDefinition.getName()));
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a business service method.
+     * The generated list of strings is in the format "<name>" where <name> is the name of the field.
+     * If the field has a relation, the name is the camel-cased version of the type of the related
+     * entity, and if the relation is many-to-many or one-to-many, the name is in the plural form.
+     * The generated list does not include the ID field.
+     * 
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a business service method.
+     */
+    public static List<String> generateInputArgsBusinessService(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .map(field -> {
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String name = StringUtils.uncapitalize(
+                                field.getType()
+                        );
+                        final String arg;
+                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                            arg = String.format("%ss", name);
+                        } else {
+                            arg = String.format("%s", name);
+                        }
+                        return arg;
+                    }
+                    return String.format("%s", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method,
+     * excluding the ID field. The generated list of strings is in the format "final <type> <name>"
+     * where <type> is the type of the field and <name> is the name of the field. If the field
+     * has a relation, the name is formatted as "<modelName>Id" for a one-to-one or many-to-one
+     * relation, and as "<modelName>Ids" for a many-to-many or one-to-many relation. The ID field
+     * is excluded from the list.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @param entities The list of model definitions to resolve related model types.
+     * @return A list of strings representing the input arguments for a constructor or method,
+     * excluding the ID field.
+     * @throws IllegalArgumentException If no ID field is found in the provided fields.
+     */
+    public static List<String> generateInputArgsExcludingId(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
+
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .map(field -> {
+                    if (Objects.nonNull(field.getRelation())) {
+                        final ModelDefinition modelDefinition = entities.stream()
+                                .filter(model -> model.getName().equals(field.getType()))
+                                .findFirst()
+                                .orElseThrow();
+
+                        final FieldDefinition relationId = extractIdField(modelDefinition.getFields());
+                        final String modelName = StringUtils.uncapitalize(
+                                ModelNameUtils.stripSuffix(modelDefinition.getName())
+                        );
+                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                            return String.format("final List<%s> %s", relationId.getType(), String.format("%sIds", modelName));
+                        } else {
+                            return String.format("final %s %s", relationId.getType(), String.format("%sId", modelName));
+                        }
+                    }
+                    return String.format("final %s %s", field.getResolvedType(), field.getName());
+                })
                 .collect(Collectors.toList());
     }
 
