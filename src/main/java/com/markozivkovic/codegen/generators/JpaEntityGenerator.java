@@ -5,10 +5,12 @@ import static com.markozivkovic.codegen.constants.JPAConstants.TABLE_ANNOTATION;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -27,6 +29,12 @@ public class JpaEntityGenerator implements CodeGenerator {
 
     private static final String MODELS = "models";
     private static final String MODELS_PACKAGE = "." + MODELS;
+
+    private final CrudConfiguration configuration;
+
+    public JpaEntityGenerator(final CrudConfiguration configuration) {
+        this.configuration = configuration;
+    }
     
     /**
      * Generates a JPA entity class based on the provided model definition.
@@ -56,13 +64,15 @@ public class JpaEntityGenerator implements CodeGenerator {
         
         final String className = model.getName();
         final String tableName = model.getStorageName();
+        final boolean optimisticLocking = (Objects.nonNull(configuration) && Objects.nonNull(configuration.isOptimisticLocking())) ?
+                configuration.isOptimisticLocking() : false;
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + MODELS_PACKAGE));
         sb.append(ImportUtils.getBaseImport(model, true));
                 
-        sb.append(ImportUtils.computeJakartaImports(model))
+        sb.append(ImportUtils.computeJakartaImports(model, optimisticLocking))
                 .append("\n");
 
         final String enumImports = ImportUtils.computeEnumsImport(model, outputDir);
@@ -78,6 +88,7 @@ public class JpaEntityGenerator implements CodeGenerator {
                 .append("\n");
 
         final Map<String, Object> classContext = TemplateContextUtils.computeJpaModelContext(model);
+        classContext.put("optimisticLocking", optimisticLocking);
         
         final String fieldsTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("model/fields-template.ftl", classContext);
         final String defaultConstructor = FreeMarkerTemplateProcessorUtils.processTemplate("model/default-constructor-template.ftl", classContext);

@@ -5,14 +5,25 @@ import java.util.Objects;
 
 public class CrudSpecification {
     
+    private CrudConfiguration configuration;
     private List<ModelDefinition> entities;
 
     public CrudSpecification() {
 
     }
 
-    public CrudSpecification(final List<ModelDefinition> entities) {
+    public CrudSpecification(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+        this.configuration = configuration;
         this.entities = entities;
+    }
+
+    public CrudConfiguration getConfiguration() {
+        return this.configuration;
+    }
+
+    public CrudSpecification setConfiguration(final CrudConfiguration configuration) {
+        this.configuration = configuration;
+        return this;
     }
 
     public List<ModelDefinition> getEntities() {
@@ -32,17 +43,19 @@ public class CrudSpecification {
             return false;
         }
         final CrudSpecification crudSpecification = (CrudSpecification) o;
-        return Objects.equals(entities, crudSpecification.entities);
+        return Objects.equals(configuration, crudSpecification.configuration) &&
+                Objects.equals(entities, crudSpecification.entities);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entities);
+        return Objects.hash(configuration, entities);
     }
 
     @Override
     public String toString() {
         return "{" +
+            " configuration='" + getConfiguration() + "'" +
             " entities='" + getEntities() + "'" +
             "}";
     }

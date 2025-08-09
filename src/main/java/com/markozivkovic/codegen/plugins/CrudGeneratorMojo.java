@@ -9,8 +9,8 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.markozivkovic.codegen.generators.SpringCrudGenerator;
 import com.markozivkovic.codegen.model.CrudSpecification;
 
@@ -34,12 +34,14 @@ public class CrudGeneratorMojo extends AbstractMojo {
         }
         
         try {
-            final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            final CrudSpecification spec = mapper.readValue(
+            final  YAMLMapper yamlMapper = YAMLMapper.builder().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
+                    .build();
+            
+            final CrudSpecification spec = yamlMapper.readValue(
                     new File(inputSpecFile), CrudSpecification.class
             );
 
-            final SpringCrudGenerator generator = new SpringCrudGenerator(spec.getEntities());
+            final SpringCrudGenerator generator = new SpringCrudGenerator(spec.getConfiguration(), spec.getEntities());
 
             spec.getEntities().stream().forEach(entity -> {
                     generator.generate(entity, outputDir);
