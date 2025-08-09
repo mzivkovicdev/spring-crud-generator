@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.model.ProjectMetadata;
 
 public class SpringCrudGenerator implements CodeGenerator {
 
@@ -21,10 +22,12 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String TRANSFER_OBJECT = "transfer-object";
     private static final String MAPPER = "mapper";
     private static final String CONTROLLER = "controller";
+    private static final String DOCKER_FILE = "dockerfile";
 
     private final Map<String, CodeGenerator> GENERATORS;
 
-    public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites) {
+    public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites,
+            final ProjectMetadata projectMetadata) {
         this.GENERATORS = Map.of(
             ENUM, new EnumGenerator(),
             JPA_MODEL, new JpaEntityGenerator(crudConfiguration),
@@ -33,7 +36,8 @@ public class SpringCrudGenerator implements CodeGenerator {
             BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
             TRANSFER_OBJECT, new TransferObjectGenerator(),
             MAPPER, new MapperGenerator(),
-            CONTROLLER, new RestControllerGenerator(entites)
+            CONTROLLER, new RestControllerGenerator(entites),
+            DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)
         );
     }
 
