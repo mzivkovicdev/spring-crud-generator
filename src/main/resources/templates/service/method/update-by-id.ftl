@@ -10,13 +10,13 @@
     ${transactionalAnnotation}
     public ${modelName} updateById(<#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>) {
 
-        final ${modelName} existing = this.getById(id);
+        final ${modelName} existing = this.getById(${idField});
 
     <#if fieldNamesWithoutId?has_content>
         existing.set${fieldNamesWithoutId[0]?cap_first}(${fieldNamesWithoutId[0]})<#list fieldNamesWithoutId[1..] as field>
             .set${field?cap_first}(${field})</#list>;</#if>
 
-        LOGGER.info("Updating ${modelName} with id {}", id);
+        LOGGER.info("Updating ${modelName} with id {}", ${idField});
 
         return this.repository.saveAndFlush(existing);
     }

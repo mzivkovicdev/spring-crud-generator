@@ -1,6 +1,7 @@
 <#assign transactionalAnnotation = model.transactionalAnnotation>
 <#assign modelName = model.modelName>
 <#assign idType = model.idType>
+<#assign idField = model.idField>
 <#list relations as rel>
     
     <#assign javadocFields = rel.javadocFields>
@@ -14,9 +15,9 @@
      * @return Added {@link ${rel.relationClassName}} to {@link ${modelName}}
      */</#if>
     ${transactionalAnnotation}
-    public ${modelName} ${rel.methodName}(final ${idType} id, final ${rel.relationClassName} ${rel.elementParam}) {
+    public ${modelName} ${rel.methodName}(final ${idType} ${idField}, final ${rel.relationClassName} ${rel.elementParam}) {
 
-        final ${modelName} entity = this.getById(id);
+        final ${modelName} entity = this.getById(${idField});
         
         <#if rel.isCollection?? && rel.isCollection>
         if (!entity.get${rel.relationField?cap_first}().add(${rel.elementParam})) {

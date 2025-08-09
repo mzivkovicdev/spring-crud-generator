@@ -33,6 +33,7 @@ public class TemplateContextUtils {
     private static final String INPUT_FIELDS = "inputFields";
     private static final String MODEL_NAME = "modelName";
     private static final String ID_TYPE = "idType";
+    private static final String ID_FIELD = "idField";
     private static final String ID_DESCRIPTION = "idDescription";
     private static final String GENERATE_JAVA_DOC = "generateJavaDoc";
     private static final String TRANSACTIONAL_ANNOTATION = "transactionalAnnotation";
@@ -41,6 +42,7 @@ public class TemplateContextUtils {
     private static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     private static final String STRIPPED_MODEL_NAME = "strippedModelName";
     private static final String SERVICE_CLASSES = "serviceClasses";
+    private static final String RELATION_ID_FIELD = "relationIdField";
     private static final String RELATION_ID_TYPE = "relationIdType";
     private static final String MODEL_SERVICE = "modelService";
 
@@ -165,6 +167,7 @@ public class TemplateContextUtils {
         model.put(MODEL_NAME, modelDefinition.getName());
         model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
         model.put(ID_TYPE, idField.getType());
+        model.put(ID_FIELD, idField.getName());
         model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
         
         relationFields.forEach(field -> 
@@ -190,6 +193,7 @@ public class TemplateContextUtils {
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_TYPE, idField.getType());
+        context.put(ID_FIELD, idField.getName());
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
         
@@ -251,8 +255,11 @@ public class TemplateContextUtils {
      */
     public static Map<String, Object> computeUpdateByIdContext(final ModelDefinition modelDefinition) {
 
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(ID_FIELD, idField.getName());
         context.put(INPUT_FIELDS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
         context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
         context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
@@ -307,6 +314,7 @@ public class TemplateContextUtils {
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_TYPE, idField.getType());
+        context.put(ID_FIELD, idField.getName());
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
         
@@ -502,26 +510,27 @@ public class TemplateContextUtils {
 
                 final boolean isRelation = Objects.nonNull(field.getRelation());
                 final boolean isCollection = isRelation && (manyToManyFields.contains(field) || oneToManyFields.contains(field));
-                final String relationIdType;
-
-                if (isRelation) {
-                    relationIdType = entities.stream()
-                            .filter(entity -> entity.getName().equals(field.getType()))
-                            .findFirst()
-                            .map(entity -> FieldUtils.extractIdField(entity.getFields()).getType())
-                            .orElseThrow();
-                } else {
-                    relationIdType = "";
-                }
                 
-                inputFields.add(Map.of(
+                final Map<String, Object> fieldContext = new HashMap<>(Map.of(
                     FIELD, field.getName(),
                     FIELD_TYPE, field.getType(),
                     STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(field.getType()),
                     IS_COLLECTION, isCollection,
-                    IS_RELATION, isRelation,
-                    RELATION_ID_TYPE, relationIdType
+                    IS_RELATION, isRelation
                 ));
+
+                if (isRelation) {
+                    final FieldDefinition relationId = entities.stream()
+                            .filter(entity -> entity.getName().equals(field.getType()))
+                            .findFirst()
+                            .map(entity -> FieldUtils.extractIdField(entity.getFields()))
+                            .orElseThrow();
+                            
+                    fieldContext.put(RELATION_ID_TYPE, relationId.getType());
+                    fieldContext.put(RELATION_ID_FIELD, relationId.getName());
+                }
+                
+                inputFields.add(fieldContext);
         });
 
         context.put(MODEL_NAME, modelDefinition.getName());

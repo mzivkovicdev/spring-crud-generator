@@ -3,10 +3,10 @@
     /**
     * Get reference of the {@link ${modelName}}
     *
-    * @param id ${idDescription}
+    * @param ${idField} ${idDescription}
     * @return Reference of {@link ${modelName}}
     */</#if>
-    public ${modelName} getReferenceById(final ${idType} id) {
+    public ${modelName} getReferenceById(final ${idType} ${idField}) {
 
-        return this.repository.getReferenceById(id);
+        return this.repository.getReferenceById(${idField});
     }

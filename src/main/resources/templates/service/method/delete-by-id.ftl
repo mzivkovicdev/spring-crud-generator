@@ -2,14 +2,14 @@
     /**
     * Deletes a {@link ${modelName}} by its ID.
     *
-    * @param id ${idDescription}
+    * @param ${idField} ${idDescription}
     */</#if>
     ${transactionalAnnotation}
-    public void deleteById(final ${idType} id) {
+    public void deleteById(final ${idType} ${idField}) {
 
-        LOGGER.info("Deleting ${modelName} with id {}", id);
+        LOGGER.info("Deleting ${modelName} with id {}", ${idField});
 
-        this.repository.deleteById(id);
+        this.repository.deleteById(${idField});
 
-        LOGGER.info("Deleted ${modelName} with id {}", id);
+        LOGGER.info("Deleted ${modelName} with id {}", ${idField});
     }
