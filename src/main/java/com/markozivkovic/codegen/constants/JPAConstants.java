@@ -34,5 +34,6 @@ public class JPAConstants {
     public static final String JAKARTA_PERSISTENCE_MANY_TO_MANY = JAKARTA_PERSISTENCE_PACKAGE + ".ManyToMany";
     public static final String JAKARTA_PERSISTENCE_ONE_TO_MANY = JAKARTA_PERSISTENCE_PACKAGE + ".OneToMany";
     public static final String JAKARTA_PERSISTENCE_MANY_TO_ONE = JAKARTA_PERSISTENCE_PACKAGE + ".ManyToOne";
+    public static final String JAKARTA_PERSISTENCE_VERSION = JAKARTA_PERSISTENCE_PACKAGE + ".Version";
 
 }

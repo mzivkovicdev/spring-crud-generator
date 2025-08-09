@@ -15,6 +15,7 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTEN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_ONE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_MANY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_ONE;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_VERSION;
 import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_DECIMAL;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_INTEGER;
@@ -124,9 +125,11 @@ public class ImportUtils {
     /**
      * Generates a string of import statements for the base jakarta persistence annotations.
      * 
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param optimisticLocking whether to include the version field
      * @return A string containing the necessary import statements for the base jakarta persistence annotations.
      */
-    public static String computeJakartaImports(final ModelDefinition modelDefinition) {
+    public static String computeJakartaImports(final ModelDefinition modelDefinition, final Boolean optimisticLocking) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final List<FieldDefinition> fields = modelDefinition.getFields();
@@ -150,6 +153,7 @@ public class ImportUtils {
         addIf(FieldUtils.isAnyRelationOneToOne(fields), imports, JAKARTA_PERSISTENCE_ONE_TO_ONE);
         addIf(FieldUtils.isFetchTypeDefined(fields), imports, JAKARTA_PERSISTENCE_FETCH_TYPE);
         addIf(FieldUtils.isCascadeTypeDefined(fields), imports, JAKARTA_PERSISTENCE_CASCADE_TYPE);
+        addIf(optimisticLocking, imports, JAKARTA_PERSISTENCE_VERSION);
 
         return imports.stream()
                   .map(imp -> String.format(IMPORT, imp))

@@ -6,6 +6,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
 
 public class SpringCrudGenerator implements CodeGenerator {
@@ -23,16 +24,16 @@ public class SpringCrudGenerator implements CodeGenerator {
 
     private final Map<String, CodeGenerator> GENERATORS;
 
-    public SpringCrudGenerator(final List<ModelDefinition> entites) {
+    public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites) {
         this.GENERATORS = Map.of(
-                ENUM, new EnumGenerator(),
-                JPA_MODEL, new JpaEntityGenerator(),
-                JPA_REPOSITORY, new JpaRepositoryGenerator(),
-                JPA_SERVICE, new JpaServiceGenerator(entites),
-                BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
-                TRANSFER_OBJECT, new TransferObjectGenerator(),
-                MAPPER, new MapperGenerator(),
-                CONTROLLER, new RestControllerGenerator(entites)
+            ENUM, new EnumGenerator(),
+            JPA_MODEL, new JpaEntityGenerator(crudConfiguration),
+            JPA_REPOSITORY, new JpaRepositoryGenerator(),
+            JPA_SERVICE, new JpaServiceGenerator(entites),
+            BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
+            TRANSFER_OBJECT, new TransferObjectGenerator(),
+            MAPPER, new MapperGenerator(),
+            CONTROLLER, new RestControllerGenerator(entites)
         );
     }
 

@@ -10,3 +10,8 @@
     private ${field.resolvedType} ${field.name};
     </#if>
 </#list>
+<#if optimisticLocking>
+
+    @Version
+    private Integer version;
+</#if>
