@@ -45,5 +45,29 @@ public class FileWriterUtils {
             );
         }
     }
+
+    /**
+     * Writes the given content to a file at the specified output path with the given file name.
+     * If the file does not exist, it will be created. Logs the operation result.
+     *
+     * @param outputPath the path where the file should be written
+     * @param fileName   the name of the file to write
+     * @param content    the content to be written to the file
+     * @throws RuntimeException if an I/O error occurs during file writing
+     */
+    public static void writeToFile(final String outputPath, final String fileName, final String content) {
+
+        final File file = new File(outputPath, fileName);
+
+        try (final FileWriter writer = new FileWriter(file)) {
+            writer.write(content);
+            LOGGER.info("Generated class: {}", fileName);
+        } catch (final IOException e) {
+            LOGGER.error("Failed to generate class {}: {}", fileName, e.getMessage());
+            throw new RuntimeException(
+                String.format("Failed to generate class file: %s", fileName), e
+            );
+        }
+    }
     
 }
