@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.TransactionConstants;
@@ -194,6 +193,7 @@ public class TemplateContextUtils {
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_TYPE, idField.getType());
+        context.put(ID_FIELD, idField.getName());
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
         
@@ -314,6 +314,7 @@ public class TemplateContextUtils {
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_TYPE, idField.getType());
+        context.put(ID_FIELD, idField.getName());
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
         
