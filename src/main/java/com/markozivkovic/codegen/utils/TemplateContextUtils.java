@@ -373,6 +373,23 @@ public class TemplateContextUtils {
     }
 
     /**
+     * Creates a template context for the input transfer object of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @return a template context for the input transfer object
+     */
+    public static Map<String, Object> computeInputTransferObjectContext(final ModelDefinition modelDefinition) {
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        context.put(ID_TYPE, idField.getType());
+        
+        return context;
+    }
+
+    /**
      * Computes a template context for a business service class of a model.
      * 
      * @param modelDefinition the model definition containing the class and field details
