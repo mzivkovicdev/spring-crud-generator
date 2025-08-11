@@ -45,6 +45,7 @@ public class TemplateContextUtils {
     private static final String RELATION_ID_FIELD = "relationIdField";
     private static final String RELATION_ID_TYPE = "relationIdType";
     private static final String MODEL_SERVICE = "modelService";
+    private static final String RELATION_FIELD_MODEL = "relationFieldModel";
 
     private TemplateContextUtils() {
         
@@ -373,6 +374,23 @@ public class TemplateContextUtils {
     }
 
     /**
+     * Creates a template context for the input transfer object of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @return a template context for the input transfer object
+     */
+    public static Map<String, Object> computeInputTransferObjectContext(final ModelDefinition modelDefinition) {
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        context.put(ID_TYPE, idField.getType());
+        
+        return context;
+    }
+
+    /**
      * Computes a template context for a business service class of a model.
      * 
      * @param modelDefinition the model definition containing the class and field details
@@ -615,6 +633,45 @@ public class TemplateContextUtils {
         context.put(ID_TYPE, idField.getType());
 
         return context;
+    }
+
+    /**
+     * Computes a template context for an add resource relation endpoint of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the add resource relation endpoint
+     */
+    public static Map<String, Object> computeAddResourceRelationEndpointContext(final ModelDefinition modelDefinition) {
+        
+        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final Map<String, Object> modelContext = new HashMap<>();
+        modelContext.put(MODEL_NAME, modelDefinition.getName());
+        modelContext.put(STRIPPED_MODEL_NAME, strippedModelName);
+        modelContext.put(ID_TYPE, idField.getType());
+
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<Map<String, Object>> relations = new ArrayList<>();
+        
+        relationFields.forEach(relation -> {
+
+            final Map<String, Object> relationContext = new HashMap<>();
+            final String strippedRelationClassName = ModelNameUtils.stripSuffix(relation.getType());
+            relationContext.put(RELATION_FIELD_MODEL, relation.getName());
+            relationContext.put(STRIPPED_RELATION_CLASS_NAME, strippedRelationClassName);
+            relationContext.put(METHOD_NAME, String.format("%ssId%ssPost", strippedModelName, strippedRelationClassName));
+            relations.add(relationContext);
+        });
+        
+        return Map.of(
+            MODEL, modelContext,
+            RELATIONS, relations
+        );
     }
     
 }

@@ -34,7 +34,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             JPA_REPOSITORY, new JpaRepositoryGenerator(),
             JPA_SERVICE, new JpaServiceGenerator(entites),
             BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
-            TRANSFER_OBJECT, new TransferObjectGenerator(),
+            TRANSFER_OBJECT, new TransferObjectGenerator(entites),
             MAPPER, new MapperGenerator(),
             CONTROLLER, new RestControllerGenerator(entites),
             DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)

@@ -40,4 +40,5 @@ public class ${className} {
     <#if getAllResources?? && getAllResources?has_content>${getAllResources}</#if>
     <#if updateResource?? && updateResource?has_content>${updateResource}</#if>
     <#if deleteResource?? && deleteResource?has_content>${deleteResource}</#if>
+    <#if addResourceRelation?? && addResourceRelation?has_content>${addResourceRelation}</#if>
 }
