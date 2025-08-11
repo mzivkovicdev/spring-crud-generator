@@ -319,12 +319,19 @@ public class ImportUtils {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
 
+        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
+
         final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
 
         Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
             imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + relationModel + "TO"));    
+        });
+
+        relations.forEach(field -> {
+            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + relationModel + "InputTO"));
         });
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {

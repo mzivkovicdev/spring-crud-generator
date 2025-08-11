@@ -74,6 +74,7 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition));
         context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition));
         context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition));
+        context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/controller-template.ftl", context);
     }
@@ -139,6 +140,24 @@ public class RestControllerGenerator implements CodeGenerator {
         final Map<String, Object> context = TemplateContextUtils.computeDeleteEndpointContext(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/delete-resource.ftl", context);
+    }
+
+    /**
+     * Generates the REST endpoint for adding a relation to a resource.
+     * 
+     * @param modelDefinition The model definition for which the add resource 
+     *                        relation endpoint is to be generated.
+     * @return A string representation of the add resource relation endpoint method.
+     */
+    private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = TemplateContextUtils.computeAddResourceRelationEndpointContext(modelDefinition);
+        
+        if (context.isEmpty()) {
+            return null;
+        }
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/add-resource-relation.ftl", context);
     }
 
 }
