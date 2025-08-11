@@ -664,10 +664,62 @@ public class TemplateContextUtils {
             final String strippedRelationClassName = ModelNameUtils.stripSuffix(relation.getType());
             relationContext.put(RELATION_FIELD_MODEL, relation.getName());
             relationContext.put(STRIPPED_RELATION_CLASS_NAME, strippedRelationClassName);
-            relationContext.put(METHOD_NAME, String.format("%ssId%ssPost", strippedModelName, strippedRelationClassName));
+            relationContext.put(METHOD_NAME, String.format("%ssId%ssPost", StringUtils.uncapitalize(strippedModelName), strippedRelationClassName));
             relations.add(relationContext);
         });
         
+        return Map.of(
+            MODEL, modelContext,
+            RELATIONS, relations
+        );
+    }
+
+    /**
+     * Computes a template context for a remove resource relation endpoint of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @param entities a list of model definitions representing entities related to the model
+     * @return a template context for the remove resource relation endpoint
+     */
+    public static Map<String, Object> computeRemoveResourceRelationEndpointContext(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+        
+        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final Map<String, Object> modelContext = new HashMap<>();
+        modelContext.put(STRIPPED_MODEL_NAME, strippedModelName);
+        modelContext.put(ID_TYPE, idField.getType());
+
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+        final List<Map<String, Object>> relations = new ArrayList<>();
+        
+        relationFields.forEach(relation -> {
+
+            final ModelDefinition relationEntity = entities.stream()
+                    .filter(entity -> entity.getName().equals(relation.getType()))
+                    .findFirst()
+                    .orElseThrow();
+
+            final FieldDefinition entityIdField = FieldUtils.extractIdField(relationEntity.getFields());
+
+            final Map<String, Object> relationContext = new HashMap<>();
+            final String strippedRelationClassName = ModelNameUtils.stripSuffix(relation.getType());
+            relationContext.put(RELATION_FIELD_MODEL, relation.getName());
+            relationContext.put(STRIPPED_RELATION_CLASS_NAME, strippedRelationClassName);
+            relationContext.put(METHOD_NAME, String.format("%ssId%ssDelete", StringUtils.uncapitalize(strippedModelName), strippedRelationClassName));
+            relationContext.put(RELATION_ID_TYPE, entityIdField.getType());
+            relationContext.put(RELATION_FIELD, String.format("%sId", StringUtils.uncapitalize(strippedRelationClassName)));
+            relationContext.put(IS_COLLECTION, manyToManyFields.contains(relation) || oneToManyFields.contains(relation));
+
+            relations.add(relationContext);
+        });
+
         return Map.of(
             MODEL, modelContext,
             RELATIONS, relations

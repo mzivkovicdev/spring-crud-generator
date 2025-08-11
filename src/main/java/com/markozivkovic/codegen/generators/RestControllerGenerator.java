@@ -75,6 +75,7 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition));
         context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition));
         context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition));
+        context.put("removeResourceRelation", generateRemoveResourceRelationEndpoint(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/controller-template.ftl", context);
     }
@@ -158,6 +159,25 @@ public class RestControllerGenerator implements CodeGenerator {
         }
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/add-resource-relation.ftl", context);
+    }
+
+    /**
+     * Generates the REST endpoint for removing a relation from a resource.
+     * 
+     * @param modelDefinition The model definition for which the remove resource 
+     *                        relation endpoint is to be generated.
+     * @return A string representation of the remove resource relation endpoint method,
+     *         or null if the context is empty.
+     */
+    private String generateRemoveResourceRelationEndpoint(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = TemplateContextUtils.computeRemoveResourceRelationEndpointContext(modelDefinition, entites);
+        
+        if (context.isEmpty()) {
+            return null;
+        }
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/remove-resource-relation.ftl", context);
     }
 
 }
