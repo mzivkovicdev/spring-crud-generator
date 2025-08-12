@@ -14,19 +14,22 @@ public class FieldDefinition {
     private boolean id;
     private List<String> values = new ArrayList<>();
     private RelationDefinition relation;
+    private ColumnDefinition column;
 
     public FieldDefinition() {
 
     }
 
     public FieldDefinition(final String name, final String type, final String description,
-            final boolean id, final List<String> values, final RelationDefinition relation) {
+            final boolean id, final List<String> values, final RelationDefinition relation,
+            final ColumnDefinition column) {
         this.name = name;
         this.type = type;
         this.description = description;
         this.id = id;
         this.values = values;
         this.relation = relation;
+        this.column = column;
     }
 
     public String getName() {
@@ -91,6 +94,15 @@ public class FieldDefinition {
         return this;
     }
 
+    public ColumnDefinition getColumn() {
+        return this.column;
+    }
+
+    public FieldDefinition setColumn(final ColumnDefinition column) {
+        this.column = column;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -104,12 +116,13 @@ public class FieldDefinition {
                 Objects.equals(description, fieldDefinition.description) &&
                 id == fieldDefinition.id &&
                 Objects.equals(values, fieldDefinition.values) &&
-                Objects.equals(relation, fieldDefinition.relation);
+                Objects.equals(relation, fieldDefinition.relation) &&
+                Objects.equals(column, fieldDefinition.column);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, description, id, values, relation);
+        return Objects.hash(name, type, description, id, values, relation, column);
     }
 
     @Override
@@ -121,6 +134,7 @@ public class FieldDefinition {
             ", id='" + isId() + "'" +
             ", values='" + getValues() + "'" +
             ", relation='" + getRelation() + "'" +
+            ", column='" + getColumn() + "'" +
             "}";
     }
 

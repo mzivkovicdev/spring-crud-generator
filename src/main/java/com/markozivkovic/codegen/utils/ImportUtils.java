@@ -8,6 +8,7 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTAN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ID;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_TABLE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_CASCADE_TYPE;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_COLUMN;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_FETCH_TYPE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_COLUMN;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_TABLE;
@@ -154,6 +155,9 @@ public class ImportUtils {
             imports.add(JAKARTA_PERSISTANCE_ENUMERATED);
         }
 
+        final boolean hasAnyFieldColumn = fields.stream()
+                .anyMatch(field -> Objects.nonNull(field.getColumn()));
+
         addIf(!relations.isEmpty(), imports, JAKARTA_PERSISTENCE_JOIN_COLUMN);
         addIf(relations.contains(MANY_TO_MANY), imports, JAKARTA_PERSISTENCE_JOIN_TABLE);
         addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_MANY);
@@ -163,6 +167,7 @@ public class ImportUtils {
         addIf(FieldUtils.isFetchTypeDefined(fields), imports, JAKARTA_PERSISTENCE_FETCH_TYPE);
         addIf(FieldUtils.isCascadeTypeDefined(fields), imports, JAKARTA_PERSISTENCE_CASCADE_TYPE);
         addIf(optimisticLocking, imports, JAKARTA_PERSISTENCE_VERSION);
+        addIf(hasAnyFieldColumn, imports, JAKARTA_PERSISTENCE_COLUMN);
 
         return imports.stream()
                   .map(imp -> String.format(IMPORT, imp))
