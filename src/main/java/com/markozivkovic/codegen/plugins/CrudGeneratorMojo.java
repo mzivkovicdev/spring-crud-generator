@@ -46,14 +46,10 @@ public class CrudGeneratorMojo extends AbstractMojo {
         try {
             final YAMLMapper yamlMapper = YAMLMapper.builder().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
                     .build();
-            final CrudSpecification spec = yamlMapper.readValue(
-                    new File(inputSpecFile), CrudSpecification.class
-            );
+            
+            final CrudSpecification spec = yamlMapper.readValue(new File(inputSpecFile), CrudSpecification.class);
             final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir);
-
-            final SpringCrudGenerator generator = new SpringCrudGenerator(
-                    spec.getConfiguration(), spec.getEntities(), projectMetadata
-            );
+            final SpringCrudGenerator generator = new SpringCrudGenerator(spec.getConfiguration(), spec.getEntities(), projectMetadata);
 
             spec.getEntities().stream().forEach(entity -> {
                     generator.generate(entity, outputDir);

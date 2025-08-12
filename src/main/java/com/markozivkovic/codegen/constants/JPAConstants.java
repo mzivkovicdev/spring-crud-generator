@@ -28,6 +28,7 @@ public class JPAConstants {
 
     public static final String JAKARTA_PERSISTENCE_FETCH_TYPE = JAKARTA_PERSISTENCE_PACKAGE + ".FetchType";
     public static final String JAKARTA_PERSISTENCE_CASCADE_TYPE = JAKARTA_PERSISTENCE_PACKAGE + ".CascadeType";
+    public static final String JAKARTA_PERSISTENCE_COLUMN = JAKARTA_PERSISTENCE_PACKAGE + ".Column";
     public static final String JAKARTA_PERSISTENCE_JOIN_COLUMN = JAKARTA_PERSISTENCE_PACKAGE + ".JoinColumn";
     public static final String JAKARTA_PERSISTENCE_JOIN_TABLE = JAKARTA_PERSISTENCE_PACKAGE + ".JoinTable";
     public static final String JAKARTA_PERSISTENCE_ONE_TO_ONE = JAKARTA_PERSISTENCE_PACKAGE + ".OneToOne";
