@@ -16,6 +16,8 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTEN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_MANY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_ONE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_VERSION;
+import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
+import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
 import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_DECIMAL;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_INTEGER;
@@ -25,6 +27,13 @@ import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_LIST;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_STREAM_COLLECTORS;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
+import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
+import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
+import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
+import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
+import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT;
+import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT;
+import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -194,6 +203,34 @@ public class ImportUtils {
         });
 
         return sb.toString();
+    }
+
+    /**
+     * Computes the base import statements for a JPA service.
+     *
+     * @param cache Whether to include the Spring caching annotations.
+     * @return A string containing the necessary import statements for the base JPA service.
+     */
+    public static String computeJpaServiceBaseImport(final boolean cache) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, SL4J_LOGGER));
+        imports.add(String.format(IMPORT, SL4J_LOGGER_FACTORY));
+        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
+        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST));
+        imports.add(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE));
+        imports.add(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+
+        if (cache) {
+            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE));
+            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT));
+            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT));
+        }
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
     }
 
     /**

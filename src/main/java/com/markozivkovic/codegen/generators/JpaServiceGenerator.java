@@ -1,20 +1,15 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
-import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
-import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
-import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
-import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -32,9 +27,11 @@ public class JpaServiceGenerator implements CodeGenerator {
     private static final String SERVICES_PACKAGE = "." + SERVICES;
 
     private final List<ModelDefinition> entites;
+    private final CrudConfiguration configuration;
 
-    public JpaServiceGenerator(final List<ModelDefinition> entites) {
+    public JpaServiceGenerator(final List<ModelDefinition> entites, final CrudConfiguration configuration) {
         this.entites = entites;
+        this.configuration = configuration;
     }
     
     @Override
@@ -60,12 +57,9 @@ public class JpaServiceGenerator implements CodeGenerator {
                 modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites))
         );
         
-        sb.append(String.format(IMPORT, SL4J_LOGGER))
-                .append(String.format(IMPORT, SL4J_LOGGER_FACTORY))
-                .append(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE))
-                .append(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST))
-                .append(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE))
-                .append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL))
+        sb.append(ImportUtils.computeJpaServiceBaseImport(
+                    Objects.nonNull(configuration) && Objects.nonNull(configuration.isCache()) && configuration.isCache())
+                )
                 .append("\n")
                 .append(ImportUtils.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir))
                 .append("\n");
@@ -165,6 +159,8 @@ public class JpaServiceGenerator implements CodeGenerator {
             return null;
         }
 
+        this.putCacheFlagToContext(context);
+
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/remove-relation.ftl", context);
     }
 
@@ -184,6 +180,8 @@ public class JpaServiceGenerator implements CodeGenerator {
         if (context.isEmpty()) {
             return null;
         }
+
+        this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/add-relation.ftl", context);
     }
@@ -212,6 +210,7 @@ public class JpaServiceGenerator implements CodeGenerator {
     public String generateCreateMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = TemplateContextUtils.computeCreateContext(modelDefinition);
+        this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/create.ftl", context);
     }
@@ -226,6 +225,7 @@ public class JpaServiceGenerator implements CodeGenerator {
     public String generateUpdateByIdMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = TemplateContextUtils.computeUpdateByIdContext(modelDefinition);
+        this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/update-by-id.ftl", context);
     }
@@ -240,6 +240,7 @@ public class JpaServiceGenerator implements CodeGenerator {
     private String generateDeleteByIdMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = TemplateContextUtils.computeDeleteByIdContext(modelDefinition);
+        this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/delete-by-id.ftl", context);
     }
@@ -254,8 +255,20 @@ public class JpaServiceGenerator implements CodeGenerator {
     public String generateGetByIdMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = TemplateContextUtils.computeGetByIdContext(modelDefinition);
+        this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-by-id.ftl", context);
+    }
+
+    /**
+     * Adds a flag to the context indicating whether the cache is enabled or not.
+     * 
+     * @param context the context to which the cache flag is to be added
+     */
+    private void putCacheFlagToContext(final Map<String, Object> context) {
+        if (Objects.nonNull(configuration) && Objects.nonNull(configuration.isCache())) {
+            context.put("cache", configuration.isCache());
+        }
     }
 
 }

@@ -5,6 +5,7 @@
     * @param ${idField} ${idDescription}
     */</#if>
     ${transactionalAnnotation}
+    <#if cache>@CacheEvict(value = "${strippedModelName}", key = "#${idField}")</#if>
     public void deleteById(final ${idType} ${idField}) {
 
         LOGGER.info("Deleting ${modelName} with id {}", ${idField});

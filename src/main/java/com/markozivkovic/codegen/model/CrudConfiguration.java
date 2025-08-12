@@ -8,17 +8,19 @@ public class CrudConfiguration {
     private String javaVersion;
     private Boolean optimisticLocking;
     private Boolean dockerfile;
+    private Boolean cache;
     
     public CrudConfiguration() {
 
     }
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
-            final Boolean dockerfile) {
+            final Boolean dockerfile, final Boolean cache) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
         this.dockerfile = dockerfile;
+        this.cache = cache;
     }
 
     public DatabaseType getDatabase() {
@@ -65,6 +67,19 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Boolean isCache() {
+        return this.cache;
+    }
+
+    public Boolean getCache() {
+        return this.cache;
+    }
+
+    public CrudConfiguration setCache(final Boolean cache) {
+        this.cache = cache;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -76,12 +91,13 @@ public class CrudConfiguration {
         return Objects.equals(database, crudConfiguration.database) &&
                 Objects.equals(javaVersion, crudConfiguration.javaVersion) &&
                 Objects.equals(optimisticLocking, crudConfiguration.optimisticLocking) &&
-                Objects.equals(dockerfile, crudConfiguration.dockerfile);
+                Objects.equals(dockerfile, crudConfiguration.dockerfile) &&
+                Objects.equals(cache, crudConfiguration.cache);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(database, javaVersion, optimisticLocking, dockerfile);
+        return Objects.hash(database, javaVersion, optimisticLocking, dockerfile, cache);
     }
 
     @Override
@@ -91,6 +107,7 @@ public class CrudConfiguration {
             ", javaVersion='" + getJavaVersion() + "'" +
             ", optimisticLocking='" + isOptimisticLocking() + "'" +
             ", dockerfile='" + isDockerfile() + "'" +
+            ", cache='" + isCache() + "'" +
             "}";
     }    
 

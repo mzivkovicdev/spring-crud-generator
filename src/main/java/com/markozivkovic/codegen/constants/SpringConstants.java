@@ -10,5 +10,6 @@ public class SpringConstants {
     public static final String SPRING_FRAMEWORK_STEREOTYPE_CONTROLLER = SPRING_FRAMEWORK_STEREOTYPE + ".Controller";
     public static final String SPRING_FRAMEWORK_STEREOTYPE_SERVICE = SPRING_FRAMEWORK_STEREOTYPE + ".Service";
     
+    
 
 }

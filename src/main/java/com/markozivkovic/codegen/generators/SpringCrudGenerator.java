@@ -32,7 +32,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             ENUM, new EnumGenerator(),
             JPA_MODEL, new JpaEntityGenerator(crudConfiguration),
             JPA_REPOSITORY, new JpaRepositoryGenerator(),
-            JPA_SERVICE, new JpaServiceGenerator(entites),
+            JPA_SERVICE, new JpaServiceGenerator(entites, crudConfiguration),
             BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
             TRANSFER_OBJECT, new TransferObjectGenerator(entites),
             MAPPER, new MapperGenerator(),

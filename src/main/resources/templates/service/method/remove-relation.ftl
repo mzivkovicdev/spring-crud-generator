@@ -2,6 +2,7 @@
 <#assign modelName = model.modelName>
 <#assign idType = model.idType>
 <#assign idField = model.idField>
+<#assign strippedModelName = model.strippedModelName>
 <#list relations as rel>
     
     <#assign javadocFields = rel.javadocFields>
@@ -15,6 +16,7 @@
      * @return Removed {@link ${rel.relationClassName}} from {@link ${modelName}}
      */</#if>
     ${transactionalAnnotation}
+    <#if cache>@CachePut(value = "${strippedModelName}", key = "#${idField}")</#if>
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}<#if rel.isCollection?? && rel.isCollection>, final ${rel.relationClassName} ${rel.elementParam}</#if>) {
 
         final ${modelName} entity = this.getById(${idField});

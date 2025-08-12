@@ -170,15 +170,16 @@ public class TemplateContextUtils {
         model.put(ID_TYPE, idField.getType());
         model.put(ID_FIELD, idField.getName());
         model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
+        model.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         
         relationFields.forEach(field -> 
             relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, isAddRelation, entities))
         );
 
-        return Map.of(
+        return new HashMap<>(Map.of(
                 MODEL, model,
                 RELATIONS, relations
-        );
+        ));
     }
 
     /**
@@ -197,6 +198,7 @@ public class TemplateContextUtils {
         context.put(ID_FIELD, idField.getName());
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
+        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         
         return context;
     }
@@ -215,6 +217,7 @@ public class TemplateContextUtils {
         final List<String> inputFields = FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields());
         final List<String> fieldNames = FieldUtils.extractNonIdFieldNames(modelDefinition.getFields());
         final List<String> javadocFields = FieldUtils.extractNonIdFieldForJavadoc(modelDefinition.getFields());
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
@@ -222,6 +225,8 @@ public class TemplateContextUtils {
         context.put(INPUT_ARGS, String.join(", ", inputFields));
         context.put(FIELD_NAMES, String.join(", ", fieldNames));
         context.put(JAVADOC_FIELDS, javadocFields);
+        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
+        context.put(ID_FIELD, idField.getName());
 
         return context;
     }
@@ -240,6 +245,7 @@ public class TemplateContextUtils {
         
         final Map<String, Object> context = computeGetByIdContext(modelDefinition);
         context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         
         return context;
     }
@@ -265,6 +271,7 @@ public class TemplateContextUtils {
         context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
         context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
         context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
 
         return context;
     }

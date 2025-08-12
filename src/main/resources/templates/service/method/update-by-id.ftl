@@ -8,6 +8,7 @@
      * @return updated {@link ${modelName}}
      */</#if>
     ${transactionalAnnotation}
+    <#if cache>@CachePut(value = "${strippedModelName}", key = "#${idField}")</#if>
     public ${modelName} updateById(<#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>) {
 
         final ${modelName} existing = this.getById(${idField});
