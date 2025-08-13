@@ -27,20 +27,45 @@ public class TransferObjectGenerator implements CodeGenerator {
 
     private static final String TRANSFER_OBJECTS = "transferobjects";
     private static final String TRANSFER_OBJECTS_PACKAGE = "." + TRANSFER_OBJECTS;
+    private static final String TRANSFER_OBJECTS_HELPERS = "transferobjects/helpers";
+    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE =  TRANSFER_OBJECTS_PACKAGE + ".helpers";
+
     private static boolean PAGE_TO_GENERATED = false;
 
-    private final List<ModelDefinition> entites;
+    private final List<ModelDefinition> entities;
 
-    public TransferObjectGenerator(final List<ModelDefinition> entites) {
-        this.entites = entites;
+    public TransferObjectGenerator(final List<ModelDefinition> entities) {
+        this.entities = entities;
     }
 
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+
+        if (FieldUtils.isModelUsedAsJsonField(modelDefinition, this.entities)) {
+            return;
+        }
         
         LOGGER.info("Generator transfer object for model: {}", modelDefinition.getName());
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+
+        modelDefinition.getFields().stream()
+                .filter(FieldUtils::isJsonField)
+                .forEach(field -> {
+
+                    final String jsonFieldName = FieldUtils.extractJsonFieldName(field);
+                    final ModelDefinition jsonModel = this.entities.stream()
+                            .filter(model -> model.getName().equals(jsonFieldName))
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                String.format(
+                                    "JSON model not found: %s", jsonFieldName
+                                )
+                            ));
+                    
+                    this.generateHelperTO(jsonModel, outputDir, packagePath);
+                });
+
         final String transferObjName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         final StringBuilder sb = new StringBuilder();
@@ -49,10 +74,12 @@ public class TransferObjectGenerator implements CodeGenerator {
         final String imports = ImportUtils.getBaseImport(modelDefinition, false);
         sb.append(imports);
 
-        final String enumImports = ImportUtils.computeEnumsImport(modelDefinition, outputDir);
+        final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(
+                modelDefinition, outputDir, true, true
+        );
         
-        if (StringUtils.isNotBlank(enumImports)) {
-            sb.append(ImportUtils.computeEnumsImport(modelDefinition, outputDir))
+        if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
+            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir))
                 .append("\n");
         }
 
@@ -67,6 +94,40 @@ public class TransferObjectGenerator implements CodeGenerator {
         generateInputTO(modelDefinition, outputDir, packagePath);
         
         LOGGER.info("Generator transfer object for model: {}", modelDefinition.getName());
+    }
+
+    /**
+     * Generates a helper transfer object for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @param outputDir the directory where the generated class will be written
+     * @param packagePath the package path of the directory where the generated class will be written
+     */
+    public void generateHelperTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
+        
+        final String transferObjName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE));
+
+        final String imports = ImportUtils.getBaseImport(modelDefinition, false);
+        sb.append(imports);
+
+        final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(
+                modelDefinition, outputDir, false, false
+        );
+        
+        if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
+            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir))
+                .append("\n");
+        }
+
+        final Map<String, Object> toContext = TemplateContextUtils.computeTransferObjectContext(modelDefinition);
+        final String transferObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("transferobject/transfer-object-template.ftl", toContext);
+        
+        sb.append(transferObjectTemplate);
+
+        FileWriterUtils.writeToFile(outputDir, TRANSFER_OBJECTS_HELPERS, transferObjName, sb.toString());
     }
 
     /**
@@ -86,7 +147,7 @@ public class TransferObjectGenerator implements CodeGenerator {
 
         relations.forEach(relation -> {
 
-            final ModelDefinition relationModelDefinition = entites.stream()
+            final ModelDefinition relationModelDefinition = entities.stream()
                     .filter(model -> model.getName().equals(relation.getType()))
                     .findFirst()
                     .orElseThrow();

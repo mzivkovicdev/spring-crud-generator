@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
@@ -31,6 +32,11 @@ public class RestControllerGenerator implements CodeGenerator {
 
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+        
+        if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
+            LOGGER.warn("Model {} does not have an ID field. Skipping REST controller generation.", modelDefinition.getName());
+            return;
+        }
         
         LOGGER.info("Generating REST controller for model: {}", modelDefinition.getName());
 

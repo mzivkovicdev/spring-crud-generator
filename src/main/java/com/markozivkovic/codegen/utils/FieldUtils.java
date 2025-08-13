@@ -186,6 +186,18 @@ public class FieldUtils {
     }
 
     /**
+     * Returns true if any field in the given list of fields is of type JSON,
+     * false otherwise.
+     * 
+     * @param fields The list of fields to check.
+     * @return True if any field is of type JSON, false otherwise.
+     */
+    public static boolean isAnyFieldJson(final List<FieldDefinition> fields) {
+        
+        return fields.stream().anyMatch(field -> isJsonField(field));
+    }
+
+    /**
      * Extracts all fields from the given list of fields that are of type Enum.
      * 
      * @param fields The list of fields to extract Enum fields from.
@@ -196,6 +208,28 @@ public class FieldUtils {
         return fields.stream()
                 .filter(field -> ENUM.equalsIgnoreCase(field.getType()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts all fields from the given list of fields that are of type JSON.
+     * 
+     * @param fields The list of fields to extract JSON fields from.
+     * @return A list of fields that are of type JSON.
+     */
+    public static List<FieldDefinition> extractJsonFields(final List<FieldDefinition> fields) {
+
+        return fields.stream()                
+                .filter(field -> isJsonField(field))
+                .collect(Collectors.toList());
+    }
+
+    public static boolean isModelUsedAsJsonField(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+
+        return entities.stream()
+                .flatMap(entity -> entity.getFields().stream())
+                .filter(field -> isJsonField(field))
+                .map(field -> extractJsonFieldName(field))
+                .anyMatch(fieldName -> fieldName.equals(modelDefinition.getName()));
     }
 
     /**
@@ -545,6 +579,10 @@ public class FieldUtils {
                             inputArg = String.format("%sTO %s", ModelNameUtils.stripSuffix(field.getType()), field.getName());
                         }
                         return inputArg;
+                    }
+
+                    if (isJsonField(field)) {
+                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
                     }
                     return String.format("%s %s", field.getResolvedType(), field.getName());
                 })

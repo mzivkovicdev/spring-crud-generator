@@ -1,5 +1,8 @@
 package com.markozivkovic.codegen.utils;
 
+import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE;
+import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT;
+import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUMERATED;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUM_TYPE;
@@ -32,9 +35,6 @@ import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
 import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT;
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT;
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -56,10 +56,12 @@ public class ImportUtils {
     private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String REPOSITORIES_PACKAGE = ".repositories";
     private static final String MODELS_PACKAGE = ".models";
+    private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_PACKAGE = ".transferobjects";
     private static final String SERVICES_PACKAGE = ".services";
     private static final String BUSINESS_SERVICES_PACKAGE = ".businessservices";
     private static final String MAPPERS_PACKAGE = ".mappers";
+    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
     
     private ImportUtils() {
 
@@ -182,18 +184,22 @@ public class ImportUtils {
      * @param outputDir       the directory where the generated code will be written
      * @return A string containing the necessary import statements for the generated enums.
      */
-    public static String computeEnumsImport(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir) {
 
-        final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
+        return computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, true, false);
+    }
+
+    public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
+            final boolean importJsonFields, final boolean transferObjects) {
+
+        final Set<String> imports = new LinkedHashSet<>();
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
 
-        if (!isAnyFieldEnum) {
+        if (!FieldUtils.isAnyFieldEnum(modelDefinition.getFields()) && !FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
             return "";
         }
 
         final List<FieldDefinition> enumFields = FieldUtils.extractEnumFields(modelDefinition.getFields());
-
-        final StringBuilder sb = new StringBuilder();
 
         enumFields.forEach(enumField -> {
             
@@ -204,10 +210,25 @@ public class ImportUtils {
                 enumName = StringUtils.capitalize(enumField.getName());
             }
 
-            sb.append(String.format(IMPORT, packagePath + ENUMS_PACKAGE + "." + enumName));
+            imports.add(String.format(IMPORT, packagePath + ENUMS_PACKAGE + "." + enumName));
         });
 
-        return sb.toString();
+        if (importJsonFields) {
+            final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
+            jsonFields.stream()
+                    .map(FieldUtils::extractJsonFieldName)
+                    .forEach(fieldName -> {
+                        if (transferObjects) {
+                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + fieldName));
+                        } else {
+                            imports.add(String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + fieldName));
+                        }
+                    });
+        }
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
     }
 
     /**
@@ -257,7 +278,7 @@ public class ImportUtils {
                 .map(field -> field.getType())
                 .collect(Collectors.toList());
 
-        final String enumsImport = computeEnumsImport(modelDefinition, outputDir);
+        final String enumsImport = computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
 
         imports.add(enumsImport);
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
@@ -285,7 +306,7 @@ public class ImportUtils {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final List<FieldDefinition> relationModels = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final String enumsImport = computeEnumsImport(modelDefinition, outputDir);
+        final String enumsImport = computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
 
         imports.add(enumsImport);
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));

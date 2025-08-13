@@ -14,7 +14,7 @@
     private ${field.resolvedType} ${field.name};
     </#if>
 </#list>
-<#if optimisticLocking>
+<#if !(embedded?? && embedded) && optimisticLocking>
 
     @Version
     private Integer version;

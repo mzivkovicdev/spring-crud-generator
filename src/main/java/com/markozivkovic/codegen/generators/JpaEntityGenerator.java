@@ -80,11 +80,6 @@ public class JpaEntityGenerator implements CodeGenerator {
     /**
      * Generates a helper JPA entity class for the given model definition.
      * 
-     * This method constructs a Java class file for a model that serves as a JSON
-     * field or embedded entity in another model. The generated class includes fields, 
-     * getters, setters, equals, hashCode, and toString methods. It also handles 
-     * necessary imports and package declarations.
-     * 
      * @param model     The model definition containing the class name and field definitions.
      * @param outputDir The directory where the generated helper class will be written.
      */
@@ -98,10 +93,10 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath + MODELS_HELPERS_PACKAGE));
         sb.append(ImportUtils.getBaseImport(model, true));
 
-        final String enumImports = ImportUtils.computeEnumsImport(model, outputDir);
+        final String enumImports = ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir);
         
         if (StringUtils.isNotBlank(enumImports)) {
-            sb.append(ImportUtils.computeEnumsImport(model, outputDir))
+            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir))
                 .append("\n");
         }
 
@@ -139,6 +134,10 @@ public class JpaEntityGenerator implements CodeGenerator {
      */
     private void generateJpaEntity(final ModelDefinition model, final String outputDir) {
 
+        if (FieldUtils.isModelUsedAsJsonField(model, this.entities)) {
+            return;
+        }
+
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         
         final String className = model.getName();
@@ -154,10 +153,10 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(ImportUtils.computeJakartaImports(model, optimisticLocking))
                 .append("\n");
 
-        final String enumImports = ImportUtils.computeEnumsImport(model, outputDir);
+        final String enumAndHelperEntitiesImports = ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir);
         
-        if (StringUtils.isNotBlank(enumImports)) {
-            sb.append(ImportUtils.computeEnumsImport(model, outputDir))
+        if (StringUtils.isNotBlank(enumAndHelperEntitiesImports)) {
+            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir))
                 .append("\n");
         }
 
