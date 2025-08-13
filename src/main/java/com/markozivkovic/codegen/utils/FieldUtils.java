@@ -3,6 +3,8 @@ package com.markozivkovic.codegen.utils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.model.FieldDefinition;
@@ -21,6 +23,8 @@ public class FieldUtils {
     private static final String ONE_TO_MANY = "OneToMany";
     private static final String MANY_TO_ONE = "ManyToOne";
     private static final String MANY_TO_MANY = "ManyToMany";
+
+    private static final Pattern pattern = Pattern.compile("^JSONB?\\[(.+)]$");
 
     private FieldUtils() {
         
@@ -570,19 +574,52 @@ public class FieldUtils {
     }
 
     /**
-     * Computes the resolved type given the type and name of a field.
+     * Returns true if the given field is marked as a JSON field, false otherwise.
+     * A JSON field is a field whose type is of the form "Json&lt;name&gt;", where
+     * &lt;name&gt; is the name of the JSON field.
      * 
-     * @param type The type of the field.
-     * @param name The name of the field.
-     * @return The resolved type of the field.
+     * @param field The field to check.
+     * @return True if the field is marked as a JSON field, false otherwise.
      */
-    public static String computeResolvedType(final String type, final String name) {
-        
-        if (ENUM.equalsIgnoreCase(type) && Objects.nonNull(name)) {
-            return StringUtils.capitalize(name) + ENUM;
+    public static boolean isJsonField(final FieldDefinition field) {
+
+        return pattern.matcher(field.getType()).matches();
+    }
+
+    /**
+     * Extracts the name of a JSON field from the given field definition if it is marked as a JSON field.
+     * A JSON field is a field whose type is of the form "Json&lt;name&gt;", where &lt;name&gt; is the name of the JSON field.
+     * 
+     * @param field The field definition to extract the JSON field name from.
+     * @return The name of the JSON field if the field is marked as a JSON field, null otherwise.
+     */
+    public static String extractJsonFieldName(final FieldDefinition field) {
+
+        final Matcher matcher = pattern.matcher(field.getType());
+        matcher.matches();
+        return matcher.group(1);
+    }
+    
+    /**
+     * Computes the resolved type of the given field definition.
+     * If the field is a JSON field, it extracts and returns the JSON field name.
+     * If the field is of type Enum and has a name, it returns the capitalized name
+     * appended with "Enum". Otherwise, it returns the field's original type.
+     *
+     * @param fieldDefinition The field definition to compute the resolved type for.
+     * @return The resolved type of the field definition.
+     */
+    public static String computeResolvedType(final FieldDefinition fieldDefinition) {
+
+        if (isJsonField(fieldDefinition)) {
+            return extractJsonFieldName(fieldDefinition);
         }
         
-        return type;
+        if (ENUM.equalsIgnoreCase(fieldDefinition.getType()) && Objects.nonNull(fieldDefinition.getName())) {
+            return StringUtils.capitalize(fieldDefinition.getName()) + ENUM;
+        }
+        
+        return fieldDefinition.getType();
     }
     
 }

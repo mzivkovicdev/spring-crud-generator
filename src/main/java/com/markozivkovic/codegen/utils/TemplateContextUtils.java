@@ -359,8 +359,13 @@ public class TemplateContextUtils {
         context.put(FIELDS, modelDefinition.getFields());
         context.put(FIELD_NAMES, FieldUtils.extractFieldNames(modelDefinition.getFields()));
         context.put(CLASS_NAME, modelDefinition.getName());
-        context.put(INPUT_ARGS, FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields()));
-        context.put(NON_ID_FIELD_NAMES, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+        try {
+            context.put(INPUT_ARGS, FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields()));
+            context.put(NON_ID_FIELD_NAMES, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+        } catch (final IllegalArgumentException e) {
+            context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
+            context.put(NON_ID_FIELD_NAMES, FieldUtils.extractFieldNames(modelDefinition.getFields()));
+        }
 
         return context;  
     }

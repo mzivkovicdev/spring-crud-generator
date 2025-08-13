@@ -30,9 +30,9 @@ public class SpringCrudGenerator implements CodeGenerator {
             final ProjectMetadata projectMetadata) {
         this.GENERATORS = Map.of(
             ENUM, new EnumGenerator(),
-            JPA_MODEL, new JpaEntityGenerator(crudConfiguration),
+            JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites),
             JPA_REPOSITORY, new JpaRepositoryGenerator(),
-            JPA_SERVICE, new JpaServiceGenerator(entites, crudConfiguration),
+            JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entites),
             BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
             TRANSFER_OBJECT, new TransferObjectGenerator(entites),
             MAPPER, new MapperGenerator(),
