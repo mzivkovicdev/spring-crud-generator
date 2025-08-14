@@ -8,7 +8,7 @@
     public ${modelName} getById(final ${idType} ${idField}) {
 
         return this.repository.findById(${idField})
-            .orElseThrow(() -> new RuntimeException(
-                "${modelName} with id not found: " + ${idField}
+            .orElseThrow(() -> new ResourceNotFoundException(
+                String.format("${modelName} with id not found: %s", ${idField})
             ));
     }

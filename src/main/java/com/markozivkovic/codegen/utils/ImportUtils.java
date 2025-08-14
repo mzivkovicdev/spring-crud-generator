@@ -57,6 +57,7 @@ public class ImportUtils {
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String REPOSITORIES_PACKAGE = ".repositories";
+    private static final String EXCEPTIONS_PACKAGE = ".exceptions";
     private static final String MODELS_PACKAGE = ".models";
     private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_PACKAGE = ".transferobjects";
@@ -65,6 +66,9 @@ public class ImportUtils {
     private static final String MAPPERS_PACKAGE = ".mappers";
     private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
+
+    private static final String INVALID_RESOURCE_STATE_EXCEPTION = "InvalidResourceStateException";
+    private static final String RESOURCE_NOT_FOUND_EXCEPTION = "ResourceNotFoundException";
     
     private ImportUtils() {
 
@@ -297,6 +301,12 @@ public class ImportUtils {
         imports.add(enumsImport);
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
         imports.add(String.format(IMPORT, packagePath + REPOSITORIES_PACKAGE + "." + modelWithoutSuffix + "Repository"));
+
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
+
+        if (!relationModels.isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + INVALID_RESOURCE_STATE_EXCEPTION));
+        }
 
         relationModels.forEach(relation -> imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + relation)));
 

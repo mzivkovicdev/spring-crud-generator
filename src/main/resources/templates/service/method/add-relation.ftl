@@ -23,11 +23,11 @@
         
         <#if rel.isCollection?? && rel.isCollection>
         if (!entity.get${rel.relationField?cap_first}().add(${rel.elementParam})) {
-            throw new RuntimeException("Not possible to add ${rel.elementParam}");
+            throw new InvalidResourceStateException("Not possible to add ${rel.elementParam}");
         }
         <#else>
         if (entity.get${rel.relationField?cap_first}() != null) {
-            throw new RuntimeException("Not possible to add ${rel.elementParam}");
+            throw new InvalidResourceStateException("Not possible to add ${rel.elementParam}");
         }
         entity.set${rel.relationField?cap_first}(${rel.elementParam});
         </#if>
