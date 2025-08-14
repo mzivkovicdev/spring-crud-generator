@@ -17,6 +17,7 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String ENUM = "enum";
     private static final String JPA_MODEL = "jpa-model";
     private static final String JPA_REPOSITORY = "jpa-repository";
+    private static final String EXCEPTION = "exception";
     private static final String JPA_SERVICE = "jpa-service";
     private static final String BUSINESS_SERVICE = "business-service";
     private static final String TRANSFER_OBJECT = "transfer-object";
@@ -32,6 +33,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             ENUM, new EnumGenerator(),
             JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites),
             JPA_REPOSITORY, new JpaRepositoryGenerator(),
+            EXCEPTION, new ExceptionGenerator(),
             JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entites),
             BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
             TRANSFER_OBJECT, new TransferObjectGenerator(entites),

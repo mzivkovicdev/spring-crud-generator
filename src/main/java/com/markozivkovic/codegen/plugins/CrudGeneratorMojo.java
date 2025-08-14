@@ -9,6 +9,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.markozivkovic.codegen.generators.SpringCrudGenerator;
@@ -44,7 +45,9 @@ public class CrudGeneratorMojo extends AbstractMojo {
         }
         
         try {
-            final YAMLMapper yamlMapper = YAMLMapper.builder().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
+            final YAMLMapper yamlMapper = YAMLMapper.builder()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
                     .build();
             
             final CrudSpecification spec = yamlMapper.readValue(new File(inputSpecFile), CrudSpecification.class);

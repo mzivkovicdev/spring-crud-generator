@@ -3,6 +3,10 @@ package com.markozivkovic.codegen.generators;
 import java.util.Map;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.ProjectMetadata;
@@ -10,6 +14,9 @@ import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 
 public class DockerfileGenerator implements CodeGenerator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DockerfileGenerator.class);
+    private static final String DOCKERFILE = "dockerfile";
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -21,6 +28,10 @@ public class DockerfileGenerator implements CodeGenerator {
     
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+
+        if (GeneratorContext.isGenerated(DOCKERFILE)) { return; }
+
+        LOGGER.info("Generating Dockerfile");
         
         if (Objects.isNull(configuration) || Objects.isNull(configuration.getDockerfile()) || !configuration.getDockerfile()) {
             return;
@@ -34,6 +45,10 @@ public class DockerfileGenerator implements CodeGenerator {
         final String dockerFile = FreeMarkerTemplateProcessorUtils.processTemplate("docker/dockerfile-template.ftl", context);
 
         FileWriterUtils.writeToFile(projectMetadata.getProjectBaseDir(), "Dockerfile", dockerFile);
+
+        GeneratorContext.markGenerated(DOCKERFILE);
+        
+        LOGGER.info("Finished generating Dockerfile");
     }
 
 }
