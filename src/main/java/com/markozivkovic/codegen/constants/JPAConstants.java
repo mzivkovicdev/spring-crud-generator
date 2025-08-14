@@ -37,4 +37,10 @@ public class JPAConstants {
     public static final String JAKARTA_PERSISTENCE_MANY_TO_ONE = JAKARTA_PERSISTENCE_PACKAGE + ".ManyToOne";
     public static final String JAKARTA_PERSISTENCE_VERSION = JAKARTA_PERSISTENCE_PACKAGE + ".Version";
 
+    public static final String ORG_HIBERNATE = "org.hibernate";
+    public static final String ORG_HIBERNATE_ANNOTATIONS = ORG_HIBERNATE + ".annotations";
+    public static final String ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE = ORG_HIBERNATE_ANNOTATIONS + ".JdbcTypeCode";
+    public static final String ORG_HIBERNATE_TYPE = ORG_HIBERNATE + ".type";
+    public static final String ORG_HIBERNATE_TYPE_SQL_TYPES = ORG_HIBERNATE_TYPE + ".SqlTypes";
+
 }

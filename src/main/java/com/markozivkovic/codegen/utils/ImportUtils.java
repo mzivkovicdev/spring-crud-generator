@@ -20,6 +20,8 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTEN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_MANY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_ONE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_VERSION;
+import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE;
+import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_TYPE_SQL_TYPES;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
 import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
@@ -158,7 +160,7 @@ public class ImportUtils {
             imports.add(JAKARTA_PERSISTANCE_ENUMERATED);
         }
 
-        final boolean hasAnyFieldColumn = fields.stream()
+        final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
                 .anyMatch(field -> Objects.nonNull(field.getColumn()));
 
         addIf(!relations.isEmpty(), imports, JAKARTA_PERSISTENCE_JOIN_COLUMN);
@@ -172,10 +174,21 @@ public class ImportUtils {
         addIf(optimisticLocking, imports, JAKARTA_PERSISTENCE_VERSION);
         addIf(hasAnyFieldColumn, imports, JAKARTA_PERSISTENCE_COLUMN);
 
-        return imports.stream()
+        final String jakartaImports = imports.stream()
                   .map(imp -> String.format(IMPORT, imp))
                   .sorted()
                   .collect(Collectors.joining());
+
+        if (!FieldUtils.isAnyFieldJson(fields)) {
+            return jakartaImports;
+        }
+
+        final String hibernateImports = Set.of(ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE, ORG_HIBERNATE_TYPE_SQL_TYPES).stream()
+                .map(imp -> String.format(IMPORT, imp))
+                .sorted()
+                .collect(Collectors.joining());
+
+        return String.format("%s\n%s", jakartaImports, hibernateImports);
     }
 
     /**

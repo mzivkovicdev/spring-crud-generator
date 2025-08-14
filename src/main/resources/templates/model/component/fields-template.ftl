@@ -10,9 +10,10 @@
     <#if field.relation??><#include "relation-field.ftl"></#if>
     <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")>
     private List<${field.resolvedType}> ${field.name};
-    <#else>
-    private ${field.resolvedType} ${field.name};
-    </#if>
+    <#else><#if field.type?matches("JSONB?\\[.+\\]")>
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")</#if>
+    private ${field.resolvedType} ${field.name};</#if>
 </#list>
 <#if !(embedded?? && embedded) && optimisticLocking>
 
