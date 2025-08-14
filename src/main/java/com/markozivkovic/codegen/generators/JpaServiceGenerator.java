@@ -26,12 +26,12 @@ public class JpaServiceGenerator implements CodeGenerator {
     private static final String SERVICES = "services";
     private static final String SERVICES_PACKAGE = "." + SERVICES;
 
-    private final List<ModelDefinition> entites;
     private final CrudConfiguration configuration;
+    private final List<ModelDefinition> entites;
 
-    public JpaServiceGenerator(final List<ModelDefinition> entites, final CrudConfiguration configuration) {
-        this.entites = entites;
+    public JpaServiceGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
         this.configuration = configuration;
+        this.entites = entites;
     }
     
     @Override

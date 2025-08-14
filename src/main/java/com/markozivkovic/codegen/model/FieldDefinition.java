@@ -82,7 +82,7 @@ public class FieldDefinition {
     }
 
     public String getResolvedType() {
-        return FieldUtils.computeResolvedType(this.type, this.name);
+        return FieldUtils.computeResolvedType(this);
     }
 
     public RelationDefinition getRelation() {

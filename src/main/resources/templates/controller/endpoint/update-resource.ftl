@@ -8,7 +8,7 @@
 
         return ResponseEntity.ok(
             ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
-                this.${serviceField}.updateById(id, <#list inputFields as arg>body.${arg}()<#if arg_has_next>, </#if></#list>)
+                this.${serviceField}.updateById(id, <#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>)
             )
         );
     }

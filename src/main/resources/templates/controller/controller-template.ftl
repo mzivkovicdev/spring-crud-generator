@@ -24,6 +24,10 @@ ${projectImports}
 public class ${className} {
 
     private final ${mapperClass} ${mapperClass?uncap_first} = Mappers.getMapper(${mapperClass}.class);
+    <#list jsonFields as jsonField>
+    <#assign jsonFieldMapperClass = jsonField?cap_first + "Mapper">
+    private final ${jsonFieldMapperClass} ${jsonFieldMapperClass?uncap_first} = Mappers.getMapper(${jsonFieldMapperClass}.class);
+    </#list>
 
     private final ${serviceClass} ${serviceField};
     <#if relations>
