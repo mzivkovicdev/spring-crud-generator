@@ -10,4 +10,8 @@ public interface ${mapperName} {
 
     List<${transferObjectName}> map${modelName}To${transferObjectName}(final List<${modelName}> model);
 
+    ${modelName} map${transferObjectName}To${modelName}(final ${transferObjectName} transferObject);
+
+    List<${modelName}> map${transferObjectName}To${modelName}(final List<${transferObjectName}> transferObject);
+
 }

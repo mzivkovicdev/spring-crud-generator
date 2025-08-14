@@ -79,7 +79,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         );
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
-            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir))
+            sb.append(enumAndHelperEntityImports)
                 .append("\n");
         }
 
@@ -118,7 +118,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         );
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
-            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir))
+            sb.append(enumAndHelperEntityImports)
                 .append("\n");
         }
 

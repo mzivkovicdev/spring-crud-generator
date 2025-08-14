@@ -46,6 +46,8 @@ public class TemplateContextUtils {
     private static final String RELATION_ID_TYPE = "relationIdType";
     private static final String MODEL_SERVICE = "modelService";
     private static final String RELATION_FIELD_MODEL = "relationFieldModel";
+    private static final String JSON_FIELDS = "jsonFields";
+    private static final String IS_JSON_FIELD = "isJsonField";
 
     private TemplateContextUtils() {
         
@@ -507,11 +509,15 @@ public class TemplateContextUtils {
     public static Map<String, Object> computeControllerClassContext(final ModelDefinition modelDefinition) {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .collect(Collectors.toList());
 
         final Map<String, Object> context = new HashMap<>();
         context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Controller");
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
         context.put(RELATIONS, !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put(JSON_FIELDS, jsonFields);
 
         return context;
     }
@@ -543,10 +549,11 @@ public class TemplateContextUtils {
                 
                 final Map<String, Object> fieldContext = new HashMap<>(Map.of(
                     FIELD, field.getName(),
-                    FIELD_TYPE, field.getType(),
+                    FIELD_TYPE, field.getResolvedType(),
                     STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(field.getType()),
                     IS_COLLECTION, isCollection,
-                    IS_RELATION, isRelation
+                    IS_RELATION, isRelation,
+                    IS_JSON_FIELD, FieldUtils.isJsonField(field)
                 ));
 
                 if (isRelation) {
@@ -622,7 +629,7 @@ public class TemplateContextUtils {
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
-        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields()));
         context.put(ID_TYPE, idField.getType());
 
         return context;

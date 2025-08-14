@@ -346,6 +346,38 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts the names of all fields from the given list that are not marked as ID fields
+     * and do not have a relation, and formats them as strings in the format expected by the
+     * controller layer.
+     * 
+     * @param fields The list of fields to extract non-ID non-relation field names from.
+     * @return A list of strings representing the non-ID non-relation fields in the format
+     *         expected by the controller layer.
+     */
+    public static List<String> extractNonIdNonRelationFieldNamesForController(final List<FieldDefinition> fields) {
+        
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .map(field -> {
+                    if (isJsonField(field)) {
+                        return String.format(
+                            "%sMapper.map%sTOTo%s(body.%s())",
+                            StringUtils.uncapitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.uncapitalize(field.getResolvedType())
+                        );
+                    }
+
+                    return String.format("body.%s()", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Extracts the names of all fields from the given list that are not marked as ID fields, and
      * formats them as Javadoc @param tags.
      * 

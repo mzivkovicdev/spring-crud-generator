@@ -25,7 +25,7 @@
         return ResponseEntity.ok(
             ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                 this.${serviceField}.create(
-                    <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else>body.${arg.field}()</#if><#if arg_has_next>, </#if></#list>
+                    <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.${arg.field}())<#else>body.${arg.field}()</#if></#if><#if arg_has_next>, </#if></#list>
                 )
             )
         );

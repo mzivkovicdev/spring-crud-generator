@@ -61,6 +61,7 @@ public class ImportUtils {
     private static final String SERVICES_PACKAGE = ".services";
     private static final String BUSINESS_SERVICES_PACKAGE = ".businessservices";
     private static final String MAPPERS_PACKAGE = ".mappers";
+    private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
     
     private ImportUtils() {
@@ -219,7 +220,7 @@ public class ImportUtils {
                     .map(FieldUtils::extractJsonFieldName)
                     .forEach(fieldName -> {
                         if (transferObjects) {
-                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + fieldName));
+                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + fieldName + "TO"));
                         } else {
                             imports.add(String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + fieldName));
                         }
@@ -399,6 +400,15 @@ public class ImportUtils {
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
             imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
+
+        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
+            modelDefinition.getFields().stream()
+                .filter(field -> FieldUtils.isJsonField(field))
+                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .forEach(jsonField -> {
+                    imports.add(String.format(IMPORT, packagePath + MAPPERS_HELPERS_PACKAGE + "." + jsonField + "Mapper"));
+                });
         }
 
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
