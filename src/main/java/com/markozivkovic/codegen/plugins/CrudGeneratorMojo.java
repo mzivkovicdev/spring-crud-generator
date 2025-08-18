@@ -32,7 +32,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
     private String version;
 
     @Parameter(defaultValue = "${project.basedir}", readonly = true)
-    private String projectBaseDir;
+    private File projectBaseDir;
 
     public void execute() throws MojoExecutionException {
 
@@ -49,9 +49,13 @@ public class CrudGeneratorMojo extends AbstractMojo {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                     .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
                     .build();
-            
+
+            System.out.println("----------------------------------------");
+            System.out.println("Project base directory: " + projectBaseDir.getAbsolutePath());
+            System.out.println("----------------------------------------");
+
             final CrudSpecification spec = yamlMapper.readValue(new File(inputSpecFile), CrudSpecification.class);
-            final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir);
+            final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir.getAbsolutePath());
             final SpringCrudGenerator generator = new SpringCrudGenerator(spec.getConfiguration(), spec.getEntities(), projectMetadata);
 
             spec.getEntities().stream().forEach(entity -> {
