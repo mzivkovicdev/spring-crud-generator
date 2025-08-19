@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
@@ -29,86 +30,91 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
+    private final List<ModelDefinition> entities;
 
-    public SwaggerDocumentationGenerator(final CrudConfiguration configuration, final ProjectMetadata projectMetadata) {
+    public SwaggerDocumentationGenerator(final CrudConfiguration configuration, final ProjectMetadata projectMetadata,
+            final List<ModelDefinition> entities) {
         this.configuration = configuration;
         this.projectMetadata = projectMetadata;
+        this.entities = entities;
     }
 
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
 
-        if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
-            LOGGER.warn("Model {} has no ID field defined. Skipping Swagger documentation generation.", modelDefinition.getName());
-            return;
-        }
-        
-        LOGGER.info("Generating API documentation for {}", modelDefinition.getName());
-        
         if (Objects.isNull(configuration) || Objects.isNull(configuration.getSwagger()) || !configuration.getSwagger()) {
             return;
         }
 
-        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        if (GeneratorContext.isGenerated(SWAGGER)) { return; }
+
         final String pathToSwaggerDocs = String.format("%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES);
-        
-        final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(modelDefinition);
-        context.put("create", createEndpoint(modelDefinition));
-        context.put("getAll", getAllEndpoint(modelDefinition));
-        context.put("getById", getByIdEndpoint(modelDefinition));
-        context.put("deleteById", deleteByIdEndpoint(modelDefinition));
-        context.put("updateById", updateByIdEndpoint(modelDefinition));
-        context.put("objects", computeObjects(modelDefinition));
 
-        final String swaggerDocumentation = FreeMarkerTemplateProcessorUtils.processTemplate(
-                "swagger/swagger-template.ftl", context
-        );
+        entities.forEach(e -> {
+            if (!FieldUtils.isAnyFieldId(e.getFields())) {
+                LOGGER.warn("Model {} has no ID field defined. Skipping Swagger documentation generation.", e.getName());
+                return;
+            }
 
-        FileWriterUtils.writeToFile(
-            pathToSwaggerDocs, SWAGGER, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerDocumentation
-        );
+            final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
+            final Map<String, Object> model = new HashMap<>();
+            model.put("schemaName", e.getName());
+            if (StringUtils.isNotBlank(e.getDescription())) {
+                model.put("description", e.getDescription());
+            }
 
-        LOGGER.info("Finished generating API documentation for {}", modelDefinition.getName());
-    }
+            final List<Map<String, Object>> properties = e.getFields().stream()
+                    .map(field -> SwaggerUtils.toSwaggerProperty(field))
+                    .collect(Collectors.toList());
 
-    /**
-     * Computes the YAML representation of the objects for the given model definition.
-     * 
-     * @param modelDefinition The model definition for which the objects are computed.
-     * @return The YAML representation of the objects for the given model definition.
-     */
-    private String computeObjects(final ModelDefinition modelDefinition) {
+            model.put("properties", properties);
 
-        final Map<String, Object> context = computeBaseContext(modelDefinition);
-        if (StringUtils.isNotBlank(modelDefinition.getDescription())) {
-            context.put("description", modelDefinition.getDescription());
-        }
-        context.put("properties", this.computeProperties(modelDefinition));
-        
-        return FreeMarkerTemplateProcessorUtils.processTemplate(
-            "swagger/schema/object-template.ftl", context
-        );
-    }
-    
-    /**
-     * Computes the properties for the given model definition.
-     * 
-     * @param modelDefinition The model definition for which the properties are computed.
-     * @return A list of maps, each containing the name, type, and description of a field in the model definition.
-     */
-    private List<Map<String, Object>> computeProperties(final ModelDefinition modelDefinition) {
-        
-        return modelDefinition.getFields().stream()
-                .map(field -> {
-                    final Map<String, Object> property = new HashMap<>();
-                    property.put("name", field.getName());
-                    property.putAll(SwaggerUtils.resolve(field.getType(), field.getValues()));
-                    if (StringUtils.isNotBlank(field.getDescription())) {
-                        property.put("description", field.getDescription());
-                    }
-                    return property;
-                })
-                .collect(Collectors.toList());
+            final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "swagger/schema/object-template.ftl", model
+            );
+            final String subDir = String.format("%s/%s", SWAGGER, "components/schemas");
+
+            FileWriterUtils.writeToFile(
+                pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
+            );
+        });
+
+        entities.forEach(e -> {
+
+            if (!FieldUtils.isAnyFieldId(e.getFields())) {
+                LOGGER.warn("Model {} has no ID field defined. Skipping Swagger documentation generation.", e.getName());
+                return;
+            }
+
+            final List<FieldDefinition> relations = FieldUtils.extractRelationFields(e.getFields());
+            final List<String> schemaNames = relations.stream()
+                    .map(FieldDefinition::getType)
+                    .filter(StringUtils::isNotBlank)
+                    .map(ModelNameUtils::stripSuffix)
+                    .map(StringUtils::uncapitalize)
+                    .distinct()
+                    .collect(Collectors.toList());
+            schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.stripSuffix(e.getName())));
+
+            final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(e);
+            context.put("create", createEndpoint(e));
+            context.put("getAll", getAllEndpoint(e));
+            context.put("getById", getByIdEndpoint(e));
+            context.put("deleteById", deleteByIdEndpoint(e));
+            context.put("updateById", updateByIdEndpoint(e));
+            context.put("schemaNames", schemaNames);
+
+            final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
+            final String swaggerDocumentation = FreeMarkerTemplateProcessorUtils.processTemplate(
+                    "swagger/swagger-template.ftl", context
+            );
+
+            FileWriterUtils.writeToFile(
+                    pathToSwaggerDocs, SWAGGER, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerDocumentation
+            );
+        });
+
+        GeneratorContext.markGenerated(SWAGGER);
     }
 
     /**

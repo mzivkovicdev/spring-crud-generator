@@ -41,7 +41,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(MAPPER, new MapperGenerator(entites)),
             Map.entry(CONTROLLER, new RestControllerGenerator(entites)),
             Map.entry(DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)),
-            Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata))
+            Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entites))
         );
     }
 

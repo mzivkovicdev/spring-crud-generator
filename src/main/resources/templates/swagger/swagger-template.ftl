@@ -46,4 +46,7 @@ paths:
 
 components:
   schemas:
-    ${objects}
+<#list schemaNames as s>
+    ${s?cap_first}:
+      $ref: './components/schemas/${s}.yaml'
+</#list>

@@ -4,10 +4,19 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.maven.api.annotations.Nullable;
 
+import com.markozivkovic.codegen.model.FieldDefinition;
+import com.markozivkovic.codegen.model.RelationDefinition;
+
 public class SwaggerUtils {
+
+    private static final String ONE_TO_ONE = "OneToOne";
+    private static final String ONE_TO_MANY = "OneToMany";
+    private static final String MANY_TO_ONE = "ManyToOne";
+    private static final String MANY_TO_MANY = "ManyToMany";
     
     private SwaggerUtils() {
         
@@ -108,6 +117,76 @@ public class SwaggerUtils {
                 m.put("type", "string");
                 return m;
         }
+    }
+
+    /**
+     * Creates a Swagger property from a given {@link FieldDefinition}.
+     *
+     * @param fieldDefinition the field definition to create a Swagger property from
+     * @return a Swagger property
+     */
+    public static Map<String, Object> toSwaggerProperty(final FieldDefinition fieldDefinition) {
+
+        final Map<String, Object> property = new LinkedHashMap<>();
+        
+        property.put("name", fieldDefinition.getName());
+        if (StringUtils.isNotBlank(fieldDefinition.getDescription())) {
+            property.put("description", fieldDefinition.getDescription());
+        }
+
+        Map<String, Object> schema;
+        final RelationDefinition rel = fieldDefinition.getRelation();
+        final String type = fieldDefinition.getType();
+
+        if (Objects.nonNull(rel)) {
+
+            switch (rel.getType()) {
+                case ONE_TO_ONE:
+                case MANY_TO_ONE:
+                    schema = ref(type);
+                    break;
+                case ONE_TO_MANY:
+                case MANY_TO_MANY:
+                    schema = arrayOfRef(type);
+                    break;
+                default:
+                    schema = ref(type);
+                    break;
+            }
+        } else {
+            schema = resolve(type, fieldDefinition.getValues());
+        }
+
+        property.putAll(schema);
+        
+        return property;
+    }
+
+    /**
+     * Return a Swagger $ref definition to the given targetSchemaName.
+     *
+     * @param targetSchemaName the name of the target schema
+     * @return a Swagger $ref definition
+     */
+    public static Map<String, Object> ref(final String targetSchemaName) {
+        
+        final Map<String, Object> m = new LinkedHashMap<>();
+        final String schemaName = ModelNameUtils.stripSuffix(targetSchemaName);
+        m.put("$ref", String.format("./%s.yaml", StringUtils.uncapitalize(schemaName)));
+        return m;
+    }
+
+    /**
+     * Return a Swagger array type definition which references the given targetSchemaName.
+     * 
+     * @param targetSchemaName the name of the target schema
+     * @return a Swagger array type definition
+     */
+    public static Map<String, Object> arrayOfRef(final String targetSchemaName) {
+        final Map<String, Object> m = new LinkedHashMap<>();
+        m.put("type", "array");
+        m.put("items", ref(targetSchemaName));
+        return m;
     }
 
 }
