@@ -18,6 +18,7 @@ import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
+import com.markozivkovic.codegen.utils.SwaggerUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class SwaggerDocumentationGenerator implements CodeGenerator {
@@ -95,14 +96,13 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      * @param modelDefinition The model definition for which the properties are computed.
      * @return A list of maps, each containing the name, type, and description of a field in the model definition.
      */
-    private List<Map<String, String>> computeProperties(final ModelDefinition modelDefinition) {
+    private List<Map<String, Object>> computeProperties(final ModelDefinition modelDefinition) {
         
         return modelDefinition.getFields().stream()
                 .map(field -> {
-                    final Map<String, String> property = new HashMap<>();
+                    final Map<String, Object> property = new HashMap<>();
                     property.put("name", field.getName());
-                    // TODO: resolve type
-                    property.put("type", field.getType());
+                    property.putAll(SwaggerUtils.resolve(field.getType(), field.getValues()));
                     if (StringUtils.isNotBlank(field.getDescription())) {
                         property.put("description", field.getDescription());
                     }
@@ -192,6 +192,13 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         return context;
     }
 
+    /**
+     * Computes the context for the given model definition, including the ID field.
+     *
+     * @param modelDefinition The model definition for which the context is computed.
+     * @return A map containing the stripped model name as the value for the key "strippedModelName",
+     *         and the name of the ID field as the value for the key "idField".
+     */
     private Map<String, Object> computeContextWithId(final ModelDefinition modelDefinition) {
         
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
