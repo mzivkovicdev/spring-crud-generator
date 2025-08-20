@@ -136,7 +136,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
                 .distinct()
                 .collect(Collectors.toList());
         schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.stripSuffix(e.getName())));
-        
+
         final List<String> relationInputSchemaNames = relationModels.stream()
                 .map(ModelDefinition::getName)
                 .map(ModelNameUtils::stripSuffix)
@@ -151,6 +151,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         context.put("getById", getByIdEndpoint(e));
         context.put("deleteById", deleteByIdEndpoint(e));
         context.put("updateById", updateByIdEndpoint(e));
+        context.put("addRelations", addRelationEndpoints(e));
         context.put("schemaNames", schemaNames);
 
         final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
@@ -193,6 +194,38 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         FileWriterUtils.writeToFile(
             pathToSwaggerDocs, subDir, String.format("%sInput.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
         );
+    }
+
+    /**
+     * Generates the swagger documentation for the add relation endpoints of the given model definition.
+     * 
+     * @param modelDefinition the model definition
+     * @return a string containing the swagger documentation for the add relation endpoints
+     */
+    private String addRelationEndpoints(final ModelDefinition modelDefinition) {
+
+        final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(modelDefinition);
+
+        final List<Map<String, Object>> relationEndpoints = modelDefinition.getFields().stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .map(field -> {
+                    final Map<String, Object> endpointContext = new HashMap<>();
+                    endpointContext.put("strippedModelName", ModelNameUtils.stripSuffix(field.getType()));
+                    endpointContext.put("relationType", field.getType().toUpperCase());
+
+                    final ModelDefinition relationModel = this.entities.stream()
+                            .filter(e -> e.getName().equals(field.getType()))
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalArgumentException("Relation model not found: " + field.getType()));
+                    final FieldDefinition idField = FieldUtils.extractIdField(relationModel.getFields());
+                    endpointContext.put("relatedIdParam", idField.getName());
+                    return endpointContext;
+                })
+                .collect(Collectors.toList());
+
+        context.put("relations", relationEndpoints);
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/relation-endpoint.ftl", context);
     }
 
     /**

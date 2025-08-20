@@ -223,6 +223,13 @@ public class FieldUtils {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Checks if the given model definition is used as a JSON field in any of the other model definitions.
+     * 
+     * @param modelDefinition The model definition to check.
+     * @param entities The list of all model definitions.
+     * @return True if the given model definition is used as a JSON field in any of the other model definitions, false otherwise.
+     */
     public static boolean isModelUsedAsJsonField(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
 
         return entities.stream()
