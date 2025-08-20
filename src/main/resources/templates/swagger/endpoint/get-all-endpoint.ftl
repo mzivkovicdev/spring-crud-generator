@@ -1,6 +1,20 @@
 <#assign uncapModelName = strippedModelName?uncap_first>
 <#assign modelName = strippedModelName?cap_first>
 get:
+      parameters:
+      - in: query
+        name: pageNumber
+        description: Page number
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: pageSize
+        description: Page size
+        required: true
+        schema:
+          type: string
+      
       summary: Get the ${uncapModelName}s
       tags:
           - "${modelName}"

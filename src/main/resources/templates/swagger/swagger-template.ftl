@@ -14,20 +14,6 @@ tags:
 
 paths:
   /${uncapModelName}s:
-    parameters:
-    - in: query
-      name: pageNumber
-      description: Page number
-      required: true
-      schema:
-        type: string
-    - in: query
-      name: pageSize
-      description: Page size
-      required: true
-      schema:
-        type: string
-    
     ${create}
     ${getAll}
 
