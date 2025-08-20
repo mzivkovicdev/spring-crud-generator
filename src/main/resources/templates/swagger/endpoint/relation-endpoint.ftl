@@ -1,0 +1,69 @@
+<#assign uncapModelName = strippedModelName?uncap_first>
+<#assign modelName = strippedModelName?cap_first>
+
+  <#list relations as rel>
+  <#assign relationField = rel.strippedModelName?uncap_first>
+  <#assign relationInput = rel.strippedModelName?cap_first + "Input">
+  <#assign relType = rel.relationType>
+  <#assign relatedIdParam = rel.relatedIdParam>
+  /${uncapModelName}s/{${idField}}/${relationField}s:
+    post:
+      parameters:
+       - in: path
+         name: ${idField}
+         description: ${idDescription}
+         required: true
+         schema:
+           type: string
+      summary: Add ${relationField} to ${uncapModelName}
+      tags:
+        - ${modelName}
+      operationId: ${uncapModelName}s${relationField?cap_first}sPost
+      requestBody:
+        required: true
+        description: Request adding ${rel.strippedModelName} to ${modelName}
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/${relationInput}'
+      responses:
+        '200':
+          description: Added ${rel.strippedModelName} to ${modelName}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/${modelName}'
+  <#if relType == "ONETOONE" || relType == "MANYTOONE">
+    delete:
+      summary: Remove ${relationField} from ${uncapModelName}
+      tags:
+        - ${modelName}
+      operationId: ${uncapModelName}s${relationField?cap_first}sDelete
+      responses:
+        '204':
+          description: Removed ${relationField} from ${uncapModelName}
+  <#else>
+  /${uncapModelName}s/{${idField}}/${relationField}s/{${relatedIdParam}}:
+    delete:
+      parameters:
+        - in: path
+          name: ${idField}
+          description: ${idDescription}
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: ${relatedIdParam}
+          description: ID of related ${rel.strippedModelName} to remove
+          required: true
+          schema:
+            type: string
+      summary: Remove ${relationField} from ${uncapModelName}
+      tags:
+        - ${modelName}
+      operationId: ${uncapModelName}s${relationField?cap_first}sRelatedDelete
+      responses:
+        '204':
+          description: Removed ${rel.strippedModelName} from ${modelName}
+  </#if>
+  </#list>

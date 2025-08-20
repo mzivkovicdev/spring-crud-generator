@@ -86,6 +86,13 @@ public class MapperGenerator implements CodeGenerator {
         FileWriterUtils.writeToFile(outputDir, MAPPERS, mapperName, sb.toString());
     }
 
+    /**
+     * Generates a helper mapper for the given json model.
+     *
+     * @param jsonModel the json model definition containing the class and field details
+     * @param outputDir the directory where the generated class will be written
+     * @param packagePath the package path of the directory where the generated class will be written
+     */
     private void generateHelperMapper(ModelDefinition jsonModel, String outputDir, String packagePath) {
         
         final String mapperName = String.format("%sMapper", ModelNameUtils.stripSuffix(jsonModel.getName()));

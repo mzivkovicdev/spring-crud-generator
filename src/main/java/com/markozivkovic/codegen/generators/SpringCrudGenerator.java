@@ -24,22 +24,24 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String MAPPER = "mapper";
     private static final String CONTROLLER = "controller";
     private static final String DOCKER_FILE = "dockerfile";
+    private static final String SWAGGER = "swagger";
 
     private final Map<String, CodeGenerator> GENERATORS;
 
     public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites,
             final ProjectMetadata projectMetadata) {
-        this.GENERATORS = Map.of(
-            ENUM, new EnumGenerator(),
-            JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites),
-            JPA_REPOSITORY, new JpaRepositoryGenerator(),
-            EXCEPTION, new ExceptionGenerator(),
-            JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entites),
-            BUSINESS_SERVICE, new BusinessServiceGenerator(entites),
-            TRANSFER_OBJECT, new TransferObjectGenerator(entites),
-            MAPPER, new MapperGenerator(entites),
-            CONTROLLER, new RestControllerGenerator(entites),
-            DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)
+        this.GENERATORS = Map.ofEntries(
+            Map.entry(ENUM, new EnumGenerator()),
+            Map.entry(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites)),
+            Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator()),
+            Map.entry(EXCEPTION, new ExceptionGenerator()),
+            Map.entry(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entites)),
+            Map.entry(BUSINESS_SERVICE, new BusinessServiceGenerator(entites)),
+            Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(entites)),
+            Map.entry(MAPPER, new MapperGenerator(entites)),
+            Map.entry(CONTROLLER, new RestControllerGenerator(entites)),
+            Map.entry(DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)),
+            Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entites))
         );
     }
 

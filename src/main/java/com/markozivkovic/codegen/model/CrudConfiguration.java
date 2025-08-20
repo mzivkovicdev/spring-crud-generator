@@ -9,18 +9,20 @@ public class CrudConfiguration {
     private Boolean optimisticLocking;
     private Boolean dockerfile;
     private Boolean cache;
+    private Boolean swagger;
     
     public CrudConfiguration() {
 
     }
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
-            final Boolean dockerfile, final Boolean cache) {
+            final Boolean dockerfile, final Boolean cache, final Boolean swagger) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
         this.dockerfile = dockerfile;
         this.cache = cache;
+        this.swagger = swagger;
     }
 
     public DatabaseType getDatabase() {
@@ -80,6 +82,19 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Boolean isSwagger() {
+        return this.swagger;
+    }
+
+    public Boolean getSwagger() {
+        return this.swagger;
+    }
+
+    public CrudConfiguration setSwagger(final Boolean swagger) {
+        this.swagger = swagger;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -92,12 +107,13 @@ public class CrudConfiguration {
                 Objects.equals(javaVersion, crudConfiguration.javaVersion) &&
                 Objects.equals(optimisticLocking, crudConfiguration.optimisticLocking) &&
                 Objects.equals(dockerfile, crudConfiguration.dockerfile) &&
-                Objects.equals(cache, crudConfiguration.cache);
+                Objects.equals(cache, crudConfiguration.cache) &&
+                Objects.equals(swagger, crudConfiguration.swagger);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(database, javaVersion, optimisticLocking, dockerfile, cache);
+        return Objects.hash(database, javaVersion, optimisticLocking, dockerfile, cache, swagger);
     }
 
     @Override
@@ -108,12 +124,14 @@ public class CrudConfiguration {
             ", optimisticLocking='" + isOptimisticLocking() + "'" +
             ", dockerfile='" + isDockerfile() + "'" +
             ", cache='" + isCache() + "'" +
+            ", swagger='" + isSwagger() + "'" +
             "}";
     }    
 
     public enum DatabaseType {
         MYSQL,
-        POSTGRESQL;
+        POSTGRESQL,
+        MSSQL;
     }
 
 }

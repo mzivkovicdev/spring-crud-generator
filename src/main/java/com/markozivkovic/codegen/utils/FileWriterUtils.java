@@ -33,15 +33,21 @@ public class FileWriterUtils {
             directory.mkdirs();
         }
 
-        final File file = new File(directory, fileName + ".java");
+        final File file;
+
+        if (!fileName.contains(".")) {
+            file = new File(directory, fileName + ".java");
+        } else {
+            file = new File(directory, fileName);
+        }
 
         try (final FileWriter writer = new FileWriter(file)) {
             writer.write(content);
-            LOGGER.info("Generated class: {}", fileName);
+            LOGGER.info("Generated : {}", fileName);
         } catch (final IOException e) {
-            LOGGER.error("Failed to generate class {}: {}", fileName, e.getMessage());
+            LOGGER.error("Failed to generate file {}: {}", fileName, e.getMessage());
             throw new RuntimeException(
-                String.format("Failed to generate class file: %s", fileName), e
+                String.format("Failed to generate file: %s", fileName), e
             );
         }
     }
