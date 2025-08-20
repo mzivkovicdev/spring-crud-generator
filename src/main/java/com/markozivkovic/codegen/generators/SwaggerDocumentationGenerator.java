@@ -48,73 +48,151 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
 
         if (GeneratorContext.isGenerated(SWAGGER)) { return; }
 
+        LOGGER.info("Generating Swagger documentation");
+
         final String pathToSwaggerDocs = String.format("%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES);
 
-        entities.forEach(e -> {
-            if (!FieldUtils.isAnyFieldId(e.getFields())) {
-                LOGGER.warn("Model {} has no ID field defined. Skipping Swagger documentation generation.", e.getName());
-                return;
-            }
+        entities.stream()
+            .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
+            .forEach(e -> this.generateObjects(e, pathToSwaggerDocs));
 
-            final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
-            final Map<String, Object> model = new HashMap<>();
-            model.put("schemaName", e.getName());
-            if (StringUtils.isNotBlank(e.getDescription())) {
-                model.put("description", e.getDescription());
-            }
+        final List<ModelDefinition> relationModels = entities.stream()
+                .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
+                .flatMap(e -> e.getFields().stream())
+                .filter(e -> Objects.nonNull(e.getRelation()))
+                .distinct()
+                .map(relationField -> {
+                    return this.entities.stream()
+                        .filter(e -> e.getName().equals(relationField.getType()))
+                        .findFirst()
+                        .orElseThrow();
+                }).collect(Collectors.toList());
 
-            final List<Map<String, Object>> properties = e.getFields().stream()
-                    .map(field -> SwaggerUtils.toSwaggerProperty(field))
-                    .collect(Collectors.toList());
+        relationModels.forEach(relationModel -> 
+            this.generateRelationInputModels(relationModel, pathToSwaggerDocs)
+        );
 
-            model.put("properties", properties);
-
-            final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
-                "swagger/schema/object-template.ftl", model
-            );
-            final String subDir = String.format("%s/%s", SWAGGER, "components/schemas");
-
-            FileWriterUtils.writeToFile(
-                pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
-            );
-        });
-
-        entities.forEach(e -> {
-
-            if (!FieldUtils.isAnyFieldId(e.getFields())) {
-                LOGGER.warn("Model {} has no ID field defined. Skipping Swagger documentation generation.", e.getName());
-                return;
-            }
-
-            final List<FieldDefinition> relations = FieldUtils.extractRelationFields(e.getFields());
-            final List<String> schemaNames = relations.stream()
-                    .map(FieldDefinition::getType)
-                    .filter(StringUtils::isNotBlank)
-                    .map(ModelNameUtils::stripSuffix)
-                    .map(StringUtils::uncapitalize)
-                    .distinct()
-                    .collect(Collectors.toList());
-            schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.stripSuffix(e.getName())));
-
-            final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(e);
-            context.put("create", createEndpoint(e));
-            context.put("getAll", getAllEndpoint(e));
-            context.put("getById", getByIdEndpoint(e));
-            context.put("deleteById", deleteByIdEndpoint(e));
-            context.put("updateById", updateByIdEndpoint(e));
-            context.put("schemaNames", schemaNames);
-
-            final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
-            final String swaggerDocumentation = FreeMarkerTemplateProcessorUtils.processTemplate(
-                    "swagger/swagger-template.ftl", context
-            );
-
-            FileWriterUtils.writeToFile(
-                    pathToSwaggerDocs, SWAGGER, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerDocumentation
-            );
-        });
+        entities.stream()
+            .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
+            .forEach(e -> this.generateSwaggerDocumentation(relationModels, e, pathToSwaggerDocs));
 
         GeneratorContext.markGenerated(SWAGGER);
+
+        LOGGER.info("Swagger documentation generated successfully at: {}", pathToSwaggerDocs);
+    }
+
+    /**
+     * Generates swagger schema for the given model. The generated schema
+     * will have one property for each field in the given model.
+     *
+     * @param e the model for which to generate the swagger schema
+     * @param pathToSwaggerDocs the path to the swagger documentation directory
+     */
+    private void generateObjects(final ModelDefinition e, final String pathToSwaggerDocs) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
+        final Map<String, Object> model = new HashMap<>();
+        model.put("schemaName", e.getName());
+        if (StringUtils.isNotBlank(e.getDescription())) {
+            model.put("description", e.getDescription());
+        }
+
+        final List<Map<String, Object>> properties = e.getFields().stream()
+                .map(field -> SwaggerUtils.toSwaggerProperty(field))
+                .collect(Collectors.toList());
+
+        model.put("properties", properties);
+
+        final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
+            "swagger/schema/object-template.ftl", model
+        );
+        final String subDir = String.format("%s/%s", SWAGGER, "components/schemas");
+
+        FileWriterUtils.writeToFile(
+            pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
+        );
+    }
+
+    /**
+     * Generates swagger documentation for the given model. The generated documentation
+     * will include endpoints for creating, retrieving all, retrieving by ID, deleting by ID,
+     * and updating by ID. If the model has any relation fields, the generated documentation
+     * will also include endpoints for creating, retrieving, deleting, and updating
+     * relation models.
+     *
+     * @param relationModels the list of models that are relation models
+     * @param e the model to generate swagger documentation for
+     * @param pathToSwaggerDocs the path to the swagger documentation directory
+     */
+    private void generateSwaggerDocumentation(final List<ModelDefinition> relationModels, final ModelDefinition e,
+            final String pathToSwaggerDocs) {
+
+        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(e.getFields());
+        final List<String> schemaNames = relations.stream()
+                .map(FieldDefinition::getType)
+                .filter(StringUtils::isNotBlank)
+                .map(ModelNameUtils::stripSuffix)
+                .map(StringUtils::uncapitalize)
+                .distinct()
+                .collect(Collectors.toList());
+        schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.stripSuffix(e.getName())));
+        
+        final List<String> relationInputSchemaNames = relationModels.stream()
+                .map(ModelDefinition::getName)
+                .map(ModelNameUtils::stripSuffix)
+                .map(StringUtils::uncapitalize)
+                .map(name -> String.format("%sInput", name))
+                .collect(Collectors.toList());
+        schemaNames.addAll(relationInputSchemaNames);
+
+        final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(e);
+        context.put("create", createEndpoint(e));
+        context.put("getAll", getAllEndpoint(e));
+        context.put("getById", getByIdEndpoint(e));
+        context.put("deleteById", deleteByIdEndpoint(e));
+        context.put("updateById", updateByIdEndpoint(e));
+        context.put("schemaNames", schemaNames);
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
+        final String swaggerDocumentation = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "swagger/swagger-template.ftl", context
+        );
+
+        FileWriterUtils.writeToFile(
+                pathToSwaggerDocs, SWAGGER, String.format("%s-api.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerDocumentation
+        );
+    }
+
+    /**
+     * Generates swagger schema for the input transfer object of the given relation model. The schema will have one
+     * property, "id", which is the ID of the relation model.
+     *
+     * @param relationModel the relation model
+     * @param pathToSwaggerDocs the path to the swagger documentation directory
+     */
+    private void generateRelationInputModels(final ModelDefinition relationModel, final String pathToSwaggerDocs) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(relationModel.getName());
+        final Map<String, Object> model = new HashMap<>();
+        model.put("schemaName", relationModel.getName());
+        if (StringUtils.isNotBlank(relationModel.getDescription())) {
+            model.put("description", relationModel.getDescription());
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(relationModel.getFields());
+        final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
+        idProperty.put("name", "id");
+
+        model.put("properties", List.of(idProperty));
+
+        final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
+            "swagger/schema/object-template.ftl", model
+        );
+        final String subDir = String.format("%s/%s", SWAGGER, "components/schemas");
+
+        FileWriterUtils.writeToFile(
+            pathToSwaggerDocs, subDir, String.format("%sInput.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
+        );
     }
 
     /**
