@@ -151,7 +151,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         context.put("getById", getByIdEndpoint(e));
         context.put("deleteById", deleteByIdEndpoint(e));
         context.put("updateById", updateByIdEndpoint(e));
-        context.put("addRelations", addRelationEndpoints(e));
+        context.put("relationEndpoints", relationEndpoints(e));
         context.put("schemaNames", schemaNames);
 
         final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
@@ -202,7 +202,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      * @param modelDefinition the model definition
      * @return a string containing the swagger documentation for the add relation endpoints
      */
-    private String addRelationEndpoints(final ModelDefinition modelDefinition) {
+    private String relationEndpoints(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(modelDefinition);
 

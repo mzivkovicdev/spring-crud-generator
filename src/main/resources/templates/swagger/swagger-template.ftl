@@ -29,7 +29,7 @@ paths:
     ${getById}
     ${updateById}
     ${deleteById}
-  <#if addRelations??>${addRelations}</#if>
+  <#if relationEndpoints??>${relationEndpoints}</#if>
 components:
   schemas:
 <#list schemaNames as s>
