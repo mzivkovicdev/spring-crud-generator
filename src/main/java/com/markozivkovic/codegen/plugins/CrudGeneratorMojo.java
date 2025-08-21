@@ -50,10 +50,6 @@ public class CrudGeneratorMojo extends AbstractMojo {
                     .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
                     .build();
 
-            System.out.println("----------------------------------------");
-            System.out.println("Project base directory: " + projectBaseDir.getAbsolutePath());
-            System.out.println("----------------------------------------");
-
             final CrudSpecification spec = yamlMapper.readValue(new File(inputSpecFile), CrudSpecification.class);
             final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir.getAbsolutePath());
             final SpringCrudGenerator generator = new SpringCrudGenerator(spec.getConfiguration(), spec.getEntities(), projectMetadata);

@@ -10,19 +10,21 @@ public class CrudConfiguration {
     private Boolean dockerfile;
     private Boolean cache;
     private Boolean swagger;
+    private Boolean openApiCodegen;
     
     public CrudConfiguration() {
 
     }
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
-            final Boolean dockerfile, final Boolean cache, final Boolean swagger) {
+            final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
         this.dockerfile = dockerfile;
         this.cache = cache;
         this.swagger = swagger;
+        this.openApiCodegen = openApiCodegen;
     }
 
     public DatabaseType getDatabase() {
@@ -95,6 +97,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Boolean getOpenApiCodegen() {
+        return this.openApiCodegen;
+    }
+
+    public CrudConfiguration setOpenApiCodegen(final Boolean swaggerCodegen) {
+        this.openApiCodegen = swaggerCodegen;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -108,12 +119,15 @@ public class CrudConfiguration {
                 Objects.equals(optimisticLocking, crudConfiguration.optimisticLocking) &&
                 Objects.equals(dockerfile, crudConfiguration.dockerfile) &&
                 Objects.equals(cache, crudConfiguration.cache) &&
-                Objects.equals(swagger, crudConfiguration.swagger);
+                Objects.equals(swagger, crudConfiguration.swagger) &&
+                Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(database, javaVersion, optimisticLocking, dockerfile, cache, swagger);
+        return Objects.hash(
+            database, javaVersion, optimisticLocking, dockerfile, cache, swagger, openApiCodegen
+        );
     }
 
     @Override
@@ -125,6 +139,7 @@ public class CrudConfiguration {
             ", dockerfile='" + isDockerfile() + "'" +
             ", cache='" + isCache() + "'" +
             ", swagger='" + isSwagger() + "'" +
+            ", openApiCodegen='" + getOpenApiCodegen() + "'" +
             "}";
     }    
 

@@ -12,19 +12,29 @@
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
+    <swagger-parser.version>1.0.75</swagger-parser.version>
+    <openapi-generator.version>7.14.0</openapi-generator.version>
     <jackson-dataformat-yaml.version>2.19.2</jackson-dataformat-yaml.version>
     <slf4j-api.version>2.0.17</slf4j-api.version>
     <freemarker.version>2.3.34</freemarker.version>
     <maven-plugin-annotations.version>3.15.1</maven-plugin-annotations.version>
     <maven-plugin-api.version>4.0.0-rc-4</maven-plugin-api.version>
+    <maven-plugin-plugin.version>3.15.1</maven-plugin-plugin.version>
     <exec-maven-plugin.version>3.5.1</exec-maven-plugin.version>
   </properties>
 
   <dependencies>
+
     <dependency>
         <groupId>com.fasterxml.jackson.dataformat</groupId>
         <artifactId>jackson-dataformat-yaml</artifactId>
         <version>${jackson-dataformat-yaml.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>io.swagger</groupId>
+        <artifactId>swagger-parser</artifactId>
+        <version>${swagger-parser.version}</version>
     </dependency>
 
     <dependency>
@@ -35,16 +45,22 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.maven.plugin-tools</groupId>
-      <artifactId>maven-plugin-annotations</artifactId>
-      <version>${maven-plugin-annotations.version}</version>
-      <scope>provided</scope>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${maven-plugin-annotations.version}</version>
+        <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.freemarker</groupId>
-      <artifactId>freemarker</artifactId>
-      <version>${freemarker.version}</version>
+        <groupId>org.freemarker</groupId>
+        <artifactId>freemarker</artifactId>
+        <version>${freemarker.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator</artifactId>
+        <version>${openapi-generator.version}</version>
     </dependency>
 
     <dependency>
@@ -61,10 +77,10 @@
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>3.8.1</version>
+        <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -73,7 +89,10 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-plugin-plugin</artifactId>
-            <version>3.10.2</version>
+            <version>${maven-plugin-plugin.version}</version>
+            <configuration>
+                <goalPrefix>spring-crud-generator</goalPrefix>
+            </configuration>
             <executions>
                 <execution>
                     <id>default-descriptor</id>
