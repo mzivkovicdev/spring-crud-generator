@@ -13,7 +13,7 @@ import com.markozivkovic.codegen.model.ProjectMetadata;
 public class SpringCrudGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringCrudGenerator.class);
-
+    
     private static final String ENUM = "enum";
     private static final String JPA_MODEL = "jpa-model";
     private static final String JPA_REPOSITORY = "jpa-repository";
@@ -25,6 +25,7 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String CONTROLLER = "controller";
     private static final String DOCKER_FILE = "dockerfile";
     private static final String SWAGGER = "swagger";
+    private static final String OPENAPI_CODEGEN = "openapi-codegen";
 
     private final Map<String, CodeGenerator> GENERATORS;
 
@@ -41,7 +42,8 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(MAPPER, new MapperGenerator(entites)),
             Map.entry(CONTROLLER, new RestControllerGenerator(entites)),
             Map.entry(DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)),
-            Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entites))
+            Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entites)),
+            Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entites))
         );
     }
 
