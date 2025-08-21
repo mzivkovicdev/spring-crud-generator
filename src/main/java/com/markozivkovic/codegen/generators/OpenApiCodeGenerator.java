@@ -1,5 +1,7 @@
 package com.markozivkovic.codegen.generators;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,7 +30,6 @@ public class OpenApiCodeGenerator implements CodeGenerator {
 
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
     private static final String OPEN_API_GENERATOR_IGNORE = ".openapi-generator-ignore";
-
     private static final String SRC_MAIN_RESOURCES_SWAGGER = "src/main/resources/swagger";
     
     private final CrudConfiguration configuration;
@@ -65,25 +66,16 @@ public class OpenApiCodeGenerator implements CodeGenerator {
                 
                 final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
                 final String apiSpecPath = String.format("%s/%s-api.yaml", pathToSwaggerDocs, StringUtils.uncapitalize(strippedModelName));
-                final SwaggerParseResult parsed = new OpenAPIV3Parser()
-                        .readLocation(apiSpecPath, null, null);
-
-                if (parsed.getOpenAPI() == null) {
-                    throw new IllegalStateException(
-                        String.format(
-                            "OpenAPI parse failed for %s -> %s", apiSpecPath, parsed.getMessages()
-                        )
-                    );
-                }
-
+                final Path apiSpecFilePath = Paths.get(apiSpecPath);
+                
                 final String outputPath = String.format("%s/generated/%s", outputDir, StringUtils.uncapitalize(strippedModelName));
                 final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputPath);
+                
                 final CodegenConfigurator cfg = new CodegenConfigurator()
-                        .setInputSpec(apiSpecPath)
+                        .setInputSpec(apiSpecFilePath.toUri().toString())
                         .setGeneratorName("spring")
                         .setLibrary("spring-boot")
                         .setOutputDir(projectMetadata.getProjectBaseDir())
-                        .setModelNamePrefix(StringUtils.uncapitalize(strippedModelName))
                         .setApiPackage(String.format("%s.api", packagePath))
                         .setModelPackage(String.format("%s.model", packagePath));
 
@@ -91,8 +83,7 @@ public class OpenApiCodeGenerator implements CodeGenerator {
                 cfg.addAdditionalProperty("interfaceOnly", true);
                 cfg.addAdditionalProperty("hideGenerationTimestamp", true);
 
-                ClientOptInput opts = cfg.toClientOptInput();
-                opts.openAPI(parsed.getOpenAPI());
+                final ClientOptInput opts = cfg.toClientOptInput();
                 new DefaultGenerator().opts(opts).generate();
             });
 
