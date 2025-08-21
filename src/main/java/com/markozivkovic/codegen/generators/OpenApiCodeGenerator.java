@@ -6,12 +6,15 @@ import java.util.Objects;
 import org.openapitools.codegen.ClientOptInput;
 import org.openapitools.codegen.DefaultGenerator;
 import org.openapitools.codegen.config.CodegenConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.ProjectMetadata;
 import com.markozivkovic.codegen.utils.FieldUtils;
+import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
@@ -21,7 +24,10 @@ import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
 public class OpenApiCodeGenerator implements CodeGenerator {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiCodeGenerator.class);
+
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
+    private static final String OPEN_API_GENERATOR_IGNORE = ".openapi-generator-ignore";
 
     private static final String SRC_MAIN_RESOURCES_SWAGGER = "src/main/resources/swagger";
     
@@ -47,6 +53,10 @@ public class OpenApiCodeGenerator implements CodeGenerator {
             return;
         }
 
+        LOGGER.info("Generating OpenAPI code");
+
+        this.generateOpenApiGeneratorIgnore();
+        
         final String pathToSwaggerDocs = String.format("%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES_SWAGGER);
 
         entities.stream()
@@ -71,10 +81,15 @@ public class OpenApiCodeGenerator implements CodeGenerator {
                 final CodegenConfigurator cfg = new CodegenConfigurator()
                         .setInputSpec(apiSpecPath)
                         .setGeneratorName("spring")
-                        .setOutputDir(outputPath)
+                        .setLibrary("spring-boot")
+                        .setOutputDir(projectMetadata.getProjectBaseDir())
                         .setModelNamePrefix(StringUtils.uncapitalize(strippedModelName))
                         .setApiPackage(String.format("%s.api", packagePath))
                         .setModelPackage(String.format("%s.model", packagePath));
+
+                cfg.addAdditionalProperty("useSpringBoot3", true);
+                cfg.addAdditionalProperty("interfaceOnly", true);
+                cfg.addAdditionalProperty("hideGenerationTimestamp", true);
 
                 ClientOptInput opts = cfg.toClientOptInput();
                 opts.openAPI(parsed.getOpenAPI());
@@ -82,6 +97,23 @@ public class OpenApiCodeGenerator implements CodeGenerator {
             });
 
         GeneratorContext.markGenerated(OPENAPI_CODEGEN);
+
+        LOGGER.info("OpenAPI code generation completed");
+    }
+
+    /**
+     * Writes a .openapi-generator-ignore file to the project base directory.
+     * This file tells the OpenAPI Generator to ignore the pom.xml file.
+     */
+    private void generateOpenApiGeneratorIgnore() {
+
+        final String fileContent = "pom.xml";
+        
+        FileWriterUtils.writeToFile(
+                projectMetadata.getProjectBaseDir(),
+                OPEN_API_GENERATOR_IGNORE,
+                fileContent
+        );
     }
     
 }

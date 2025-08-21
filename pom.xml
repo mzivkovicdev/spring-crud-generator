@@ -24,6 +24,7 @@
   </properties>
 
   <dependencies>
+
     <dependency>
         <groupId>com.fasterxml.jackson.dataformat</groupId>
         <artifactId>jackson-dataformat-yaml</artifactId>
@@ -89,6 +90,9 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-plugin-plugin</artifactId>
             <version>${maven-plugin-plugin.version}</version>
+            <configuration>
+                <goalPrefix>spring-crud-generator</goalPrefix>
+            </configuration>
             <executions>
                 <execution>
                     <id>default-descriptor</id>
