@@ -11,13 +11,15 @@ public class CrudConfiguration {
     private Boolean cache;
     private Boolean swagger;
     private Boolean openApiCodegen;
+    private Boolean graphQl;
     
     public CrudConfiguration() {
 
     }
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
-            final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen) {
+            final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
+            final Boolean graphQl) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
@@ -25,6 +27,7 @@ public class CrudConfiguration {
         this.cache = cache;
         this.swagger = swagger;
         this.openApiCodegen = openApiCodegen;
+        this.graphQl = graphQl;
     }
 
     public DatabaseType getDatabase() {
@@ -106,6 +109,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Boolean getGraphQl() {
+        return this.graphQl;
+    }
+
+    public CrudConfiguration setGraphQl(final Boolean graphQl) {
+        this.graphQl = graphQl;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -120,13 +132,15 @@ public class CrudConfiguration {
                 Objects.equals(dockerfile, crudConfiguration.dockerfile) &&
                 Objects.equals(cache, crudConfiguration.cache) &&
                 Objects.equals(swagger, crudConfiguration.swagger) &&
-                Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen);
+                Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen) &&
+                Objects.equals(graphQl, crudConfiguration.graphQl);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-            database, javaVersion, optimisticLocking, dockerfile, cache, swagger, openApiCodegen
+            database, javaVersion, optimisticLocking, dockerfile, cache, swagger,
+            openApiCodegen, graphQl
         );
     }
 
@@ -140,6 +154,7 @@ public class CrudConfiguration {
             ", cache='" + isCache() + "'" +
             ", swagger='" + isSwagger() + "'" +
             ", openApiCodegen='" + getOpenApiCodegen() + "'" +
+            ", graphQl='" + getGraphQl() + "'" +
             "}";
     }    
 
