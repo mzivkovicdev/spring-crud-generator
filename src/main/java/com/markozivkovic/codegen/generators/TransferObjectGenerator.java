@@ -10,6 +10,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -26,17 +27,26 @@ public class TransferObjectGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(TransferObjectGenerator.class);
 
     private static final String TRANSFER_OBJECTS = "transferobjects";
+    
+    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
+    private static final String TRANSFER_OBJECTS_GRAPHQL_HELPERS_PACKAGE = TRANSFER_OBJECTS_GRAPHQL_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS_GRAPHQL = "transferobjects/graphql";
+    private static final String TRANSFER_OBJECTS_GRAPHQL_HELPERS = "transferobjects/graphql/helpers";
+    
     private static final String TRANSFER_OBJECTS_PACKAGE = "." + TRANSFER_OBJECTS;
     private static final String TRANSFER_OBJECTS_HELPERS = "transferobjects/helpers";
     private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE =  TRANSFER_OBJECTS_PACKAGE + ".helpers";
 
     private static boolean PAGE_TO_GENERATED = false;
 
+    private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
 
-    public TransferObjectGenerator(final List<ModelDefinition> entities) {
+    public TransferObjectGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
         this.entities = entities;
+        this.configuration = configuration;
     }
+
 
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
@@ -63,13 +73,38 @@ public class TransferObjectGenerator implements CodeGenerator {
                                 )
                             ));
                     
-                    this.generateHelperTO(jsonModel, outputDir, packagePath);
+                    this.generateHelperTO(jsonModel, outputDir, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE, TRANSFER_OBJECTS_HELPERS);
+
+                    if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+                        this.generateHelperTO(jsonModel, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_HELPERS_PACKAGE, TRANSFER_OBJECTS_GRAPHQL_HELPERS);
+                    }
                 });
+
+        this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_PACKAGE, TRANSFER_OBJECTS);
+        
+        if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+            this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL);
+        }
+
+        generatePageTO(packagePath, outputDir);
+        generateInputTO(modelDefinition, outputDir, packagePath);
+        
+        LOGGER.info("Generator transfer object for model: {}", modelDefinition.getName());
+    }
+
+    /**
+     * Generates a transfer object for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @param outputDir       the directory where the generated class will be written
+     * @param packagePath     the package path of the directory where the generated class will be written
+     */
+    public void generateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
 
         final String transferObjName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_PACKAGE));
+        sb.append(String.format(PACKAGE, packagePath));
 
         final String imports = ImportUtils.getBaseImport(modelDefinition, false);
         sb.append(imports);
@@ -88,12 +123,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         
         sb.append(transferObjectTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, TRANSFER_OBJECTS, transferObjName, sb.toString());
-
-        generatePageTO(packagePath, outputDir);
-        generateInputTO(modelDefinition, outputDir, packagePath);
-        
-        LOGGER.info("Generator transfer object for model: {}", modelDefinition.getName());
+        FileWriterUtils.writeToFile(outputDir, subDir, transferObjName, sb.toString());
     }
 
     /**
@@ -103,12 +133,12 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param outputDir the directory where the generated class will be written
      * @param packagePath the package path of the directory where the generated class will be written
      */
-    public void generateHelperTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
+    public void generateHelperTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
         
         final String transferObjName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE));
+        sb.append(String.format(PACKAGE, packagePath));
 
         final String imports = ImportUtils.getBaseImport(modelDefinition, false);
         sb.append(imports);
@@ -127,7 +157,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         
         sb.append(transferObjectTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, TRANSFER_OBJECTS_HELPERS, transferObjName, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, subDir, transferObjName, sb.toString());
     }
 
     /**
