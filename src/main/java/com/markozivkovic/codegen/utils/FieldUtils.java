@@ -7,6 +7,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.RelationDefinition;
@@ -25,6 +28,8 @@ public class FieldUtils {
     private static final String MANY_TO_MANY = "ManyToMany";
 
     private static final Pattern pattern = Pattern.compile("^JSONB?\\[(.+)]$");
+    private static final ObjectMapper mapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
 
     private FieldUtils() {
         
@@ -697,6 +702,24 @@ public class FieldUtils {
         }
         
         return fieldDefinition.getType();
+    }
+
+    /**
+     * Creates a deep copy of the given field definition.
+     * 
+     * @param fieldDefinition The field definition to clone.
+     * @return A deep copy of the given field definition.
+     */
+    public static FieldDefinition cloneFieldDefinition(final FieldDefinition fieldDefinition) {
+        
+        try {
+            final String jsonValue = mapper.writeValueAsString(fieldDefinition);
+            return mapper.readValue(
+                jsonValue, FieldDefinition.class
+            );
+        } catch (final JsonProcessingException e) {
+            throw new RuntimeException("Failed to clone FieldDefinition", e);
+        }
     }
     
 }

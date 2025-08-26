@@ -73,7 +73,11 @@ public class GraphQlGenerator implements CodeGenerator {
 
         final List<FieldDefinition> fields = e.getFields().stream()
             .map(field -> {
-                return field.setType(ModelNameUtils.stripSuffix(field.getType()));
+                if (Objects.nonNull(field.getRelation())) {
+                    return FieldUtils.cloneFieldDefinition(field)
+                        .setType(ModelNameUtils.stripSuffix(field.getType()));
+                }
+                return field;
             }).collect(Collectors.toList());
         
         final Map<String, Object> context = Map.of(
