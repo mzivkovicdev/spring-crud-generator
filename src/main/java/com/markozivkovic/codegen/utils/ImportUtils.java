@@ -66,6 +66,7 @@ public class ImportUtils {
     private static final String MAPPERS_PACKAGE = ".mappers";
     private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql.helpers";
 
     private static final String INVALID_RESOURCE_STATE_EXCEPTION = "InvalidResourceStateException";
     private static final String RESOURCE_NOT_FOUND_EXCEPTION = "ResourceNotFoundException";
@@ -253,22 +254,23 @@ public class ImportUtils {
      */
     public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir) {
 
-        return computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, true, false);
+        return computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, true, false, false);
     }
 
     /**
      * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
      * if any.
      * 
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
+     * @param modelDefinition  the model definition containing the class name, table name, and field definitions
+     * @param outputDir        the directory where the generated code will be written
      * @param importJsonFields whether to include the helper entities for JSON fields
-     * @param transferObjects  whether to include the transfer objects
+     * @param restTOs          whether to include the REST transfer objects
+     * @param graphqlTOs       whether to include the GraphQL transfer objects
      * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
      *         transfer objects.
      */
     public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
-            final boolean importJsonFields, final boolean transferObjects) {
+            final boolean importJsonFields, final boolean restTOs, final boolean graphqlTOs) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
@@ -296,7 +298,9 @@ public class ImportUtils {
             jsonFields.stream()
                     .map(FieldUtils::extractJsonFieldName)
                     .forEach(fieldName -> {
-                        if (transferObjects) {
+                        if (graphqlTOs) {
+                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE + "." + fieldName + "TO"));
+                        } else if (restTOs) {
                             imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + fieldName + "TO"));
                         } else {
                             imports.add(String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + fieldName));
