@@ -6,17 +6,21 @@ import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.model.CrudConfiguration;
+import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.StringUtils;
 
 public class MapperGenerator implements CodeGenerator {
     
@@ -104,12 +108,43 @@ public class MapperGenerator implements CodeGenerator {
             transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + transferObjectName);
         }
 
+        final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final String helperMapperImports = jsonFields.stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .map(field -> String.format(
+                    IMPORT, packagePath + (isGraphQl ? MAPPERS_GRAPHQL_HELPERS_PACKAGE : MAPPERS_HELPERS_PACKAGE) + "." + field + "Mapper"
+                ))
+                .collect(Collectors.joining(", "));
+
         final Map<String, Object> context = new HashMap<>();
         context.put("modelImport", modelImport);
         context.put("transferObjectImport", transferObjectImport);
+        
+        if (StringUtils.isNotBlank(helperMapperImports)) {
+            context.put("helperMapperImports", helperMapperImports);
+        }
+        
         context.put("modelName", modelDefinition.getName());
         context.put("mapperName", mapperName);
         context.put("transferObjectName", transferObjectName);
+        
+        if (!relationFields.isEmpty() || !jsonFields.isEmpty()) {
+            final String mapperParameters = Stream.concat(relationFields.stream(), jsonFields.stream())
+                    .map(field -> {
+                        
+                        if (FieldUtils.isJsonField(field)) {
+                            return FieldUtils.extractJsonFieldName(field);
+                        } else {
+                            return ModelNameUtils.stripSuffix(field.getType());
+                        }
+                    })
+                    .map(field -> String.format("%sMapper.class", field))
+                    .distinct()
+                    .collect(Collectors.joining(", "));
+            context.put("parameters", mapperParameters);
+            LOGGER.info("Mapper parameters: {}", mapperParameters);
+        }
 
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);
 

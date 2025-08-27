@@ -2,8 +2,8 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 
-${modelImport}${transferObjectImport}
-@Mapper
+<#if helperMapperImports??>${helperMapperImports}</#if>${modelImport}${transferObjectImport}
+@Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 
     ${transferObjectName} map${modelName}To${transferObjectName}(final ${modelName} model);
