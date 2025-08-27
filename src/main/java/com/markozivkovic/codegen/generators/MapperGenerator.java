@@ -10,6 +10,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -29,10 +30,19 @@ public class MapperGenerator implements CodeGenerator {
     private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_PACKAGE = ".transferobjects";
     private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
+    
+    private static final String MAPPERS_GRAPHQL = "mappers/graphql";
+    private static final String MAPPERS_GRAPHQL_HELPERS = "mappers/graphql/helpers";
+    private static final String MAPPERS_GRAPHQL_PACKAGE = ".mappers.graphql";
+    private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql";
+    private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = TRANSFER_OBJECTS_GRAPHQL_PACKAGE + ".helpers";
 
+    private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
 
-    public MapperGenerator(final List<ModelDefinition> entities) {
+    public MapperGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+        this.configuration = configuration;
         this.entities = entities;
     }
 
@@ -46,8 +56,6 @@ public class MapperGenerator implements CodeGenerator {
         LOGGER.info("Generating mapper for model: {}", modelDefinition.getName());
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String mapperName = String.format("%sMapper", ModelNameUtils.stripSuffix(modelDefinition.getName()));
-        final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
         modelDefinition.getFields().stream()
                 .filter(FieldUtils::isJsonField)
@@ -63,11 +71,38 @@ public class MapperGenerator implements CodeGenerator {
                                 )
                             ));
                     
-                    this.generateHelperMapper(jsonModel, outputDir, packagePath);
+                    this.generateHelperMapper(jsonModel, outputDir, packagePath, false);
+                    if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+                        this.generateHelperMapper(jsonModel, outputDir, packagePath, true);
+                    }
                 });
 
+        this.generateMapper(modelDefinition, outputDir, packagePath, false);
+        if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+            this.generateMapper(modelDefinition, outputDir, packagePath, true);
+        }
+    }
+
+    /**
+     * Generates a mapper class for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @param outputDir       the directory where the generated class will be written
+     * @param packagePath     the package path of the directory where the generated class will be written
+     */
+    private void generateMapper(final ModelDefinition modelDefinition, final String outputDir,
+            final String packagePath, final boolean isGraphQl) {
+
+        final String mapperName = String.format("%sMapper", ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
         final String modelImport = String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName());
-        final String transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + transferObjectName);
+        final String transferObjectImport;
+        
+        if (isGraphQl) {
+            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + transferObjectName);
+        } else {
+            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + transferObjectName);
+        }
 
         final Map<String, Object> context = new HashMap<>();
         context.put("modelImport", modelImport);
@@ -80,10 +115,10 @@ public class MapperGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + MAPPERS_PACKAGE))
+        sb.append(String.format(PACKAGE, isGraphQl ? (packagePath + MAPPERS_GRAPHQL_PACKAGE) : (packagePath + MAPPERS_PACKAGE)))
                 .append(mapperTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, MAPPERS, mapperName, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL : MAPPERS, mapperName, sb.toString());
     }
 
     /**
@@ -93,13 +128,19 @@ public class MapperGenerator implements CodeGenerator {
      * @param outputDir the directory where the generated class will be written
      * @param packagePath the package path of the directory where the generated class will be written
      */
-    private void generateHelperMapper(ModelDefinition jsonModel, String outputDir, String packagePath) {
+    private void generateHelperMapper(final ModelDefinition jsonModel, final String outputDir, final String packagePath,
+            final boolean isGraphQl) {
         
         final String mapperName = String.format("%sMapper", ModelNameUtils.stripSuffix(jsonModel.getName()));
         final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(jsonModel.getName()));
 
         final String modelImport = String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + jsonModel.getName());
-        final String transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + transferObjectName);
+        final String transferObjectImport;
+        if (isGraphQl) {
+            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE + "." + transferObjectName);
+        } else {
+            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + transferObjectName);
+        }
 
         final Map<String, Object> context = new HashMap<>();
         context.put("modelImport", modelImport);
@@ -112,10 +153,10 @@ public class MapperGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + MAPPERS_HELPERS_PACKAGE))
+        sb.append(String.format(PACKAGE, isGraphQl ? (packagePath + MAPPERS_GRAPHQL_HELPERS_PACKAGE) : (packagePath + MAPPERS_HELPERS_PACKAGE)))
                 .append(mapperTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, MAPPERS_HELPERS, mapperName, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL_HELPERS : MAPPERS_HELPERS, mapperName, sb.toString());
     }
 
 }

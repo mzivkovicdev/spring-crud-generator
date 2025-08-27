@@ -97,7 +97,5 @@ public class GraphQlGenerator implements CodeGenerator {
     }
 
     // TODO: GraphQL resolvers
-
-    // TODO: GraphQL mappers
     
 }
