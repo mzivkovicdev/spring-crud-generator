@@ -84,6 +84,8 @@ public class TransferObjectGenerator implements CodeGenerator {
         
         if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
             this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL);
+            this.generateCreateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL);
+            this.generateUpdateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL);
         }
 
         generatePageTO(packagePath, outputDir);
@@ -99,14 +101,63 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param outputDir       the directory where the generated class will be written
      * @param packagePath     the package path of the directory where the generated class will be written
      */
-    public void generateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
+    private void generateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
 
-        final String transferObjName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        generateTO(
+            modelDefinition, outputDir, packagePath, subDir, String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
+            TemplateContextUtils.computeTransferObjectContext(modelDefinition), false
+        );
+    }
+
+    /**
+     * Generates a create transfer object for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @param outputDir       the directory where the generated class will be written
+     * @param packagePath     the package path of the directory where the generated class will be written
+     * @param subDir          the sub directory where the generated class will be written
+     */
+    private void generateCreateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
+
+        generateTO(
+            modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
+            TemplateContextUtils.computeCreateTransferObjectContext(modelDefinition, this.entities), true
+        );
+    }
+
+    /**
+     * Generates an update transfer object for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @param outputDir       the directory where the generated class will be written
+     * @param packagePath     the package path of the directory where the generated class will be written
+     * @param subDir          the sub directory where the generated class will be written
+     */
+    private void generateUpdateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
+
+        generateTO(
+            modelDefinition, outputDir, packagePath, subDir, String.format("%sUpdateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
+            TemplateContextUtils.computeUpdateTransferObjectContext(modelDefinition), false
+        );
+    }
+
+    /**
+     * Generates a transfer object for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @param outputDir       the directory where the generated class will be written
+     * @param packagePath     the package path of the directory where the generated class will be written
+     * @param subDir          the sub directory where the generated class will be written
+     * @param transferObjName the name of the transfer object
+     * @param toContext       the map of context for the transfer object template
+     */
+    private void generateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir,
+            final String transferObjName, final Map<String, Object> toContext, final Boolean relationIdsImport) {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath));
 
-        final String imports = ImportUtils.getBaseImport(modelDefinition, false);
+        final String imports = ImportUtils.getBaseImport(modelDefinition, entities, relationIdsImport);
         sb.append(imports);
 
         final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(
@@ -118,7 +169,6 @@ public class TransferObjectGenerator implements CodeGenerator {
                 .append("\n");
         }
 
-        final Map<String, Object> toContext = TemplateContextUtils.computeTransferObjectContext(modelDefinition);
         final String transferObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("transferobject/transfer-object-template.ftl", toContext);
         
         sb.append(transferObjectTemplate);
@@ -133,7 +183,7 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param outputDir the directory where the generated class will be written
      * @param packagePath the package path of the directory where the generated class will be written
      */
-    public void generateHelperTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
+    private void generateHelperTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
         
         final String transferObjName = String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
 
@@ -167,7 +217,7 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param outputDir the directory where the generated class will be written
      * @param packagePath the package path to use as the prefix for the generated class
      */
-    public void generateInputTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
+    private void generateInputTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
         
         if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             return;
@@ -212,7 +262,7 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param packagePath the package path to use as the prefix for the generated class
      * @param outputDir the directory where the generated class will be written
      */
-    public static void generatePageTO(final String packagePath, final String outputDir) {
+    private static void generatePageTO(final String packagePath, final String outputDir) {
 
         if (!PAGE_TO_GENERATED) {
 

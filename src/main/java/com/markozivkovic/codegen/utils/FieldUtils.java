@@ -610,6 +610,65 @@ public class FieldUtils {
      * @param fields The list of fields to generate the input arguments from.
      * @return A list of strings representing the input arguments for a constructor or method without the final keyword.
      */
+    public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
+        
+        return fields.stream()
+                .map(field -> {
+
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String inputArg;
+                        final ModelDefinition modelDefinition = entities.stream()
+                                .filter(model -> model.getName().equals(field.getType()))
+                                .findFirst()
+                                .orElseThrow();
+                        final FieldDefinition relationId = extractIdField(modelDefinition.getFields());
+                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                            inputArg = String.format("List<%s> %sIds", relationId.getType(), field.getName());
+                        } else {
+                            inputArg = String.format("%s %sId", relationId.getType(), field.getName());
+                        }
+                        return inputArg;
+                    }
+
+                    if (isJsonField(field)) {
+                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
+                    }
+                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword
+     * for the updateInputTO of a model.
+     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
+     * <name> is the name of the field, for all fields that are not relations.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a constructor or method without the final keyword
+     *         for the updateInputTO of a model.
+     */
+    public static List<String> generateInputArgsWithoutFinalUpdateInputTO(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .map(field -> {
+                    if (isJsonField(field)) {
+                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
+                    }
+                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword.
+     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
+     * <name> is the name of the field.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a constructor or method without the final keyword.
+     */
     public static List<String> generateInputArgsWithoutFinal(final List<FieldDefinition> fields) {
         
         return fields.stream()

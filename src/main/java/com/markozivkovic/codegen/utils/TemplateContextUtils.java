@@ -376,6 +376,37 @@ public class TemplateContextUtils {
      * Creates a template context for a transfer object of a model.
      * 
      * @param modelDefinition the model definition containing the class and field details
+     * @param modelDefinitions the list of model definitions
+     * @return a template context for the transfer object
+     */
+    public static Map<String, Object> computeCreateTransferObjectContext(final ModelDefinition modelDefinition, final List<ModelDefinition> modelDefinitions) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Create");
+        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinalCreateInputTO(modelDefinition.getFields(), modelDefinitions));
+    
+        return context;
+    }
+
+    /**
+     * Creates a template context for a transfer object of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @return a template context for the transfer object
+     */
+    public static Map<String, Object> computeUpdateTransferObjectContext(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Update");
+        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(modelDefinition.getFields()));
+    
+        return context;
+    }
+
+    /**
+     * Creates a template context for a transfer object of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
      * @return a template context for the transfer object
      */
     public static Map<String, Object> computeTransferObjectContext(final ModelDefinition modelDefinition) {

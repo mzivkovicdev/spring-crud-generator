@@ -83,20 +83,37 @@ public class ImportUtils {
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects) {
 
-        return getBaseImport(modelDefinition, importObjects, false);
+        return getBaseImport(modelDefinition, List.of(), importObjects, false, false);
     }
 
     /**
-     * Generates a string of import statements based on the fields present in the given model definition, with options to include
-     * the java.util.Objects class and the java.util.List interface.
+     * Computes the necessary imports for the given model definition, including imports for the types of its fields,
+     * as well as imports for the types of its relations, if any.
      *
-     * @param modelDefinition The model definition containing field information used to determine necessary imports.
-     * @param importObjects   Whether to include the java.util.Objects import.
-     * @param importList      Whether to include the java.util.List import.
+     * @param modelDefinition the model definition containing field information used to determine necessary imports.
+     * @param entities        the list of all model definitions, used to determine the necessary imports for relations.
+     * @param realtionIds     whether to include the imports for the relation IDs.
      * @return A string containing the necessary import statements for the model.
      */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList) {
+    public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean realtionIds) {
 
+        return getBaseImport(modelDefinition, entities, false, false, realtionIds);
+    }
+
+    /**
+     * Computes the necessary imports for the given model definition, including imports for the types of its fields,
+     * as well as imports for the types of its relations, if any.
+     *
+     * @param modelDefinition the model definition containing field information used to determine necessary imports.
+     * @param entities        the list of all model definitions.
+     * @param importObjects   whether to include the java.util.Objects import.
+     * @param importList      whether to include the java.util.List import.
+     * @param relationIds     whether to include the UUID import if any of the relations have a UUID ID.
+     * @return A string containing the necessary import statements for the model.
+     */
+    private static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean importObjects,
+            final boolean importList, final boolean relationIds) {
+        
         final StringBuilder sb = new StringBuilder();
 
         final List<FieldDefinition> fields = modelDefinition.getFields();
@@ -108,6 +125,24 @@ public class ImportUtils {
         addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, JAVA_TIME_LOCAL_DATE_TIME);
         addIf(importObjects, imports, JAVA_UTIL_OBJECTS);
         addIf(FieldUtils.isAnyFieldUUID(fields), imports, JAVA_UTIL_UUID);
+
+        if (relationIds) {
+            modelDefinition.getFields().stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .forEach(field -> {
+
+                    final ModelDefinition relatedEntity = entities.stream()
+                            .filter(entity -> entity.getName().equals(field.getType()))
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                String.format(
+                                    "Related entity not found: %s", field.getType()
+                                )
+                            ));
+                    final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
+                    addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
+                });
+        }
         
         final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
                 FieldUtils.isAnyRelationManyToMany(fields);
@@ -126,6 +161,20 @@ public class ImportUtils {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Generates a string of import statements based on the fields present in the given model definition, with options to include
+     * the java.util.Objects class and the java.util.List interface.
+     *
+     * @param modelDefinition The model definition containing field information used to determine necessary imports.
+     * @param importObjects   Whether to include the java.util.Objects import.
+     * @param importList      Whether to include the java.util.List import.
+     * @return A string containing the necessary import statements for the model.
+     */
+    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList) {
+
+        return getBaseImport(modelDefinition, List.of(), importObjects, importList, false);
     }
 
     /**
@@ -207,6 +256,17 @@ public class ImportUtils {
         return computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, true, false);
     }
 
+    /**
+     * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
+     * if any.
+     * 
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @param importJsonFields whether to include the helper entities for JSON fields
+     * @param transferObjects  whether to include the transfer objects
+     * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
+     *         transfer objects.
+     */
     public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
             final boolean importJsonFields, final boolean transferObjects) {
 
