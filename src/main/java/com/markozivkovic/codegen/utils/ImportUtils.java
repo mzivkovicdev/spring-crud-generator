@@ -68,6 +68,10 @@ public class ImportUtils {
     private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql.helpers";
 
+    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql";
+    private static final String MAPPERS_GRAPHQL_PACKAGE = MAPPERS_PACKAGE + ".graphql";
+    private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
+
     private static final String INVALID_RESOURCE_STATE_EXCEPTION = "InvalidResourceStateException";
     private static final String RESOURCE_NOT_FOUND_EXCEPTION = "ResourceNotFoundException";
     
@@ -503,6 +507,63 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + modelWithoutSuffix + "TO"));
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
         imports.add(String.format(IMPORT, packagePath + MAPPERS_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for the given model definition, including UUID if any model has a UUID as its ID.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return A string containing the necessary import statements for the given model.
+     */
+    public static String computeResolverBaseImports(final ModelDefinition modelDefinition) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        if (FieldUtils.isIdFieldUUID(idField)) {
+            imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+        }
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for the given model definition, including the graphql mappers, graphql mappers helpers, and the page transfer object.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @return A string containing the necessary import statements for the given model.
+     */
+    public static String computeGraphQlResolverImports(final ModelDefinition modelDefinition, final String outputDir) {
+        
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
+            modelDefinition.getFields().stream()
+                .filter(field -> FieldUtils.isJsonField(field))
+                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .forEach(jsonField -> {
+                    imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_HELPERS_PACKAGE + "." + jsonField + "Mapper"));
+                });
+        }
+
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "TO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "CreateTO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "UpdateTO"));
+        imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
 
         return imports.stream()
                 .sorted()

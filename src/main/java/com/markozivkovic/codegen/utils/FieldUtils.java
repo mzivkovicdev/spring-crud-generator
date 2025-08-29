@@ -390,6 +390,79 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts the names of all fields from the given list that are not marked as ID fields
+     * and do not have a relation, and formats them as strings in the format expected by the
+     * resolver layer.
+     * 
+     * @param fields The list of fields to extract non-ID non-relation field names from.
+     * @return A list of strings representing the non-ID non-relation fields in the format
+     *         expected by the resolver layer.
+     */
+    public static List<String> extractNonIdNonRelationFieldNamesForResolver(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .map(field -> {
+                    if (isJsonField(field)) {
+                        return String.format(
+                            "%sMapper.map%sTOTo%s(input.%s())",
+                            StringUtils.uncapitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.uncapitalize(field.getResolvedType())
+                        );
+                    }
+
+                    return String.format("input.%s()", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that are not marked as ID fields
+     * and formats them as strings in the format expected by the resolver layer.
+     * 
+     * @param fields The list of fields to extract non-ID field names from.
+     * @return A list of strings representing the non-ID fields in the format expected by the
+     *         resolver layer.
+     */
+    public static List<String> extractNonIdFieldNamesForResolver(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .map(field -> {
+                    if (isJsonField(field)) {
+                        return String.format(
+                            "%sMapper.map%sTOTo%s(input.%s())",
+                            StringUtils.uncapitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.uncapitalize(field.getResolvedType())
+                        );
+                    }
+
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String inputArg;
+                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                            inputArg = String.format("input.%sIds()", field.getName());
+                        } else {
+                            inputArg = String.format("input.%sId()", field.getName());
+                        }
+
+                        return inputArg;
+                    }
+
+                    return String.format("input.%s()", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Extracts the names of all fields from the given list that are not marked as ID fields, and
      * formats them as Javadoc @param tags.
      * 

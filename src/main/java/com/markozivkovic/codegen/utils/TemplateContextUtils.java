@@ -31,6 +31,8 @@ public class TemplateContextUtils {
     private static final String JAVADOC_FIELDS = "javadocFields";
     private static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
     private static final String INPUT_FIELDS = "inputFields";
+    private static final String INPUT_FIELDS_WITHOUT_RELATIONS = "inputFieldsWithoutRelations";
+    private static final String INPUT_FIELDS_WITH_RELATIONS = "inputFieldsWithRelations";
     private static final String MODEL_NAME = "modelName";
     private static final String ID_TYPE = "idType";
     private static final String ID_FIELD = "idField";
@@ -660,7 +662,7 @@ public class TemplateContextUtils {
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
-        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put(ID_TYPE, idField.getType());
 
         return context;
@@ -789,6 +791,61 @@ public class TemplateContextUtils {
         context.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         context.put(ID_FIELD, idField.getName());
         context.put(ID_DESCRIPTION, Objects.nonNull(idField.getDescription()) ? idField.getDescription() : "");
+        
+        return context;
+    }
+
+    /**
+     * Computes a GraphQL query mapping template context for a model definition.
+     * 
+     * @param modelDefinition the model definition
+     * @return a GraphQL query mapping template context with model name, stripped model name, and ID type
+     */
+    public static Map<String, Object> computeQueryMappingGraphQL(final ModelDefinition modelDefinition) {
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        context.put(ID_TYPE, idField.getType());
+
+        return context;
+    }
+
+    /**
+     * Computes a GraphQL mutation mapping template context for a model definition.
+     * 
+     * @param modelDefinition the model definition
+     * @return a GraphQL mutation mapping template context with model name, stripped model name, and ID type
+     */
+    public static Map<String, Object> computeMutationMappingGraphQL(final ModelDefinition modelDefinition) {
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        context.put(ID_TYPE, idField.getType());
+        context.put(INPUT_FIELDS_WITHOUT_RELATIONS, FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS_WITH_RELATIONS, FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for a GraphQL resolver class of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the GraphQL resolver class with stripped model name and class name
+     */
+    public static Map<String, Object> computeGraphQlResolver(final ModelDefinition modelDefinition) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(STRIPPED_MODEL_NAME, strippedModelName);
+        context.put(CLASS_NAME, String.format("%sResolver", strippedModelName));
         
         return context;
     }
