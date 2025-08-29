@@ -662,7 +662,7 @@ public class TemplateContextUtils {
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
-        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields()));
         context.put(ID_TYPE, idField.getType());
 
         return context;
@@ -829,6 +829,7 @@ public class TemplateContextUtils {
         context.put(ID_TYPE, idField.getType());
         context.put(INPUT_FIELDS_WITHOUT_RELATIONS, FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put(INPUT_FIELDS_WITH_RELATIONS, FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
+        context.put(RELATIONS, !FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty());
 
         return context;
     }
@@ -842,10 +843,15 @@ public class TemplateContextUtils {
     public static Map<String, Object> computeGraphQlResolver(final ModelDefinition modelDefinition) {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .collect(Collectors.toList());
         
         final Map<String, Object> context = new HashMap<>();
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
         context.put(CLASS_NAME, String.format("%sResolver", strippedModelName));
+        context.put(JSON_FIELDS, jsonFields);
+        context.put(RELATIONS, !FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty());
         
         return context;
     }

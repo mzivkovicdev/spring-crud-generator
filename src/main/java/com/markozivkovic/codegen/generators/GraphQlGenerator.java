@@ -28,8 +28,8 @@ public class GraphQlGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQlGenerator.class);
     
-    private static final String GRAPHQL_SCHEMA = "graphql-schema";
-    private static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/" + GRAPHQL_SCHEMA;
+    private static final String GRAPHQL = "graphql";
+    private static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/" + GRAPHQL;
     private static final String RESOLVERS = "resolver";
     private static final String RESOLVERS_PACKAGE = "." + RESOLVERS;
 
@@ -51,7 +51,7 @@ public class GraphQlGenerator implements CodeGenerator {
             return;
         }
 
-        if (!GeneratorContext.isGenerated(GRAPHQL_SCHEMA)) {
+        if (!GeneratorContext.isGenerated(GRAPHQL)) {
             final String pathToGraphQlSchema = String.format("%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES_GRAPHQL);
     
             entities.stream()
@@ -82,7 +82,7 @@ public class GraphQlGenerator implements CodeGenerator {
                 sb.toString()
         );
 
-        GeneratorContext.markGenerated(GRAPHQL_SCHEMA);
+        GeneratorContext.markGenerated(GRAPHQL);
 
         LOGGER.info("Finished generating GraphQL code");
     }

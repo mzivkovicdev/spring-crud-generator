@@ -565,6 +565,10 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
 
+        if (!FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
+
         return imports.stream()
                 .sorted()
                 .collect(Collectors.joining());
