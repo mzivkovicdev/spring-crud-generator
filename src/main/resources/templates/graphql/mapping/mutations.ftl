@@ -14,8 +14,8 @@
     }
 
     @MutationMapping
-    public ${transferObjectClass} update${strippedModelName}(@Argument ${idType} id,
-                                    @Argument ${updateInputToClass} input) {
+    public ${transferObjectClass} update${strippedModelName}(@Argument final ${idType} id,
+                                    @Argument final ${updateInputToClass} input) {
 
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                 this.${serviceField}.updateById(id, <#list inputFieldsWithoutRelations as arg>${arg}<#if arg_has_next>, </#if></#list>)
@@ -23,7 +23,7 @@
     }
 
     @MutationMapping
-    public boolean delete${strippedModelName}(@Argument ${idType} id) {
+    public boolean delete${strippedModelName}(@Argument final ${idType} id) {
         
         this.${serviceField}.deleteById(id);
         

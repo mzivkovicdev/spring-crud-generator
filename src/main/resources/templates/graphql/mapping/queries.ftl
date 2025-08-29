@@ -4,15 +4,15 @@
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 
     @QueryMapping
-    public ${transferObjectClass} ${uncapModelName}ById(@Argument ${idType} id) {
+    public ${transferObjectClass} ${uncapModelName}ById(@Argument final ${idType} id) {
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
             this.${serviceField}.getById(id)
         );
     }
 
     @QueryMapping
-    public PageTO<${transferObjectClass}> ${uncapModelName}sPage(@Argument Integer pageNumber,
-                                            @Argument Integer pageSize) {
+    public PageTO<${transferObjectClass}> ${uncapModelName}sPage(@Argument final Integer pageNumber,
+                                            @Argument final Integer pageSize) {
         
         final Page<${modelName?cap_first}> pageObject = this.${serviceField}.getAll(pageNumber, pageSize);
 
