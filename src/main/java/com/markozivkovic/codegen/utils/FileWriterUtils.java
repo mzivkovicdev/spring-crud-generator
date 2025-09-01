@@ -63,6 +63,11 @@ public class FileWriterUtils {
      */
     public static void writeToFile(final String outputPath, final String fileName, final String content) {
 
+        final File directory = new File(outputPath);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
         final File file = new File(outputPath, fileName);
 
         try (final FileWriter writer = new FileWriter(file)) {

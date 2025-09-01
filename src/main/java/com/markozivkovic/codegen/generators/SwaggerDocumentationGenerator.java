@@ -65,7 +65,11 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
                     return this.entities.stream()
                         .filter(e -> e.getName().equals(relationField.getType()))
                         .findFirst()
-                        .orElseThrow();
+                        .orElseThrow(() -> new IllegalArgumentException(
+                            String.format(
+                                "Relation model not found: %s", relationField.getType()
+                            ))
+                        );
                 }).collect(Collectors.toList());
 
         relationModels.forEach(relationModel -> 

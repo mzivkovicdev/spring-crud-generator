@@ -7,6 +7,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.RelationDefinition;
@@ -25,6 +28,8 @@ public class FieldUtils {
     private static final String MANY_TO_MANY = "ManyToMany";
 
     private static final Pattern pattern = Pattern.compile("^JSONB?\\[(.+)]$");
+    private static final ObjectMapper mapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
 
     private FieldUtils() {
         
@@ -385,6 +390,79 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts the names of all fields from the given list that are not marked as ID fields
+     * and do not have a relation, and formats them as strings in the format expected by the
+     * resolver layer.
+     * 
+     * @param fields The list of fields to extract non-ID non-relation field names from.
+     * @return A list of strings representing the non-ID non-relation fields in the format
+     *         expected by the resolver layer.
+     */
+    public static List<String> extractNonIdNonRelationFieldNamesForResolver(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .map(field -> {
+                    if (isJsonField(field)) {
+                        return String.format(
+                            "%sMapper.map%sTOTo%s(input.%s())",
+                            StringUtils.uncapitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.uncapitalize(field.getResolvedType())
+                        );
+                    }
+
+                    return String.format("input.%s()", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that are not marked as ID fields
+     * and formats them as strings in the format expected by the resolver layer.
+     * 
+     * @param fields The list of fields to extract non-ID field names from.
+     * @return A list of strings representing the non-ID fields in the format expected by the
+     *         resolver layer.
+     */
+    public static List<String> extractNonIdFieldNamesForResolver(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .map(field -> {
+                    if (isJsonField(field)) {
+                        return String.format(
+                            "%sMapper.map%sTOTo%s(input.%s())",
+                            StringUtils.uncapitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.uncapitalize(field.getResolvedType())
+                        );
+                    }
+
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String inputArg;
+                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                            inputArg = String.format("input.%sIds()", field.getName());
+                        } else {
+                            inputArg = String.format("input.%sId()", field.getName());
+                        }
+
+                        return inputArg;
+                    }
+
+                    return String.format("input.%s()", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Extracts the names of all fields from the given list that are not marked as ID fields, and
      * formats them as Javadoc @param tags.
      * 
@@ -605,6 +683,65 @@ public class FieldUtils {
      * @param fields The list of fields to generate the input arguments from.
      * @return A list of strings representing the input arguments for a constructor or method without the final keyword.
      */
+    public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
+        
+        return fields.stream()
+                .map(field -> {
+
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String inputArg;
+                        final ModelDefinition modelDefinition = entities.stream()
+                                .filter(model -> model.getName().equals(field.getType()))
+                                .findFirst()
+                                .orElseThrow();
+                        final FieldDefinition relationId = extractIdField(modelDefinition.getFields());
+                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                            inputArg = String.format("List<%s> %sIds", relationId.getType(), field.getName());
+                        } else {
+                            inputArg = String.format("%s %sId", relationId.getType(), field.getName());
+                        }
+                        return inputArg;
+                    }
+
+                    if (isJsonField(field)) {
+                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
+                    }
+                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword
+     * for the updateInputTO of a model.
+     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
+     * <name> is the name of the field, for all fields that are not relations.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a constructor or method without the final keyword
+     *         for the updateInputTO of a model.
+     */
+    public static List<String> generateInputArgsWithoutFinalUpdateInputTO(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .map(field -> {
+                    if (isJsonField(field)) {
+                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
+                    }
+                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword.
+     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
+     * <name> is the name of the field.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a constructor or method without the final keyword.
+     */
     public static List<String> generateInputArgsWithoutFinal(final List<FieldDefinition> fields) {
         
         return fields.stream()
@@ -697,6 +834,24 @@ public class FieldUtils {
         }
         
         return fieldDefinition.getType();
+    }
+
+    /**
+     * Creates a deep copy of the given field definition.
+     * 
+     * @param fieldDefinition The field definition to clone.
+     * @return A deep copy of the given field definition.
+     */
+    public static FieldDefinition cloneFieldDefinition(final FieldDefinition fieldDefinition) {
+        
+        try {
+            final String jsonValue = mapper.writeValueAsString(fieldDefinition);
+            return mapper.readValue(
+                jsonValue, FieldDefinition.class
+            );
+        } catch (final JsonProcessingException e) {
+            throw new RuntimeException("Failed to clone FieldDefinition", e);
+        }
     }
     
 }

@@ -31,6 +31,8 @@ public class TemplateContextUtils {
     private static final String JAVADOC_FIELDS = "javadocFields";
     private static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
     private static final String INPUT_FIELDS = "inputFields";
+    private static final String INPUT_FIELDS_WITHOUT_RELATIONS = "inputFieldsWithoutRelations";
+    private static final String INPUT_FIELDS_WITH_RELATIONS = "inputFieldsWithRelations";
     private static final String MODEL_NAME = "modelName";
     private static final String ID_TYPE = "idType";
     private static final String ID_FIELD = "idField";
@@ -370,6 +372,37 @@ public class TemplateContextUtils {
         }
 
         return context;  
+    }
+
+    /**
+     * Creates a template context for a transfer object of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @param modelDefinitions the list of model definitions
+     * @return a template context for the transfer object
+     */
+    public static Map<String, Object> computeCreateTransferObjectContext(final ModelDefinition modelDefinition, final List<ModelDefinition> modelDefinitions) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Create");
+        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinalCreateInputTO(modelDefinition.getFields(), modelDefinitions));
+    
+        return context;
+    }
+
+    /**
+     * Creates a template context for a transfer object of a model.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @return a template context for the transfer object
+     */
+    public static Map<String, Object> computeUpdateTransferObjectContext(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Update");
+        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(modelDefinition.getFields()));
+    
+        return context;
     }
 
     /**
@@ -758,6 +791,90 @@ public class TemplateContextUtils {
         context.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         context.put(ID_FIELD, idField.getName());
         context.put(ID_DESCRIPTION, Objects.nonNull(idField.getDescription()) ? idField.getDescription() : "");
+        
+        return context;
+    }
+
+    /**
+     * Computes a GraphQL query mapping template context for a model definition.
+     * 
+     * @param modelDefinition the model definition
+     * @return a GraphQL query mapping template context with model name, stripped model name, and ID type
+     */
+    public static Map<String, Object> computeQueryMappingGraphQL(final ModelDefinition modelDefinition) {
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        context.put(ID_TYPE, idField.getType());
+
+        return context;
+    }
+
+    /**
+     * Computes a GraphQL mutation mapping template context for a model definition.
+     * 
+     * @param modelDefinition the model definition
+     * @param entities a list of model definitions representing entities related to the model
+     * @return a GraphQL mutation mapping template context with model name, stripped model name, and ID type
+     */
+    public static Map<String, Object> computeMutationMappingGraphQL(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        context.put(ID_TYPE, idField.getType());
+        context.put(INPUT_FIELDS_WITHOUT_RELATIONS, FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS_WITH_RELATIONS, FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
+        final List<Map<String, Object>> relations = new ArrayList<>();
+
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        relationFields.forEach(relation -> {
+
+            final ModelDefinition relationEntity = entities.stream()
+                    .filter(entity -> entity.getName().equals(relation.getType()))
+                    .findFirst()
+                    .orElseThrow();
+            
+            final Map<String, Object> relationContext = new HashMap<>();
+            final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(relation.getName()));
+            relationContext.put(RELATION_FIELD, strippedFieldName);
+            relationContext.put(IS_COLLECTION, manyToManyFields.contains(relation) || oneToManyFields.contains(relation));
+            relationContext.put(RELATION_ID_TYPE, FieldUtils.extractIdField(relationEntity.getFields()).getType());
+
+            relations.add(relationContext);
+        });
+
+        context.put(RELATIONS, relations);
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for a GraphQL resolver class of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @return a template context for the GraphQL resolver class with stripped model name and class name
+     */
+    public static Map<String, Object> computeGraphQlResolver(final ModelDefinition modelDefinition) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .collect(Collectors.toList());
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(STRIPPED_MODEL_NAME, strippedModelName);
+        context.put(CLASS_NAME, String.format("%sResolver", strippedModelName));
+        context.put(JSON_FIELDS, jsonFields);
+        context.put(RELATIONS, !FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty());
         
         return context;
     }

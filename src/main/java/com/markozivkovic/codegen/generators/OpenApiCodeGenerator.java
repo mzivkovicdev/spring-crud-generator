@@ -21,9 +21,6 @@ import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 
-import io.swagger.v3.parser.OpenAPIV3Parser;
-import io.swagger.v3.parser.core.models.SwaggerParseResult;
-
 public class OpenApiCodeGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiCodeGenerator.class);

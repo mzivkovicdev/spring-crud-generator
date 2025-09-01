@@ -66,6 +66,11 @@ public class ImportUtils {
     private static final String MAPPERS_PACKAGE = ".mappers";
     private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql.helpers";
+
+    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql";
+    private static final String MAPPERS_GRAPHQL_PACKAGE = MAPPERS_PACKAGE + ".graphql";
+    private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
 
     private static final String INVALID_RESOURCE_STATE_EXCEPTION = "InvalidResourceStateException";
     private static final String RESOURCE_NOT_FOUND_EXCEPTION = "ResourceNotFoundException";
@@ -83,20 +88,37 @@ public class ImportUtils {
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects) {
 
-        return getBaseImport(modelDefinition, importObjects, false);
+        return getBaseImport(modelDefinition, List.of(), importObjects, false, false);
     }
 
     /**
-     * Generates a string of import statements based on the fields present in the given model definition, with options to include
-     * the java.util.Objects class and the java.util.List interface.
+     * Computes the necessary imports for the given model definition, including imports for the types of its fields,
+     * as well as imports for the types of its relations, if any.
      *
-     * @param modelDefinition The model definition containing field information used to determine necessary imports.
-     * @param importObjects   Whether to include the java.util.Objects import.
-     * @param importList      Whether to include the java.util.List import.
+     * @param modelDefinition the model definition containing field information used to determine necessary imports.
+     * @param entities        the list of all model definitions, used to determine the necessary imports for relations.
+     * @param realtionIds     whether to include the imports for the relation IDs.
      * @return A string containing the necessary import statements for the model.
      */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList) {
+    public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean realtionIds) {
 
+        return getBaseImport(modelDefinition, entities, false, false, realtionIds);
+    }
+
+    /**
+     * Computes the necessary imports for the given model definition, including imports for the types of its fields,
+     * as well as imports for the types of its relations, if any.
+     *
+     * @param modelDefinition the model definition containing field information used to determine necessary imports.
+     * @param entities        the list of all model definitions.
+     * @param importObjects   whether to include the java.util.Objects import.
+     * @param importList      whether to include the java.util.List import.
+     * @param relationIds     whether to include the UUID import if any of the relations have a UUID ID.
+     * @return A string containing the necessary import statements for the model.
+     */
+    private static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean importObjects,
+            final boolean importList, final boolean relationIds) {
+        
         final StringBuilder sb = new StringBuilder();
 
         final List<FieldDefinition> fields = modelDefinition.getFields();
@@ -108,6 +130,24 @@ public class ImportUtils {
         addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, JAVA_TIME_LOCAL_DATE_TIME);
         addIf(importObjects, imports, JAVA_UTIL_OBJECTS);
         addIf(FieldUtils.isAnyFieldUUID(fields), imports, JAVA_UTIL_UUID);
+
+        if (relationIds) {
+            modelDefinition.getFields().stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .forEach(field -> {
+
+                    final ModelDefinition relatedEntity = entities.stream()
+                            .filter(entity -> entity.getName().equals(field.getType()))
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                String.format(
+                                    "Related entity not found: %s", field.getType()
+                                )
+                            ));
+                    final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
+                    addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
+                });
+        }
         
         final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
                 FieldUtils.isAnyRelationManyToMany(fields);
@@ -126,6 +166,20 @@ public class ImportUtils {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Generates a string of import statements based on the fields present in the given model definition, with options to include
+     * the java.util.Objects class and the java.util.List interface.
+     *
+     * @param modelDefinition The model definition containing field information used to determine necessary imports.
+     * @param importObjects   Whether to include the java.util.Objects import.
+     * @param importList      Whether to include the java.util.List import.
+     * @return A string containing the necessary import statements for the model.
+     */
+    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList) {
+
+        return getBaseImport(modelDefinition, List.of(), importObjects, importList, false);
     }
 
     /**
@@ -204,11 +258,23 @@ public class ImportUtils {
      */
     public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir) {
 
-        return computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, true, false);
+        return computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, true, false, false);
     }
 
+    /**
+     * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
+     * if any.
+     * 
+     * @param modelDefinition  the model definition containing the class name, table name, and field definitions
+     * @param outputDir        the directory where the generated code will be written
+     * @param importJsonFields whether to include the helper entities for JSON fields
+     * @param restTOs          whether to include the REST transfer objects
+     * @param graphqlTOs       whether to include the GraphQL transfer objects
+     * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
+     *         transfer objects.
+     */
     public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
-            final boolean importJsonFields, final boolean transferObjects) {
+            final boolean importJsonFields, final boolean restTOs, final boolean graphqlTOs) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
@@ -236,7 +302,9 @@ public class ImportUtils {
             jsonFields.stream()
                     .map(FieldUtils::extractJsonFieldName)
                     .forEach(fieldName -> {
-                        if (transferObjects) {
+                        if (graphqlTOs) {
+                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE + "." + fieldName + "TO"));
+                        } else if (restTOs) {
                             imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + fieldName + "TO"));
                         } else {
                             imports.add(String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + fieldName));
@@ -439,6 +507,67 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + modelWithoutSuffix + "TO"));
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
         imports.add(String.format(IMPORT, packagePath + MAPPERS_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for the given model definition, including UUID if any model has a UUID as its ID.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return A string containing the necessary import statements for the given model.
+     */
+    public static String computeResolverBaseImports(final ModelDefinition modelDefinition) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        if (FieldUtils.isIdFieldUUID(idField)) {
+            imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+        }
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for the given model definition, including the graphql mappers, graphql mappers helpers, and the page transfer object.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @return A string containing the necessary import statements for the given model.
+     */
+    public static String computeGraphQlResolverImports(final ModelDefinition modelDefinition, final String outputDir) {
+        
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
+            modelDefinition.getFields().stream()
+                .filter(field -> FieldUtils.isJsonField(field))
+                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .forEach(jsonField -> {
+                    imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_HELPERS_PACKAGE + "." + jsonField + "Mapper"));
+                });
+        }
+
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "TO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "CreateTO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "UpdateTO"));
+        imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+
+        if (!FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
 
         return imports.stream()
                 .sorted()
