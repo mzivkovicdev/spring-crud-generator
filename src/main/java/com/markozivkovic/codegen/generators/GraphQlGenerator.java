@@ -57,6 +57,9 @@ public class GraphQlGenerator implements CodeGenerator {
             entities.stream()
                 .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
                 .forEach(e -> this.generateGraphQlSchema(e, pathToGraphQlSchema));
+
+            final String scalars = FreeMarkerTemplateProcessorUtils.processTemplate("graphql/scalars.graphql.ftl", Map.of());
+            FileWriterUtils.writeToFile(pathToGraphQlSchema, "scalars.graphqls", scalars);
         }
 
         if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
