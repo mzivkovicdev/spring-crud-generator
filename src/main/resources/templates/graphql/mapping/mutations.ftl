@@ -3,7 +3,7 @@
 <#assign baseServiceField = strippedModelName?uncap_first + "Service">
 <#assign createInputToClass = strippedModelName + "CreateTO">
 <#assign updateInputToClass = strippedModelName + "UpdateTO">
-<#if relations>
+<#if relations?has_content>
     <#assign serviceField = strippedModelName?uncap_first + "BusinessService">
 <#else>
     <#assign serviceField = strippedModelName?uncap_first + "Service">
@@ -34,3 +34,26 @@
         
         return true;
     }
+<#if relations?has_content>
+<#list relations as rel>
+<#assign relationField = rel.relationField?uncap_first>
+<#assign relationIdType = rel.relationIdType>
+    @MutationMapping
+    public ${transferObjectClass} add${relationField?cap_first}(@Argument ${idType} id, @Argument ${relationIdType} ${relationField}Id) {
+        return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
+            this.${serviceField}.add${relationField?cap_first}(id, ${relationField}Id)
+        );
+    }
+
+    @MutationMapping
+    public boolean remove${relationField?cap_first}(@Argument ${idType} id<#if rel.isCollection>, @Argument final ${relationIdType} ${relationField}Id</#if>) {
+
+        <#if rel.isCollection>
+        this.${serviceField}.remove${relationField?cap_first}(id, ${relationField}Id);
+        <#else>
+        this.${baseServiceField}.remove${relationField?cap_first}(id);
+        </#if>
+        return true;
+    }
+</#list>
+</#if>

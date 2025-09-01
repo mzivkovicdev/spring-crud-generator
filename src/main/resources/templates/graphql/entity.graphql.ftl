@@ -60,4 +60,9 @@ extend type Mutation {
   create${name}(input: ${name}CreateInput!): ${name}!
   update${name}(id: ID!, input: ${name}UpdateInput!): ${name}!
   delete${name}(id: ID!): Boolean!
+  <#list fields?filter(f -> hasRelation(f)) as field>
+  <#assign relCap = field.name?cap_first>
+  add${relCap}(id: ID!, ${field.name}Id: ID!): ${name}!
+  remove${relCap}(id: ID! <#if isToMany(field)>, ${field.name}Id: ID!</#if>): ${name}!
+  </#list>
 }

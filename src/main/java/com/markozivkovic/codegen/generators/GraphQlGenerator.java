@@ -150,7 +150,7 @@ public class GraphQlGenerator implements CodeGenerator {
      */
     private String generateMutationMappings(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeMutationMappingGraphQL(modelDefinition);
+        final Map<String, Object> context = TemplateContextUtils.computeMutationMappingGraphQL(modelDefinition, entities);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/mapping/mutations.ftl", context

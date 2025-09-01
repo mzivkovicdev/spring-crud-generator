@@ -817,9 +817,10 @@ public class TemplateContextUtils {
      * Computes a GraphQL mutation mapping template context for a model definition.
      * 
      * @param modelDefinition the model definition
+     * @param entities a list of model definitions representing entities related to the model
      * @return a GraphQL mutation mapping template context with model name, stripped model name, and ID type
      */
-    public static Map<String, Object> computeMutationMappingGraphQL(final ModelDefinition modelDefinition) {
+    public static Map<String, Object> computeMutationMappingGraphQL(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         
@@ -829,7 +830,29 @@ public class TemplateContextUtils {
         context.put(ID_TYPE, idField.getType());
         context.put(INPUT_FIELDS_WITHOUT_RELATIONS, FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put(INPUT_FIELDS_WITH_RELATIONS, FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
-        context.put(RELATIONS, !FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty());
+        final List<Map<String, Object>> relations = new ArrayList<>();
+
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        relationFields.forEach(relation -> {
+
+            final ModelDefinition relationEntity = entities.stream()
+                    .filter(entity -> entity.getName().equals(relation.getType()))
+                    .findFirst()
+                    .orElseThrow();
+            
+            final Map<String, Object> relationContext = new HashMap<>();
+            final String strippedFieldName = StringUtils.capitalize(ModelNameUtils.stripSuffix(relation.getName()));
+            relationContext.put(RELATION_FIELD, strippedFieldName);
+            relationContext.put(IS_COLLECTION, manyToManyFields.contains(relation) || oneToManyFields.contains(relation));
+            relationContext.put(RELATION_ID_TYPE, FieldUtils.extractIdField(relationEntity.getFields()).getType());
+
+            relations.add(relationContext);
+        });
+
+        context.put(RELATIONS, relations);
 
         return context;
     }
