@@ -1,7 +1,7 @@
 <#list fields as field>
-    <#if field.id>
+    <#if field.id?has_content>
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)</#if><#if field.type?lower_case == "enum">
+    @GeneratedValue(strategy = GenerationType.${field.id.strategy})</#if><#if field.type?lower_case == "enum">
     @Enumerated(EnumType.STRING)</#if><#if field.column??>
     @Column(
         <#assign first=true>

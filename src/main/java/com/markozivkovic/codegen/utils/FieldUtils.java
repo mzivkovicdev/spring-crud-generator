@@ -316,7 +316,7 @@ public class FieldUtils {
     public static FieldDefinition extractIdField(final List<FieldDefinition> fields) {
         
         return fields.stream()
-                .filter(FieldDefinition::isId)
+                .filter(field -> Objects.nonNull(field.getId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No ID field found in the provided fields."));
     }
@@ -784,7 +784,7 @@ public class FieldUtils {
      */
     public static boolean isAnyFieldId(final List<FieldDefinition> fields) {
 
-        return fields.stream().anyMatch(FieldDefinition::isId);
+        return fields.stream().anyMatch(field -> Objects.nonNull(field.getId()));
     }
 
     /**
