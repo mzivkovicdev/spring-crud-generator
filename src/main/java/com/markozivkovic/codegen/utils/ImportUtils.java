@@ -61,6 +61,7 @@ public class ImportUtils {
     private static final String MODELS_PACKAGE = ".models";
     private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS = "transferobjects";
+    private static final String TRANSFER_OBJECTS_PACKAGE = "." + TRANSFER_OBJECTS;
     private static final String TRANSFER_OBJECTS_REST_PACKAGE = "." + TRANSFER_OBJECTS + ".rest";
     private static final String SERVICES_PACKAGE = ".services";
     private static final String BUSINESS_SERVICES_PACKAGE = ".businessservices";
@@ -507,8 +508,8 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
         imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + PAGE_TO));
-        imports.add(String.format(IMPORT, packagePath + MAPPERS_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
 
         return imports.stream()
                 .sorted()
@@ -565,7 +566,7 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "CreateTO"));
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "UpdateTO"));
         imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + PAGE_TO));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
 
         if (!FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
