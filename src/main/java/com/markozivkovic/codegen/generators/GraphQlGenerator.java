@@ -30,7 +30,7 @@ public class GraphQlGenerator implements CodeGenerator {
     
     private static final String GRAPHQL = "graphql";
     private static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/" + GRAPHQL;
-    private static final String RESOLVERS = "resolver";
+    private static final String RESOLVERS = "resolvers";
     private static final String RESOLVERS_PACKAGE = "." + RESOLVERS;
 
     private final CrudConfiguration configuration;
