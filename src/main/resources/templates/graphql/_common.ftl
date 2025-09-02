@@ -30,7 +30,7 @@
 </#function>
 
 <#function isNonNull field>
-  <#if (field.id?has_content && field.id == true)>
+  <#if (field.id?has_content)>
     <#return true>
   </#if>
   <#if field.column?has_content && field.column.nullable?has_content && (field.column.nullable == false)>

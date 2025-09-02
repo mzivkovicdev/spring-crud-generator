@@ -25,7 +25,7 @@ type ${name} {
 }
 
 input ${name}CreateInput {
-  <#list fields?filter(f -> !(f.id?has_content && f.id == true)) as field>
+  <#list fields?filter(f -> !(f.id?has_content)) as field>
   <#if hasRelation(field)>
   <#assign refName = relInputRefName(field)>
   <#if isToMany(field)>
@@ -41,7 +41,7 @@ input ${name}CreateInput {
   </#list>
 }
 
-<#assign updatableFields = fields?filter(f -> !(f.id?has_content && f.id == true) && !hasRelation(f))>
+<#assign updatableFields = fields?filter(f -> !(f.id?has_content) && !hasRelation(f))>
 <#if updatableFields?size gt 0>
 input ${name}UpdateInput {
   <#list updatableFields as field>

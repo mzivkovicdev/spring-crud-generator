@@ -11,7 +11,7 @@ public class FieldDefinition {
     private String name;
     private String type;
     private String description;
-    private boolean id;
+    private IdDefinition id;
     private List<String> values = new ArrayList<>();
     private RelationDefinition relation;
     private ColumnDefinition column;
@@ -21,7 +21,7 @@ public class FieldDefinition {
     }
 
     public FieldDefinition(final String name, final String type, final String description,
-            final boolean id, final List<String> values, final RelationDefinition relation,
+            final IdDefinition id, final List<String> values, final RelationDefinition relation,
             final ColumnDefinition column) {
         this.name = name;
         this.type = type;
@@ -59,15 +59,11 @@ public class FieldDefinition {
         return this;
     }
 
-    public boolean isId() {
+    public IdDefinition getId() {
         return this.id;
     }
 
-    public boolean getId() {
-        return this.id;
-    }
-
-    public FieldDefinition setId(final boolean id) {
+    public FieldDefinition setId(final IdDefinition id) {
         this.id = id;
         return this;
     }
@@ -131,7 +127,7 @@ public class FieldDefinition {
             " name='" + getName() + "'" +
             ", type='" + getType() + "'" +
             ", description='" + getDescription() + "'" +
-            ", id='" + isId() + "'" +
+            ", id='" + getId() + "'" +
             ", values='" + getValues() + "'" +
             ", relation='" + getRelation() + "'" +
             ", column='" + getColumn() + "'" +
