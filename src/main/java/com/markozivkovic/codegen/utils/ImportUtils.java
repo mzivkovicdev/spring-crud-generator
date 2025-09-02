@@ -60,15 +60,17 @@ public class ImportUtils {
     private static final String EXCEPTIONS_PACKAGE = ".exceptions";
     private static final String MODELS_PACKAGE = ".models";
     private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_PACKAGE = ".transferobjects";
+    private static final String TRANSFER_OBJECTS = "transferobjects";
+    private static final String TRANSFER_OBJECTS_REST_PACKAGE = "." + TRANSFER_OBJECTS + ".rest";
     private static final String SERVICES_PACKAGE = ".services";
     private static final String BUSINESS_SERVICES_PACKAGE = ".businessservices";
     private static final String MAPPERS_PACKAGE = ".mappers";
-    private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql.helpers";
+    private static final String MAPPERS_REST_PACKAGE = MAPPERS_PACKAGE + ".rest";
+    private static final String MAPPERS_REST_HELPERS_PACKAGE = MAPPERS_REST_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS_REST_HELPERS_PACKAGE = TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql.helpers";
 
-    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql";
+    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
     private static final String MAPPERS_GRAPHQL_PACKAGE = MAPPERS_PACKAGE + ".graphql";
     private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
 
@@ -305,7 +307,7 @@ public class ImportUtils {
                         if (graphqlTOs) {
                             imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE + "." + fieldName + "TO"));
                         } else if (restTOs) {
-                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + fieldName + "TO"));
+                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_HELPERS_PACKAGE + "." + fieldName + "TO"));
                         } else {
                             imports.add(String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + fieldName));
                         }
@@ -481,12 +483,12 @@ public class ImportUtils {
 
         Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + relationModel + "TO"));    
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));    
         });
 
         relations.forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + relationModel + "InputTO"));
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
         });
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
@@ -498,14 +500,14 @@ public class ImportUtils {
                 .filter(field -> FieldUtils.isJsonField(field))
                 .map(field -> FieldUtils.extractJsonFieldName(field))
                 .forEach(jsonField -> {
-                    imports.add(String.format(IMPORT, packagePath + MAPPERS_HELPERS_PACKAGE + "." + jsonField + "Mapper"));
+                    imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_HELPERS_PACKAGE + "." + jsonField + "Mapper"));
                 });
         }
 
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
         imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + modelWithoutSuffix + "TO"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + PAGE_TO));
         imports.add(String.format(IMPORT, packagePath + MAPPERS_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
 
         return imports.stream()
@@ -563,7 +565,7 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "CreateTO"));
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "UpdateTO"));
         imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + PAGE_TO));
 
         if (!FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));

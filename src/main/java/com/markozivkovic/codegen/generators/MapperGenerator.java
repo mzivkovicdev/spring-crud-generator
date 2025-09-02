@@ -26,20 +26,21 @@ public class MapperGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MapperGenerator.class);
 
-    private static final String MAPPERS = "mappers";
-    private static final String MAPPERS_PACKAGE = "." + MAPPERS;
-    private static final String MAPPERS_HELPERS = "mappers/helpers";
-    private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_PACKAGE + ".helpers";
+    private static final String MAPPERS_REST = "mappers/rest";
+    private static final String MAPPERS_REST_PACKAGE = ".mappers.rest";
+    private static final String MAPPERS_REST_HELPERS = "mappers/rest/helpers";
+    private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_REST_PACKAGE + ".helpers";
     private static final String MODELS_PACKAGE = ".models";
     private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_PACKAGE = ".transferobjects";
-    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS = "transferobjects";
+    private static final String TRANSFER_OBJECTS_REST_PACKAGE = "." + TRANSFER_OBJECTS + ".rest";
+    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
     
     private static final String MAPPERS_GRAPHQL = "mappers/graphql";
     private static final String MAPPERS_GRAPHQL_HELPERS = "mappers/graphql/helpers";
     private static final String MAPPERS_GRAPHQL_PACKAGE = ".mappers.graphql";
     private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql";
+    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
     private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = TRANSFER_OBJECTS_GRAPHQL_PACKAGE + ".helpers";
 
     private final CrudConfiguration configuration;
@@ -105,7 +106,7 @@ public class MapperGenerator implements CodeGenerator {
         if (isGraphQl) {
             transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + transferObjectName);
         } else {
-            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + transferObjectName);
+            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + transferObjectName);
         }
 
         final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
@@ -150,10 +151,10 @@ public class MapperGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, isGraphQl ? (packagePath + MAPPERS_GRAPHQL_PACKAGE) : (packagePath + MAPPERS_PACKAGE)))
+        sb.append(String.format(PACKAGE, isGraphQl ? (packagePath + MAPPERS_GRAPHQL_PACKAGE) : (packagePath + MAPPERS_REST_PACKAGE)))
                 .append(mapperTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL : MAPPERS, mapperName, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL : MAPPERS_REST, mapperName, sb.toString());
     }
 
     /**
@@ -191,7 +192,7 @@ public class MapperGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, isGraphQl ? (packagePath + MAPPERS_GRAPHQL_HELPERS_PACKAGE) : (packagePath + MAPPERS_HELPERS_PACKAGE)))
                 .append(mapperTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL_HELPERS : MAPPERS_HELPERS, mapperName, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL_HELPERS : MAPPERS_REST_HELPERS, mapperName, sb.toString());
     }
 
 }

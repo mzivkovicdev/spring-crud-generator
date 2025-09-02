@@ -27,15 +27,17 @@ public class TransferObjectGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(TransferObjectGenerator.class);
 
     private static final String TRANSFER_OBJECTS = "transferobjects";
-    
-    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
+
+    private static final String TRANSFER_OBJECTS_PACKAGE = "." + TRANSFER_OBJECTS;
+    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql";
     private static final String TRANSFER_OBJECTS_GRAPHQL_HELPERS_PACKAGE = TRANSFER_OBJECTS_GRAPHQL_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_GRAPHQL = "transferobjects/graphql";
     private static final String TRANSFER_OBJECTS_GRAPHQL_HELPERS = "transferobjects/graphql/helpers";
     
-    private static final String TRANSFER_OBJECTS_PACKAGE = "." + TRANSFER_OBJECTS;
-    private static final String TRANSFER_OBJECTS_HELPERS = "transferobjects/helpers";
-    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE =  TRANSFER_OBJECTS_PACKAGE + ".helpers";
+    private static final String TRANSFER_OBJECTS_REST = TRANSFER_OBJECTS + "/rest";
+    private static final String TRANSFER_OBJECTS_REST_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".rest";
+    private static final String TRANSFER_OBJECTS_HELPERS = "transferobjects/rest/helpers";
+    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE =  TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
 
     private static boolean PAGE_TO_GENERATED = false;
 
@@ -80,7 +82,7 @@ public class TransferObjectGenerator implements CodeGenerator {
                     }
                 });
 
-        this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_PACKAGE, TRANSFER_OBJECTS, false);
+        this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_REST_PACKAGE, TRANSFER_OBJECTS_REST, false);
         
         if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
             this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL, true);
@@ -237,7 +239,7 @@ public class TransferObjectGenerator implements CodeGenerator {
                     .orElseThrow();
 
             final StringBuilder sb = new StringBuilder();
-            sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_PACKAGE));
+            sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_REST_PACKAGE));
     
             final String transferObjName = String.format("%sInputTO", ModelNameUtils.stripSuffix(relationModelDefinition.getName()));
             final FieldDefinition idField = FieldUtils.extractIdField(relationModelDefinition.getFields());
@@ -254,7 +256,7 @@ public class TransferObjectGenerator implements CodeGenerator {
     
             sb.append(transferObjectTemplate);
     
-            FileWriterUtils.writeToFile(outputDir, TRANSFER_OBJECTS, transferObjName, sb.toString());
+            FileWriterUtils.writeToFile(outputDir, TRANSFER_OBJECTS_REST, transferObjName, sb.toString());
         });
     }
 
