@@ -71,8 +71,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<HttpResponse> mediaTypeNotSupportedError() {
 
         return new ResponseEntity<>(
-                new HttpResponse(REQUEST_NOT_READABLE_MESSAGE<#if isDetailed>, HttpStatus.BAD_REQUEST</#if>),
-                HttpStatus.BAD_REQUEST
+                new HttpResponse(REQUEST_NOT_READABLE_MESSAGE<#if isDetailed>, HttpStatus.UNSUPPORTED_MEDIA_TYPE</#if>),
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE
         );
     }
 
@@ -80,8 +80,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<HttpResponse> noResourceFoundError(final NoResourceFoundException e) {
         
         return new ResponseEntity<>(
-                new HttpResponse(e.getMessage()<#if isDetailed>, HttpStatus.BAD_REQUEST</#if>),
-                HttpStatus.BAD_REQUEST
+                new HttpResponse(e.getMessage()<#if isDetailed>, HttpStatus.NOT_FOUND</#if>),
+                HttpStatus.NOT_FOUND
         );
     }
 
@@ -100,9 +100,9 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 new HttpResponse(
                     String.format(EXTENDED_MESSAGE_FORMAT, RESOURCE_NOT_FOUND_MESSAGE, e.getMessage())<#if isDetailed>,
-                    HttpStatus.BAD_REQUEST</#if>
+                    HttpStatus.NOT_FOUND</#if>
                 ),
-                HttpStatus.BAD_REQUEST
+                HttpStatus.NOT_FOUND
         );
     }
 <#if hasRelations>
@@ -112,9 +112,9 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 new HttpResponse(
                     String.format(EXTENDED_MESSAGE_FORMAT, INVALID_RESOURCE_STATE_MESSAGE, e.getMessage())<#if isDetailed>,
-                    HttpStatus.BAD_REQUEST</#if>
+                    HttpStatus.CONFLICT</#if>
                 ),
-                HttpStatus.BAD_REQUEST
+                HttpStatus.CONFLICT
         );
     }
 </#if>
