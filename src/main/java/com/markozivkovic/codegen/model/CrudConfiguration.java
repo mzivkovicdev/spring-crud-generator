@@ -12,6 +12,7 @@ public class CrudConfiguration {
     private Boolean swagger;
     private Boolean openApiCodegen;
     private Boolean graphQl;
+    private ErrorResponse errorResponse;
     
     public CrudConfiguration() {
 
@@ -19,7 +20,7 @@ public class CrudConfiguration {
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
             final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
-            final Boolean graphQl) {
+            final Boolean graphQl, final ErrorResponse errorResponse) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
@@ -28,6 +29,7 @@ public class CrudConfiguration {
         this.swagger = swagger;
         this.openApiCodegen = openApiCodegen;
         this.graphQl = graphQl;
+        this.errorResponse = errorResponse;
     }
 
     public DatabaseType getDatabase() {
@@ -118,6 +120,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public ErrorResponse getErrorResponse() {
+        return this.errorResponse;
+    }
+
+    public CrudConfiguration setErrorResponse(final ErrorResponse errorResponse) {
+        this.errorResponse = errorResponse;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -133,14 +144,15 @@ public class CrudConfiguration {
                 Objects.equals(cache, crudConfiguration.cache) &&
                 Objects.equals(swagger, crudConfiguration.swagger) &&
                 Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen) &&
-                Objects.equals(graphQl, crudConfiguration.graphQl);
+                Objects.equals(graphQl, crudConfiguration.graphQl) &&
+                Objects.equals(errorResponse, crudConfiguration.errorResponse);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, optimisticLocking, dockerfile, cache, swagger,
-            openApiCodegen, graphQl
+            openApiCodegen, graphQl, errorResponse
         );
     }
 
@@ -155,6 +167,7 @@ public class CrudConfiguration {
             ", swagger='" + isSwagger() + "'" +
             ", openApiCodegen='" + getOpenApiCodegen() + "'" +
             ", graphQl='" + getGraphQl() + "'" +
+            ", errorResponse='" + getErrorResponse() + "'" +
             "}";
     }    
 
@@ -162,6 +175,13 @@ public class CrudConfiguration {
         MYSQL,
         POSTGRESQL,
         MSSQL;
+    }
+
+    public enum ErrorResponse {
+        DETAILED,
+        SIMPLE,
+        MINIMAL,
+        NONE
     }
 
 }

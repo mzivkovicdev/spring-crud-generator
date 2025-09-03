@@ -58,6 +58,7 @@ public class ImportUtils {
     private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String REPOSITORIES_PACKAGE = ".repositories";
     private static final String EXCEPTIONS_PACKAGE = ".exceptions";
+    private static final String EXCEPTIONS_RESPONSES_PACKAGE = EXCEPTIONS_PACKAGE + ".responses";
     private static final String MODELS_PACKAGE = ".models";
     private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS = "transferobjects";
@@ -77,6 +78,8 @@ public class ImportUtils {
 
     private static final String INVALID_RESOURCE_STATE_EXCEPTION = "InvalidResourceStateException";
     private static final String RESOURCE_NOT_FOUND_EXCEPTION = "ResourceNotFoundException";
+
+    private static final String HTTP_RESPONSE = "HttpResponse";
     
     private ImportUtils() {
 
@@ -510,6 +513,31 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
         imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for the global exception handler, given the relations configuration.
+     *
+     * @param hasRelations whether the project has any relations
+     * @param outputDir the directory where the generated code will be written
+     * @return A string containing the necessary import statements for the global exception handler.
+     */
+    public static String computeGlobalExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_RESPONSES_PACKAGE + "." + HTTP_RESPONSE));
+
+        if (hasRelations) {
+            imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + INVALID_RESOURCE_STATE_EXCEPTION));
+        }
 
         return imports.stream()
                 .sorted()
