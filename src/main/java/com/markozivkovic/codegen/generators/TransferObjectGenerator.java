@@ -6,6 +6,7 @@ import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.utils.AuditUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -164,6 +166,9 @@ public class TransferObjectGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath));
 
         final String imports = ImportUtils.getBaseImport(modelDefinition, entities, relationIdsImport);
+        if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()) {
+            sb.append(String.format(IMPORT, AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())));
+        }
         sb.append(imports);
 
         final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(
@@ -196,7 +201,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath));
 
-        final String imports = ImportUtils.getBaseImport(modelDefinition, false);
+        final String imports = ImportUtils.getBaseImport(modelDefinition, false, false);
         sb.append(imports);
 
         final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(

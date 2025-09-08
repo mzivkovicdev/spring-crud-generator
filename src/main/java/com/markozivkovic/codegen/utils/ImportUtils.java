@@ -4,6 +4,7 @@ import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAME
 import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT;
 import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
+import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY_LISTENERS;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUMERATED;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUM_TYPE;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATED_VALUE;
@@ -22,6 +23,9 @@ import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTEN
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_VERSION;
 import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE;
 import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_TYPE_SQL_TYPES;
+import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_ANNOTATION_CREATED_DATE;
+import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_ANNOTATION_LAST_MODIFIED_DATE;
+import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_JPA_DOMAIN_SUPPORT_AUDITING_ENTITY_LISTENER;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
 import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
@@ -92,9 +96,9 @@ public class ImportUtils {
      * @param importObjects   Whether to include the java.util.Objects import.
      * @return A string containing the necessary import statements for the model.
      */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects) {
+    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importAuditing) {
 
-        return getBaseImport(modelDefinition, List.of(), importObjects, false, false);
+        return getBaseImport(modelDefinition, List.of(), importObjects, false, false, importAuditing);
     }
 
     /**
@@ -108,7 +112,7 @@ public class ImportUtils {
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean realtionIds) {
 
-        return getBaseImport(modelDefinition, entities, false, false, realtionIds);
+        return getBaseImport(modelDefinition, entities, false, false, realtionIds, false);
     }
 
     /**
@@ -123,7 +127,7 @@ public class ImportUtils {
      * @return A string containing the necessary import statements for the model.
      */
     private static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean importObjects,
-            final boolean importList, final boolean relationIds) {
+            final boolean importList, final boolean relationIds, final boolean importAuditing) {
         
         final StringBuilder sb = new StringBuilder();
 
@@ -135,6 +139,14 @@ public class ImportUtils {
         addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, JAVA_TIME_LOCAL_DATE);
         addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, JAVA_TIME_LOCAL_DATE_TIME);
         addIf(importObjects, imports, JAVA_UTIL_OBJECTS);
+        
+        if (modelDefinition.getAudit() != null) {
+            addIf(
+                importAuditing && Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled(),
+                imports,
+                AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())
+            );
+        }
         addIf(FieldUtils.isAnyFieldUUID(fields), imports, JAVA_UTIL_UUID);
 
         if (relationIds) {
@@ -183,9 +195,9 @@ public class ImportUtils {
      * @param importList      Whether to include the java.util.List import.
      * @return A string containing the necessary import statements for the model.
      */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList) {
+    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList, final boolean importAuditing) {
 
-        return getBaseImport(modelDefinition, List.of(), importObjects, importList, false);
+        return getBaseImport(modelDefinition, List.of(), importObjects, importList, false, importAuditing);
     }
 
     /**
@@ -226,7 +238,8 @@ public class ImportUtils {
 
         final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
                 .anyMatch(field -> Objects.nonNull(field.getColumn()));
-
+        final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
+        
         addIf(!relations.isEmpty(), imports, JAKARTA_PERSISTENCE_JOIN_COLUMN);
         addIf(relations.contains(MANY_TO_MANY), imports, JAKARTA_PERSISTENCE_JOIN_TABLE);
         addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_MANY);
@@ -236,18 +249,36 @@ public class ImportUtils {
         addIf(FieldUtils.isFetchTypeDefined(fields), imports, JAKARTA_PERSISTENCE_FETCH_TYPE);
         addIf(FieldUtils.isCascadeTypeDefined(fields), imports, JAKARTA_PERSISTENCE_CASCADE_TYPE);
         addIf(optimisticLocking, imports, JAKARTA_PERSISTENCE_VERSION);
-        addIf(hasAnyFieldColumn, imports, JAKARTA_PERSISTENCE_COLUMN);
+        addIf(hasAnyFieldColumn || isAuditingEnabled, imports, JAKARTA_PERSISTENCE_COLUMN);
+        addIf(isAuditingEnabled, imports, JAKARTA_PERSISTANCE_ENTITY_LISTENERS);
 
         final String jakartaImports = imports.stream()
                   .map(imp -> String.format(IMPORT, imp))
                   .sorted()
                   .collect(Collectors.joining());
 
+        final Set<String> orgImports = new LinkedHashSet<>();
+        addIf(isAuditingEnabled, orgImports, SPRING_DATA_JPA_DOMAIN_SUPPORT_AUDITING_ENTITY_LISTENER);
+        addIf(isAuditingEnabled, orgImports, SPRING_DATA_ANNOTATION_CREATED_DATE);
+        addIf(isAuditingEnabled, orgImports, SPRING_DATA_ANNOTATION_LAST_MODIFIED_DATE);
+        
         if (!FieldUtils.isAnyFieldJson(fields)) {
-            return jakartaImports;
+            if (orgImports.isEmpty()) {
+                return jakartaImports;
+            }
+
+            final String orgImportsFormatted = orgImports.stream()
+                    .map(imp -> String.format(IMPORT, imp))
+                    .sorted()
+                    .collect(Collectors.joining());
+
+            return String.format("%s\n%s", jakartaImports, orgImportsFormatted);
         }
 
-        final String hibernateImports = Set.of(ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE, ORG_HIBERNATE_TYPE_SQL_TYPES).stream()
+        final String hibernateImports = Stream.concat(
+                    Set.of(ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE, ORG_HIBERNATE_TYPE_SQL_TYPES).stream(),
+                    orgImports.stream()
+                )
                 .map(imp -> String.format(IMPORT, imp))
                 .sorted()
                 .collect(Collectors.joining());
