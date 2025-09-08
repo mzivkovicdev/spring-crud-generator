@@ -54,7 +54,7 @@ public class JpaServiceGenerator implements CodeGenerator {
 
         sb.append(String.format(PACKAGE, packagePath + SERVICES_PACKAGE));
         sb.append(ImportUtils.getBaseImport(
-                modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites))
+                modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false)
         );
         
         sb.append(ImportUtils.computeJpaServiceBaseImport(

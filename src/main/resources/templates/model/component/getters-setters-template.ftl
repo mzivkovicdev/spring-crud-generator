@@ -20,3 +20,12 @@
     </#if>
 
 </#list>
+<#if auditEnabled?? && auditEnabled>
+    public ${auditType} getCreatedAt() {
+        return this.createdAt;
+    }
+
+    public ${auditType} getUpdatedAt() {
+        return this.updatedAt;
+    }
+</#if>

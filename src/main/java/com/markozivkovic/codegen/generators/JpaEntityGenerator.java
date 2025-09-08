@@ -1,6 +1,8 @@
 package com.markozivkovic.codegen.generators;
 
+import static com.markozivkovic.codegen.constants.JPAConstants.AUDITING_ENTITY_LISTENER_CLASS;
 import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_ANNOTATION;
+import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_LISTENERS_ANNOTATION;
 import static com.markozivkovic.codegen.constants.JPAConstants.TABLE_ANNOTATION;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
@@ -91,7 +93,7 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath + MODELS_HELPERS_PACKAGE));
-        sb.append(ImportUtils.getBaseImport(model, true));
+        sb.append(ImportUtils.getBaseImport(model, true, false));
 
         final String enumImports = ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir);
         
@@ -148,7 +150,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + MODELS_PACKAGE));
-        sb.append(ImportUtils.getBaseImport(model, true));
+        sb.append(ImportUtils.getBaseImport(model, true, true));
                 
         sb.append(ImportUtils.computeJakartaImports(model, optimisticLocking))
                 .append("\n");
@@ -164,6 +166,11 @@ public class JpaEntityGenerator implements CodeGenerator {
                 .append("\n")
                 .append(String.format(TABLE_ANNOTATION, tableName))
                 .append("\n");
+
+        if (Objects.nonNull(model.getAudit()) && model.getAudit().isEnabled()) {
+            sb.append(String.format(ENTITY_LISTENERS_ANNOTATION, AUDITING_ENTITY_LISTENER_CLASS))
+                    .append("\n");
+        }
 
         final Map<String, Object> classContext = TemplateContextUtils.computeJpaModelContext(model);
         classContext.put("optimisticLocking", optimisticLocking);

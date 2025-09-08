@@ -50,6 +50,8 @@ public class TemplateContextUtils {
     private static final String RELATION_FIELD_MODEL = "relationFieldModel";
     private static final String JSON_FIELDS = "jsonFields";
     private static final String IS_JSON_FIELD = "isJsonField";
+    private static final String AUDIT_ENABLED = "auditEnabled";
+    private static final String AUDIT_TYPE = "auditType";
 
     private TemplateContextUtils() {
         
@@ -370,6 +372,10 @@ public class TemplateContextUtils {
             context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
             context.put(NON_ID_FIELD_NAMES, FieldUtils.extractFieldNames(modelDefinition.getFields()));
         }
+        if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()) {
+            context.put(AUDIT_ENABLED, modelDefinition.getAudit().isEnabled());
+            context.put(AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
+        }
 
         return context;  
     }
@@ -416,7 +422,11 @@ public class TemplateContextUtils {
         final Map<String, Object> context = new HashMap<>();
         context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinal(modelDefinition.getFields()));
-    
+        context.put(AUDIT_ENABLED, Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled());
+        if (Objects.nonNull(modelDefinition.getAudit())) {
+            context.put(AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
+        }
+
         return context;
     }
 

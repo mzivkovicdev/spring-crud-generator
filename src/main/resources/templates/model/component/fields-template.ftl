@@ -20,3 +20,13 @@
     @Version
     private Integer version;
 </#if>
+<#if auditEnabled?? && auditEnabled>
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private ${auditType} createdAt;
+
+    @LastModifiedDate
+    @Column(nullable = false)
+    private ${auditType} updatedAt;
+</#if>

@@ -62,7 +62,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + BUSINESS_SERVICES_PACKAGE));
-        sb.append(ImportUtils.getBaseImport(modelDefinition, false));
+        sb.append(ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
 
         if (this.isAnyIdFieldUUID(modelDefinition, entites)) {
             sb.append(String.format(IMPORT, JAVA_UTIL_UUID));

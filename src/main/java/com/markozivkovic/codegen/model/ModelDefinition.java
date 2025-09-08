@@ -9,17 +9,19 @@ public class ModelDefinition {
     private String storageName;
     private String description;
     private List<FieldDefinition> fields; 
+    private AuditDefinition audit;
 
     public ModelDefinition() {
 
     }
 
     public ModelDefinition(final String name, final String storageName, final String description,
-            final List<FieldDefinition> fields) {
+            final List<FieldDefinition> fields, final AuditDefinition audit) {
         this.name = name;
         this.storageName = storageName;
         this.description = description;
         this.fields = fields;
+        this.audit = audit;
     }
 
     public String getName() {
@@ -58,6 +60,15 @@ public class ModelDefinition {
         return this;
     }
 
+    public AuditDefinition getAudit() {
+        return this.audit;
+    }
+
+    public ModelDefinition setAudit(final AuditDefinition audit) {
+        this.audit = audit;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -69,12 +80,13 @@ public class ModelDefinition {
         return Objects.equals(name, modelDefinition.name) &&
                 Objects.equals(storageName, modelDefinition.storageName) &&
                 Objects.equals(description, modelDefinition.description) &&
-                Objects.equals(fields, modelDefinition.fields);
+                Objects.equals(fields, modelDefinition.fields) &&
+                Objects.equals(audit, modelDefinition.audit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, storageName, description, fields);
+        return Objects.hash(name, storageName, description, fields, audit);
     }
 
     @Override
@@ -84,6 +96,7 @@ public class ModelDefinition {
             ", storageName='" + getStorageName() + "'" +
             ", description='" + getDescription() + "'" +
             ", fields='" + getFields() + "'" +
+            ", audit='" + getAudit() + "'" +
             "}";
     }    
 
