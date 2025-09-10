@@ -22,6 +22,7 @@ import com.markozivkovic.codegen.model.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.model.RelationDefinition;
 
 public class FlywayUtils {
     
@@ -664,6 +665,66 @@ public class FlywayUtils {
         ctx.put("auditCreatedType", auditType(db, resolvedAuditType));
         ctx.put("auditUpdatedType", auditType(db, resolvedAuditType));
         ctx.put("auditNowExpr", auditNow(db));
+
+        return ctx;
+    }
+
+    /**
+     * Maps a many-to-many relation field to a Flyway migration context map.
+     *
+     * @param owner the model definition that owns the relation field
+     * @param relationField the relation field definition
+     * @param db the database type for which to generate the migration context
+     * @param modelsByName a map of model names to their definitions
+     * @return a Flyway migration context map
+     */
+    public static Map<String, Object> toJoinTableContext(
+            final ModelDefinition owner,
+            final FieldDefinition relationField,
+            final DatabaseType db,
+            final Map<String, ModelDefinition> modelsByName) {
+
+        if (relationField.getRelation() == null || !"ManyToMany".equals(relationField.getRelation().getType())) {
+            throw new IllegalArgumentException(
+                String.format("Field '%s' is not a many-to-many relation field", relationField.getName())
+            );
+        }
+
+        final String joinTable = relationField.getRelation().getJoinTable().getName();
+        if (!StringUtils.isNotBlank(joinTable)) {
+            throw new IllegalArgumentException(
+                String.format("Many-to-many relation field '%s' has no join table", relationField.getName())
+            );
+        }
+        final String leftTable = owner.getStorageName();
+        final FieldDefinition ownerPk = FieldUtils.extractIdField(owner.getFields());
+        final String leftPkCol = ModelNameUtils.toSnakeCase(ownerPk.getName());
+        final String leftSqlType = columnSqlType(ownerPk, db);
+        final String leftJoinCol = relationField.getRelation().getJoinTable().getJoinColumn();
+
+        final String targetName = relationField.getType();
+        final ModelDefinition target = modelsByName.get(targetName);
+        final String rightTable = target.getStorageName();
+        final FieldDefinition targetPk = FieldUtils.extractIdField(target.getFields());
+        final String rightPkCol = ModelNameUtils.toSnakeCase(targetPk.getName());
+        final String rightSqlType = columnSqlType(targetPk, db);
+
+        final String rightJoinCol = relationField.getRelation().getJoinTable().getInverseJoinColumn();
+
+        final Map<String, Object> ctx = new LinkedHashMap<>();
+        ctx.put("joinTable", joinTable);
+        ctx.put("left", Map.of(
+                "column", leftJoinCol,
+                "sqlType", leftSqlType,
+                "table",  leftTable,
+                "pkColumn", leftPkCol
+        ));
+        ctx.put("right", Map.of(
+                "column", rightJoinCol,
+                "sqlType", rightSqlType,
+                "table",  rightTable,
+                "pkColumn", rightPkCol
+        ));
 
         return ctx;
     }

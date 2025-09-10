@@ -1,9 +1,11 @@
 package com.markozivkovic.codegen.generators;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -11,6 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.model.CrudConfiguration;
+import com.markozivkovic.codegen.model.CrudConfiguration.DatabaseType;
+import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.ProjectMetadata;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -67,21 +71,56 @@ public class MigrationScriptGenerator implements CodeGenerator {
         final List<ModelDefinition> models = this.entities.stream()
                 .filter(model -> !jsonModels.contains(model))
                 .collect(Collectors.toList());
-                
+
         final Map<String, ModelDefinition> modelsByName = models.stream()
                 .collect(Collectors.toMap(ModelDefinition::getName, m -> m, (a,b)->a, LinkedHashMap::new));
 
-        this.generateCreateTableScripts(jsonModels, pathToDbScripts, models, modelsByName);
+        this.generateCreateTableScripts(pathToDbScripts, models, modelsByName);
 
-        this.generateAlterTableScripts(jsonModels, pathToDbScripts, models, modelsByName);
+        this.generateAlterTableScripts(pathToDbScripts, models, modelsByName);
+
+        this.generateJoinTables(pathToDbScripts, models, modelsByName);
 
         LOGGER.info("Migration scripts generated");
 
         GeneratorContext.markGenerated(MIGRATION_SCRIPT);
     }
 
-    private void generateJoinTables(final List<ModelDefinition> jsonModels, final String pathToDbScripts) {
+    /**
+     * Generates create table scripts for all many-to-many join tables.
+     *
+     * @param pathToDbScripts the path to which to write the generated scripts
+     * @param models the list of models for which to generate the join tables
+     * @param modelsByName the mapping of model names to ModelDefinition objects
+     */
+    private void generateJoinTables(final String pathToDbScripts, final List<ModelDefinition> models,
+            final Map<String, ModelDefinition> modelsByName) {
         
+        final DatabaseType db = this.configuration.getDatabase();
+        final Set<String> emittedJoinTables = new HashSet<>();
+
+        for (final ModelDefinition owner : models) {
+            if (owner.getFields() == null || owner.getFields().isEmpty())
+                continue;
+
+            for (final FieldDefinition f : owner.getFields()) {
+                if (f.getRelation() == null || !"ManyToMany".equals(f.getRelation().getType())) continue;
+
+                final String joinTable = f.getRelation().getJoinTable().getName();
+                if (!emittedJoinTables.add(joinTable))
+                    continue;
+
+                final Map<String, Object> ctx = FlywayUtils.toJoinTableContext(owner, f, db, modelsByName);
+
+                final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
+                        "migration/flyway/create-join-table.sql.ftl", ctx
+                );
+
+                final String fileName = String.format("V%d__create_%s.sql", version, joinTable);
+                FileWriterUtils.writeToFile(pathToDbScripts, fileName, sql);
+                version++;
+            }
+        }
     }
 
     /**
@@ -89,10 +128,11 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * marked as JSON models. The generated scripts are written to the given
      * path.
      * 
-     * @param jsonModels the list of models that are JSON models
      * @param pathToDbScripts the path to which to write the generated scripts
+     * @param models the list of models that are not JSON models
+     * @param modelsByName the mapping of model names to ModelDefinition objects
      */
-    private void generateAlterTableScripts(final List<ModelDefinition> jsonModels, final String pathToDbScripts, final List<ModelDefinition> models,
+    private void generateAlterTableScripts(final String pathToDbScripts, final List<ModelDefinition> models,
             final Map<String, ModelDefinition> modelsByName) {
         
         models.forEach(model -> {
@@ -118,10 +158,11 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * marked as JSON models. The generated scripts are written to the given
      * path.
      * 
-     * @param jsonModels the list of models that are JSON models
      * @param pathToDbScripts the path to which to write the generated scripts
+     * @param models the list of models that are not JSON models
+     * @param modelsByName the mapping of model names to ModelDefinition objects
      */
-    private void generateCreateTableScripts(final List<ModelDefinition> jsonModels, final String pathToDbScripts, final List<ModelDefinition> models,
+    private void generateCreateTableScripts(final String pathToDbScripts, final List<ModelDefinition> models,
             final Map<String, ModelDefinition> modelsByName) {
 
         final Map<String, List<Map<String,Object>>> extrasByChildTable =
