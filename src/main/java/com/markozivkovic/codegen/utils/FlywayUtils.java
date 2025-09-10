@@ -382,17 +382,6 @@ public class FlywayUtils {
     }
 
     /**
-     * Checks if the given field definition has a many-to-many relation.
-     *
-     * @param f the field definition to check
-     * @return true if the field definition has a many-to-many relation, false otherwise
-     */
-    private static boolean isManyToMany(final FieldDefinition f) {
-        return Objects.nonNull(f.getRelation()) &&
-                "ManyToMany".equals(f.getRelation().getType());
-    }
-
-    /**
      * Determines if the given field definition has a one-to-one or many-to-one relation.
      *
      * @param f the field definition to check
@@ -403,6 +392,18 @@ public class FlywayUtils {
             return false;
         final String t = f.getRelation().getType();
         return "OneToOne".equals(t) || "ManyToOne".equals(t);
+    }
+
+    /**
+     * Determines if the given field definition has a collection relation, i.e., either
+     * a one-to-many or many-to-many relation.
+     *
+     * @param f the field definition to check
+     * @return true if the field definition has a one-to-many or many-to-many relation, false otherwise
+     */
+    private static boolean isCollectionRelation(final FieldDefinition f) {
+        return f.getRelation() != null &&
+            ("OneToMany".equals(f.getRelation().getType()) || "ManyToMany".equals(f.getRelation().getType()));
     }
 
     /**
@@ -507,16 +508,15 @@ public class FlywayUtils {
     /**
      * Maps a model definition to a Flyway migration context.
      *
-     * This method takes a model definition and converts it into a Flyway migration context.
-     * This context can then be used to generate the SQL for the underlying database.
-     *
-     * @param modelDefinition the model definition to be converted into a Flyway migration context
+     * @param model the model definition to be converted into a Flyway migration context
+     * @param db the database type for which to generate the migration context
+     * @param modelsByName a map of model names to their definitions
      * @return a Flyway migration context as a map
      */
     public static Map<String, Object> toCreateTableContext(
-        final ModelDefinition model,
-        final DatabaseType db,
-        final Map<String, ModelDefinition> modelsByName) {
+            final ModelDefinition model,
+            final DatabaseType db,
+            final Map<String, ModelDefinition> modelsByName) {
 
         final String tableName = model.getStorageName();
 
@@ -525,7 +525,10 @@ public class FlywayUtils {
         String pkCols = null;
 
         for (final FieldDefinition field : model.getFields()) {
-            if (isManyToMany(field)) continue;
+
+            if (isCollectionRelation(field)) {
+                continue;
+            }
 
             final Map<String, Object> column = new LinkedHashMap<>();
             final boolean toOne = isToOneRelation(field);
@@ -590,6 +593,5 @@ public class FlywayUtils {
 
         return ctx;
     }
-
 
 }
