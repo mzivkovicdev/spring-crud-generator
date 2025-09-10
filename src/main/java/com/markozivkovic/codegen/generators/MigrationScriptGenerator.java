@@ -1,8 +1,9 @@
 package com.markozivkovic.codegen.generators;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -63,9 +64,16 @@ public class MigrationScriptGenerator implements CodeGenerator {
             })
             .collect(Collectors.toList());
 
-        this.generateCreateTableScripts(jsonModels, pathToDbScripts);
+        final List<ModelDefinition> models = this.entities.stream()
+                .filter(model -> !jsonModels.contains(model))
+                .collect(Collectors.toList());
+                
+        final Map<String, ModelDefinition> modelsByName = models.stream()
+                .collect(Collectors.toMap(ModelDefinition::getName, m -> m, (a,b)->a, LinkedHashMap::new));
 
-        this.generateAlterTableScripts(jsonModels, pathToDbScripts);
+        this.generateCreateTableScripts(jsonModels, pathToDbScripts, models, modelsByName);
+
+        this.generateAlterTableScripts(jsonModels, pathToDbScripts, models, modelsByName);
 
         LOGGER.info("Migration scripts generated");
 
@@ -84,21 +92,11 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param jsonModels the list of models that are JSON models
      * @param pathToDbScripts the path to which to write the generated scripts
      */
-    private void generateAlterTableScripts(final List<ModelDefinition> jsonModels, final String pathToDbScripts) {
+    private void generateAlterTableScripts(final List<ModelDefinition> jsonModels, final String pathToDbScripts, final List<ModelDefinition> models,
+            final Map<String, ModelDefinition> modelsByName) {
         
-        this.entities.stream()
-            .filter(model -> !jsonModels.contains(model))
-            .forEach(model -> {
-                final Map<String, ModelDefinition> relationModels = model.getFields().stream()
-                        .filter(field -> Objects.nonNull(field.getRelation()))
-                        .map(field -> {
-                            final String targetName = field.getType();
-                            return this.entities.stream()
-                                    .filter(entity -> entity.getName().equals(targetName))
-                                    .findFirst()
-                                    .orElseThrow();
-                        }).collect(Collectors.toMap(ModelDefinition::getName, modelDefinition -> modelDefinition));
-                final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, relationModels);
+        models.forEach(model -> {
+                final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, modelsByName);
                 
                 if (context != null && !context.isEmpty()) {
                     final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -123,21 +121,16 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param jsonModels the list of models that are JSON models
      * @param pathToDbScripts the path to which to write the generated scripts
      */
-    private void generateCreateTableScripts(final List<ModelDefinition> jsonModels, final String pathToDbScripts) {
+    private void generateCreateTableScripts(final List<ModelDefinition> jsonModels, final String pathToDbScripts, final List<ModelDefinition> models,
+            final Map<String, ModelDefinition> modelsByName) {
 
-        this.entities.stream()
-            .filter(model -> !jsonModels.contains(model))
-            .forEach(model -> {
-                final Map<String, ModelDefinition> relationModels = model.getFields().stream()
-                        .filter(field -> Objects.nonNull(field.getRelation()))
-                        .map(field -> {
-                            final String targetName = field.getType();
-                            return this.entities.stream()
-                                    .filter(entity -> entity.getName().equals(targetName))
-                                    .findFirst()
-                                    .orElseThrow();
-                        }).collect(Collectors.toMap(ModelDefinition::getName, modelDefinition -> modelDefinition));
-                final Map<String, Object> context = FlywayUtils.toCreateTableContext(model, this.configuration.getDatabase(), relationModels);
+        final Map<String, List<Map<String,Object>>> extrasByChildTable =
+            FlywayUtils.collectReverseOneToManyExtras(models, this.configuration.getDatabase(), modelsByName);
+
+        models.forEach(model -> {
+                
+                final List<Map<String,Object>> extraCols = extrasByChildTable.getOrDefault(model.getStorageName(), Collections.emptyList());
+                final Map<String, Object> context = FlywayUtils.toCreateTableContext(model, this.configuration.getDatabase(), modelsByName, extraCols);
                 final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
                     "migration/flyway/create-table.sql.ftl", context
                 );

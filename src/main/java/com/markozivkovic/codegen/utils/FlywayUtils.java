@@ -12,6 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -504,6 +506,65 @@ public class FlywayUtils {
         }
         return ctx;
     }
+
+    /**
+     * Collects extra columns that should be added to the child tables of one-to-many
+     * relations. The columns represent the foreign key to the parent table, and are
+     * used when generating create table scripts.
+     * 
+     * @param allEntities the list of all entities
+     * @param db          the database type
+     * @param modelsByName the mapping of model names to ModelDefinition objects
+     * @return a map of child table names to lists of extra columns
+     */
+    public static Map<String, List<Map<String,Object>>> collectReverseOneToManyExtras(
+            final List<ModelDefinition> allEntities,
+            final DatabaseType db,
+            final Map<String, ModelDefinition> modelsByName
+    ) {
+        final Map<String, List<Map<String,Object>>> extras = new LinkedHashMap<>();
+
+        for (final ModelDefinition parent : allEntities) {
+            final FieldDefinition parentPk = FieldUtils.extractIdField(parent.getFields());
+            final String parentPkSql = (parentPk != null) ? columnSqlType(parentPk, db) : "BIGINT";
+
+            for (FieldDefinition f : parent.getFields()) {
+                if (!isOneToMany(f)) continue;
+
+                final ModelDefinition child = modelsByName.get(f.getType());
+                if (child == null || child.getStorageName()==null) continue;
+
+                final String childTable = child.getStorageName();
+
+                final String childFkCol = (f.getRelation().getJoinColumn()!=null && !f.getRelation().getJoinColumn().isBlank())
+                        ? f.getRelation().getJoinColumn()
+                        : ModelNameUtils.toSnakeCase(parent.getName()) + "_id";
+
+                final Map<String,Object> col = new LinkedHashMap<>();
+                col.put("name", childFkCol);
+                col.put("sqlType", parentPkSql);
+                col.put("nullable", true);
+                col.put("unique", false);
+                col.put("isPk", false);
+
+                extras.computeIfAbsent(childTable, k -> new ArrayList<>());
+                final List<Map<String,Object>> dst = extras.get(childTable);
+                final boolean already = dst.stream().anyMatch(m -> childFkCol.equals(m.get("name")));
+                if (!already) dst.add(col);
+            }
+        }
+        return extras;
+    }
+
+    /**
+     * Checks if the given field definition has a relation of type {@link RelationDefinition#ONE_TO_MANY}.
+     *
+     * @param f the field definition to check
+     * @return true if the field definition has a one-to-many relation, false otherwise
+     */
+    private static boolean isOneToMany(final FieldDefinition f) {
+        return f.getRelation() != null && "OneToMany".equals(f.getRelation().getType());
+    }
     
     /**
      * Maps a model definition to a Flyway migration context.
@@ -516,7 +577,8 @@ public class FlywayUtils {
     public static Map<String, Object> toCreateTableContext(
             final ModelDefinition model,
             final DatabaseType db,
-            final Map<String, ModelDefinition> modelsByName) {
+            final Map<String, ModelDefinition> modelsByName,
+            final List<Map<String,Object>> extraColumnsForThisTable) {
 
         final String tableName = model.getStorageName();
 
@@ -573,6 +635,18 @@ public class FlywayUtils {
             }
 
             cols.add(column);
+        }
+
+        if (extraColumnsForThisTable != null && !extraColumnsForThisTable.isEmpty()) {
+            final Set<String> existing = cols.stream()
+                    .map(c -> (String) c.get("name"))
+                    .collect(Collectors.toSet());
+            for (final Map<String,Object> extra : extraColumnsForThisTable) {
+                final String name = (String) extra.get("name");
+                if (!existing.contains(name)){
+                    cols.add(extra);
+                }
+            }
         }
 
         final boolean auditEnabled = model.getAudit() != null && model.getAudit().isEnabled();
