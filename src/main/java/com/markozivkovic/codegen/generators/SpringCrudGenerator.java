@@ -28,7 +28,8 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String SWAGGER = "swagger";
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
     private static final String GRAPHQL = "graphql";
-
+    private static final String MIGRATION_SCRIPT = "migration-script";
+    
     private final Map<String, CodeGenerator> GENERATORS;
 
     public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites,
@@ -47,7 +48,8 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)),
             Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entites)),
             Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entites)),
-            Map.entry(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entites))
+            Map.entry(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entites)),
+            Map.entry(MIGRATION_SCRIPT, new MigrationScriptGenerator(crudConfiguration, projectMetadata, entites))
         );
     }
 

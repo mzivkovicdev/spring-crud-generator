@@ -13,6 +13,7 @@ public class CrudConfiguration {
     private Boolean openApiCodegen;
     private Boolean graphQl;
     private ErrorResponse errorResponse;
+    private Boolean migrationScripts;
     
     public CrudConfiguration() {
 
@@ -20,7 +21,7 @@ public class CrudConfiguration {
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
             final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
-            final Boolean graphQl, final ErrorResponse errorResponse) {
+            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
@@ -30,6 +31,7 @@ public class CrudConfiguration {
         this.openApiCodegen = openApiCodegen;
         this.graphQl = graphQl;
         this.errorResponse = errorResponse;
+        this.migrationScripts = migrationScripts;
     }
 
     public DatabaseType getDatabase() {
@@ -129,6 +131,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Boolean isMigrationScripts() {
+        return this.migrationScripts;
+    }
+
+    public CrudConfiguration setMigrationScripts(final Boolean migrationScripts) {
+        this.migrationScripts = migrationScripts;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -145,14 +156,15 @@ public class CrudConfiguration {
                 Objects.equals(swagger, crudConfiguration.swagger) &&
                 Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen) &&
                 Objects.equals(graphQl, crudConfiguration.graphQl) &&
-                Objects.equals(errorResponse, crudConfiguration.errorResponse);
+                Objects.equals(errorResponse, crudConfiguration.errorResponse) &&
+                Objects.equals(migrationScripts, crudConfiguration.migrationScripts);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, optimisticLocking, dockerfile, cache, swagger,
-            openApiCodegen, graphQl, errorResponse
+            openApiCodegen, graphQl, errorResponse, migrationScripts
         );
     }
 
@@ -168,6 +180,7 @@ public class CrudConfiguration {
             ", openApiCodegen='" + getOpenApiCodegen() + "'" +
             ", graphQl='" + getGraphQl() + "'" +
             ", errorResponse='" + getErrorResponse() + "'" +
+            ", migrationScripts='" + isMigrationScripts() + "'" +
             "}";
     }    
 
