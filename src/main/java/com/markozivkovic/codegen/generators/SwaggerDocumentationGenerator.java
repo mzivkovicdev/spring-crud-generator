@@ -146,6 +146,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
                 .map(ModelNameUtils::stripSuffix)
                 .map(StringUtils::uncapitalize)
                 .map(name -> String.format("%sInput", name))
+                .distinct()
                 .collect(Collectors.toList());
         schemaNames.addAll(relationInputSchemaNames);
 
