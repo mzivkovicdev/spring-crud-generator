@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,6 @@ import com.markozivkovic.codegen.model.flyway.MigrationState;
 public class FlywayUtils {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(FlywayUtils.class);
-    private static final String SHA_256 = "SHA-256";
     private static final String MIGRATIONS = "migrations";
     private static final String MIGRATIONS_JSON = "migrations.json";
     private static final int DEFAULT_VARCHAR = 255;
@@ -47,22 +45,29 @@ public class FlywayUtils {
      * @param str String to hash
      * @return SHA-256 hash of the given string
      */
-    public static String sha256(final String str) {
+    public static String sha256(final byte[] data) {
         try {
-            final MessageDigest messageDigest = MessageDigest.getInstance(SHA_256);
-            final byte[] hash = messageDigest.digest(
-                str.getBytes(StandardCharsets.UTF_8)
-            );
-            final StringBuilder sb = new StringBuilder();
-            
-            Arrays.asList(hash).forEach(b ->
-                sb.append(String.format("%02x", b))
-            );
-            
+            final MessageDigest md = MessageDigest.getInstance("SHA-256");
+            final byte[] dig = md.digest(data);
+            final StringBuilder sb = new StringBuilder(dig.length * 2);
+            for (final byte b : dig) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
             return sb.toString();
-        } catch (final Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Calculate the SHA-256 hash of a given string.
+     * The string is converted to a byte array using UTF-8 encoding before being hashed.
+     * 
+     * @param text String to hash
+     * @return SHA-256 hash of the given string
+     */
+    public static String sha256(final String text) {
+        return sha256(text.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -377,9 +382,12 @@ public class FlywayUtils {
      * or null if the field definition does not have an ID definition or the ID definition
      * does not have a strategy
      */
-    private static String sequenceDefaultExpr(DatabaseType d, FieldDefinition f, String table) {
-        if (f.getId() == null || f.getId().getStrategy() != IdStrategyEnum.SEQUENCE) return null;
-        String seq = (f.getId().getSequenceName()!=null && !f.getId().getSequenceName().isBlank())
+    private static String sequenceDefaultExpr(final DatabaseType d, final FieldDefinition f, final String table) {
+        if (f.getId() == null || f.getId().getStrategy() != IdStrategyEnum.SEQUENCE) {
+            return null;
+        }
+
+        final String seq = (f.getId().getSequenceName()!=null && !f.getId().getSequenceName().isBlank())
                 ? f.getId().getSequenceName()
                 : table + "_id_seq";
         return switch (d) {
@@ -454,10 +462,14 @@ public class FlywayUtils {
                                             final Map<String, ModelDefinition> modelsByName,
                                             final String fallback) {
         final ModelDefinition target = modelsByName.get(relField.getType());
-        if (target == null) return fallback;
+        if (target == null) {
+            return fallback;
+        }
 
         final FieldDefinition targetPk = FieldUtils.extractIdField(target.getFields());
-        if (targetPk == null) return fallback;
+        if (targetPk == null) {
+            return fallback;
+        }
 
         return columnSqlType(targetPk, db);
     }

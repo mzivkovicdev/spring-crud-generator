@@ -17,10 +17,12 @@ import com.markozivkovic.codegen.model.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.ProjectMetadata;
+import com.markozivkovic.codegen.model.flyway.MigrationState;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FlywayUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.MigrationManifestBuilder;
 
 public class MigrationScriptGenerator implements CodeGenerator {
     
@@ -54,7 +56,9 @@ public class MigrationScriptGenerator implements CodeGenerator {
         }
 
         LOGGER.info("Generating migration scripts");
-        final String pathToDbScripts = String.format("%s/%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES, DB_MIGRATION_PATH);
+        final String pathToDbScripts = String.format("%s/%s/%s", this.projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES, DB_MIGRATION_PATH);
+        final MigrationState migrationState = FlywayUtils.loadOrEmpty(this.projectMetadata.getProjectBaseDir());
+        final MigrationManifestBuilder manifest = new MigrationManifestBuilder(migrationState);
 
         final List<ModelDefinition> jsonModels = this.entities.stream()
             .flatMap(entity -> entity.getFields().stream())
@@ -75,11 +79,14 @@ public class MigrationScriptGenerator implements CodeGenerator {
         final Map<String, ModelDefinition> modelsByName = models.stream()
                 .collect(Collectors.toMap(ModelDefinition::getName, m -> m, (a,b)-> a, LinkedHashMap::new));
 
-        this.generateCreateTableScripts(pathToDbScripts, models, modelsByName);
+        this.generateCreateTableScripts(pathToDbScripts, models, modelsByName, manifest);
 
-        this.generateAlterTableScripts(pathToDbScripts, models, modelsByName);
+        this.generateAlterTableScripts(pathToDbScripts, models, modelsByName, manifest);
 
-        this.generateJoinTables(pathToDbScripts, models, modelsByName);
+        this.generateJoinTables(pathToDbScripts, models, modelsByName, manifest);
+
+        migrationState.setLastScriptVersion(version - 1);
+        FlywayUtils.save(this.projectMetadata.getProjectBaseDir(), manifest.build());
 
         LOGGER.info("Migration scripts generated");
 
@@ -94,7 +101,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param modelsByName the mapping of model names to ModelDefinition objects
      */
     private void generateJoinTables(final String pathToDbScripts, final List<ModelDefinition> models,
-            final Map<String, ModelDefinition> modelsByName) {
+            final Map<String, ModelDefinition> modelsByName, final MigrationManifestBuilder manifest) {
         
         final DatabaseType db = this.configuration.getDatabase();
         final Set<String> emittedJoinTables = new HashSet<>();
@@ -119,6 +126,9 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 final String fileName = String.format("V%d__create_%s.sql", version, joinTable);
                 FileWriterUtils.writeToFile(pathToDbScripts, fileName, sql);
                 version++;
+
+                manifest.addJoin(owner.getStorageName(), ctx);
+                manifest.addJoinFile(owner.getStorageName(), joinTable, fileName, sql);
             }
         }
     }
@@ -133,7 +143,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param modelsByName the mapping of model names to ModelDefinition objects
      */
     private void generateAlterTableScripts(final String pathToDbScripts, final List<ModelDefinition> models,
-            final Map<String, ModelDefinition> modelsByName) {
+            final Map<String, ModelDefinition> modelsByName, final MigrationManifestBuilder manifest) {
         
         models.forEach(model -> {
                 final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, modelsByName);
@@ -149,6 +159,9 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     
                     FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
                     version++;
+                    
+                    manifest.addForeignKeys(tableName, context);
+                    manifest.addEntityFile(tableName, dbSciptName, dbScript);
                 }
             });
     }
@@ -163,7 +176,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param modelsByName the mapping of model names to ModelDefinition objects
      */
     private void generateCreateTableScripts(final String pathToDbScripts, final List<ModelDefinition> models,
-            final Map<String, ModelDefinition> modelsByName) {
+            final Map<String, ModelDefinition> modelsByName, final MigrationManifestBuilder manifest) {
 
         final Map<String, List<Map<String,Object>>> extrasByChildTable =
             FlywayUtils.collectReverseOneToManyExtras(models, this.configuration.getDatabase(), modelsByName);
@@ -182,6 +195,9 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 
                 FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
                 version++;
+
+                manifest.applyCreateContext(model.getName(), tableName, context);
+                manifest.addEntityFile(tableName, dbSciptName, dbScript);
             });
     }
 
