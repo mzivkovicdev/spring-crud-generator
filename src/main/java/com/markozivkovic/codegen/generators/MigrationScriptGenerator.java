@@ -73,7 +73,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 .collect(Collectors.toList());
 
         final Map<String, ModelDefinition> modelsByName = models.stream()
-                .collect(Collectors.toMap(ModelDefinition::getName, m -> m, (a,b)->a, LinkedHashMap::new));
+                .collect(Collectors.toMap(ModelDefinition::getName, m -> m, (a,b)-> a, LinkedHashMap::new));
 
         this.generateCreateTableScripts(pathToDbScripts, models, modelsByName);
 

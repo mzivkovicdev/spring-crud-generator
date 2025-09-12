@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,11 +19,13 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.markozivkovic.codegen.model.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.model.FieldDefinition;
 import com.markozivkovic.codegen.model.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.model.RelationDefinition;
+import com.markozivkovic.codegen.model.flyway.MigrationState;
 
 public class FlywayUtils {
     
@@ -31,6 +34,8 @@ public class FlywayUtils {
     private static final String MIGRATIONS = "migrations";
     private static final String MIGRATIONS_JSON = "migrations.json";
     private static final int DEFAULT_VARCHAR = 255;
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private FlywayUtils() {
 
@@ -727,6 +732,62 @@ public class FlywayUtils {
         ));
 
         return ctx;
+    }
+
+    /**
+     * Loads the migration state from the given base directory. If no migration state is found, a new empty one is created.
+     *
+     * @param baseDir the base directory in which to look for the migration state
+     * @return the loaded migration state if found, otherwise a new empty one
+     * @throws RuntimeException if an exception occurs while loading the migration state
+     */
+    public static MigrationState loadOrEmpty(final String baseDir) {
+        final Path migrationStatePath = Paths.get(baseDir, ".crud-generator", "migration-state.json");
+        try {
+            if (Files.exists(migrationStatePath)) {
+                return OBJECT_MAPPER.readValue(Files.readAllBytes(migrationStatePath), MigrationState.class);
+            }
+
+            return new MigrationState(
+                    "1.0",
+                    0,
+                    new ArrayList<>()
+            );
+        } catch (final IOException e) {
+            throw new RuntimeException(
+                String.format(
+                    "Failed to load migration state from '%s': %s", migrationStatePath, e.getMessage()
+                ),
+                e
+            );
+        }
+    }
+
+    /**
+     * Saves the given migration state to the given base directory.
+     *
+     * @param baseDir the base directory to which to save the migration state
+     * @param migrationState the migration state to save
+     */
+    public static void save(final String baseDir, final MigrationState migrationState) {
+        final Path migrationStatePath = Paths.get(baseDir, ".crud-generator", "migration-state.json");
+        try {
+            final Path dir = migrationStatePath.getParent();
+            if (dir != null && Files.notExists(dir)) {
+                Files.createDirectories(dir);
+            }
+            Files.write(
+                migrationStatePath, OBJECT_MAPPER.writeValueAsBytes(migrationState),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING
+            );
+        } catch (final IOException e) {
+            throw new RuntimeException(
+                String.format(
+                    "Failed to save migration state to '%s': %s", migrationStatePath, e.getMessage()
+                ),
+                e
+            );
+        }
     }
 
 }
