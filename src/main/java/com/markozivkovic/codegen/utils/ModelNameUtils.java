@@ -26,5 +26,14 @@ public class ModelNameUtils {
                 .map(suffix -> modelName.substring(0, modelName.length() - suffix.length()))
                 .orElse(modelName);
     }
+
+    /**
+     * Converts a camel-case string to a snake-case string.
+     * @param s the string to convert
+     * @return the converted string
+     */
+    public static String toSnakeCase(final String s) {
+        return s.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+    }
     
 }
