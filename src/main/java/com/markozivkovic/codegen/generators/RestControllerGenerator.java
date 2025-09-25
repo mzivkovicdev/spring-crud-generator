@@ -183,7 +183,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeAddResourceRelationEndpointContext(modelDefinition, entites);
+        final Map<String, Object> context = TemplateContextUtils.computeAddResourceRelationEndpointContext(modelDefinition);
         
         if (context.isEmpty()) {
             return null;

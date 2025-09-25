@@ -704,7 +704,7 @@ public class TemplateContextUtils {
      * @param modelDefinition the model definition
      * @return a template context for the add resource relation endpoint
      */
-    public static Map<String, Object> computeAddResourceRelationEndpointContext(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+    public static Map<String, Object> computeAddResourceRelationEndpointContext(final ModelDefinition modelDefinition) {
         
         if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             return Map.of();
@@ -725,14 +725,7 @@ public class TemplateContextUtils {
 
             final Map<String, Object> relationContext = new HashMap<>();
             final String strippedRelationClassName = ModelNameUtils.stripSuffix(relation.getType());
-            
-            final ModelDefinition relationModel = entities.stream()
-                    .filter(entity -> entity.getName().equals(relation.getType()))
-                    .findFirst()
-                    .orElseThrow();
-            final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
 
-            relationContext.put(ID_FIELD, relationIdField.getName());
             relationContext.put(RELATION_FIELD_MODEL, relation.getName());
             relationContext.put(STRIPPED_RELATION_CLASS_NAME, strippedRelationClassName);
             relationContext.put(METHOD_NAME, String.format("%ssId%ssPost", StringUtils.uncapitalize(strippedModelName), strippedRelationClassName));
