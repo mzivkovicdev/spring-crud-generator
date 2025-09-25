@@ -31,6 +31,7 @@ get:
                     type: integer
                   totalElements:
                     type: integer
+                    format: int64
                   size:
                     type: integer
                   number:
