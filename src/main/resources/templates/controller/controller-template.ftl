@@ -7,14 +7,14 @@
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;<#if swagger>
+import org.springframework.http.ResponseEntity;<#if !swagger>
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;</#if>
-import org.springframework.web.bind.annotation.RequestMapping;<#if swagger>
+import org.springframework.web.bind.annotation.RequestMapping;<#if !swagger>
 import org.springframework.web.bind.annotation.RequestParam;</#if>
 import org.springframework.web.bind.annotation.RestController;
 
