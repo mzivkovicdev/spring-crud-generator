@@ -137,6 +137,7 @@ public class SwaggerUtils {
         Map<String, Object> schema;
         final RelationDefinition rel = fieldDefinition.getRelation();
         final String type = fieldDefinition.getType();
+        final boolean isJsonField = FieldUtils.isJsonField(fieldDefinition);
 
         if (Objects.nonNull(rel)) {
 
@@ -154,7 +155,11 @@ public class SwaggerUtils {
                     break;
             }
         } else {
-            schema = resolve(type, fieldDefinition.getValues());
+            if (!isJsonField) {
+                schema = resolve(type, fieldDefinition.getValues());
+            } else {
+                schema = ref(FieldUtils.extractJsonFieldName(fieldDefinition));
+            }
         }
 
         property.putAll(schema);

@@ -76,6 +76,8 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
             this.generateRelationInputModels(relationModel, pathToSwaggerDocs)
         );
 
+        this.generateJsonObjects(pathToSwaggerDocs);
+
         entities.stream()
             .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
             .forEach(e -> this.generateSwaggerDocumentation(relationModels, e, pathToSwaggerDocs));
@@ -115,6 +117,32 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         FileWriterUtils.writeToFile(
             pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
         );
+    }
+
+    /**
+     * Generates JSON objects for all entities that have fields of type JSON or JSONB.
+     * The generated JSON objects will be created in the specified path to the Swagger
+     * documentation directory.
+     *
+     * @param pathToSwaggerDocs the path to the Swagger documentation directory
+     */
+    private void generateJsonObjects(final String pathToSwaggerDocs) {
+        
+        final List<FieldDefinition> fields = this.entities.stream()
+                .flatMap(entity -> entity.getFields().stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        final List<String> jsonFields = FieldUtils.extractJsonFields(fields).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .distinct()
+                .collect(Collectors.toList());
+
+        this.entities.stream()
+            .filter(entity -> jsonFields.contains(entity.getName()))
+            .forEach(entity -> {
+                this.generateObjects(entity, pathToSwaggerDocs);
+            });
     }
 
     /**
