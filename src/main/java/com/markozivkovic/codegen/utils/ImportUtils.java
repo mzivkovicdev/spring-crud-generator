@@ -513,6 +513,7 @@ public class ImportUtils {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
 
         final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
@@ -522,7 +523,7 @@ public class ImportUtils {
         if (swagger) {
             imports.add(String.format(
                 IMPORT,
-                String.format(packagePath + GENERATED_RESOURCE_API_RESOURCE_API, StringUtils.uncapitalize(modelWithoutSuffix), modelWithoutSuffix)
+                String.format(packagePath + GENERATED_RESOURCE_API_RESOURCE_API, unCapModelWithoutSuffix, modelWithoutSuffix)
             ));
         }
 
@@ -533,7 +534,7 @@ public class ImportUtils {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(relationModel), relationModel)
+                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, relationModel)
                 ));
             }
         });
@@ -545,7 +546,7 @@ public class ImportUtils {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(relationModel), relationModel + "Input")
+                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, relationModel + "Input")
                 ));
             }
         });
@@ -571,11 +572,11 @@ public class ImportUtils {
         } else {
             imports.add(String.format(
                 IMPORT,
-                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(modelWithoutSuffix), modelWithoutSuffix)
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, modelWithoutSuffix)
             ));
             imports.add(String.format(
                 IMPORT,
-                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(modelWithoutSuffix), String.format("%ssGet200Response", modelWithoutSuffix))
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, String.format("%ssGet200Response", modelWithoutSuffix))
             ));
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
