@@ -24,7 +24,8 @@ paths:
         description: ${idDescription}
         required: true
         schema:
-          type: string
+          type: ${id.type}
+          <#if id.format??>format: ${id.format}</#if>
       
     ${getById}
     ${updateById}

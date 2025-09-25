@@ -151,7 +151,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeUpdateEndpointContext(modelDefinition);
+        final Map<String, Object> context = TemplateContextUtils.computeUpdateEndpointContext(modelDefinition, swagger);
         context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/update-resource.ftl", context);
@@ -183,7 +183,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeAddResourceRelationEndpointContext(modelDefinition);
+        final Map<String, Object> context = TemplateContextUtils.computeAddResourceRelationEndpointContext(modelDefinition, entites);
         
         if (context.isEmpty()) {
             return null;

@@ -149,8 +149,12 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
                 .distinct()
                 .collect(Collectors.toList());
         schemaNames.addAll(relationInputSchemaNames);
+        
+        final FieldDefinition idField = FieldUtils.extractIdField(e.getFields());
+        final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
 
         final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(e);
+        context.put("id", idProperty);
         context.put("create", createEndpoint(e));
         context.put("getAll", getAllEndpoint(e));
         context.put("getById", getByIdEndpoint(e));
@@ -210,6 +214,9 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
     private String relationEndpoints(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(modelDefinition);
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
+        context.put("id", idProperty);
 
         final List<Map<String, Object>> relationEndpoints = modelDefinition.getFields().stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
@@ -222,8 +229,10 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
                             .filter(e -> e.getName().equals(field.getType()))
                             .findFirst()
                             .orElseThrow(() -> new IllegalArgumentException("Relation model not found: " + field.getType()));
-                    final FieldDefinition idField = FieldUtils.extractIdField(relationModel.getFields());
-                    endpointContext.put("relatedIdParam", idField.getName());
+                    final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
+                    endpointContext.put("relatedIdParam", relationIdField.getName());
+                    final Map<String, Object> relatedIdProperty = SwaggerUtils.toSwaggerProperty(relationIdField);
+                    endpointContext.put("relatedId", relatedIdProperty);
                     return endpointContext;
                 })
                 .collect(Collectors.toList());

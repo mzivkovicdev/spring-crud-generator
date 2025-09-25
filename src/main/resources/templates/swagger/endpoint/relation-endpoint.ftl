@@ -14,7 +14,8 @@
          description: ${idDescription}
          required: true
          schema:
-           type: string
+          type: ${id.type}
+          <#if id.format??>format: ${id.format}</#if>
       summary: Add ${relationField} to ${uncapModelName}
       tags:
         - ${modelName}
@@ -51,13 +52,15 @@
           description: ${idDescription}
           required: true
           schema:
-            type: string
+            type: ${id.type}
+            <#if id.format??>format: ${id.format}</#if>
         - in: path
           name: ${relatedIdParam}
           description: ID of related ${rel.strippedModelName} to remove
           required: true
           schema:
-            type: string
+            type: ${rel.relatedId.type}
+            <#if rel.relatedId.format??>format: ${rel.relatedId.format}</#if>
       summary: Remove ${relationField} from ${uncapModelName}
       tags:
         - ${modelName}

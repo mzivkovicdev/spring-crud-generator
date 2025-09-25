@@ -14,14 +14,14 @@
         <#if !swagger>
         return ResponseEntity.ok(
             ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
-                this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.id())
+                this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.${idField}())
             )
         );
         <#else>
         return ResponseEntity.ok(
             ${mapperClass}.map${transferObjectClass}To${model.strippedModelName}(
                 ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
-                    this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.id())
+                    this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.get${rel.idField?cap_first}())
                 )
             )
         );
