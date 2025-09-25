@@ -75,6 +75,8 @@ public class ImportUtils {
     private static final String MAPPERS_REST_HELPERS_PACKAGE = MAPPERS_REST_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_REST_HELPERS_PACKAGE = TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql.helpers";
+    private static final String GENERATED_RESOURCE_API_RESOURCE_API = ".generated.%s.api.%ssApi";
+    private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
 
     private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
     private static final String MAPPERS_GRAPHQL_PACKAGE = MAPPERS_PACKAGE + ".graphql";
@@ -502,9 +504,10 @@ public class ImportUtils {
      *
      * @param modelDefinition the model definition containing the class name, table name, and field definitions
      * @param outputDir       the directory where the generated code will be written
+     * @param swagger         whether to include Swagger annotations
      * @return A string containing the necessary import statements for the given model.
      */
-    public static String computeControllerProjectImports(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeControllerProjectImports(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -516,14 +519,35 @@ public class ImportUtils {
         final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
 
+        if (swagger) {
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_API_RESOURCE_API, StringUtils.uncapitalize(modelWithoutSuffix), modelWithoutSuffix)
+            ));
+        }
+
         Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));    
+            if (!swagger) {
+                imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));    
+            } else {
+                imports.add(String.format(
+                    IMPORT,
+                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(relationModel), relationModel)
+                ));
+            }
         });
 
         relations.forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
+            if (!swagger) {
+                imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
+            } else {
+                imports.add(String.format(
+                    IMPORT,
+                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(relationModel), relationModel + "Input")
+                ));
+            }
         });
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
@@ -541,8 +565,19 @@ public class ImportUtils {
 
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
         imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        if (!swagger) {
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        } else {
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(modelWithoutSuffix), modelWithoutSuffix)
+            ));
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, StringUtils.uncapitalize(modelWithoutSuffix), String.format("%ssGet200Response", modelWithoutSuffix))
+            ));
+        }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
 
         return imports.stream()

@@ -18,7 +18,7 @@
       summary: Add ${relationField} to ${uncapModelName}
       tags:
         - ${modelName}
-      operationId: ${uncapModelName}s${relationField?cap_first}sPost
+      operationId: ${uncapModelName}sId${relationField?cap_first}sPost
       requestBody:
         required: true
         description: Request adding ${rel.strippedModelName} to ${modelName}
@@ -61,7 +61,7 @@
       summary: Remove ${relationField} from ${uncapModelName}
       tags:
         - ${modelName}
-      operationId: ${uncapModelName}s${relationField?cap_first}sRelatedDelete
+      operationId: ${uncapModelName}sId${relationField?cap_first}sDelete
       responses:
         '204':
           description: Removed ${rel.strippedModelName} from ${modelName}

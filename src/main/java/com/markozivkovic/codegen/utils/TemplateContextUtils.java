@@ -730,10 +730,10 @@ public class TemplateContextUtils {
             relations.add(relationContext);
         });
         
-        return Map.of(
+        return new HashMap<>(Map.of(
             MODEL, modelContext,
             RELATIONS, relations
-        );
+        ));
     }
 
     /**
@@ -782,10 +782,10 @@ public class TemplateContextUtils {
             relations.add(relationContext);
         });
 
-        return Map.of(
+        return new HashMap<>(Map.of(
             MODEL, modelContext,
             RELATIONS, relations
-        );
+        ));
     }
 
     /**
