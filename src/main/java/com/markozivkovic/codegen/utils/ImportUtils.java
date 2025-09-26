@@ -301,6 +301,34 @@ public class ImportUtils {
     }
 
     /**
+     * Computes the necessary imports for the given model definition, including the enums if any exist.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @param packagePath   the package path where the generated code will be written
+     * @return A set of strings containing the necessary import statements for the given model.
+     */
+    private static Set<String> computeEnumImports(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
+        
+        final List<FieldDefinition> enumFields = FieldUtils.extractEnumFields(modelDefinition.getFields());
+        final Set<String> imports = new LinkedHashSet<>();
+
+        enumFields.forEach(enumField -> {
+            
+            final String enumName;
+            if (!enumField.getName().endsWith("Enum")) {
+                enumName = String.format("%sEnum", StringUtils.capitalize(enumField.getName()));
+            } else {
+                enumName = StringUtils.capitalize(enumField.getName());
+            }
+
+            imports.add(String.format(IMPORT, packagePath + ENUMS_PACKAGE + "." + enumName));
+        });
+
+        return imports;
+    }
+
+    /**
      * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
      * if any.
      * 
@@ -322,19 +350,7 @@ public class ImportUtils {
             return "";
         }
 
-        final List<FieldDefinition> enumFields = FieldUtils.extractEnumFields(modelDefinition.getFields());
-
-        enumFields.forEach(enumField -> {
-            
-            final String enumName;
-            if (!enumField.getName().endsWith("Enum")) {
-                enumName = String.format("%sEnum", StringUtils.capitalize(enumField.getName()));
-            } else {
-                enumName = StringUtils.capitalize(enumField.getName());
-            }
-
-            imports.add(String.format(IMPORT, packagePath + ENUMS_PACKAGE + "." + enumName));
-        });
+        imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
 
         if (importJsonFields) {
             final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
@@ -521,6 +537,7 @@ public class ImportUtils {
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
 
         if (swagger) {
+            imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
             imports.add(String.format(
                 IMPORT,
                 String.format(packagePath + GENERATED_RESOURCE_API_RESOURCE_API, unCapModelWithoutSuffix, modelWithoutSuffix)

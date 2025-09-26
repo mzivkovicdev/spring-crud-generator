@@ -191,6 +191,17 @@ public class FieldUtils {
     }
 
     /**
+     * Returns true if the given field is of type Enum, false otherwise.
+     * 
+     * @param field The field to check.
+     * @return True if the field is of type Enum, false otherwise.
+     */
+    public static boolean isFieldEnum(final FieldDefinition field) {
+
+        return ENUM.equalsIgnoreCase(field.getType());
+    }
+
+    /**
      * Returns true if any field in the given list of fields is of type JSON,
      * false otherwise.
      * 
@@ -382,6 +393,15 @@ public class FieldUtils {
                             StringUtils.capitalize(field.getResolvedType()),
                             StringUtils.capitalize(field.getResolvedType()),
                             !swagger ? StringUtils.uncapitalize(field.getResolvedType()) : StringUtils.capitalize(field.getResolvedType())
+                        );
+                    }
+
+                    if (isFieldEnum(field) && swagger) {
+                        return  String.format(
+                            "body.get%s() != null ? %s.valueOf(body.get%s().name()) : null",
+                            StringUtils.capitalize(field.getName()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getName())
                         );
                     }
 

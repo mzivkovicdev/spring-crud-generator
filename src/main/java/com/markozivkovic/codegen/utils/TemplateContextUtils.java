@@ -52,6 +52,7 @@ public class TemplateContextUtils {
     private static final String IS_JSON_FIELD = "isJsonField";
     private static final String AUDIT_ENABLED = "auditEnabled";
     private static final String AUDIT_TYPE = "auditType";
+    private static final String IS_ENUM = "isEnum";
 
     private TemplateContextUtils() {
         
@@ -596,7 +597,8 @@ public class TemplateContextUtils {
                     STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(field.getType()),
                     IS_COLLECTION, isCollection,
                     IS_RELATION, isRelation,
-                    IS_JSON_FIELD, FieldUtils.isJsonField(field)
+                    IS_JSON_FIELD, FieldUtils.isJsonField(field),
+                    IS_ENUM, FieldUtils.isFieldEnum(field)
                 ));
 
                 if (isRelation) {

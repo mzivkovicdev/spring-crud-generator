@@ -8,6 +8,7 @@
 <#assign relationField = rel.strippedRelationClassName?uncap_first>
 <#assign relationInput = rel.strippedRelationClassName?cap_first + "Input">
 <#assign relationInputTO = rel.strippedRelationClassName?cap_first + "InputTO">
+
     <#if swagger>@Override<#else>@PostMapping("/{id}/${relationField}s")</#if>
     public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${model.strippedModelName}</#if>> ${rel.methodName}(<#if !swagger>@PathVariable </#if>final ${idType} id,
             <#if !swagger>@RequestBody </#if>final <#if !swagger>${relationInputTO}<#else>${relationInput}</#if> body) {
