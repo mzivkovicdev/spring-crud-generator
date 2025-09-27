@@ -79,9 +79,9 @@ public class MapperGenerator implements CodeGenerator {
                                 )
                             ));
                     
-                    this.generateHelperMapper(jsonModel, outputDir, packagePath, false);
+                    this.generateHelperMapper(modelDefinition, jsonModel, outputDir, packagePath, false, swagger);
                     if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
-                        this.generateHelperMapper(jsonModel, outputDir, packagePath, true);
+                        this.generateHelperMapper(modelDefinition, jsonModel, outputDir, packagePath, true, false);
                     }
                 });
 
@@ -175,12 +175,15 @@ public class MapperGenerator implements CodeGenerator {
     /**
      * Generates a helper mapper for the given json model.
      *
+     * @param parentModel the parent model definition containing the class and field details
      * @param jsonModel the json model definition containing the class and field details
      * @param outputDir the directory where the generated class will be written
      * @param packagePath the package path of the directory where the generated class will be written
+     * @param isGraphQl indicates if the mapper is for GraphQL or REST
+     * @param swagger indicates if the mapper is for Swagger models
      */
-    private void generateHelperMapper(final ModelDefinition jsonModel, final String outputDir, final String packagePath,
-            final boolean isGraphQl) {
+    private void generateHelperMapper(final ModelDefinition parentModel, final ModelDefinition jsonModel, final String outputDir,
+            final String packagePath, final boolean isGraphQl, final boolean swagger) {
         
         final String mapperName = String.format("%sMapper", ModelNameUtils.stripSuffix(jsonModel.getName()));
         final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(jsonModel.getName()));
@@ -199,6 +202,17 @@ public class MapperGenerator implements CodeGenerator {
         context.put("modelName", jsonModel.getName());
         context.put("mapperName", mapperName);
         context.put("transferObjectName", transferObjectName);
+
+        if (swagger) {
+            context.put("generatedModelImport", String.format(
+                packagePath + GENERATED_RESOURCE_MODEL_RESOURCE,
+                StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName())), ModelNameUtils.stripSuffix(jsonModel.getName())    
+            ));
+        }
+
+        context.put("swagger", false);
+        context.put("swaggerModel", ModelNameUtils.stripSuffix(jsonModel.getName()));
+        context.put("generateAllHelperMethods", swagger);
 
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);
 

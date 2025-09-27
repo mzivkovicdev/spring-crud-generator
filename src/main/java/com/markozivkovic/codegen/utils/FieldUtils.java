@@ -388,7 +388,7 @@ public class FieldUtils {
                 .map(field -> {
                     if (isJsonField(field)) {
                         return String.format(
-                            !swagger ? "%sMapper.map%sTOTo%s(body.%s())" : "%sMapper.map%sTOTo%s(body.get%s())",
+                            !swagger ? "%sMapper.map%sTOTo%s(body.%s())" : "%sMapper.map%sTo%s(body.get%s())",
                             StringUtils.uncapitalize(field.getResolvedType()),
                             StringUtils.capitalize(field.getResolvedType()),
                             StringUtils.capitalize(field.getResolvedType()),

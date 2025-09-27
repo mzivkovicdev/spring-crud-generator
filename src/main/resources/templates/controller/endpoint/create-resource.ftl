@@ -39,7 +39,7 @@
             ${mapperClass}.map${transferObjectClass}To${strippedModelName}(
                 ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                     this.${serviceField}.create(
-                        <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.<#if !swagger>${arg.field}<#else>get${arg.field?cap_first}</#if>())<#else><#if !arg.isEnum>body.<#if !swagger>${arg.field}<#else>get${arg.field?cap_first}</#if>()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
+                        <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}To${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
                     )
                 )
             )
