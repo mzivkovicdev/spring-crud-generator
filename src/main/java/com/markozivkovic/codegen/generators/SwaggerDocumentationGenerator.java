@@ -251,7 +251,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
                 .map(field -> {
                     final Map<String, Object> endpointContext = new HashMap<>();
                     endpointContext.put("strippedModelName", ModelNameUtils.stripSuffix(field.getType()));
-                    endpointContext.put("relationType", field.getType().toUpperCase());
+                    endpointContext.put("relationType", field.getRelation().getType().toUpperCase());
 
                     final ModelDefinition relationModel = this.entities.stream()
                             .filter(e -> e.getName().equals(field.getType()))
