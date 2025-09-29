@@ -8,9 +8,9 @@
     <#if cache>@CacheEvict(value = "${strippedModelName}", key = "#${idField}")</#if>
     public void deleteById(final ${idType} ${idField}) {
 
-        LOGGER.info("Deleting ${modelName} with id {}", ${idField});
+        LOGGER.info("Deleting ${strippedModelName} with id {}", ${idField});
 
         this.repository.deleteById(${idField});
 
-        LOGGER.info("Deleted ${modelName} with id {}", ${idField});
+        LOGGER.info("Deleted ${strippedModelName} with id {}", ${idField});
     }

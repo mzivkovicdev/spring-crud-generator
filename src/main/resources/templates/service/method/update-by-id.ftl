@@ -17,7 +17,7 @@
         existing.set${fieldNamesWithoutId[0]?cap_first}(${fieldNamesWithoutId[0]})<#list fieldNamesWithoutId[1..] as field>
             .set${field?cap_first}(${field})</#list>;</#if>
 
-        LOGGER.info("Updating ${modelName} with id {}", ${idField});
+        LOGGER.info("Updating ${strippedModelName} with id {}", ${idField});
 
         return this.repository.saveAndFlush(existing);
     }

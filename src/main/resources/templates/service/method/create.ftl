@@ -11,7 +11,7 @@
     <#if cache>@CachePut(value = "${strippedModelName}", key = "#result.${idField}")</#if>
     public ${modelName} create(${inputArgs}) {
 
-        LOGGER.info("Creating new ${modelName}");
+        LOGGER.info("Creating new ${strippedModelName}");
 
         return this.repository.saveAndFlush(new ${modelName}(${fieldNames}));
     }
