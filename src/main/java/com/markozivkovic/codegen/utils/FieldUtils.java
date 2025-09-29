@@ -191,6 +191,17 @@ public class FieldUtils {
     }
 
     /**
+     * Returns true if the given field is of type Enum, false otherwise.
+     * 
+     * @param field The field to check.
+     * @return True if the field is of type Enum, false otherwise.
+     */
+    public static boolean isFieldEnum(final FieldDefinition field) {
+
+        return ENUM.equalsIgnoreCase(field.getType());
+    }
+
+    /**
      * Returns true if any field in the given list of fields is of type JSON,
      * false otherwise.
      * 
@@ -363,10 +374,11 @@ public class FieldUtils {
      * controller layer.
      * 
      * @param fields The list of fields to extract non-ID non-relation field names from.
+     * @param swagger True if the generated code is for Swagger, false otherwise.
      * @return A list of strings representing the non-ID non-relation fields in the format
      *         expected by the controller layer.
      */
-    public static List<String> extractNonIdNonRelationFieldNamesForController(final List<FieldDefinition> fields) {
+    public static List<String> extractNonIdNonRelationFieldNamesForController(final List<FieldDefinition> fields, final boolean swagger) {
         
         final FieldDefinition id = extractIdField(fields);
         
@@ -376,15 +388,25 @@ public class FieldUtils {
                 .map(field -> {
                     if (isJsonField(field)) {
                         return String.format(
-                            "%sMapper.map%sTOTo%s(body.%s())",
+                            !swagger ? "%sMapper.map%sTOTo%s(body.%s())" : "%sMapper.map%sTo%s(body.get%s())",
                             StringUtils.uncapitalize(field.getResolvedType()),
                             StringUtils.capitalize(field.getResolvedType()),
                             StringUtils.capitalize(field.getResolvedType()),
-                            StringUtils.uncapitalize(field.getResolvedType())
+                            !swagger ? StringUtils.uncapitalize(field.getResolvedType()) : StringUtils.capitalize(field.getResolvedType())
                         );
                     }
 
-                    return String.format("body.%s()", field.getName());
+                    if (isFieldEnum(field) && swagger) {
+                        return  String.format(
+                            "body.get%s() != null ? %s.valueOf(body.get%s().name()) : null",
+                            StringUtils.capitalize(field.getName()),
+                            StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getName())
+                        );
+                    }
+
+                    return !swagger ? String.format("body.%s()", field.getName()) :
+                        String.format("body.get%s()", StringUtils.capitalize(field.getName()));
                 })
                 .collect(Collectors.toList());
     }

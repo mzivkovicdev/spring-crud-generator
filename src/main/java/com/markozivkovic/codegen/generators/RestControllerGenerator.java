@@ -4,10 +4,12 @@ import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.model.CrudConfiguration;
 import com.markozivkovic.codegen.model.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -24,9 +26,11 @@ public class RestControllerGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerGenerator.class);
 
+    private final CrudConfiguration configuration;
     private final List<ModelDefinition> entites;
 
-    public RestControllerGenerator(final List<ModelDefinition> entites) {
+    public RestControllerGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
+        this.configuration = configuration;
         this.entites = entites;
     }
 
@@ -43,13 +47,15 @@ public class RestControllerGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sController", modelWithoutSuffix);
+        final Boolean swagger = Objects.nonNull(this.configuration) && Objects.nonNull(this.configuration.getSwagger())
+                && this.configuration.isSwagger();
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
         sb.append(ImportUtils.computeControllerBaseImports(modelDefinition, entites))
             .append("\n")
-            .append(generateControllerClass(modelDefinition, outputDir));
+            .append(generateControllerClass(modelDefinition, outputDir, swagger));
 
         FileWriterUtils.writeToFile(outputDir, CONTROLLERS, className, sb.toString());
     }
@@ -68,20 +74,22 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the controller class is to be generated.
      * @param outputDir The output directory where the generated class is to be written.
+     * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the controller class.
      */
-    private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir) {
+    private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Map<String, Object> context = TemplateContextUtils.computeControllerClassContext(modelDefinition);
-        context.put("projectImports", ImportUtils.computeControllerProjectImports(modelDefinition, outputDir));
+        context.put("projectImports", ImportUtils.computeControllerProjectImports(modelDefinition, outputDir, swagger));
 
-        context.put("createResource", generateCreateResourceEndpoint(modelDefinition));
-        context.put("getResource", generateGetResourceEndpoint(modelDefinition));
-        context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition));
-        context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition));
-        context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition));
-        context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition));
-        context.put("removeResourceRelation", generateRemoveResourceRelationEndpoint(modelDefinition));
+        context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger));
+        context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger));
+        context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition, swagger));
+        context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition, swagger));
+        context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition, swagger));
+        context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition, swagger));
+        context.put("removeResourceRelation", generateRemoveResourceRelationEndpoint(modelDefinition, swagger));
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/controller-template.ftl", context);
     }
@@ -91,11 +99,13 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the create resource 
      *                        endpoint is to be generated.
+     * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the create resource endpoint method.
      */
-    private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition) {
+    private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = TemplateContextUtils.computeCreateEndpointContext(modelDefinition, entites);
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-resource.ftl", context);
     }
@@ -105,18 +115,29 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the get resource 
      *                        endpoint is to be generated.
+     * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the get resource endpoint method.
      */
-    private String generateGetResourceEndpoint(final ModelDefinition modelDefinition) {
+    private String generateGetResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = TemplateContextUtils.computeGetByIdEndpointContext(modelDefinition);
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-resource.ftl", context);
     }
 
-    private String generateGetAllResourcesEndpoint(final ModelDefinition modelDefinition) {
+    /**
+     * Generates the REST endpoint for retrieving all resources.
+     * 
+     * @param modelDefinition The model definition for which the get all resources 
+     *                        endpoint is to be generated.
+     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @return A string representation of the get all resources endpoint method.
+     */
+    private String generateGetAllResourcesEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = TemplateContextUtils.computeGetAllEndpointContext(modelDefinition);
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-all-resources.ftl", context);
     }
@@ -126,11 +147,13 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the update resource 
      *                        endpoint is to be generated.
+     * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the update resource endpoint method.
      */
-    private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition) {
+    private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeUpdateEndpointContext(modelDefinition);
+        final Map<String, Object> context = TemplateContextUtils.computeUpdateEndpointContext(modelDefinition, swagger);
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/update-resource.ftl", context);
     }
@@ -140,11 +163,13 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the delete resource 
      *                        endpoint is to be generated.
+     * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the delete resource endpoint method.
      */
-    private String generateDeleteResourceEndpoint(final ModelDefinition modelDefinition) {
+    private String generateDeleteResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = TemplateContextUtils.computeDeleteEndpointContext(modelDefinition);
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/delete-resource.ftl", context);
     }
@@ -154,15 +179,18 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the add resource 
      *                        relation endpoint is to be generated.
+     * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the add resource relation endpoint method.
      */
-    private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition) {
+    private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
         
         final Map<String, Object> context = TemplateContextUtils.computeAddResourceRelationEndpointContext(modelDefinition);
         
         if (context.isEmpty()) {
             return null;
         }
+
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/add-resource-relation.ftl", context);
     }
@@ -172,16 +200,19 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the remove resource 
      *                        relation endpoint is to be generated.
+     * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the remove resource relation endpoint method,
      *         or null if the context is empty.
      */
-    private String generateRemoveResourceRelationEndpoint(final ModelDefinition modelDefinition) {
+    private String generateRemoveResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
         
         final Map<String, Object> context = TemplateContextUtils.computeRemoveResourceRelationEndpointContext(modelDefinition, entites);
         
         if (context.isEmpty()) {
             return null;
         }
+
+        context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/remove-resource-relation.ftl", context);
     }

@@ -21,6 +21,10 @@ import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
+
 public class OpenApiCodeGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiCodeGenerator.class);
@@ -64,12 +68,27 @@ public class OpenApiCodeGenerator implements CodeGenerator {
                 final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
                 final String apiSpecPath = String.format("%s/%s-api.yaml", pathToSwaggerDocs, StringUtils.uncapitalize(strippedModelName));
                 final Path apiSpecFilePath = Paths.get(apiSpecPath);
+                final String specUri = apiSpecFilePath.toUri().toString();
+
+                final ParseOptions parseOptions = new ParseOptions();
+                parseOptions.setResolve(true);
+                parseOptions.setResolveFully(false);
+                parseOptions.setFlatten(false);
+
+                final SwaggerParseResult pr = new OpenAPIV3Parser()
+                        .readLocation(specUri, null, parseOptions);
+                
+                if (Objects.isNull(pr) || Objects.isNull(pr.getOpenAPI())) {
+                    final var msgs = (pr != null && pr.getMessages() != null) ?
+                            String.join("\n", pr.getMessages()) : "(no parser messages)";
+                    throw new IllegalStateException("OpenAPI parse failed for: " + specUri + "\n" + msgs);
+                }
                 
                 final String outputPath = String.format("%s/generated/%s", outputDir, StringUtils.uncapitalize(strippedModelName));
                 final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputPath);
                 
                 final CodegenConfigurator cfg = new CodegenConfigurator()
-                        .setInputSpec(apiSpecFilePath.toUri().toString())
+                        .setInputSpec(specUri)
                         .setGeneratorName("spring")
                         .setLibrary("spring-boot")
                         .setOutputDir(projectMetadata.getProjectBaseDir())
@@ -81,6 +100,7 @@ public class OpenApiCodeGenerator implements CodeGenerator {
                 cfg.addAdditionalProperty("hideGenerationTimestamp", true);
 
                 final ClientOptInput opts = cfg.toClientOptInput();
+                opts.openAPI(pr.getOpenAPI());
                 new DefaultGenerator().opts(opts).generate();
             });
 

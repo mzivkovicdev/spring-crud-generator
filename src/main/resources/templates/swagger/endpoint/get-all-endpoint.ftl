@@ -7,13 +7,13 @@ get:
         description: Page number
         required: true
         schema:
-          type: string
+          type: integer
       - in: query
         name: pageSize
         description: Page size
         required: true
         schema:
-          type: string
+          type: integer
       
       summary: Get the ${uncapModelName}s
       tags:
@@ -31,6 +31,7 @@ get:
                     type: integer
                   totalElements:
                     type: integer
+                    format: int64
                   size:
                     type: integer
                   number:

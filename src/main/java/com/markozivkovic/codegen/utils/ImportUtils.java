@@ -75,6 +75,8 @@ public class ImportUtils {
     private static final String MAPPERS_REST_HELPERS_PACKAGE = MAPPERS_REST_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_REST_HELPERS_PACKAGE = TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql.helpers";
+    private static final String GENERATED_RESOURCE_API_RESOURCE_API = ".generated.%s.api.%ssApi";
+    private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
 
     private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
     private static final String MAPPERS_GRAPHQL_PACKAGE = MAPPERS_PACKAGE + ".graphql";
@@ -299,6 +301,34 @@ public class ImportUtils {
     }
 
     /**
+     * Computes the necessary imports for the given model definition, including the enums if any exist.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @param packagePath   the package path where the generated code will be written
+     * @return A set of strings containing the necessary import statements for the given model.
+     */
+    private static Set<String> computeEnumImports(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
+        
+        final List<FieldDefinition> enumFields = FieldUtils.extractEnumFields(modelDefinition.getFields());
+        final Set<String> imports = new LinkedHashSet<>();
+
+        enumFields.forEach(enumField -> {
+            
+            final String enumName;
+            if (!enumField.getName().endsWith("Enum")) {
+                enumName = String.format("%sEnum", StringUtils.capitalize(enumField.getName()));
+            } else {
+                enumName = StringUtils.capitalize(enumField.getName());
+            }
+
+            imports.add(String.format(IMPORT, packagePath + ENUMS_PACKAGE + "." + enumName));
+        });
+
+        return imports;
+    }
+
+    /**
      * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
      * if any.
      * 
@@ -320,19 +350,7 @@ public class ImportUtils {
             return "";
         }
 
-        final List<FieldDefinition> enumFields = FieldUtils.extractEnumFields(modelDefinition.getFields());
-
-        enumFields.forEach(enumField -> {
-            
-            final String enumName;
-            if (!enumField.getName().endsWith("Enum")) {
-                enumName = String.format("%sEnum", StringUtils.capitalize(enumField.getName()));
-            } else {
-                enumName = StringUtils.capitalize(enumField.getName());
-            }
-
-            imports.add(String.format(IMPORT, packagePath + ENUMS_PACKAGE + "." + enumName));
-        });
+        imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
 
         if (importJsonFields) {
             final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
@@ -502,28 +520,52 @@ public class ImportUtils {
      *
      * @param modelDefinition the model definition containing the class name, table name, and field definitions
      * @param outputDir       the directory where the generated code will be written
+     * @param swagger         whether to include Swagger annotations
      * @return A string containing the necessary import statements for the given model.
      */
-    public static String computeControllerProjectImports(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeControllerProjectImports(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
 
         final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
         final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
 
+        if (swagger) {
+            imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_API_RESOURCE_API, unCapModelWithoutSuffix, modelWithoutSuffix)
+            ));
+        }
+
         Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));    
+            if (!swagger) {
+                imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));    
+            } else {
+                imports.add(String.format(
+                    IMPORT,
+                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, relationModel)
+                ));
+            }
         });
 
         relations.forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
+            if (!swagger) {
+                imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
+            } else {
+                imports.add(String.format(
+                    IMPORT,
+                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, relationModel + "Input")
+                ));
+            }
         });
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
@@ -541,8 +583,19 @@ public class ImportUtils {
 
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
         imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        if (!swagger) {
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        } else {
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, modelWithoutSuffix)
+            ));
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, String.format("%ssGet200Response", modelWithoutSuffix))
+            ));
+        }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "Mapper"));
 
         return imports.stream()

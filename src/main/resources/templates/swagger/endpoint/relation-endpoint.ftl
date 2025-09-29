@@ -4,21 +4,22 @@
   <#list relations as rel>
   <#assign relationField = rel.strippedModelName?uncap_first>
   <#assign relationInput = rel.strippedModelName?cap_first + "Input">
-  <#assign relType = rel.relationType>
+  <#assign relType = rel.relationType?upper_case>
   <#assign relatedIdParam = rel.relatedIdParam>
   /${uncapModelName}s/{${idField}}/${relationField}s:
+    parameters:
+      - in: path
+        name: ${idField}
+        description: ${idDescription}
+        required: true
+        schema:
+          type: ${id.type}
+          <#if id.format??>format: ${id.format}</#if>
     post:
-      parameters:
-       - in: path
-         name: ${idField}
-         description: ${idDescription}
-         required: true
-         schema:
-           type: string
       summary: Add ${relationField} to ${uncapModelName}
       tags:
         - ${modelName}
-      operationId: ${uncapModelName}s${relationField?cap_first}sPost
+      operationId: ${uncapModelName}sId${relationField?cap_first}sPost
       requestBody:
         required: true
         description: Request adding ${rel.strippedModelName} to ${modelName}
@@ -38,30 +39,32 @@
       summary: Remove ${relationField} from ${uncapModelName}
       tags:
         - ${modelName}
-      operationId: ${uncapModelName}s${relationField?cap_first}sDelete
+      operationId: ${uncapModelName}sId${relationField?cap_first}sDelete
       responses:
         '204':
           description: Removed ${relationField} from ${uncapModelName}
   <#else>
   /${uncapModelName}s/{${idField}}/${relationField}s/{${relatedIdParam}}:
+    parameters:
+      - in: path
+        name: ${idField}
+        description: ${idDescription}
+        required: true
+        schema:
+          type: ${id.type}
+          <#if id.format??>format: ${id.format}</#if>
+      - in: path
+        name: ${relatedIdParam}
+        description: ID of related ${rel.strippedModelName} to remove
+        required: true
+        schema:
+          type: ${rel.relatedId.type}
+          <#if rel.relatedId.format??>format: ${rel.relatedId.format}</#if>
     delete:
-      parameters:
-        - in: path
-          name: ${idField}
-          description: ${idDescription}
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: ${relatedIdParam}
-          description: ID of related ${rel.strippedModelName} to remove
-          required: true
-          schema:
-            type: string
       summary: Remove ${relationField} from ${uncapModelName}
       tags:
         - ${modelName}
-      operationId: ${uncapModelName}s${relationField?cap_first}sRelatedDelete
+      operationId: ${uncapModelName}sId${relationField?cap_first}sDelete
       responses:
         '204':
           description: Removed ${rel.strippedModelName} from ${modelName}

@@ -52,6 +52,7 @@ public class TemplateContextUtils {
     private static final String IS_JSON_FIELD = "isJsonField";
     private static final String AUDIT_ENABLED = "auditEnabled";
     private static final String AUDIT_TYPE = "auditType";
+    private static final String IS_ENUM = "isEnum";
 
     private TemplateContextUtils() {
         
@@ -596,7 +597,8 @@ public class TemplateContextUtils {
                     STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(field.getType()),
                     IS_COLLECTION, isCollection,
                     IS_RELATION, isRelation,
-                    IS_JSON_FIELD, FieldUtils.isJsonField(field)
+                    IS_JSON_FIELD, FieldUtils.isJsonField(field),
+                    IS_ENUM, FieldUtils.isFieldEnum(field)
                 ));
 
                 if (isRelation) {
@@ -661,9 +663,10 @@ public class TemplateContextUtils {
      * Computes a template context for an update endpoint of a model.
      * 
      * @param modelDefinition the model definition containing the class name and field definitions
+     * @param swagger whether Swagger is enabled
      * @return a template context for the update endpoint
      */
-    public static Map<String, Object> computeUpdateEndpointContext(final ModelDefinition modelDefinition) {
+    public static Map<String, Object> computeUpdateEndpointContext(final ModelDefinition modelDefinition, final boolean swagger) {
         
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
@@ -672,7 +675,7 @@ public class TemplateContextUtils {
 
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(STRIPPED_MODEL_NAME, strippedModelName);
-        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields()));
+        context.put(INPUT_FIELDS, FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
         context.put(ID_TYPE, idField.getType());
 
         return context;
@@ -724,16 +727,17 @@ public class TemplateContextUtils {
 
             final Map<String, Object> relationContext = new HashMap<>();
             final String strippedRelationClassName = ModelNameUtils.stripSuffix(relation.getType());
+
             relationContext.put(RELATION_FIELD_MODEL, relation.getName());
             relationContext.put(STRIPPED_RELATION_CLASS_NAME, strippedRelationClassName);
             relationContext.put(METHOD_NAME, String.format("%ssId%ssPost", StringUtils.uncapitalize(strippedModelName), strippedRelationClassName));
             relations.add(relationContext);
         });
         
-        return Map.of(
+        return new HashMap<>(Map.of(
             MODEL, modelContext,
             RELATIONS, relations
-        );
+        ));
     }
 
     /**
@@ -782,10 +786,10 @@ public class TemplateContextUtils {
             relations.add(relationContext);
         });
 
-        return Map.of(
+        return new HashMap<>(Map.of(
             MODEL, modelContext,
             RELATIONS, relations
-        );
+        ));
     }
 
     /**
