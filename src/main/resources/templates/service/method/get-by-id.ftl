@@ -9,6 +9,6 @@
 
         return this.repository.findById(${idField})
             .orElseThrow(() -> new ResourceNotFoundException(
-                String.format("${modelName} with id not found: %s", ${idField})
+                String.format("${strippedModelName?cap_first} with id not found: %s", ${idField})
             ));
     }
