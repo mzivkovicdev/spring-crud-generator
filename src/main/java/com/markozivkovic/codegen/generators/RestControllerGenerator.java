@@ -47,7 +47,8 @@ public class RestControllerGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sController", modelWithoutSuffix);
-        final Boolean swagger = Objects.nonNull(this.configuration) && this.configuration.isSwagger();
+        final Boolean swagger = Objects.nonNull(this.configuration) && Objects.nonNull(this.configuration.getSwagger())
+                && this.configuration.isSwagger();
 
         final StringBuilder sb = new StringBuilder();
 
