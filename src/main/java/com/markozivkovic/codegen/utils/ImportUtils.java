@@ -35,11 +35,20 @@ import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE_TIME;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_LIST;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
+import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OPTIONAL;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_STREAM_COLLECTORS;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
 import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
+import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_AFTER_EACH;
+import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_BEFORE_EACH;
+import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH;
+import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_TEST;
+import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST;
+import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_MOCK_MOCKITO_MOCK_BEAN;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
 import java.util.LinkedHashSet;
@@ -100,7 +109,7 @@ public class ImportUtils {
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importAuditing) {
 
-        return getBaseImport(modelDefinition, List.of(), importObjects, false, false, importAuditing);
+        return getBaseImport(modelDefinition, List.of(), importObjects, false, false, importAuditing, false);
     }
 
     /**
@@ -114,7 +123,7 @@ public class ImportUtils {
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean realtionIds) {
 
-        return getBaseImport(modelDefinition, entities, false, false, realtionIds, false);
+        return getBaseImport(modelDefinition, entities, false, false, realtionIds, false, false);
     }
 
     /**
@@ -126,10 +135,12 @@ public class ImportUtils {
      * @param importObjects   whether to include the java.util.Objects import.
      * @param importList      whether to include the java.util.List import.
      * @param relationIds     whether to include the UUID import if any of the relations have a UUID ID.
+     * @param importAuditing  whether to include the auditing imports
+     * @param importOptional  whether to include the java.util.Optional import
      * @return A string containing the necessary import statements for the model.
      */
     private static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean importObjects,
-            final boolean importList, final boolean relationIds, final boolean importAuditing) {
+            final boolean importList, final boolean relationIds, final boolean importAuditing, final boolean importOptional) {
         
         final StringBuilder sb = new StringBuilder();
 
@@ -140,6 +151,7 @@ public class ImportUtils {
         addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, JAVA_MATH_BIG_INTEGER);
         addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, JAVA_TIME_LOCAL_DATE);
         addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, JAVA_TIME_LOCAL_DATE_TIME);
+        addIf(importOptional, imports, JAVA_UTIL_OPTIONAL);
         addIf(importObjects, imports, JAVA_UTIL_OBJECTS);
         
         if (modelDefinition.getAudit() != null) {
@@ -195,11 +207,25 @@ public class ImportUtils {
      * @param modelDefinition The model definition containing field information used to determine necessary imports.
      * @param importObjects   Whether to include the java.util.Objects import.
      * @param importList      Whether to include the java.util.List import.
+     * @param importAuditing  Whether to include the auditing imports
      * @return A string containing the necessary import statements for the model.
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList, final boolean importAuditing) {
 
-        return getBaseImport(modelDefinition, List.of(), importObjects, importList, false, importAuditing);
+        return getBaseImport(modelDefinition, List.of(), importObjects, importList, false, importAuditing, false);
+    }
+
+    /**
+     * Generates a string of import statements based on the fields present in the given model definition, with options to include
+     * the java.util.List interface.
+     *
+     * @param modelDefinition The model definition containing field information used to determine necessary imports.
+     * @param importList      Whether to include the java.util.List import.
+     * @return A string containing the necessary import statements for the model.
+     */
+    public static String getTestBaseImport(final ModelDefinition modelDefinition, final boolean importList) {
+        
+        return getBaseImport(modelDefinition, List.of(), false, importList, false, false, true);
     }
 
     /**
@@ -366,6 +392,35 @@ public class ImportUtils {
                         }
                     });
         }
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary import statements for the generated test service.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return A string containing the necessary import statements for the generated test service.
+     */
+    public static String computeTestServiceImports(final ModelDefinition modelDefinition) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
+
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_BEFORE_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_MOCK_MOCKITO_MOCK_BEAN));
+        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
+        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION));
+
+        addIf(isAnyFieldEnum, imports, JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);
+        addIf(isAnyFieldEnum, imports, JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE);
 
         return imports.stream()
                 .sorted()

@@ -14,6 +14,7 @@ public class CrudConfiguration {
     private Boolean graphQl;
     private ErrorResponse errorResponse;
     private Boolean migrationScripts;
+    private Boolean unitTests;
     
     public CrudConfiguration() {
 
@@ -21,7 +22,7 @@ public class CrudConfiguration {
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
             final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
-            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts) {
+            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final Boolean unitTests) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
@@ -32,6 +33,7 @@ public class CrudConfiguration {
         this.graphQl = graphQl;
         this.errorResponse = errorResponse;
         this.migrationScripts = migrationScripts;
+        this.unitTests = unitTests;
     }
 
     public DatabaseType getDatabase() {
@@ -140,6 +142,19 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Boolean getUnitTests() {
+        return this.unitTests;
+    }
+
+    public Boolean isUnitTests() {
+        return this.unitTests;
+    }
+
+    public CrudConfiguration setUnitTests(final Boolean unitTests) {
+        this.unitTests = unitTests;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -157,14 +172,15 @@ public class CrudConfiguration {
                 Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen) &&
                 Objects.equals(graphQl, crudConfiguration.graphQl) &&
                 Objects.equals(errorResponse, crudConfiguration.errorResponse) &&
-                Objects.equals(migrationScripts, crudConfiguration.migrationScripts);
+                Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
+                Objects.equals(unitTests, crudConfiguration.unitTests);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, optimisticLocking, dockerfile, cache, swagger,
-            openApiCodegen, graphQl, errorResponse, migrationScripts
+            openApiCodegen, graphQl, errorResponse, migrationScripts, unitTests
         );
     }
 
@@ -181,6 +197,7 @@ public class CrudConfiguration {
             ", graphQl='" + getGraphQl() + "'" +
             ", errorResponse='" + getErrorResponse() + "'" +
             ", migrationScripts='" + isMigrationScripts() + "'" +
+            ", unitTests='" + isUnitTests() + "'" +
             "}";
     }    
 

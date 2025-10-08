@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.markozivkovic.codegen.generators.SpringCrudGenerator;
+import com.markozivkovic.codegen.generators.tests.SpringCrudTestGenerator;
 import com.markozivkovic.codegen.model.CrudSpecification;
 import com.markozivkovic.codegen.model.ProjectMetadata;
 
@@ -53,9 +54,14 @@ public class CrudGeneratorMojo extends AbstractMojo {
             final CrudSpecification spec = yamlMapper.readValue(new File(inputSpecFile), CrudSpecification.class);
             final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir.getAbsolutePath());
             final SpringCrudGenerator generator = new SpringCrudGenerator(spec.getConfiguration(), spec.getEntities(), projectMetadata);
+            final SpringCrudTestGenerator testGenerator = new SpringCrudTestGenerator(spec.getConfiguration(), spec.getEntities());
 
             spec.getEntities().stream().forEach(entity -> {
                     generator.generate(entity, outputDir);
+            });
+
+            spec.getEntities().stream().forEach(entity -> {
+                    testGenerator.generate(entity, outputDir);
             });
         } catch (final Exception e) {
             throw new MojoExecutionException("Code generation failed", e);
