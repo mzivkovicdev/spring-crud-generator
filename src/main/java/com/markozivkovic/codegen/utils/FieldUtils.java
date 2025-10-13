@@ -547,6 +547,47 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts the names of all fields from the given list.
+     * 
+     * @param fields The list of fields to extract names from.
+     * @return A list of names of the fields.
+     */
+    public static List<String> extractFieldNamesWithoutRelations(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .map(field -> {
+                    if (field.getRelation() != null) {
+                        if (field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) ||
+                                field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY)) {
+                            return null;
+                        }
+                    }
+
+                    return field.getName();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the names of all fields from the given model definition that have a one-to-many or
+     * many-to-many relation.
+     *
+     * @param modelDefinition The model definition to extract the names of fields with a one-to-many or
+     *                  many-to-many relation from.
+     * @return A list of names of fields from the given model definition that have a one-to-many or
+     *          many-to-many relation.
+     */
+    public static List<String> extractCollectionRelationNames(final ModelDefinition modelDefinition) {
+        
+        return modelDefinition.getFields().stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .filter(field -> field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) || field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY))
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Checks if any field within the provided list of model definitions has a one-to-many or
      * many-to-many relation to the specified model definition.
      *

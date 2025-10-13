@@ -250,9 +250,13 @@ public class TemplateContextUtils {
      */
     public static Map<String, Object> computeDeleteByIdContext(final ModelDefinition modelDefinition) {
         
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final Map<String, Object> context = computeGetByIdContext(modelDefinition);
+        
         context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
         context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
+        context.put(ID_FIELD, idField.getName());
+        context.put(ID_TYPE, idField.getType());
         
         return context;
     }
@@ -274,6 +278,7 @@ public class TemplateContextUtils {
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_FIELD, idField.getName());
+        context.put(ID_TYPE, idField.getType());
         context.put(INPUT_FIELDS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
         context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
         context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
@@ -291,8 +296,12 @@ public class TemplateContextUtils {
      */
     public static Map<String, Object> computeGetAllContext(final ModelDefinition modelDefinition) {
     
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
+        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
+        context.put(ID_FIELD, idField.getName());
+        context.put(ID_TYPE, idField.getType());
         
         return context;
     }
@@ -310,6 +319,8 @@ public class TemplateContextUtils {
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_TYPE, idField.getType());
+        context.put(ID_FIELD, idField.getName());
+        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
         
@@ -330,6 +341,7 @@ public class TemplateContextUtils {
         context.put(MODEL_NAME, modelDefinition.getName());
         context.put(ID_TYPE, idField.getType());
         context.put(ID_FIELD, idField.getName());
+        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
         
