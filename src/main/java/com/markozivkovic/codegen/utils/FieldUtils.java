@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.ModelDefinition;
-import com.markozivkovic.codegen.model.RelationDefinition;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.RelationDefinition;
 
 public class FieldUtils {
 

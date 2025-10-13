@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.context.GeneratorContext;
-import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;

@@ -7,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.generators.CodeGenerator;
-import com.markozivkovic.codegen.model.CrudConfiguration;
-import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.ModelDefinition;
 
 public class SpringCrudTestGenerator implements CodeGenerator {
     

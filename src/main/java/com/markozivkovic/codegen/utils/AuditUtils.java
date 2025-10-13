@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.utils;
 
-import com.markozivkovic.codegen.model.AuditDefinition.AuditTypeEnum;
+import com.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
 
 public class AuditUtils {
     

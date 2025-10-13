@@ -1,4 +1,4 @@
-package com.markozivkovic.codegen.model;
+package com.markozivkovic.codegen.models;
 
 import java.util.List;
 import java.util.Objects;

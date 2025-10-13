@@ -8,8 +8,8 @@ import java.util.Objects;
 
 import org.apache.maven.api.annotations.Nullable;
 
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.RelationDefinition;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.RelationDefinition;
 
 public class SwaggerUtils {
 

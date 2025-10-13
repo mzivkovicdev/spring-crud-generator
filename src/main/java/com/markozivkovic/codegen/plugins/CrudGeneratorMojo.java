@@ -14,8 +14,8 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.markozivkovic.codegen.generators.SpringCrudGenerator;
 import com.markozivkovic.codegen.generators.tests.SpringCrudTestGenerator;
-import com.markozivkovic.codegen.model.CrudSpecification;
-import com.markozivkovic.codegen.model.ProjectMetadata;
+import com.markozivkovic.codegen.models.CrudSpecification;
+import com.markozivkovic.codegen.models.ProjectMetadata;
 
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class CrudGeneratorMojo extends AbstractMojo {

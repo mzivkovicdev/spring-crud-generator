@@ -10,10 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.generators.CodeGenerator;
-import com.markozivkovic.codegen.generators.JpaServiceGenerator;
-import com.markozivkovic.codegen.model.CrudConfiguration;
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -24,7 +23,7 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class ServiceUnitTestGenerator implements CodeGenerator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JpaServiceGenerator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceUnitTestGenerator.class);
 
     private static final String SERVICES = "services";
     private static final String SERVICES_PACKAGE = "." + SERVICES;

@@ -19,12 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.markozivkovic.codegen.model.CrudConfiguration.DatabaseType;
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.IdDefinition.IdStrategyEnum;
-import com.markozivkovic.codegen.model.ModelDefinition;
-import com.markozivkovic.codegen.model.RelationDefinition;
-import com.markozivkovic.codegen.model.flyway.MigrationState;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.RelationDefinition;
+import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
+import com.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
+import com.markozivkovic.codegen.models.flyway.MigrationState;
 
 public class FlywayUtils {
     

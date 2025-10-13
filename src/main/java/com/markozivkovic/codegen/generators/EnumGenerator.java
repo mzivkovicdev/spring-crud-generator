@@ -8,8 +8,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;

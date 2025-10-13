@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.TransactionConstants;
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
 
 public class TemplateContextUtils {
 

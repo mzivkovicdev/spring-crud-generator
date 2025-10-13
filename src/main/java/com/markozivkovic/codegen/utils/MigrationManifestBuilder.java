@@ -10,14 +10,14 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.markozivkovic.codegen.model.flyway.AuditState;
-import com.markozivkovic.codegen.model.flyway.ColumnState;
-import com.markozivkovic.codegen.model.flyway.EntityState;
-import com.markozivkovic.codegen.model.flyway.FileState;
-import com.markozivkovic.codegen.model.flyway.FkState;
-import com.markozivkovic.codegen.model.flyway.JoinState;
-import com.markozivkovic.codegen.model.flyway.JoinState.JoinSide;
-import com.markozivkovic.codegen.model.flyway.MigrationState;
+import com.markozivkovic.codegen.models.flyway.AuditState;
+import com.markozivkovic.codegen.models.flyway.ColumnState;
+import com.markozivkovic.codegen.models.flyway.EntityState;
+import com.markozivkovic.codegen.models.flyway.FileState;
+import com.markozivkovic.codegen.models.flyway.FkState;
+import com.markozivkovic.codegen.models.flyway.JoinState;
+import com.markozivkovic.codegen.models.flyway.MigrationState;
+import com.markozivkovic.codegen.models.flyway.JoinState.JoinSide;
 
 public class MigrationManifestBuilder {
     
