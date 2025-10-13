@@ -3,7 +3,7 @@
     void updateById() {
 
         final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
-        final ${idType} ${idField} = ${modelName?uncap_first}.get${idField?cap_first}();
+        final ${idType} ${idField} = ${strippedModelName?uncap_first}.get${idField?cap_first}();
 
         when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
                 .thenReturn(Optional.of(${strippedModelName?uncap_first}));
@@ -24,7 +24,7 @@
     void updateById_notFound() {
 
         final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
-        final ${idType} ${idField} = ${modelName?uncap_first}.get${idField?cap_first}();
+        final ${idType} ${idField} = ${strippedModelName?uncap_first}.get${idField?cap_first}();
 
         when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
                 .thenReturn(Optional.empty());

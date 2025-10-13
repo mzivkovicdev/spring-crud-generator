@@ -30,11 +30,11 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private static final String SERVICES_PACKAGE = "." + SERVICES;
 
     private final CrudConfiguration configuration;
-    private final List<ModelDefinition> entites;
+    private final List<ModelDefinition> entities;
 
     public ServiceUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
         this.configuration = configuration;
-        this.entites = entites;
+        this.entities = entites;
     }
     
     @Override
@@ -79,10 +79,10 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
 
         final Map<String, Object> context = new HashMap<>();
         final String baseImports = ImportUtils.getTestBaseImport(
-                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entites)
+                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities)
         );
         final String projectImports = ImportUtils.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir);
-        final String testImports = ImportUtils.computeTestServiceImports(modelDefinition);
+        final String testImports = ImportUtils.computeTestServiceImports(modelDefinition, entities);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
@@ -120,7 +120,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String getReferenceByIdMethod(final ModelDefinition modelDefinition) {
         
-        if (!FieldUtils.hasRelation(modelDefinition, entites)) {
+        if (!FieldUtils.hasRelation(modelDefinition, entities)) {
             return null;
         }
 
@@ -137,7 +137,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String getAllByIdsMethod(final ModelDefinition modelDefinition) {
 
-        if (!FieldUtils.hasCollectionRelation(modelDefinition, entites)) {
+        if (!FieldUtils.hasCollectionRelation(modelDefinition, entities)) {
             return null;
         }
         final Map<String, Object> context = TemplateContextUtils.createGetAllByIdsMethodContext(modelDefinition);
@@ -219,7 +219,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateCreateMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = TemplateContextUtils.computeCreateContext(modelDefinition);
-        context.put("fieldNamesList", FieldUtils.extractFieldNames(modelDefinition.getFields()));
+        context.put("fieldNamesList", FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/create.ftl", context);
     }

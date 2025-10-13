@@ -17,7 +17,7 @@ class ${className} {
 
     private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
 
-    @MockBean
+    @MockitoBean
     private ${strippedModelName?cap_first}Repository ${strippedModelName?uncap_first}Repository;
 
     private ${strippedModelName?cap_first}Service ${strippedModelName?uncap_first}Service;

@@ -22,7 +22,7 @@
         when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> this.${strippedModelName?uncap_first}Service.getById(id))
+        assertThatThrownBy(() -> this.${strippedModelName?uncap_first}Service.getById(${idField}))
                 .isExactlyInstanceOf(ResourceNotFoundException.class)
                 .hasMessage(
                     String.format("${strippedModelName?cap_first} with id not found: %s", ${idField})

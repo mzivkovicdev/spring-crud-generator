@@ -3,14 +3,14 @@
     void getAllByIds() {
 
         final List<${modelName}> ${strippedModelName?uncap_first}s = PODAM_FACTORY.manufacturePojo(List.class, ${modelName}.class);
-        final List<${idType}> ids = ${strippedModelName?uncap_first}.stream()
-                .map(${modelName}::${idField})
+        final List<${idType}> ids = ${strippedModelName?uncap_first}s.stream()
+                .map(${modelName}::get${idField?cap_first})
                 .collect(Collectors.toList());
 
         when(this.${strippedModelName?uncap_first}Repository.findAllById(ids))
-                .thenReturn(${strippedModelName?uncap_first});
+                .thenReturn(${strippedModelName?uncap_first}s);
 
-        final List<${strippedModelName}> results = this.${strippedModelName}Service.getAllByIds(ids);
+        final List<${modelName}> results = this.${strippedModelName}Service.getAllByIds(ids);
 
         results.forEach(result -> {
 

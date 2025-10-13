@@ -27,6 +27,7 @@ import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_ANNOT
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_ANNOTATION_LAST_MODIFIED_DATE;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_JPA_DOMAIN_SUPPORT_AUDITING_ENTITY_LISTENER;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
+import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_IMPL;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
 import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_DECIMAL;
@@ -48,7 +49,7 @@ import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_AP
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_MOCK_MOCKITO_MOCK_BEAN;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
 import java.util.LinkedHashSet;
@@ -402,25 +403,29 @@ public class ImportUtils {
      * Computes the necessary import statements for the generated test service.
      *
      * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param entities        the list of all model definitions
      * @return A string containing the necessary import statements for the generated test service.
      */
-    public static String computeTestServiceImports(final ModelDefinition modelDefinition) {
+    public static String computeTestServiceImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
         final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
+        final boolean hasCollectionRelation = FieldUtils.hasCollectionRelation(modelDefinition, entities);
 
         imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
         imports.add(String.format(IMPORT, JUNIT_JUPITER_API_BEFORE_EACH));
         imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
         imports.add(String.format(IMPORT, JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_MOCK_MOCKITO_MOCK_BEAN));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
         imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
+        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_IMPL));
         imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST));
         imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION));
 
-        addIf(isAnyFieldEnum, imports, JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);
-        addIf(isAnyFieldEnum, imports, JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE);
+        addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST));
+        addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE));
+        addIf(hasCollectionRelation, imports, String.format(IMPORT, JAVA_UTIL_STREAM_COLLECTORS));
 
         return imports.stream()
                 .sorted()

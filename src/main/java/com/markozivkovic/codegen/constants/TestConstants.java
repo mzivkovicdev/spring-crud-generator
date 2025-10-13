@@ -20,8 +20,8 @@ public class TestConstants {
 
     public static final String SPRINGFRAMEWORK = "org.springframework";
     public static final String SPRINGFRAMEWORK_BOOT_TEST = SPRINGFRAMEWORK + ".boot.test";
-    public static final String SPRINGFRAMEWORK_BOOT_TEST_MOCK_MOCKITO_MOCK_BEAN =
-            SPRINGFRAMEWORK_BOOT_TEST + ".mock.mockito.MockBean";
+    public static final String SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN =
+            SPRINGFRAMEWORK + ".test.context.bean.override.mockito.MockitoBean";
     public static final String SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION =
             SPRINGFRAMEWORK + ".test.context.junit.jupiter.SpringExtension";
 
