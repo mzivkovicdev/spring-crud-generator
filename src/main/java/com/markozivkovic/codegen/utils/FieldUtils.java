@@ -227,6 +227,20 @@ public class FieldUtils {
     }
 
     /**
+     * Returns a list of names of all fields from the given list of fields that are of type Enum.
+     * 
+     * @param fields The list of fields to extract Enum field names from.
+     * @return A list of names of fields that are of type Enum.
+     */
+    public static List<String> extractNamesOfEnumFields(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .filter(field -> ENUM.equalsIgnoreCase(field.getType()))
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Extracts all fields from the given list of fields that are of type JSON.
      * 
      * @param fields The list of fields to extract JSON fields from.
@@ -364,6 +378,24 @@ public class FieldUtils {
         return fields.stream()
                 .filter(field -> !field.getName().equals(id.getName()))
                 .filter(field -> Objects.isNull(field.getRelation()))
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that do not have a relation, do not have an enum type
+     * and do not have a JSON field.
+     * 
+     * @param fields The list of fields to extract non-ID non-relation field names from.
+     * @return A list of names of fields that are not marked as ID fields and do not have a
+     *         relation, and do not have an enum type.
+     */
+    public static List<String> extractNonRelationNonEnumAndNonJsonFieldNames(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .filter(field -> !isFieldEnum(field))
+                .filter(field -> !isJsonField(field))
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
     }
