@@ -3,7 +3,7 @@ import java.util.List;
 import org.mapstruct.Mapper;
 
 <#if swagger?? && swagger && !(generateAllHelperMethods?? && !generateAllHelperMethods)>${generatedModelImport}</#if><#if helperMapperImports??>${helperMapperImports}</#if>${modelImport}${transferObjectImport}
-@Mapper(componentModel = "spring"<#if parameters??>, uses = { ${parameters} }</#if>)
+@Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 
     ${transferObjectName} map${modelName}To${transferObjectName}(final ${modelName} model);

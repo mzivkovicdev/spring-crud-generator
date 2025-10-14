@@ -12,12 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.context.GeneratorContext;
-import com.markozivkovic.codegen.model.CrudConfiguration;
-import com.markozivkovic.codegen.model.CrudConfiguration.DatabaseType;
-import com.markozivkovic.codegen.model.FieldDefinition;
-import com.markozivkovic.codegen.model.ModelDefinition;
-import com.markozivkovic.codegen.model.ProjectMetadata;
-import com.markozivkovic.codegen.model.flyway.MigrationState;
+import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.ProjectMetadata;
+import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
+import com.markozivkovic.codegen.models.flyway.MigrationState;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FlywayUtils;

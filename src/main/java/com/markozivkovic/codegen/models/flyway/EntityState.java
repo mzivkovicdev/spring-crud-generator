@@ -1,4 +1,4 @@
-package com.markozivkovic.codegen.model.flyway;
+package com.markozivkovic.codegen.models.flyway;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.generators;
 
-import com.markozivkovic.codegen.model.ModelDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
 
 public interface CodeGenerator {
     
