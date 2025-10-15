@@ -3,7 +3,8 @@
 <#assign serviceClass = strippedModelName?cap_first + "Service">
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
-<#assign mapperClass = strippedModelName?cap_first + "Mapper">
+<#assign mapperClass = strippedModelName?cap_first + "RestMapper">
+<#assign mapperField = strippedModelName?cap_first + "Mapper">
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
@@ -23,10 +24,11 @@ ${projectImports}
 @RequestMapping("/api/v1/${uncapModelName}s")
 public class ${className} <#if swagger>implements ${strippedModelName}sApi</#if>{
 
-    private final ${mapperClass} ${mapperClass?uncap_first} = Mappers.getMapper(${mapperClass}.class);
+    private final ${mapperClass} ${mapperField?uncap_first} = Mappers.getMapper(${mapperClass}.class);
     <#list jsonFields as jsonField>
-    <#assign jsonFieldMapperClass = jsonField?cap_first + "Mapper">
-    private final ${jsonFieldMapperClass} ${jsonFieldMapperClass?uncap_first} = Mappers.getMapper(${jsonFieldMapperClass}.class);
+    <#assign jsonFieldMapperClass = jsonField?cap_first + "RestMapper">
+    <#assign jsonFieldMapper = jsonField?cap_first + "Mapper">
+    private final ${jsonFieldMapperClass} ${jsonFieldMapper?uncap_first} = Mappers.getMapper(${jsonFieldMapperClass}.class);
     </#list>
 
     private final ${serviceClass} ${serviceField};

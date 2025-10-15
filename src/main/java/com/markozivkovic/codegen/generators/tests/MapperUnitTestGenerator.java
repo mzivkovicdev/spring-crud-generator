@@ -113,7 +113,8 @@ public class MapperUnitTestGenerator implements CodeGenerator {
             final String packagePath, final boolean isGraphQl, final boolean swagger) {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final String className = String.format("%sMapperTest", strippedModelName);
+        final String className = isGraphQl ? String.format("%sGraphQlMapperTest", strippedModelName) :
+                String.format("%sRestMapperTest", strippedModelName);
         final String transferObjectName = String.format("%sTO", strippedModelName);
         final String modelImport = String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
@@ -133,6 +134,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("strippedModelName", strippedModelName);
         context.put("transferObjectName", transferObjectName);
         context.put("idField", idField.getName());
+        context.put("isGraphQL", isGraphQl);
         context.put("fieldNames", FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(modelDefinition.getFields()));
         context.put("enumFields", FieldUtils.extractNamesOfEnumFields(modelDefinition.getFields()));
         context.put("swagger", swagger);
@@ -172,8 +174,9 @@ public class MapperUnitTestGenerator implements CodeGenerator {
     private void generateHelperMapperTest(final ModelDefinition parentModel, final ModelDefinition jsonModel, final String outputDir,
             final String packagePath, final boolean isGraphQl, final boolean swagger) {
         
-        final String className = String.format("%sMapperTest", ModelNameUtils.stripSuffix(jsonModel.getName()));
         final String strippedModelName = ModelNameUtils.stripSuffix(jsonModel.getName());
+        final String className = isGraphQl ? String.format("%sGraphQlMapperTest", strippedModelName) :
+                String.format("%sRestMapperTest", strippedModelName);
         final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(jsonModel.getName()));
 
         final String modelImport = String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + jsonModel.getName());
@@ -195,6 +198,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("strippedModelName", strippedModelName);
         context.put("transferObjectName", transferObjectName);
         context.put("swagger", false);
+        context.put("isGraphQL", isGraphQl);
         context.put("idField", jsonModel.getFields().stream().findAny().orElseThrow().getName());
         context.put("swaggerModel", strippedModelName);
         context.put("generateAllHelperMethods", swagger);

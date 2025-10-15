@@ -2,10 +2,15 @@
   <#return field.type?matches("JSONB?\\[.+\\]")>
 </#function>
 
-<#function jsonInnerType field>
-  <#-- backref $1 hvata unutrašnji deo -->
-  <#return field.type?replace("^JSONB?\\[(.+)]$", "$1", "r")>
+<#function jsonInnerType field isInput>
+  <#assign inner = field.type?replace("^JSONB?\\[(.+)]$", "$1", "r")>
+  <#if isInput?? && isInput>
+    <#return inner + "Input">
+  <#else>
+    <#return inner>
+  </#if>
 </#function>
+
 
 <#function mapScalarType t>
   <#assign T = t?trim>
@@ -24,7 +29,6 @@
   <#elseif T == "LocalDateTime" || T == "OffsetDateTime" || T == "Instant">
     <#return "DateTime">
   <#else>
-    <#-- Fallback: tretiraj kao referencirani tip/enum -->
     <#return T>
   </#if>
 </#function>
@@ -39,9 +43,9 @@
   <#return false>
 </#function>
 
-<#function gqlFieldType field>
+<#function gqlFieldType field isInput>
   <#if isJson(field)>
-    <#return jsonInnerType(field)>
+    <#return jsonInnerType(field, isInput)>
   <#else>
     <#return mapScalarType(field.type)>
   </#if>

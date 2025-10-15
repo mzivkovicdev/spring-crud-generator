@@ -102,7 +102,8 @@ public class MapperGenerator implements CodeGenerator {
             final String packagePath, final boolean isGraphQl, final boolean swagger) {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final String mapperName = String.format("%sMapper", strippedModelName);
+        final String mapperName = isGraphQl ? String.format("%sGraphQLMapper", strippedModelName) :
+                String.format("%sRestMapper", strippedModelName);
         final String transferObjectName = String.format("%sTO", strippedModelName);
         final String modelImport = String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName());
         final String transferObjectImport;
@@ -118,7 +119,7 @@ public class MapperGenerator implements CodeGenerator {
         final String helperMapperImports = jsonFields.stream()
                 .map(FieldUtils::extractJsonFieldName)
                 .map(field -> String.format(
-                    IMPORT, packagePath + (isGraphQl ? MAPPERS_GRAPHQL_HELPERS_PACKAGE : MAPPERS_HELPERS_PACKAGE) + "." + field + "Mapper"
+                    IMPORT, packagePath + (isGraphQl ? MAPPERS_GRAPHQL_HELPERS_PACKAGE : MAPPERS_HELPERS_PACKAGE) + "." + field + (isGraphQl ? "GraphQLMapper" : "RestMapper")
                 ))
                 .collect(Collectors.joining(", "));
 
@@ -155,7 +156,7 @@ public class MapperGenerator implements CodeGenerator {
                             return ModelNameUtils.stripSuffix(field.getType());
                         }
                     })
-                    .map(field -> String.format("%sMapper.class", field))
+                    .map(field -> isGraphQl ? String.format("%sGraphQLMapper.class", field) : String.format("%sRestMapper.class", field))
                     .distinct()
                     .collect(Collectors.joining(", "));
             context.put("parameters", mapperParameters);
@@ -185,7 +186,8 @@ public class MapperGenerator implements CodeGenerator {
     private void generateHelperMapper(final ModelDefinition parentModel, final ModelDefinition jsonModel, final String outputDir,
             final String packagePath, final boolean isGraphQl, final boolean swagger) {
         
-        final String mapperName = String.format("%sMapper", ModelNameUtils.stripSuffix(jsonModel.getName()));
+        final String mapperName = isGraphQl ? String.format("%sGraphQLMapper", ModelNameUtils.stripSuffix(jsonModel.getName())) :
+                String.format("%sRestMapper", ModelNameUtils.stripSuffix(jsonModel.getName()));
         final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(jsonModel.getName()));
 
         final String modelImport = String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + jsonModel.getName());

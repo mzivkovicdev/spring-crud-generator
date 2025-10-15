@@ -15,7 +15,11 @@ class ${className} {
 
     private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
 
-    private final ${strippedModelName?cap_first}Mapper ${strippedModelName?uncap_first}Mapper = Mappers.getMapper(${strippedModelName?cap_first}Mapper.class);
+    <#if isGraphQL>
+    private final ${strippedModelName?cap_first}GraphQLMapper ${strippedModelName?uncap_first}Mapper = Mappers.getMapper(${strippedModelName?cap_first}GraphQLMapper.class);
+    <#else>
+    private final ${strippedModelName?cap_first}RestMapper ${strippedModelName?uncap_first}Mapper = Mappers.getMapper(${strippedModelName?cap_first}RestMapper.class);
+    </#if>
 
     @Test
     void map${modelName}To${transferObjectName}() {
