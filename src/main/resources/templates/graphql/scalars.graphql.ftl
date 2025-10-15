@@ -6,3 +6,4 @@ scalar UUID
 scalar Date
 scalar DateTime
 scalar BigDecimal
+scalar JSON
