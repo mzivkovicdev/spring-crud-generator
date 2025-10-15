@@ -7,6 +7,23 @@ enum ${name}${ef.name?cap_first}Enum {
 }
 </#list>
 
+<#list jsonModels as jsonModel>
+<#assign jsonFields = jsonModel.fields>
+type ${jsonModel.name} {
+<#list jsonFields as field>
+  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field, true))>
+  ${field.name}: ${baseType}
+</#list>
+}
+
+input ${jsonModel.name}Input {
+<#list jsonFields as field>
+  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field, true))>
+  ${field.name}: ${baseType}
+</#list>
+}
+</#list>
+
 type ${name} {
   <#list fields as field>
   <#if hasRelation(field)>
@@ -17,7 +34,7 @@ type ${name} {
   ${field.name}: ${tgt}<#if relNonNull(field)>!</#if>
   </#if>
   <#else>
-  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field))>
+  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field, false))>
   <#assign typeWithNull = withNullability(baseType, field)>
   ${field.name}: ${typeWithNull}
   </#if>
@@ -34,7 +51,7 @@ input ${name}CreateInput {
   ${refName}: ID!
   </#if>
   <#else>
-  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field))>
+  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field, true))>
   <#assign typeWithNull = (field.column?has_content && field.column.nullable?has_content && field.column.nullable == false)?then(baseType + "!", baseType)>
   ${field.name}: ${typeWithNull}
   </#if>
@@ -45,7 +62,7 @@ input ${name}CreateInput {
 <#if updatableFields?size gt 0>
 input ${name}UpdateInput {
   <#list updatableFields as field>
-  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field))>
+  <#assign baseType = (isEnum(field))?then(name + field.name?cap_first + "Enum", gqlFieldType(field, true))>
   ${field.name}: ${baseType}
   </#list>
 }

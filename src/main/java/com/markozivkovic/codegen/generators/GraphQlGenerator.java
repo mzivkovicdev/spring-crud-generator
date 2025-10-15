@@ -109,10 +109,18 @@ public class GraphQlGenerator implements CodeGenerator {
                 }
                 return field;
             }).collect(Collectors.toList());
+            
+        final List<String> jsonFieldNames = FieldUtils.extractJsonFields(fields).stream()
+                .map(jsonField -> FieldUtils.extractJsonFieldName(jsonField))
+                .collect(Collectors.toList());
+        final List<ModelDefinition> jsonModels = this.entities.stream()
+                .filter(model -> jsonFieldNames.contains(model.getName()))
+                .collect(Collectors.toList());
         
         final Map<String, Object> context = Map.of(
             "name", ModelNameUtils.stripSuffix(e.getName()),
-            "fields", fields
+            "fields", fields,
+            "jsonModels", jsonModels
         );
 
         final String graphQl = FreeMarkerTemplateProcessorUtils.processTemplate(
