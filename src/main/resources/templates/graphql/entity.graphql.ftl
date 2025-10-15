@@ -51,9 +51,17 @@ input ${name}UpdateInput {
 }
 </#if>
 
+type ${name}Page {
+  totalPages: Int!
+  totalElements: Long!
+  size: Int!
+  number: Int!
+  content: [${name}!]!
+}
+
 extend type Query {
   ${name?uncap_first}ById(id: ID!): ${name}
-  ${name?uncap_first}sPage(pageNumber: Int = 0, pageSize: Int = 20): Page
+  ${name?uncap_first}sPage(pageNumber: Int = 0, pageSize: Int = 20): ${name}Page!
 }
 
 extend type Mutation {
@@ -62,7 +70,7 @@ extend type Mutation {
   delete${name}(id: ID!): Boolean!
   <#list fields?filter(f -> hasRelation(f)) as field>
   <#assign relCap = field.name?cap_first>
-  add${relCap}(id: ID!, ${field.name}Id: ID!): ${name}!
-  remove${relCap}(id: ID! <#if isToMany(field)>, ${field.name}Id: ID!</#if>): ${name}!
+  add${relCap}To${name}(id: ID!, ${field.name}Id: ID!): ${name}!
+  remove${relCap}From${name}(id: ID! <#if isToMany(field)>, ${field.name}Id: ID!</#if>): ${name}!
   </#list>
 }
