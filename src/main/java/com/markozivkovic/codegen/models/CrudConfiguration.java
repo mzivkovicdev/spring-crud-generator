@@ -1,5 +1,7 @@
 package com.markozivkovic.codegen.models;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class CrudConfiguration {
@@ -15,6 +17,7 @@ public class CrudConfiguration {
     private ErrorResponse errorResponse;
     private Boolean migrationScripts;
     private Boolean unitTests;
+    private Map<String, Boolean> additionalProperties = new HashMap<>();
     
     public CrudConfiguration() {
 
@@ -22,7 +25,8 @@ public class CrudConfiguration {
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
             final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
-            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final Boolean unitTests) {
+            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final Boolean unitTests,
+            final Map<String, Boolean> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
@@ -34,6 +38,7 @@ public class CrudConfiguration {
         this.errorResponse = errorResponse;
         this.migrationScripts = migrationScripts;
         this.unitTests = unitTests;
+        this.additionalProperties = additionalProperties;
     }
 
     public DatabaseType getDatabase() {
@@ -155,6 +160,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Map<String, Boolean> getAdditionalProperties() {
+        return this.additionalProperties;
+    }
+
+    public CrudConfiguration setAdditionalProperties(final Map<String, Boolean> additionalProperties) {
+        this.additionalProperties = additionalProperties;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -173,14 +187,16 @@ public class CrudConfiguration {
                 Objects.equals(graphQl, crudConfiguration.graphQl) &&
                 Objects.equals(errorResponse, crudConfiguration.errorResponse) &&
                 Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
-                Objects.equals(unitTests, crudConfiguration.unitTests);
+                Objects.equals(unitTests, crudConfiguration.unitTests) &&
+                Objects.equals(additionalProperties, crudConfiguration.additionalProperties);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, optimisticLocking, dockerfile, cache, swagger,
-            openApiCodegen, graphQl, errorResponse, migrationScripts, unitTests
+            openApiCodegen, graphQl, errorResponse, migrationScripts, unitTests,
+            additionalProperties
         );
     }
 
@@ -198,6 +214,7 @@ public class CrudConfiguration {
             ", errorResponse='" + getErrorResponse() + "'" +
             ", migrationScripts='" + isMigrationScripts() + "'" +
             ", unitTests='" + isUnitTests() + "'" +
+            ", additionalProperties='" + getAdditionalProperties() + "'" +
             "}";
     }    
 
