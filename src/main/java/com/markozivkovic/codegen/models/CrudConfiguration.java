@@ -17,7 +17,7 @@ public class CrudConfiguration {
     private ErrorResponse errorResponse;
     private Boolean migrationScripts;
     private Boolean unitTests;
-    private Map<String, Boolean> additionalProperties = new HashMap<>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
     
     public CrudConfiguration() {
 
@@ -26,7 +26,7 @@ public class CrudConfiguration {
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
             final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
             final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final Boolean unitTests,
-            final Map<String, Boolean> additionalProperties) {
+            final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
@@ -160,11 +160,11 @@ public class CrudConfiguration {
         return this;
     }
 
-    public Map<String, Boolean> getAdditionalProperties() {
+    public Map<String, Object> getAdditionalProperties() {
         return this.additionalProperties;
     }
 
-    public CrudConfiguration setAdditionalProperties(final Map<String, Boolean> additionalProperties) {
+    public CrudConfiguration setAdditionalProperties(final Map<String, Object> additionalProperties) {
         this.additionalProperties = additionalProperties;
         return this;
     }

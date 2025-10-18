@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -28,6 +29,8 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class BusinessServiceGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessServiceGenerator.class);
+
+    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
 
     private static final String BUSINESS_SERVICES = "businessservices";
     private static final String BUSINESS_SERVICES_PACKAGE = "." + BUSINESS_SERVICES;
@@ -70,9 +73,13 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         sb.append(String.format(IMPORT, SL4J_LOGGER))
                 .append(String.format(IMPORT, SL4J_LOGGER_FACTORY))
-                .append(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE))
-                .append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL))
-                .append("\n")
+                .append(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE));
+        
+        if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            sb.append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+        }
+        
+        sb.append("\n")
                 .append(ImportUtils.computeModelsEnumsAndServiceImports(modelDefinition, outputDir))
                 .append("\n")
                 .append(generateBusinessServiceClass(modelDefinition));

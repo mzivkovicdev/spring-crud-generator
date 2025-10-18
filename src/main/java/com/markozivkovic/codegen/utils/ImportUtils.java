@@ -50,6 +50,7 @@ import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PA
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN;
+import static com.markozivkovic.codegen.constants.TransactionConstants.OPTIMISTIC_LOCKING_RETRY;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
 import java.util.LinkedHashSet;
@@ -59,15 +60,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 
 public class ImportUtils {
 
-    private static final String PAGE_TO = "PageTO";
+    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
 
+    private static final String PAGE_TO = "PageTO";
     private static final String MANY_TO_MANY = "ManyToMany";
 
+    private static final String ANNOTATIONS_PACKAGE = ".annotations";
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String REPOSITORIES_PACKAGE = ".repositories";
@@ -447,7 +451,9 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
         imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST));
         imports.add(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE));
-        imports.add(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+        if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            imports.add(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+        }
 
         if (cache) {
             imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE));
@@ -487,6 +493,10 @@ public class ImportUtils {
 
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
 
+        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + OPTIMISTIC_LOCKING_RETRY));
+        }
+
         if (!relationModels.isEmpty()) {
             imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + INVALID_RESOURCE_STATE_EXCEPTION));
         }
@@ -523,6 +533,10 @@ public class ImportUtils {
             imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + relation.getType()));
             imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + ModelNameUtils.stripSuffix(relation.getType()) + "Service"));
         });
+
+        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + OPTIMISTIC_LOCKING_RETRY));
+        }
 
         return imports.stream()
                 .sorted()

@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.AdditionalConfigurationConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -32,9 +31,7 @@ public class GraphQlGenerator implements CodeGenerator {
     private static final String GRAPHQL = "graphql";
     private static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/" + GRAPHQL;
     private static final String RESOLVERS = "resolvers";
-    private static final String CONFIGURATIONS = "configurations";
     private static final String RESOLVERS_PACKAGE = "." + RESOLVERS;
-    private static final String CONFIGURATIONS_PACKAGE = "." + CONFIGURATIONS;
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -87,38 +84,10 @@ public class GraphQlGenerator implements CodeGenerator {
                 String.format("%sResolver.java", ModelNameUtils.stripSuffix(modelDefinition.getName())),
                 sb.toString()
         );
-
-        this.generateGraphqlConfiguration(outputDir);
         
         GeneratorContext.markGenerated(GRAPHQL);
 
         LOGGER.info("Finished generating GraphQL code");
-    }
-
-    /**
-     * Generates the GraphQL configuration. This method is only called if the GraphQL scalar
-     * configuration is enabled.
-     *
-     * @param outputDir the output directory where the configuration file will be generated
-     */
-    private void generateGraphqlConfiguration(final String outputDir) {
-        
-        final boolean scalarConfig = configuration.getAdditionalProperties()
-                .getOrDefault(AdditionalConfigurationConstants.GRAPHQL_SCALAR_CONFIG, false);
-
-        if (GeneratorContext.isGenerated(GRAPHQL) || !scalarConfig) { return; }
-
-        LOGGER.info("Generating GraphQL configuration");
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-
-        final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, packagePath + CONFIGURATIONS_PACKAGE))
-                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
-            "graphql/scalar-configuration.ftl", Map.of()
-                ));
-        
-        FileWriterUtils.writeToFile(outputDir, CONFIGURATIONS, "GraphQlConfiguration.java", sb.toString());
     }
 
     /**

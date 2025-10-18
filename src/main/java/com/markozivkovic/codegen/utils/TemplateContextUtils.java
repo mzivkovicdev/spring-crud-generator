@@ -8,10 +8,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.TransactionConstants;
+import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 
 public class TemplateContextUtils {
+
+    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
 
     private static final String METHOD_NAME = "methodName";
     private static final String IS_COLLECTION = "isCollection";
@@ -173,7 +176,11 @@ public class TemplateContextUtils {
         final List<Map<String, Object>> relations = new ArrayList<>();
 
         model.put(MODEL_NAME, modelDefinition.getName());
-        model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
+        } else {
+            model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        }
         model.put(ID_TYPE, idField.getType());
         model.put(ID_FIELD, idField.getName());
         model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
@@ -228,7 +235,11 @@ public class TemplateContextUtils {
 
         final Map<String, Object> context = new HashMap<>();
         context.put(MODEL_NAME, modelDefinition.getName());
-        context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
+        } else {
+            context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        }
         context.put(INPUT_ARGS, String.join(", ", inputFields));
         context.put(FIELD_NAMES, String.join(", ", fieldNames));
         context.put(JAVADOC_FIELDS, javadocFields);
@@ -253,7 +264,11 @@ public class TemplateContextUtils {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final Map<String, Object> context = computeGetByIdContext(modelDefinition);
         
-        context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
+        } else {
+            context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        }
         context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         context.put(ID_FIELD, idField.getName());
         context.put(ID_TYPE, idField.getType());
@@ -282,7 +297,11 @@ public class TemplateContextUtils {
         context.put(INPUT_FIELDS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
         context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
         context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
-        context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
+        } else {
+            context.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        }
         context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
 
         return context;
@@ -542,6 +561,11 @@ public class TemplateContextUtils {
 
         model.put(MODEL_NAME, modelDefinition.getName());
         model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+            model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
+        } else {
+            model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
+        }
         model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
         model.put(INPUT_ARGS, inputArgs);
         model.put(FIELD_NAMES, fieldNames);
@@ -904,4 +928,5 @@ public class TemplateContextUtils {
         
         return context;
     }
+
 }
