@@ -6,4 +6,10 @@ public class AdditionalConfigurationConstants {
 
     public static final String GRAPHQL_SCALAR_CONFIG = "graphql.scalarConfig";
 
+    public static final String OPT_LOCK_RETRY_CONFIGURATION = "optimisticLocking.retry.config";
+    public static final String OPT_LOCK_MAX_ATTEMPTS = "optimisticLocking.retry.maxAttempts";
+    public static final String OPT_LOCK_BACKOFF_DELAY_MS = "optimisticLocking.backoff.delayMs";
+    public static final String OPT_LOCK_BACKOFF_MAX_DELAY_MS = "optimisticLocking.backoff.maxDelayMs";
+    public static final String OPT_LOCK_BACKOFF_MULTIPLIER = "optimisticLocking.backoff.multiplier";
+
 }

@@ -19,6 +19,7 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String JPA_REPOSITORY = "jpa-repository";
     private static final String EXCEPTION = "exception";
     private static final String EXCEPTION_HANDLER = "exception-handler";
+    private static final String ADDITIONAL_PROPERTY = "additional-property";
     private static final String JPA_SERVICE = "jpa-service";
     private static final String BUSINESS_SERVICE = "business-service";
     private static final String TRANSFER_OBJECT = "transfer-object";
@@ -40,6 +41,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator()),
             Map.entry(EXCEPTION, new ExceptionGenerator()),
             Map.entry(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entites)),
+            Map.entry(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration)),
             Map.entry(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entites)),
             Map.entry(BUSINESS_SERVICE, new BusinessServiceGenerator(entites)),
             Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entites)),
