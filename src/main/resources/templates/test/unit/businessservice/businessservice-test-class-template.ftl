@@ -1,5 +1,4 @@
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -41,7 +40,7 @@ class ${className} {
     <#if createResource?? && createResource?has_content>${createResource}</#if>
     <#if addRelationMethod?? && addRelationMethod?has_content>${addRelationMethod}</#if>
     <#if removeRelationMethod?? && removeRelationMethod?has_content>${removeRelationMethod}</#if>
-    
+
     private void verify${strippedModelName?cap_first}(final ${modelName} result, final ${modelName} ${modelName?uncap_first}) {
 
         assertThat(result).isNotNull();
