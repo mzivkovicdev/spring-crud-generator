@@ -729,6 +729,44 @@ public class FieldUtils {
     }
 
     /**
+     * Generates a list of strings representing the input arguments for a test method, excluding the ID field.
+     * The generated list of strings is in the format expected by the test layer.
+     * If the field has a relation, the name is formatted as "<modelName>Id" for a one-to-one or many-to-one
+     * relation, and as "<modelName>Ids" for a many-to-many or one-to-many relation.
+     * 
+     * @param fields The list of fields to generate the input arguments from.
+     * @param entities The list of model definitions to resolve related model types.
+     * @return A list of strings representing the input arguments for a test method, excluding the ID field.
+     * @throws IllegalArgumentException If no ID field is found in the provided fields.
+     */
+    public static List<String> generateInputArgsExcludingIdForTest(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
+
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.getName().equals(id.getName()))
+                .map(field -> {
+                    if (Objects.nonNull(field.getRelation())) {
+                        final ModelDefinition modelDefinition = entities.stream()
+                                .filter(model -> model.getName().equals(field.getType()))
+                                .findFirst()
+                                .orElseThrow();
+
+                        final String modelName = StringUtils.uncapitalize(
+                                ModelNameUtils.stripSuffix(modelDefinition.getName())
+                        );
+                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                            return String.format("%s", String.format("%sIds", modelName));
+                        } else {
+                            return String.format("%s", String.format("%sId", modelName));
+                        }
+                    }
+                    return String.format("%s", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Generates a list of strings representing the input arguments for a constructor or method, excluding the ID field.
      * The generated list of strings is in the format "final <type> <name>" where <type> is the type of the field and
      * <name> is the name of the field. The ID field is excluded from the list.
@@ -869,6 +907,27 @@ public class FieldUtils {
     public static boolean isIdFieldUUID(final FieldDefinition field) {
         
         return UUID.equalsIgnoreCase(field.getType());
+    }
+
+    /**
+     * Determines whether any of the ID fields of the given model definition or any of its related models is of type UUID.
+     * 
+     * @param modelDefinition the model definition for which to check the ID field type
+     * @param entities the list of model definitions for which to check the ID field type
+     * @return true if any of the ID fields of the given model definition or any of its related models is of type UUID, false otherwise
+     */
+    public static boolean isAnyIdFieldUUID(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+        
+        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<String> relationTypes = FieldUtils.extractRelationFields(relations).stream()
+                .map(FieldDefinition::getType)
+                .collect(Collectors.toList());
+        
+        return entities.stream()
+                .filter(entity -> relationTypes.contains(entity.getName()))
+                .map(entity -> entity.getFields())
+                .map(entity -> extractIdField(entity))
+                .anyMatch(field -> isIdFieldUUID(field));
     }
 
     /**

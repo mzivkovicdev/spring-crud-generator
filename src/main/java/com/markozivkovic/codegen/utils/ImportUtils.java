@@ -437,6 +437,27 @@ public class ImportUtils {
     }
 
     /**
+     * Computes the necessary import statements for the generated test business service.
+     *
+     * @return A string containing the necessary import statements for the generated test business service.
+     */
+    public static String computeTestBusinessServiceImports() {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_BEFORE_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
      * Computes the base import statements for a JPA service.
      *
      * @param cache Whether to include the Spring caching annotations.

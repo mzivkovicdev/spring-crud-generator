@@ -43,6 +43,7 @@ public class TemplateContextUtils {
     private static final String GENERATE_JAVA_DOC = "generateJavaDoc";
     private static final String TRANSACTIONAL_ANNOTATION = "transactionalAnnotation";
     private static final String INPUT_ARGS = "inputArgs";
+    private static final String TEST_INPUT_ARGS = "testInputArgs";
     private static final String CLASS_NAME = "className";
     private static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     private static final String STRIPPED_MODEL_NAME = "strippedModelName";
@@ -140,6 +141,7 @@ public class TemplateContextUtils {
                 .ifPresent(entity -> {
                     final FieldDefinition entityIdField = FieldUtils.extractIdField(entity.getFields());
                     relation.put(RELATION_ID_TYPE, entityIdField.getType());
+                    relation.put(RELATION_ID_FIELD, entityIdField.getName());
                 });
         
         relation.put(RELATION_CLASS_NAME, field.getType());
@@ -552,6 +554,9 @@ public class TemplateContextUtils {
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
         final String inputArgs = FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields(), entities).stream()
                 .collect(Collectors.joining(", "));
+                
+        final String testInputArgs = FieldUtils.generateInputArgsExcludingIdForTest(modelDefinition.getFields(), entities).stream()
+                .collect(Collectors.joining(", "));
 
         final String fieldNames = FieldUtils.generateInputArgsBusinessService(modelDefinition.getFields()).stream()
                 .collect(Collectors.joining(", "));
@@ -560,6 +565,7 @@ public class TemplateContextUtils {
         final List<Map<String, Object>> relations = new ArrayList<>();
 
         model.put(MODEL_NAME, modelDefinition.getName());
+        model.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.TRANSACTIONAL_ANNOTATION);
         if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
             model.put(TRANSACTIONAL_ANNOTATION, TransactionConstants.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
@@ -569,6 +575,7 @@ public class TemplateContextUtils {
         model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
         model.put(INPUT_ARGS, inputArgs);
         model.put(FIELD_NAMES, fieldNames);
+        model.put(TEST_INPUT_ARGS, testInputArgs);
 
         relationFields.forEach(field -> {
             relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, true, entities));

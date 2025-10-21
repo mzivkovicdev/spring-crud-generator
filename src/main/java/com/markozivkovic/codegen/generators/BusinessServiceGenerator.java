@@ -10,13 +10,11 @@ import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FR
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.context.GeneratorContext;
-import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -67,7 +65,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath + BUSINESS_SERVICES_PACKAGE));
         sb.append(ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
 
-        if (this.isAnyIdFieldUUID(modelDefinition, entites)) {
+        if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entites)) {
             sb.append(String.format(IMPORT, JAVA_UTIL_UUID));
         }
 
@@ -142,27 +140,6 @@ public class BusinessServiceGenerator implements CodeGenerator {
         final Map<String, Object> context = TemplateContextUtils.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/remove-relation.ftl", context);
-    }
-
-    /**
-     * Determines whether any of the ID fields of the given model definition or any of its related models is of type UUID.
-     * 
-     * @param modelDefinition the model definition for which to check the ID field type
-     * @param entities the list of model definitions for which to check the ID field type
-     * @return true if any of the ID fields of the given model definition or any of its related models is of type UUID, false otherwise
-     */
-    private boolean isAnyIdFieldUUID(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
-        
-        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final List<String> relationTypes = FieldUtils.extractRelationFields(relations).stream()
-                .map(FieldDefinition::getType)
-                .collect(Collectors.toList());
-        
-        return entities.stream()
-                .filter(entity -> relationTypes.contains(entity.getName()))
-                .map(entity -> entity.getFields())
-                .map(entity -> FieldUtils.extractIdField(entity))
-                .anyMatch(field -> FieldUtils.isIdFieldUUID(field));
     }
 
 }
