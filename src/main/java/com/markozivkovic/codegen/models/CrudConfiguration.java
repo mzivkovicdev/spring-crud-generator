@@ -9,7 +9,7 @@ public class CrudConfiguration {
     private DatabaseType database;
     private String javaVersion;
     private Boolean optimisticLocking;
-    private Boolean dockerfile;
+    private DockerConfiguration docker;
     private Boolean cache;
     private Boolean swagger;
     private Boolean openApiCodegen;
@@ -24,13 +24,13 @@ public class CrudConfiguration {
     }
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
-            final Boolean dockerfile, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
+            final DockerConfiguration docker, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
             final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final Boolean unitTests,
             final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.optimisticLocking = optimisticLocking;
-        this.dockerfile = dockerfile;
+        this.docker = docker;
         this.cache = cache;
         this.swagger = swagger;
         this.openApiCodegen = openApiCodegen;
@@ -72,16 +72,12 @@ public class CrudConfiguration {
         return this;
     }
 
-    public Boolean isDockerfile() {
-        return this.dockerfile;
+    public DockerConfiguration getDocker() {
+        return this.docker;
     }
 
-    public Boolean getDockerfile() {
-        return this.dockerfile;
-    }
-
-    public CrudConfiguration setDockerfile(final Boolean dockerfile) {
-        this.dockerfile = dockerfile;
+    public CrudConfiguration setDocker(final DockerConfiguration docker) {
+        this.docker = docker;
         return this;
     }
 
@@ -180,7 +176,7 @@ public class CrudConfiguration {
         return Objects.equals(database, crudConfiguration.database) &&
                 Objects.equals(javaVersion, crudConfiguration.javaVersion) &&
                 Objects.equals(optimisticLocking, crudConfiguration.optimisticLocking) &&
-                Objects.equals(dockerfile, crudConfiguration.dockerfile) &&
+                Objects.equals(docker, crudConfiguration.docker) &&
                 Objects.equals(cache, crudConfiguration.cache) &&
                 Objects.equals(swagger, crudConfiguration.swagger) &&
                 Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen) &&
@@ -194,7 +190,7 @@ public class CrudConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(
-            database, javaVersion, optimisticLocking, dockerfile, cache, swagger,
+            database, javaVersion, optimisticLocking, docker, cache, swagger,
             openApiCodegen, graphQl, errorResponse, migrationScripts, unitTests,
             additionalProperties
         );
@@ -206,7 +202,7 @@ public class CrudConfiguration {
             " database='" + getDatabase() + "'" +
             ", javaVersion='" + getJavaVersion() + "'" +
             ", optimisticLocking='" + isOptimisticLocking() + "'" +
-            ", dockerfile='" + isDockerfile() + "'" +
+            ", docker='" + getDocker() + "'" +
             ", cache='" + isCache() + "'" +
             ", swagger='" + isSwagger() + "'" +
             ", openApiCodegen='" + getOpenApiCodegen() + "'" +
@@ -229,6 +225,64 @@ public class CrudConfiguration {
         SIMPLE,
         MINIMAL,
         NONE
+    }
+
+    public static class DockerConfiguration {
+
+        private Boolean dockerfile;
+        private Boolean dockerCompose;
+
+        public DockerConfiguration() {
+
+        }
+
+        public DockerConfiguration(final Boolean dockerfile, final Boolean dockerCompose) {
+            this.dockerfile = dockerfile;
+            this.dockerCompose = dockerCompose;
+        }
+
+        public Boolean getDockerfile() {
+            return this.dockerfile;
+        }
+
+        public DockerConfiguration setDockerfile(final Boolean dockerfile) {
+            this.dockerfile = dockerfile;
+            return this;
+        }
+
+        public Boolean getDockerCompose() {
+            return this.dockerCompose;
+        }
+
+        public DockerConfiguration setDockerCompose(final Boolean dockerCompose) {
+            this.dockerCompose = dockerCompose;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof DockerConfiguration)) {
+                return false;
+            }
+            final DockerConfiguration dockerConfiguration = (DockerConfiguration) o;
+            return Objects.equals(dockerfile, dockerConfiguration.dockerfile) &&
+                    Objects.equals(dockerCompose, dockerConfiguration.dockerCompose);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dockerfile, dockerCompose);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " dockerfile='" + getDockerfile() + "'" +
+                ", dockerCompose='" + getDockerCompose() + "'" +
+                "}";
+        }
     }
 
 }

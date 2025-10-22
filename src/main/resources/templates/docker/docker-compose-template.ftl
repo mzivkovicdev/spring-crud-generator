@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+    ${artifactId}:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: ${artifactId}-app
+        restart: unless-stopped
+        ports:
+            - "8080:8080"
+        environment:
+            <#if dbType == "postgresql">
+            SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${artifactId}
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: app
+            <#elseif dbType == "mysql">
+            SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: app
+            <#elseif dbType == "mssql">
+            SPRING_DATASOURCE_URL: jdbc:sqlserver://db:1433;databaseName=${artifactId};encrypt=false
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: App!Passw0rd
+            </#if>
+        depends_on:
+            - database
+        networks:
+            - ${artifactId}-network
+    
+    database:
+        <#if dbType == "postgresql">
+        image: postgres:latest
+        container_name: ${artifactId}-postgre-db
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${artifactId}
+            POSTGRES_USER: app
+            POSTGRES_PASSWORD: app
+        ports:
+            - "5432:5432"
+        <#elseif dbType == "mysql">
+        image: mysql:latest
+        container_name: ${artifactId}-mysql-db
+        environment:
+            MYSQL_DATABASE: ${artifactId}
+            MYSQL_USER: app
+            MYSQL_PASSWORD: app
+            MYSQL_ROOT_PASSWORD: root
+        command: ["--default-authentication-plugin=mysql_native_password"]
+        ports:
+            - "3306:3306"
+        <#elseif dbType == "mssql">
+        image: mcr.microsoft.com/mssql/server:latest
+        container_name: ${artifactId}-mssql-db
+        environment:
+            ACCEPT_EULA: "Y"
+            DB_NAME: ${artifactId}
+            MSSQL_SA_PASSWORD: Strong!Passw0rd
+            MSSQL_PID: "Express"
+            APP_USER: app
+            APP_PASSWORD: App!Passw0rd
+        ports:
+            - "1433:1433"
+        command:
+            - bash
+            - lc
+            - |
+                /opt/mssql/bin/sqlservr & pid=$$!;
+                echo 'Waiting for SQL Server to be ready...';
+                for i in {1..60}; do
+                    /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q 'SELECT 1' >/dev/null 2>&1 && break;
+                    sleep 3;
+                done;
+                echo 'Creating database and user if needed...';
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF DB_ID('$$DB_NAME') IS NULL BEGIN CREATE DATABASE [$$DB_NAME]; END";
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = '$$APP_USER') BEGIN CREATE LOGIN [$$APP_USER] WITH PASSWORD='$$APP_PASSWORD', CHECK_POLICY=OFF; END";
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "USE [$$DB_NAME]; IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$$APP_USER') CREATE USER [$$APP_USER] FOR LOGIN [$$APP_USER]; EXEC sp_addrolemember 'db_owner', '$$APP_USER';";
+                wait $$pid
+        </#if>
+        volumes:
+            - db_data:/var/lib/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql">mysql<#elseif dbType == "mssql">mssql</#if>
+        networks:
+            - ${artifactId}-network
+
+networks:
+    ${artifactId}-network:
+
+volumes:
+    db_data:

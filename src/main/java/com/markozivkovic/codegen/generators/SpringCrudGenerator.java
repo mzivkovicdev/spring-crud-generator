@@ -25,7 +25,7 @@ public class SpringCrudGenerator implements CodeGenerator {
     private static final String TRANSFER_OBJECT = "transfer-object";
     private static final String MAPPER = "mapper";
     private static final String CONTROLLER = "controller";
-    private static final String DOCKER_FILE = "dockerfile";
+    private static final String DOCKER = "docker";
     private static final String SWAGGER = "swagger";
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
     private static final String GRAPHQL = "graphql";
@@ -47,7 +47,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entites)),
             Map.entry(MAPPER, new MapperGenerator(crudConfiguration, entites)),
             Map.entry(CONTROLLER, new RestControllerGenerator(crudConfiguration, entites)),
-            Map.entry(DOCKER_FILE, new DockerfileGenerator(crudConfiguration, projectMetadata)),
+            Map.entry(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata)),
             Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entites)),
             Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entites)),
             Map.entry(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entites)),
