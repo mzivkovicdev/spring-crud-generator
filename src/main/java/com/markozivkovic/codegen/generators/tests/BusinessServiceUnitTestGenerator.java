@@ -93,9 +93,25 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("modelName", modelDefinition.getName());
         context.put("strippedModelName", modelWithoutSuffix);
         context.put("createResource", createResourceMethod(modelDefinition));
+        context.put("addRelationMethod", addRelationMethod(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/businessservice-test-class-template.ftl", context
+        );
+    }
+
+    /**
+     * Generates the addRelationMethod method as a string for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a string representation of the addRelationMethod unit test
+     */
+    private String addRelationMethod(final ModelDefinition modelDefinition) {
+
+        final Map<String, Object> context = TemplateContextUtils.computeAddRelationMethodServiceContext(modelDefinition, entites);
+        
+        return FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/businessservice/method/add-relation.ftl", context
         );
     }
 
