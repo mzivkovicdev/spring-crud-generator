@@ -6,6 +6,7 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: ${artifactId}-app
+        restart: unless-stopped
         ports:
             - "8080:8080"
         environment:
@@ -31,6 +32,7 @@ services:
         <#if dbType == "postgresql">
         image: postgres:latest
         container_name: ${artifactId}-postgre-db
+        restart: unless-stopped
         environment:
             POSTGRES_DB: ${artifactId}
             POSTGRES_USER: app
@@ -60,35 +62,21 @@ services:
             APP_PASSWORD: App!Passw0rd
         ports:
             - "1433:1433"
-        command: >
-            /bin/bash -lc "
-            /opt/mssql/bin/sqlservr & pid=$!;
-            echo 'Waiting for SQL Server to be ready...';
-            for i in {1..60}; do
-                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' >/dev/null 2>&1 && break;
-                sleep 3;
-            done;
-            echo 'Creating database and user if needed...';
-            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q "
-                IF DB_ID('${DB_NAME}') IS NULL
-                BEGIN
-                    CREATE DATABASE [${DB_NAME}];
-                END
-            ";
-            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q "
-                IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = '${APP_USER}')
-                BEGIN
-                    CREATE LOGIN [${APP_USER}] WITH PASSWORD='${APP_PASSWORD}', CHECK_POLICY=OFF;
-                END
-            ";
-            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q "
-                USE [${DB_NAME}];
-                IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '${APP_USER}')
-                CREATE USER [${APP_USER}] FOR LOGIN [${APP_USER}];
-                EXEC sp_addrolemember 'db_owner', '${APP_USER}';
-            ";
-            wait $pid
-            "
+        command:
+            - bash
+            - lc
+            - |
+                /opt/mssql/bin/sqlservr & pid=$$!;
+                echo 'Waiting for SQL Server to be ready...';
+                for i in {1..60}; do
+                    /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q 'SELECT 1' >/dev/null 2>&1 && break;
+                    sleep 3;
+                done;
+                echo 'Creating database and user if needed...';
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF DB_ID('$$DB_NAME') IS NULL BEGIN CREATE DATABASE [$$DB_NAME]; END";
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = '$$APP_USER') BEGIN CREATE LOGIN [$$APP_USER] WITH PASSWORD='$$APP_PASSWORD', CHECK_POLICY=OFF; END";
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "USE [$$DB_NAME]; IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$$APP_USER') CREATE USER [$$APP_USER] FOR LOGIN [$$APP_USER]; EXEC sp_addrolemember 'db_owner', '$$APP_USER';";
+                wait $$pid
         </#if>
         volumes:
             - db_data:/var/lib/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql">mysql<#elseif dbType == "mssql">mssql</#if>
