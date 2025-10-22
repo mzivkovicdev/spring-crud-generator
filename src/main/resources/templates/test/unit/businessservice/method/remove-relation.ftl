@@ -6,7 +6,7 @@
 <#list relations as rel>
 <#assign relationServiceClass = rel.strippedRelationClassName?uncap_first + "Service">
 <#assign relationField = rel.strippedRelationClassName?uncap_first>
-
+    <#if rel.isCollection?? && rel.isCollection>
     @Test
     void ${rel.methodName}() {
 
@@ -24,5 +24,5 @@
         verify(this.${serviceClass?uncap_first}).${rel.methodName}(${idField?uncap_first}, ${rel.relationClassName?uncap_first});
 
         verify${strippedModelName?cap_first}(result, ${modelName?uncap_first});
-    }
+    }</#if>
 </#list>

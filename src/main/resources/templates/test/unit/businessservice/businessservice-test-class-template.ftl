@@ -16,11 +16,10 @@ class ${className} {
     private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
 
     <#list serviceClasses as serviceClass>
-    
     @MockitoBean
     private ${serviceClass?cap_first} ${serviceClass?uncap_first};
-    </#list>
 
+    </#list>
     private ${strippedModelName?cap_first}BusinessService ${strippedModelName?uncap_first}BusinessService;
 
     @AfterEach

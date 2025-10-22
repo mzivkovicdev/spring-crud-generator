@@ -94,9 +94,25 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("strippedModelName", modelWithoutSuffix);
         context.put("createResource", createResourceMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
+        context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/businessservice-test-class-template.ftl", context
+        );
+    }
+
+    /**
+     * Generates the removeRelationMethod method as a string for the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a string representation of the removeRelationMethod unit test
+     */
+    private String removeRelationMethod(final ModelDefinition modelDefinition) {
+
+        final Map<String, Object> context = TemplateContextUtils.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
+        
+        return FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/businessservice/method/remove-relation.ftl", context
         );
     }
 
