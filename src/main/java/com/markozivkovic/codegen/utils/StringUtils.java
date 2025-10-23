@@ -41,4 +41,14 @@ public class StringUtils {
         return !str.isBlank();
     }
 
+    /**
+     * Checks if a String is empty (""), not null and not whitespace only.
+     * 
+     * @param str the String to check, may be null
+     * @return <code>true</code> if the String is empty and not null and not whitespace only
+     */
+    public static boolean isBlank(final String str) {
+        return !isNotBlank(str);
+    }
+
 }

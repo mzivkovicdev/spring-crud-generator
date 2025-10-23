@@ -42,14 +42,24 @@ import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
 import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
+import static com.markozivkovic.codegen.constants.TestConstants.COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_AFTER_EACH;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_BEFORE_EACH;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_TEST;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS;
+import static com.markozivkovic.codegen.constants.TestConstants.ORG_MAPSTRUCT_FACTORY_MAPPERS;
 import static com.markozivkovic.codegen.constants.TransactionConstants.OPTIMISTIC_LOCKING_RETRY;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
@@ -778,6 +788,116 @@ public class ImportUtils {
         if (!FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
         }
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Compute the imports for a controller test.
+     *
+     * @return the imports string for a controller test
+     */
+    public static String computeControllerTestImports() {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
+        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
+        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_IMPL));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Compute the imports for a controller test.
+     *
+     * @param modelDefinition    the model definition containing the class name, table name, and field definitions
+     * @param outputDir          the directory where the generated code will be written
+     * @param swagger            whether to generate swagger imports
+     * @param importInputObjects whether to import the input objects of the relations
+     * @return the imports string for a controller test
+     */
+    public static String computeControllerTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
+                final boolean swagger, final boolean importInputObjects) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
+
+        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
+
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        if (swagger) {
+            imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
+        }
+
+        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+            if (!swagger) {
+                imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));    
+            } else {
+                imports.add(String.format(
+                    IMPORT,
+                    String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, relationModel)
+                ));
+            }
+        });
+
+        if (importInputObjects) {
+            relations.forEach(field -> {
+                final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+                if (!swagger) {
+                    imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
+                } else {
+                    imports.add(String.format(
+                        IMPORT,
+                        String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, relationModel + "Input")
+                    ));
+                }
+            });
+        }
+
+        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
+
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+        if (!swagger) {
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        } else {
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, modelWithoutSuffix)
+            ));
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, String.format("%ssGet200Response", modelWithoutSuffix))
+            ));
+        }
+        imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
+        imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalExceptionHandler"));
 
         return imports.stream()
                 .sorted()

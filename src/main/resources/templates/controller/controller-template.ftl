@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 ${projectImports}
 @RestController
-@RequestMapping("/api/v1/${uncapModelName}s")
+<#if swagger>@RequestMapping("/api/v1")<#else>@RequestMapping("/api/v1/${uncapModelName}s")</#if>
 public class ${className} <#if swagger>implements ${strippedModelName}sApi</#if>{
 
     private final ${mapperClass} ${mapperField?uncap_first} = Mappers.getMapper(${mapperClass}.class);

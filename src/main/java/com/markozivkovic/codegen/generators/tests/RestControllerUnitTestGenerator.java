@@ -1,0 +1,101 @@
+package com.markozivkovic.codegen.generators.tests;
+
+import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.markozivkovic.codegen.generators.CodeGenerator;
+import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.utils.FieldUtils;
+import com.markozivkovic.codegen.utils.FileWriterUtils;
+import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.ImportUtils;
+import com.markozivkovic.codegen.utils.ModelNameUtils;
+import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils;
+
+public class RestControllerUnitTestGenerator implements CodeGenerator {
+
+    private static final String CONTROLLERS = "controllers";
+    private static final String CONTROLLERS_PACKAGE = "." + CONTROLLERS;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerUnitTestGenerator.class);
+
+    private final CrudConfiguration configuration;
+
+    public RestControllerUnitTestGenerator(final CrudConfiguration configuration) {
+        this.configuration = configuration;
+    }
+    
+    @Override
+    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+        
+        if (this.configuration == null || this.configuration.getUnitTests() == null || !this.configuration.getUnitTests()) {
+            return;
+        }
+
+        if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
+            LOGGER.warn("Model {} does not have an ID field. Skipping controller unit test generation.", modelDefinition.getName());
+            return;
+        }
+
+        LOGGER.info("Generating controller unit test for model: {}", modelDefinition.getName());
+
+        final String testOutputDir = outputDir.replace("main", "test");
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final Boolean swagger = Objects.nonNull(this.configuration) && Objects.nonNull(this.configuration.getSwagger())
+                && this.configuration.isSwagger();
+
+        this.generateGetEndpointUnitTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+    }
+
+    /**
+     * Generates a unit test class for the get endpoint of the REST controller
+     * for the given model definition.
+     *
+     * @param modelDefinition    the model definition containing the class name and field definitions
+     * @param outputDir          the directory where the generated code will be written
+     * @param testOutputDir      the directory where the generated unit test will be written
+     * @param packagePath        the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix the model name without the suffix
+     * @param swagger            indicates if the swagger and open API generator is enabled
+     */
+    private void generateGetEndpointUnitTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+            final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+        
+        final StringBuilder sb = new StringBuilder();
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final String className = String.format("%sGetMockMvcTest", modelWithoutSuffix);
+        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put("controllerClassName", controllerClassName);
+        context.put("className", className);
+        context.put("swagger", swagger);
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put("strippedModelName", modelWithoutSuffix);
+        context.put("modelName", modelDefinition.getName());
+        context.put("idType", idField.getType());
+        context.put("idField", idField.getName());
+        context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
+        context.put("testImports", ImportUtils.computeControllerTestImports());
+        context.put("projectImports", ImportUtils.computeControllerTestProjectImports(modelDefinition, outputDir, swagger, false));
+
+        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/controller/endpoint/get-resource.ftl",
+                context
+        ));
+
+        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+    }
+
+}

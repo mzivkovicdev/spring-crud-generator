@@ -11,6 +11,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 ${projectImports}
@@ -40,6 +41,18 @@ public class GlobalExceptionHandler {
                         HttpStatus.METHOD_NOT_ALLOWED</#if>
                 ),
                 HttpStatus.METHOD_NOT_ALLOWED
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<HttpResponse> methodArgumentTypeMissmatchError(final MethodArgumentTypeMismatchException e) {
+
+        return new ResponseEntity<>(
+                new HttpResponse(
+                        String.format(EXTENDED_MESSAGE_FORMAT, INVALID_FORMAT_MESSAGE, e.getMessage())<#if isDetailed>,
+                        HttpStatus.BAD_REQUEST</#if>
+                ),
+                HttpStatus.BAD_REQUEST
         );
     }
 
