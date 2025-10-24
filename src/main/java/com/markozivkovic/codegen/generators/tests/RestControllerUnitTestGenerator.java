@@ -55,6 +55,47 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 && this.configuration.isSwagger();
 
         this.generateGetEndpointUnitTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+        this.generateDeleteByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix);
+    }
+
+    /**
+     * Generates a unit test for the delete by ID endpoint of the REST controller
+     * for the given model definition.
+     *
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @param outputDir the directory where the generated code will be written
+     * @param testOutputDir the directory where the generated unit test will be written
+     * @param packagePath the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix the model name without the suffix
+     */
+    private void generateDeleteByIdEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+            final String packagePath, final String modelWithoutSuffix) {
+
+        final StringBuilder sb = new StringBuilder();
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final String className = String.format("%sDeleteByIdMockMvcTest", modelWithoutSuffix);
+        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put("controllerClassName", controllerClassName);
+        context.put("className", className);
+        context.put("strippedModelName", modelWithoutSuffix);
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put("idType", idField.getType());
+        context.put("idField", idField.getName());
+        context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
+        context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
+                modelDefinition, outputDir, false, false, false
+        ));
+        context.put("testImports", ImportUtils.computeDeleteEndpointTestImports());
+
+        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/controller/endpoint/delete-resource.ftl",
+                context
+        ));
+
+        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
     }
 
     /**
@@ -86,8 +127,10 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("testImports", ImportUtils.computeControllerTestImports());
-        context.put("projectImports", ImportUtils.computeControllerTestProjectImports(modelDefinition, outputDir, swagger, false));
+        context.put("testImports", ImportUtils.computeGetEndpointTestImports());
+        context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
+                modelDefinition, outputDir, swagger, false, true
+        ));
 
         sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
