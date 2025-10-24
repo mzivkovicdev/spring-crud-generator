@@ -799,7 +799,7 @@ public class ImportUtils {
      *
      * @return the imports string for a controller test
      */
-    public static String computeControllerTestImports() {
+    public static String computeGetEndpointTestImports() {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -824,16 +824,42 @@ public class ImportUtils {
     }
 
     /**
+     * Compute the necessary imports for a controller delete endpoint test.
+     *
+     * @return A string containing the necessary import statements for a controller delete endpoint test.
+     */
+    public static String computeDeleteEndpointTestImports() {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
      * Compute the imports for a controller test.
      *
      * @param modelDefinition    the model definition containing the class name, table name, and field definitions
      * @param outputDir          the directory where the generated code will be written
      * @param swagger            whether to generate swagger imports
      * @param importInputObjects whether to import the input objects of the relations
+     * @param importObjectMapper whether to import the object mapper
      * @return the imports string for a controller test
      */
     public static String computeControllerTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
-                final boolean swagger, final boolean importInputObjects) {
+                final boolean swagger, final boolean importInputObjects, final boolean importObjectMapper) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -896,7 +922,9 @@ public class ImportUtils {
             ));
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
-        imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        if (importObjectMapper) {
+            imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        }
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalExceptionHandler"));
 
         return imports.stream()
