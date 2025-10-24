@@ -55,6 +55,7 @@ import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION;
+import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_HTTP_MEDIA_TYPE;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC;
@@ -849,6 +850,59 @@ public class ImportUtils {
     }
 
     /**
+     * Computes the necessary imports for the generated update endpoint test, including the enums if any exist, the model itself,
+     * the related service, and any related models.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir       the directory where the generated code will be written
+     * @param swagger         whether to include Swagger annotations
+     * @return A string containing the necessary import statements for the generated update endpoint test.
+     */
+    public static String computeUpdateEndpointTestProjectImports(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
+
+        if (swagger) {
+            imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
+        }
+
+        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
+
+        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
+            modelDefinition.getFields().stream()
+                .filter(field -> FieldUtils.isJsonField(field))
+                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .forEach(jsonField -> {
+                    imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_HELPERS_PACKAGE + "." + jsonField + "RestMapper"));
+                });
+        }
+
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+        if (!swagger) {
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
+        } else {
+            imports.add(String.format(
+                IMPORT,
+                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, modelWithoutSuffix)
+            ));
+        }
+        imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
+        imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalExceptionHandler"));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
      * Compute the imports for a controller test.
      *
      * @param modelDefinition    the model definition containing the class name, table name, and field definitions
@@ -926,6 +980,34 @@ public class ImportUtils {
             imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
         }
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalExceptionHandler"));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Compute the necessary imports for a controller update endpoint test.
+     *
+     * @return a string containing the necessary import statements for a controller update endpoint test
+     */
+    public static String computeUpdateEndpointTestImports() {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
+        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_HTTP_MEDIA_TYPE));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
 
         return imports.stream()
                 .sorted()

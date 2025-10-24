@@ -34,6 +34,9 @@ public class TestConstants {
     public static final String SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED =
             SPRINGFRAMEWORK_BEANS_FACTORY + ".annotation.Autowired";
 
+    public static final String SPRINGFRAMEWORK_HTTP = SPRINGFRAMEWORK + ".http";
+    public static final String SPRINGFRAMEWORK_HTTP_MEDIA_TYPE = SPRINGFRAMEWORK_HTTP + ".MediaType";
+
     public static final String SPRINGFRAMEWORK_BOOT = SPRINGFRAMEWORK + ".boot";
     public static final String SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE =
             SPRINGFRAMEWORK_BOOT + ".autoconfigure";
