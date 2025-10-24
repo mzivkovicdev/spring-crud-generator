@@ -3,8 +3,10 @@ package com.markozivkovic.codegen.generators.tests;
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +56,57 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final Boolean swagger = Objects.nonNull(this.configuration) && Objects.nonNull(this.configuration.getSwagger())
                 && this.configuration.isSwagger();
 
-        this.generateGetEndpointUnitTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+        this.generateGetEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
         this.generateDeleteByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix);
+        this.generateUpdateByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+    }
+
+    /**
+     * Generates a unit test for the update by ID endpoint of the REST controller
+     * for the given model definition.
+     *
+     * @param modelDefinition    the model definition containing the class name and field definitions
+     * @param outputDir          the directory where the generated code will be written
+     * @param testOutputDir      the directory where the generated unit test will be written
+     * @param packagePath        the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix the model name without the suffix
+     * @param swagger            indicates if the swagger and open API generator is enabled
+     */
+    private void generateUpdateByIdEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+            final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+        
+        final StringBuilder sb = new StringBuilder();
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final String className = String.format("%sUpdateByIdMockMvcTest", modelWithoutSuffix);
+        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .collect(Collectors.toList());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put("controllerClassName", controllerClassName);
+        context.put("className", className);
+        context.put("strippedModelName", modelWithoutSuffix);
+        context.put("modelName", modelDefinition.getName());
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put("idType", idField.getType());
+        context.put("idField", idField.getName());
+        context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
+        context.put("swagger", swagger);
+        context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
+        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports());
+        context.put("projectImports", ImportUtils.computeUpdateEndpointTestProjectImports( 
+                modelDefinition, outputDir, swagger
+        ));
+        context.put("jsonFields", jsonFields);
+
+        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/controller/endpoint/update-resource.ftl",
+                context
+        ));
+
+        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
     }
 
     /**
@@ -109,7 +160,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
      * @param modelWithoutSuffix the model name without the suffix
      * @param swagger            indicates if the swagger and open API generator is enabled
      */
-    private void generateGetEndpointUnitTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+    private void generateGetEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
             final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
         
         final StringBuilder sb = new StringBuilder();

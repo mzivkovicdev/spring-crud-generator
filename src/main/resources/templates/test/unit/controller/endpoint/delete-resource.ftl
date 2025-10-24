@@ -3,9 +3,9 @@
 <#assign serviceField = strippedModelName?uncap_first + "Service">
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;<#if hasRelations>
+import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
