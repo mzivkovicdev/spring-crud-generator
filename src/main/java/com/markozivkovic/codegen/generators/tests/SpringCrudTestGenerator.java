@@ -26,7 +26,7 @@ public class SpringCrudTestGenerator implements CodeGenerator {
             Map.entry(JPA_SERVICE_TEST, new ServiceUnitTestGenerator(configuration, entites)),
             Map.entry(BUSINESS_SERVICE_TEST, new BusinessServiceUnitTestGenerator(configuration, entites)),
             Map.entry(MAPPER_TEST, new MapperUnitTestGenerator(configuration, entites)),
-            Map.entry(CONTROLLER_TEST, new RestControllerUnitTestGenerator(configuration))
+            Map.entry(CONTROLLER_TEST, new RestControllerUnitTestGenerator(configuration, entites))
         );
     }
 
