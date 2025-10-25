@@ -21,6 +21,7 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 
 public class RestControllerUnitTestGenerator implements CodeGenerator {
@@ -31,9 +32,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerUnitTestGenerator.class);
 
     private final CrudConfiguration configuration;
+    private final List<ModelDefinition> entities;
 
-    public RestControllerUnitTestGenerator(final CrudConfiguration configuration) {
+    public RestControllerUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
         this.configuration = configuration;
+        this.entities = entities;
     }
     
     @Override
@@ -59,6 +62,53 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         this.generateGetEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
         this.generateDeleteByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix);
         this.generateUpdateByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+        this.generateCreateEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+    }
+
+    /**
+     * Generates a unit test for the create endpoint of the REST controller
+     * for the given model definition.
+     *
+     * @param modelDefinition    the model definition containing the class name and field definitions
+     * @param outputDir          the directory where the generated code will be written
+     * @param testOutputDir      the directory where the generated unit test will be written
+     * @param packagePath        the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix the model name without the suffix
+     * @param swagger            indicates if the swagger and open API generator is enabled
+     */
+    private void generateCreateEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+            final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+        
+        final StringBuilder sb = new StringBuilder();
+        final String className = String.format("%sCreateMockMvcTest", modelWithoutSuffix);
+        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .collect(Collectors.toList());
+
+        final Map<String, Object> context = new HashMap<>(
+                TemplateContextUtils.computeCreateEndpointContext(modelDefinition, entities)
+        );
+        context.put("controllerClassName", controllerClassName);
+        context.put("className", className);
+        context.put("strippedModelName", modelWithoutSuffix);
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put("hasCollectionRelations", FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields()) 
+                || FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()));
+        context.put("swagger", swagger);
+        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports());
+        context.put("projectImports", ImportUtils.computeCreateEndpointTestProjectImports( 
+                modelDefinition, outputDir, swagger
+        ));
+        context.put("jsonFields", jsonFields);
+
+        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/controller/endpoint/create-resource.ftl",
+                context
+        ));
+
+        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
     }
 
     /**
