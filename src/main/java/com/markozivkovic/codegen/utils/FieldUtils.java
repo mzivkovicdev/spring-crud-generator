@@ -918,8 +918,8 @@ public class FieldUtils {
      */
     public static boolean isAnyIdFieldUUID(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
         
-        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final List<String> relationTypes = FieldUtils.extractRelationFields(relations).stream()
+        final List<FieldDefinition> relations = extractRelationFields(modelDefinition.getFields());
+        final List<String> relationTypes = extractRelationFields(relations).stream()
                 .map(FieldDefinition::getType)
                 .collect(Collectors.toList());
         
