@@ -49,6 +49,7 @@ import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_AP
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_TEST;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE;
+import static com.markozivkovic.codegen.constants.TestConstants.ORG_MAPSTRUCT_FACTORY_MAPPERS;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION;
@@ -60,7 +61,6 @@ import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC;
 import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS;
-import static com.markozivkovic.codegen.constants.TestConstants.ORG_MAPSTRUCT_FACTORY_MAPPERS;
 import static com.markozivkovic.codegen.constants.TransactionConstants.OPTIMISTIC_LOCKING_RETRY;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
@@ -1076,6 +1076,42 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
         imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
         imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for a controller remove relation endpoint, including UUID if any model has a UUID as its ID,
+     * and List and Collectors if any model has a many-to-many or one-to-many relation.
+     *
+     * @param modelDefinition the model definition containing field information used to determine necessary imports.
+     * @param entities        the list of all model definitions.
+     * @return A string containing the necessary import statements for the controller remove relation endpoint.
+     */
+    public static String computeRemoveRelationEndpointBaseImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+        
+        final List<FieldDefinition> fields = modelDefinition.getFields();
+        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, JAVA_UTIL_UUID);
+
+        modelDefinition.getFields().stream()
+            .filter(field -> Objects.nonNull(field.getRelation()))
+            .forEach(field -> {
+
+                final ModelDefinition relatedEntity = entities.stream()
+                        .filter(entity -> entity.getName().equals(field.getType()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(
+                            String.format(
+                                "Related entity not found: %s", field.getType()
+                            )
+                        ));
+                final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
+                addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
+            });
 
         return imports.stream()
                 .sorted()
