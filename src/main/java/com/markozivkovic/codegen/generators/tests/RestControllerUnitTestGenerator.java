@@ -64,7 +64,67 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         this.generateDeleteByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix);
         this.generateUpdateByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
         this.generateCreateEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+        this.generateAddRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
         this.generateRemoveRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+    }
+
+    /**
+     * Generates a unit test for the add relation endpoint of the REST controller
+     * for the given model definition.
+     *
+     * @param modelDefinition    the model definition containing the class name and field definitions
+     * @param outputDir          the directory where the generated code will be written
+     * @param testOutputDir      the directory where the generated unit test will be written
+     * @param packagePath        the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix the model name without the suffix
+     * @param swagger            indicates if the swagger and open API generator is enabled
+     */
+    private void generateAddRelationEdnpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+                final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        if (relationFields.isEmpty()) {
+                return; 
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+
+        relationFields.forEach(relationField -> {
+
+                final StringBuilder sb = new StringBuilder();
+                final String strippedRelationField = ModelNameUtils.stripSuffix(relationField.getType());
+                final String className = String.format("%sAdd%sMockMvcTest", modelWithoutSuffix, strippedRelationField);
+                final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+
+                final Map<String, Object> context = new HashMap<>();
+                context.put("controllerClassName", controllerClassName);
+                context.put("className", className);
+                context.put("modelName", modelDefinition.getName());
+                context.put(
+                        "methodName",
+                        String.format("%ssId%ssPost", StringUtils.uncapitalize(modelWithoutSuffix), strippedRelationField)
+                );
+                context.put("strippedModelName", modelWithoutSuffix);
+                context.put("idType", idField.getType());
+                context.put("idField", idField.getName());
+                context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
+                context.put("strippedRelationClassName", strippedRelationField);
+                context.put("relationFieldModel", StringUtils.capitalize(relationField.getName()));
+                context.put("baseImports", ImportUtils.computeAddRelationEndpointBaseImports(modelDefinition));
+                context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
+                        modelDefinition, outputDir, swagger, true, true
+                ));
+                context.put("testImports", ImportUtils.computeAddRelationEndpointTestImports());
+                context.put("swagger", swagger);
+
+                sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+                sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                        "test/unit/controller/endpoint/add-resource-relation.ftl",
+                        context
+                ));
+
+                FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+        });
     }
 
     /**
