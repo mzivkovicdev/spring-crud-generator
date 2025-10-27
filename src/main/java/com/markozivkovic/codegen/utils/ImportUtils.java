@@ -825,6 +825,34 @@ public class ImportUtils {
     }
 
     /**
+     * Compute the imports for a controller test.
+     *
+     * @return the imports string for a controller test
+     */
+    public static String computeAddRelationEndpointTestImports() {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
+        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
+        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_HTTP_MEDIA_TYPE));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
+        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
      * Compute the necessary imports for a controller delete endpoint test.
      *
      * @return A string containing the necessary import statements for a controller delete endpoint test.
@@ -1076,6 +1104,23 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
         imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
         imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for a controller add relation endpoint.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return a string containing the necessary import statements for a controller add relation endpoint
+     */
+    public static String computeAddRelationEndpointBaseImports(final ModelDefinition modelDefinition) {
+        final Set<String> imports = new LinkedHashSet<>();
+        
+        final List<FieldDefinition> fields = modelDefinition.getFields();
+        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, JAVA_UTIL_UUID);
 
         return imports.stream()
                 .sorted()
