@@ -71,6 +71,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -1184,6 +1185,67 @@ public class ImportUtils {
                 final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
                 addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
             });
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * computes the necessary imports for a query resolver test.
+     * 
+     * @return a string containing the necessary import statements for a query resolver test
+     */
+    public static String computeQueryResolverTestImports() {
+        
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.IMPORT));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
+        imports.add(String.format(IMPORT, ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));
+        
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for a query unit test, including the necessary enums, models, services, and transfer objects.
+     *
+     * @param outputDir the directory where the generated code will be written
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return a string containing the necessary import statements for a query unit test
+     */
+    public static String computeProjectImportsForQueryUnitTests(final String outputDir, final ModelDefinition modelDefinition) {
+     
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
+
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "TO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalGraphQlExceptionHandler"));
 
         return imports.stream()
                 .sorted()
