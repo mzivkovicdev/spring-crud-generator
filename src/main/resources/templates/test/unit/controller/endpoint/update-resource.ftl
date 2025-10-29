@@ -24,7 +24,7 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 })
 @AutoConfigureMockMvc(addFilters = false)
 @ContextConfiguration(classes = {
-        GlobalExceptionHandler.class, ${controllerClassName}.class
+        GlobalRestExceptionHandler.class, ${controllerClassName}.class
 })
 class ${className} {
 
