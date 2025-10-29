@@ -35,7 +35,8 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
     private static final String IS_DETAILED = "isDetailed";
     
     private static final String HTTP_RESPONSE = "HttpResponse";
-    private static final String GLOBAL_EXCEPTION_HANDLER = "GlobalExceptionHandler";
+    private static final String GLOBAL_REST_EXCEPTION_HANDLER = "GlobalRestExceptionHandler";
+    private static final String GLOBAL_GRAPHQL_EXCEPTION_HANDLER = "GlobalGraphQlExceptionHandler";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandlerGenerator.class);
 
@@ -59,6 +60,42 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
 
         this.generateHttpResponse(outputDir);
         this.generateExceptionHandler(outputDir);
+
+        if (Objects.nonNull(this.crudConfiguration.getGraphQl()) && this.crudConfiguration.getGraphQl()) {
+            this.generateGraphQlExceptionHandler(outputDir);
+        }
+    }
+
+    /**
+     * Generates the GlobalGraphQlExceptionHandler class which handles different exceptions.
+     *
+     * @param outputDir the directory where the generated code will be written
+     */
+    private void generateGraphQlExceptionHandler(final String outputDir) {
+        
+        final List<FieldDefinition> fields = this.entities.stream()
+                .flatMap(models -> models.getFields().stream())
+                .collect(Collectors.toList());
+
+        final List<String> relationTypes = FieldUtils.extractRelationTypes(fields);
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final boolean hasRelations = !relationTypes.isEmpty();
+
+        final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "exception/graphql-exception-handler-template.ftl", Map.of(
+                    HAS_RELATIONS, hasRelations,
+                    PROJECT_IMPORTS, ImportUtils.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir),
+                    IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
+                )
+        );
+
+        final StringBuilder sb = new StringBuilder();
+        
+        sb.append(String.format(PACKAGE, packagePath + EXCEPTIONS_HANDLERS_PACKAGE))
+                .append(exceptionTemplate);
+
+        FileWriterUtils.writeToFile(outputDir, EXCEPTIONS_HANDLERS, GLOBAL_GRAPHQL_EXCEPTION_HANDLER, sb.toString());
     }
 
     /**
@@ -112,9 +149,9 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         final boolean hasRelations = !relationTypes.isEmpty();
 
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
-                "exception/exception-handler-template.ftl", Map.of(
+                "exception/rest-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ImportUtils.computeGlobalExceptionHandlerProjectImports(hasRelations, outputDir),
+                    PROJECT_IMPORTS, ImportUtils.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir),
                     IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );
@@ -124,7 +161,7 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath + EXCEPTIONS_HANDLERS_PACKAGE))
                 .append(exceptionTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, EXCEPTIONS_HANDLERS, GLOBAL_EXCEPTION_HANDLER, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, EXCEPTIONS_HANDLERS, GLOBAL_REST_EXCEPTION_HANDLER, sb.toString());
     }
 
 }

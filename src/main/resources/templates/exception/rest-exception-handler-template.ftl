@@ -16,9 +16,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 ${projectImports}
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalRestExceptionHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalRestExceptionHandler.class);
 
     private static final String EXTENDED_MESSAGE_FORMAT = "%s %s";
     private static final String METHOD_NOT_ALLOWED_MESSAGE = "This method is not supported. Please send a '%s' request";

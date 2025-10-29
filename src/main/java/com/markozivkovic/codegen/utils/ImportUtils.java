@@ -712,18 +712,21 @@ public class ImportUtils {
     /**
      * Computes the necessary imports for the global exception handler, given the relations configuration.
      *
-     * @param hasRelations whether the project has any relations
-     * @param outputDir the directory where the generated code will be written
+     * @param hasRelations       whether the project has any relations
+     * @param outputDir          the directory where the generated code will be written
+     * @param importHttpResponse whether to include the HttpResponse import
      * @return A string containing the necessary import statements for the global exception handler.
      */
-    public static String computeGlobalExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir) {
+    private static String computeGlobalExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir, final boolean importHttpResponse) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
 
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_RESPONSES_PACKAGE + "." + HTTP_RESPONSE));
+        if (importHttpResponse) {
+            imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_RESPONSES_PACKAGE + "." + HTTP_RESPONSE));
+        }
 
         if (hasRelations) {
             imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + INVALID_RESOURCE_STATE_EXCEPTION));
@@ -732,6 +735,30 @@ public class ImportUtils {
         return imports.stream()
                 .sorted()
                 .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for the global rest exception handler, given the relations configuration.
+     * 
+     * @param hasRelations whether the project has any relations
+     * @param outputDir the directory where the generated code will be written
+     * @return A string containing the necessary import statements for the global rest exception handler.
+     */
+    public static String computeGlobalRestExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir) {
+
+        return computeGlobalExceptionHandlerProjectImports(hasRelations, outputDir, true);
+    }
+
+    /**
+     * Computes the necessary imports for the global graphql exception handler, given the relations configuration.
+     * 
+     * @param hasRelations whether the project has any relations
+     * @param outputDir the directory where the generated code will be written
+     * @return A string containing the necessary import statements for the global graphql exception handler.
+     */
+    public static String computeGlobalGraphQlExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir) {
+
+        return computeGlobalExceptionHandlerProjectImports(hasRelations, outputDir, false);
     }
 
     /**
@@ -923,7 +950,7 @@ public class ImportUtils {
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
         imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalExceptionHandler"));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
         return imports.stream()
                 .sorted()
@@ -991,7 +1018,7 @@ public class ImportUtils {
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
         imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalExceptionHandler"));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
         return imports.stream()
                 .sorted()
@@ -1075,7 +1102,7 @@ public class ImportUtils {
         if (importObjectMapper) {
             imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
         }
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalExceptionHandler"));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
         return imports.stream()
                 .sorted()
