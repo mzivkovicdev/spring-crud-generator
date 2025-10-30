@@ -1224,6 +1224,91 @@ public class ImportUtils {
     }
 
     /**
+     * computes the necessary imports for a mutation resolver test.
+     * 
+     * @return a string containing the necessary import statements for a mutation resolver test
+     */
+    public static String computeMutationResolverTestImports() {
+        
+        final Set<String> imports = new LinkedHashSet<>();
+
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.IMPORT));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));
+        
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * computes the necessary imports for a mutation unit test, including the necessary imports for the fields, relations, and service.
+     *
+     * @param outputDir the directory where the generated code will be written
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return a string containing the necessary import statements for a mutation unit test
+     */
+    public static String computeProjectImportsForMutationUnitTests(final String outputDir, final ModelDefinition modelDefinition) {
+     
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));
+        });
+
+        relations.forEach(field -> {
+            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
+        });
+
+        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
+            modelDefinition.getFields().stream()
+                .filter(field -> FieldUtils.isJsonField(field))
+                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .forEach(jsonField -> {
+                    imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_HELPERS_PACKAGE + "." + jsonField + "GraphQLMapper"));
+                });
+        }
+
+        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
+        }
+        
+        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
+        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "TO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "CreateTO"));
+        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "UpdateTO"));
+        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalGraphQlExceptionHandler"));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
      * Computes the necessary imports for a query unit test, including the necessary enums, models, services, and transfer objects.
      *
      * @param outputDir the directory where the generated code will be written

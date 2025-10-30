@@ -7,6 +7,7 @@ public final class ImportConstants {
     public static final class Jackson {
         private Jackson() {}
         public static final String OBJECT_MAPPER = "com.fasterxml.jackson.databind.ObjectMapper";
+        public static final String TYPE_REFERENCE = "com.fasterxml.jackson.core.type.TypeReference";
     }
 
     public static final class MapStruct {
