@@ -18,10 +18,14 @@
     <#return "UUID">
   <#elseif T == "String">
     <#return "String">
-  <#elseif T == "Integer" || T == "Long" || T == "Short" || T == "Byte">
+  <#elseif T == "Long">
+    <#return "Long">
+  <#elseif T == "Integer" || T == "Short" || T == "Byte">
     <#return "Int">
-  <#elseif T == "Float" || T == "Double" || T == "BigDecimal">
+  <#elseif T == "Float">
     <#return "Float">
+  <#elseif T == "Double" || T == "BigDecimal">
+    <#return "BigDecimal">
   <#elseif T == "Boolean">
     <#return "Boolean">
   <#elseif T == "LocalDate">
