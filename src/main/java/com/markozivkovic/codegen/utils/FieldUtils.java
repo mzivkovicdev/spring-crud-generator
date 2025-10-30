@@ -818,7 +818,10 @@ public class FieldUtils {
      */
     public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
         
+        final FieldDefinition idField = extractIdField(fields);
+        
         return fields.stream()
+                .filter(field -> !field.equals(idField))
                 .map(field -> {
 
                     if (Objects.nonNull(field.getRelation())) {
@@ -856,7 +859,10 @@ public class FieldUtils {
      */
     public static List<String> generateInputArgsWithoutFinalUpdateInputTO(final List<FieldDefinition> fields) {
 
+        final FieldDefinition id = extractIdField(fields);
+        
         return fields.stream()
+                .filter(field -> !field.equals(id))
                 .filter(field -> Objects.isNull(field.getRelation()))
                 .map(field -> {
                     if (isJsonField(field)) {
