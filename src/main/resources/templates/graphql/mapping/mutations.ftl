@@ -39,21 +39,22 @@
 <#assign relationField = rel.relationField?uncap_first>
 <#assign relationIdType = rel.relationIdType>
     @MutationMapping
-    public ${transferObjectClass} add${relationField?cap_first}To${strippedModelName?cap_first}(@Argument ${idType} id, @Argument ${relationIdType} ${relationField}Id) {
+    public ${transferObjectClass} add${relationField?cap_first}To${strippedModelName?cap_first}(@Argument final ${idType} id, @Argument final ${relationIdType} ${relationField}Id) {
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
             this.${serviceField}.add${relationField?cap_first}(id, ${relationField}Id)
         );
     }
 
     @MutationMapping
-    public boolean remove${relationField?cap_first}From${strippedModelName?cap_first}(@Argument ${idType} id<#if rel.isCollection>, @Argument final ${relationIdType} ${relationField}Id</#if>) {
+    public ${transferObjectClass} remove${relationField?cap_first}From${strippedModelName?cap_first}(@Argument final ${idType} id<#if rel.isCollection>, @Argument final ${relationIdType} ${relationField}Id</#if>) {
 
-        <#if rel.isCollection>
-        this.${serviceField}.remove${relationField?cap_first}(id, ${relationField}Id);
-        <#else>
-        this.${baseServiceField}.remove${relationField?cap_first}(id);
-        </#if>
-        return true;
+        return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
+            <#if rel.isCollection>
+            this.${serviceField}.remove${relationField?cap_first}(id, ${relationField}Id)
+            <#else>
+            this.${baseServiceField}.remove${relationField?cap_first}(id)
+            </#if>
+        );
     }
 </#list>
 </#if>

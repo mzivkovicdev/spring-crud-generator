@@ -139,7 +139,7 @@ class ${strippedModelName}ResolverMutationTest {
         )).thenReturn(updated);
 
         final ${transferObjectClass} result = this.graphQlTester.document(mutation)
-            .variable("id", String.valueOf(${idField?uncap_first}))
+            .variable("id", ${idField?uncap_first})
             .variable("input", inputVars)
             .execute()
             .path("update${strippedModelName}")
@@ -209,6 +209,151 @@ class ${strippedModelName}ResolverMutationTest {
             .errors()
             .satisfy(errors -> assertThat(errors).isNotEmpty());
     }
+    <#if relations?has_content>
+    <#list relations as rel>
+    <#assign relationField = rel.relationField?uncap_first>
+    <#assign relationIdType = rel.relationIdType>
+
+    @Test
+    void add${relationField?cap_first}To${strippedModelName}() {
+
+        final ${modelName} saved = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${idType} ${idField?uncap_first} = saved.get${idField?cap_first}();
+        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class);
+
+        when(this.${businessServiceField}.add${relationField?cap_first}(
+            ${idField?uncap_first}, ${relationField}Id
+        )).thenReturn(saved);
+
+        final String mutation = """
+            mutation($id: ID!, $relId: ID!) {
+              add${relationField?cap_first}To${strippedModelName}(id: $id, ${relationField}Id: $relId) {
+                ${idField?uncap_first}
+              }
+            }
+        """;
+
+        final ${transferObjectClass} result = this.graphQlTester.document(mutation)
+            .variable("id", ${idField?uncap_first})
+            .variable("relId", ${relationField}Id)
+            .execute()
+            .path("add${relationField?cap_first}To${strippedModelName}")
+            .entity(${transferObjectClass}.class)
+            .get();
+
+        verify(this.${businessServiceField}).add${relationField?cap_first}(
+            ${idField?uncap_first}, ${relationField}Id
+        );
+
+        assertThat(result).isNotNull();
+        assertThat(result.${idField?uncap_first}()).isEqualTo(saved.get${idField?cap_first}());
+    }
+
+    @Test
+    void add${relationField?cap_first}To${strippedModelName}_idTypeMismatch_error() {
+
+        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class);
+        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class);
+
+        final String mutation = """
+            mutation($id: ID!, $relId: ID!) {
+              add${relationField?cap_first}To${strippedModelName}(id: $id, ${relationField}Id: $relId) { ${idField?uncap_first} }
+            }
+        """;
+
+        this.graphQlTester.document(mutation)
+            .variable("id", ${idField?uncap_first})
+            .variable("relId", ${relationField}Id)
+            .execute()
+            .errors()
+            .satisfy(errors -> assertThat(errors).isNotEmpty());
+    }
+
+    @Test
+    void remove${relationField?cap_first}From${strippedModelName}() {
+
+        final ${modelName} saved = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${idType} ${idField?uncap_first} = saved.get${idField?cap_first}();<#if rel.isCollection>
+        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class)</#if>;
+
+        final String mutation = """
+            mutation(<#if rel.isCollection>$id: ID!, $relId: ID!<#else>$id: ID!</#if>) {
+              remove${relationField?cap_first}From${strippedModelName}(id: $id<#if rel.isCollection>, ${relationField}Id: $relId</#if>) {
+                ${idField?uncap_first}
+              }
+            }
+        """;
+
+        <#if rel.isCollection>
+        when(this.${businessServiceField}.remove${relationField?cap_first}(${idField?uncap_first}, ${relationField}Id)).thenReturn(saved);
+        <#else>
+        when(this.${serviceField}.remove${relationField?cap_first}(${idField?uncap_first})).thenReturn(saved);
+        </#if>
+
+        final ${transferObjectClass} result = this.graphQlTester.document(mutation)
+            .variable("id", ${idField?uncap_first})
+            <#if rel.isCollection>.variable("relId", ${relationField}Id)</#if>
+            .execute()
+            .path("remove${relationField?cap_first}From${strippedModelName}")
+            .entity(${transferObjectClass}.class)
+            .get();
+
+        <#if rel.isCollection>
+        verify(this.${businessServiceField}).remove${relationField?cap_first}(${idField?uncap_first}, ${relationField}Id);
+        <#else>
+        verify(this.${serviceField}).remove${relationField?cap_first}(${idField?uncap_first});
+        </#if>
+
+        assertThat(result).isNotNull();
+        assertThat(result.${idField?uncap_first}()).isEqualTo(saved.get${idField?cap_first}());
+    }
+
+    @Test
+    void remove${relationField?cap_first}From${strippedModelName}_${idField?uncap_first}TypeMismatch_error() {
+
+        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class)
+        <#if rel.isCollection>;
+        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class)</#if>;
+
+        final String mutation = """
+            mutation(<#if rel.isCollection>$id: ID!, $relId: ID!<#else>$id: ID!</#if>) {
+              remove${relationField?cap_first}From${strippedModelName}(id: $id<#if rel.isCollection>, ${relationField}Id: $relId</#if>) {
+                ${idField?uncap_first}
+              }
+            }
+        """;
+
+        this.graphQlTester.document(mutation)
+            .variable("id", ${idField?uncap_first})
+            <#if rel.isCollection>.variable("relId", ${relationField}Id)</#if>
+            .execute()
+            .errors()
+            .satisfy(errors -> assertThat(errors).isNotEmpty());
+    }
+    <#if rel.isCollection>
+    @Test
+    void remove${relationField?cap_first}From${strippedModelName}_${relationField?uncap_first}IdTypeMismatch_error() {
+
+        final ${idType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${idType}.class);
+        final ${rel.invalidRelationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${rel.invalidRelationIdType}.class);
+
+        final String mutation = """
+            mutation($id: ID!, $relId: ID!$id: ID!) {
+              remove${relationField?cap_first}From${strippedModelName}(id: $id, ${relationField}Id: $relId) {
+                ${idField?uncap_first}
+              }
+            }
+        """;
+
+        this.graphQlTester.document(mutation)
+            .variable("id", ${idField?uncap_first})
+            .variable("relId", ${relationField}Id)
+            .execute()
+            .errors()
+            .satisfy(errors -> assertThat(errors).isNotEmpty());
+    }</#if>
+    </#list>
+    </#if>
 
     @TestConfiguration
     static class RuntimeWiringTestConfig {

@@ -2,6 +2,7 @@ package com.markozivkovic.codegen.generators.tests;
 
 import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +31,11 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerUnitTestGenerator.class);
 
     private final CrudConfiguration configuration;
+    private final List<ModelDefinition> entities;
 
-    public GraphQlUnitTestGenerator(final CrudConfiguration configuration) {
+    public GraphQlUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
         this.configuration = configuration;
+        this.entities = entities;
     }
 
     @Override
@@ -78,8 +81,11 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
                 .map(FieldUtils::extractJsonFieldName)
                 .collect(Collectors.toList());
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
 
         final Map<String, Object> context = new HashMap<>();
+        final List<Map<String, Object>> relations = new ArrayList<>();
         context.put("strippedModelName", modelWithoutSuffix);
         context.put("resolverClassName", resolverClassName);
         context.put("className", className);
@@ -93,6 +99,21 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("jsonFields", jsonFields);
         context.put("testImports", ImportUtils.computeMutationResolverTestImports());
         context.put("projectImports", ImportUtils.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
+        
+        relationFields.forEach(field -> {
+            final ModelDefinition relationModel = this.entities.stream()
+                    .filter(entity -> entity.getName().equals(field.getType()))
+                    .findFirst()
+                    .orElseThrow();
+            final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
+            relations.add(Map.of(
+                "relationField", field.getName(),
+                "relationIdType", relationIdField.getType(),
+                "isCollection", collectionRelationFields.contains(field.getName()),
+                "invalidRelationIdType", UnitTestUtils.computeInvalidIdType(relationIdField)
+            ));
+        });
+        context.put("relations", relations);
 
         sb.append(String.format(PACKAGE, packagePath + RESOLVERS_PACKAGE));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
