@@ -1,8 +1,7 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +10,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -250,7 +250,7 @@ public class TransferObjectGenerator implements CodeGenerator {
             final FieldDefinition idField = FieldUtils.extractIdField(relationModelDefinition.getFields());
     
             if (FieldUtils.isIdFieldUUID(idField)) {
-                sb.append(String.format(IMPORT, JAVA_UTIL_UUID))
+                sb.append(String.format(IMPORT, ImportConstants.Java.UUID))
                         .append("\n");
             }
     

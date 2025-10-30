@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -3,6 +3,7 @@ package com.markozivkovic.codegen.utils;
 import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE;
 import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT;
 import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY_LISTENERS;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUMERATED;
@@ -29,16 +30,6 @@ import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_JPA_D
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_IMPL;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_DECIMAL;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_INTEGER;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE_TIME;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_LIST;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OPTIONAL;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_STREAM_COLLECTORS;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
 import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
@@ -164,12 +155,12 @@ public class ImportUtils {
         final List<FieldDefinition> fields = modelDefinition.getFields();
         final Set<String> imports = new LinkedHashSet<>();
 
-        addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, JAVA_MATH_BIG_DECIMAL);
-        addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, JAVA_MATH_BIG_INTEGER);
-        addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, JAVA_TIME_LOCAL_DATE);
-        addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, JAVA_TIME_LOCAL_DATE_TIME);
-        addIf(importOptional, imports, JAVA_UTIL_OPTIONAL);
-        addIf(importObjects, imports, JAVA_UTIL_OBJECTS);
+        addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
+        addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
+        addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
+        addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
+        addIf(importOptional, imports, ImportConstants.Java.OPTIONAL);
+        addIf(importObjects, imports, ImportConstants.Java.OBJECTS);
         
         if (modelDefinition.getAudit() != null) {
             addIf(
@@ -178,7 +169,7 @@ public class ImportUtils {
                 AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())
             );
         }
-        addIf(FieldUtils.isAnyFieldUUID(fields), imports, JAVA_UTIL_UUID);
+        addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
 
         if (relationIds) {
             modelDefinition.getFields().stream()
@@ -194,14 +185,14 @@ public class ImportUtils {
                                 )
                             ));
                     final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
-                    addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
+                    addIf(FieldUtils.isIdFieldUUID(idField), imports, ImportConstants.Java.UUID);
                 });
         }
         
         final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
                 FieldUtils.isAnyRelationManyToMany(fields);
 
-        addIf(hasLists || importList, imports, JAVA_UTIL_LIST);
+        addIf(hasLists || importList, imports, ImportConstants.Java.LIST);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
@@ -441,7 +432,7 @@ public class ImportUtils {
 
         addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST));
         addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE));
-        addIf(hasCollectionRelation, imports, String.format(IMPORT, JAVA_UTIL_STREAM_COLLECTORS));
+        addIf(hasCollectionRelation, imports, String.format(IMPORT, ImportConstants.Java.COLLECTORS));
 
         return imports.stream()
                 .sorted()
@@ -594,12 +585,12 @@ public class ImportUtils {
         final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
         if (FieldUtils.isIdFieldUUID(idField)) {
-            imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+            imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
         if (!manyToManyFields.isEmpty() || !oneToManyFields.isEmpty()) {
-            imports.add(String.format(IMPORT, JAVA_UTIL_LIST));
-            imports.add(String.format(IMPORT, JAVA_UTIL_STREAM_COLLECTORS));
+            imports.add(String.format(IMPORT, ImportConstants.Java.LIST));
+            imports.add(String.format(IMPORT, ImportConstants.Java.COLLECTORS));
         }
 
         relations.forEach(realtionField -> {
@@ -612,7 +603,7 @@ public class ImportUtils {
             final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
 
             if (FieldUtils.isIdFieldUUID(relationIdField)) {
-                imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+                imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
             }
         });
 
@@ -775,7 +766,7 @@ public class ImportUtils {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         if (FieldUtils.isIdFieldUUID(idField)) {
-            imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+            imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
         return imports.stream()
@@ -1148,7 +1139,7 @@ public class ImportUtils {
         final Set<String> imports = new LinkedHashSet<>();
         
         final List<FieldDefinition> fields = modelDefinition.getFields();
-        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, JAVA_UTIL_UUID);
+        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, ImportConstants.Java.UUID);
 
         return imports.stream()
                 .sorted()
@@ -1168,7 +1159,7 @@ public class ImportUtils {
         final Set<String> imports = new LinkedHashSet<>();
         
         final List<FieldDefinition> fields = modelDefinition.getFields();
-        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, JAVA_UTIL_UUID);
+        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, ImportConstants.Java.UUID);
 
         modelDefinition.getFields().stream()
             .filter(field -> Objects.nonNull(field.getRelation()))
@@ -1183,7 +1174,7 @@ public class ImportUtils {
                             )
                         ));
                 final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
-                addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
+                addIf(FieldUtils.isIdFieldUUID(idField), imports, ImportConstants.Java.UUID);
             });
 
         return imports.stream()

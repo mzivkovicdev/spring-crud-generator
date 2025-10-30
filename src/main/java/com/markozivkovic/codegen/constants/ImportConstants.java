@@ -4,6 +4,23 @@ public final class ImportConstants {
 
     private ImportConstants() {}
 
+    public static final String IMPORT = "import %s;\n";
+    public static final String PACKAGE = "package %s;\n\n";
+
+    public static final class Java {
+        private Java() {}
+        public static final String OBJECTS = "java.util.Objects";
+        public static final String OPTIONAL = "java.util.Optional";
+        public static final String UUID = "java.util.UUID";
+        public static final String LIST = "java.util.List";
+        public static final String MAP = "java.util.Map";
+        public static final String COLLECTORS = "java.util.stream.Collectors";
+        public static final String BIG_DECIMAL = "java.math.BigDecimal";
+        public static final String BIG_INTEGER = "java.math.BigInteger";
+        public static final String LOCAL_DATE = "java.time.LocalDate";
+        public static final String LOCAL_DATE_TIME = "java.time.LocalDateTime";
+    }
+
     public static final class Jackson {
         private Jackson() {}
         public static final String OBJECT_MAPPER = "com.fasterxml.jackson.databind.ObjectMapper";

@@ -1,8 +1,7 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
 import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
@@ -14,6 +13,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -66,7 +66,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
         sb.append(ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
 
         if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entites)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID));
+            sb.append(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
         sb.append(String.format(IMPORT, SL4J_LOGGER))

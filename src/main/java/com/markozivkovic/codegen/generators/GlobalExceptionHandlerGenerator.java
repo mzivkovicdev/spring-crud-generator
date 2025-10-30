@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -11,9 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
-import com.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;

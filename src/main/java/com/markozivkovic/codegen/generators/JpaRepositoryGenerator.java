@@ -1,15 +1,15 @@
 package com.markozivkovic.codegen.generators;
 
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_JPA_REPOSITORY;
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
 
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -56,7 +56,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath + REPOSITORIES_PACKAGE));
 
         if (FieldUtils.isIdFieldUUID(idField)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID))
+            sb.append(String.format(IMPORT, ImportConstants.Java.UUID))
                     .append("\n");
         }
 
