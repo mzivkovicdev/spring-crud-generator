@@ -52,6 +52,9 @@ public final class ImportConstants {
         public static final String IMPORT = "org.springframework.context.annotation.Import";
         public static final String BEAN = "org.springframework.context.annotation.Bean";
         public static final String SERVICE = "org.springframework.stereotype.Service";
+        public static final String CACHEABLE = "org.springframework.cache.annotation.Cacheable";
+        public static final String CACHE_EVICT = "org.springframework.cache.annotation.CacheEvict";
+        public static final String CACHE_PUT = "org.springframework.cache.annotation.CachePut";
     }
 
     public static final class SpringCore {

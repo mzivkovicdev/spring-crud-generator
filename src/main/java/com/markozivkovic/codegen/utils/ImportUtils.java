@@ -1,8 +1,5 @@
 package com.markozivkovic.codegen.utils;
 
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE;
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT;
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT;
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
 import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY_LISTENERS;
@@ -479,9 +476,9 @@ public class ImportUtils {
         }
 
         if (cache) {
-            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE));
-            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT));
-            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT));
+            imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.CACHEABLE));
+            imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.CACHE_EVICT));
+            imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.CACHE_PUT));
         }
 
         return imports.stream()
