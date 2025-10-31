@@ -21,6 +21,28 @@ public final class ImportConstants {
         public static final String LOCAL_DATE_TIME = "java.time.LocalDateTime";
     }
 
+    public static final class Jakarta {
+        private Jakarta() {}
+        public static final String ENTITY = "jakarta.persistence.Entity";
+        public static final String ENTITY_LISTENERS = "jakarta.persistence.EntityListeners";
+        public static final String TABLE = "jakarta.persistence.Table";
+        public static final String ID = "jakarta.persistence.Id";
+        public static final String GENERATED_VALUE = "jakarta.persistence.GeneratedValue";
+        public static final String GENERATION_TYPE = "jakarta.persistence.GenerationType";
+        public static final String ENUM_TYPE = "jakarta.persistence.EnumType";
+        public static final String ENUMERATED = "jakarta.persistence.Enumerated";
+        public static final String FETCH_TYPE = "jakarta.persistence.FetchType";
+        public static final String CASCADE_TYPE = "jakarta.persistence.CascadeType";
+        public static final String COLUMN = "jakarta.persistence.Column";
+        public static final String JOIN_COLUMN = "jakarta.persistence.JoinColumn";
+        public static final String JOIN_TABLE = "jakarta.persistence.JoinTable";
+        public static final String ONE_TO_ONE = "jakarta.persistence.OneToOne";
+        public static final String MANY_TO_MANY = "jakarta.persistence.ManyToMany";
+        public static final String ONE_TO_MANY = "jakarta.persistence.OneToMany";
+        public static final String MANY_TO_ONE = "jakarta.persistence.ManyToOne";
+        public static final String VERSION = "jakarta.persistence.Version";
+    }
+
     public static final class Jackson {
         private Jackson() {}
         public static final String OBJECT_MAPPER = "com.fasterxml.jackson.databind.ObjectMapper";
@@ -38,13 +60,13 @@ public final class ImportConstants {
         public static final String TEST = "org.junit.jupiter.api.Test";
         public static final String AFTER_EACH = "org.junit.jupiter.api.AfterEach";
         public static final String BEFORE_EACH = "org.junit.jupiter.api.BeforeEach";
+        public static final class Params {
+            private Params() {}
+            public static final String PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
+            public static final String ENUM_SOURCE = "org.junit.jupiter.params.provider.EnumSource";
+        }
     }
 
-    public static final class Params {
-        private Params() {}
-        public static final String PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
-        public static final String ENUM_SOURCE = "org.junit.jupiter.params.provider.EnumSource";
-    }
 
     public static final class SpringAnnotation {
         private SpringAnnotation() {}

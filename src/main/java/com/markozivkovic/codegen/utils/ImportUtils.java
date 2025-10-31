@@ -1,24 +1,6 @@
 package com.markozivkovic.codegen.utils;
 
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY_LISTENERS;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUMERATED;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUM_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATED_VALUE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATION_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ID;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_TABLE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_CASCADE_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_COLUMN;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_FETCH_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_COLUMN;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_TABLE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_MANY;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_ONE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_MANY;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_ONE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_VERSION;
 import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE;
 import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_TYPE_SQL_TYPES;
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_ANNOTATION_CREATED_DATE;
@@ -259,30 +241,30 @@ public class ImportUtils {
         final List<String> relations = FieldUtils.extractRelationTypes(fields);
 
         imports.addAll(Set.of(
-            JAKARTA_PERSISTANCE_ENTITY, JAKARTA_PERSISTANCE_GENERATED_VALUE, JAKARTA_PERSISTANCE_GENERATION_TYPE,
-            JAKARTA_PERSISTANCE_ID, JAKARTA_PERSISTANCE_TABLE
+            ImportConstants.Jakarta.ENTITY, ImportConstants.Jakarta.GENERATED_VALUE, ImportConstants.Jakarta.GENERATION_TYPE,
+            ImportConstants.Jakarta.ID, ImportConstants.Jakarta.TABLE
         ));
         
         if (FieldUtils.isAnyFieldEnum(fields)) {
-            imports.add(JAKARTA_PERSISTANCE_ENUM_TYPE);
-            imports.add(JAKARTA_PERSISTANCE_ENUMERATED);
+            imports.add(ImportConstants.Jakarta.ENUM_TYPE);
+            imports.add(ImportConstants.Jakarta.ENUMERATED);
         }
 
         final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
                 .anyMatch(field -> Objects.nonNull(field.getColumn()));
         final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
         
-        addIf(!relations.isEmpty(), imports, JAKARTA_PERSISTENCE_JOIN_COLUMN);
-        addIf(relations.contains(MANY_TO_MANY), imports, JAKARTA_PERSISTENCE_JOIN_TABLE);
-        addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_MANY);
-        addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_ONE);
-        addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, JAKARTA_PERSISTENCE_ONE_TO_MANY);
-        addIf(FieldUtils.isAnyRelationOneToOne(fields), imports, JAKARTA_PERSISTENCE_ONE_TO_ONE);
-        addIf(FieldUtils.isFetchTypeDefined(fields), imports, JAKARTA_PERSISTENCE_FETCH_TYPE);
-        addIf(FieldUtils.isCascadeTypeDefined(fields), imports, JAKARTA_PERSISTENCE_CASCADE_TYPE);
-        addIf(optimisticLocking, imports, JAKARTA_PERSISTENCE_VERSION);
-        addIf(hasAnyFieldColumn || isAuditingEnabled, imports, JAKARTA_PERSISTENCE_COLUMN);
-        addIf(isAuditingEnabled, imports, JAKARTA_PERSISTANCE_ENTITY_LISTENERS);
+        addIf(!relations.isEmpty(), imports, ImportConstants.Jakarta.JOIN_COLUMN);
+        addIf(relations.contains(MANY_TO_MANY), imports, ImportConstants.Jakarta.JOIN_TABLE);
+        addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, ImportConstants.Jakarta.MANY_TO_MANY);
+        addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, ImportConstants.Jakarta.MANY_TO_ONE);
+        addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, ImportConstants.Jakarta.ONE_TO_MANY);
+        addIf(FieldUtils.isAnyRelationOneToOne(fields), imports, ImportConstants.Jakarta.ONE_TO_ONE);
+        addIf(FieldUtils.isFetchTypeDefined(fields), imports, ImportConstants.Jakarta.FETCH_TYPE);
+        addIf(FieldUtils.isCascadeTypeDefined(fields), imports, ImportConstants.Jakarta.CASCADE_TYPE);
+        addIf(optimisticLocking, imports, ImportConstants.Jakarta.VERSION);
+        addIf(hasAnyFieldColumn || isAuditingEnabled, imports, ImportConstants.Jakarta.COLUMN);
+        addIf(isAuditingEnabled, imports, ImportConstants.Jakarta.ENTITY_LISTENERS);
 
         final String jakartaImports = imports.stream()
                   .map(imp -> String.format(IMPORT, imp))
