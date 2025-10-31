@@ -32,7 +32,6 @@ import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKA
 import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
-import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
 import static com.markozivkovic.codegen.constants.TestConstants.COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_AFTER_EACH;
 import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_BEFORE_EACH;
@@ -474,7 +473,7 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, SL4J_LOGGER_FACTORY));
         imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
         imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST));
-        imports.add(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.SERVICE));
         if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
             imports.add(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
         }

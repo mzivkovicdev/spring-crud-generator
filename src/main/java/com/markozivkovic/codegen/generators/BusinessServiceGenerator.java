@@ -4,7 +4,6 @@ import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
 import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
-import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
 import java.util.List;
@@ -71,7 +70,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         sb.append(String.format(IMPORT, SL4J_LOGGER))
                 .append(String.format(IMPORT, SL4J_LOGGER_FACTORY))
-                .append(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE));
+                .append(String.format(IMPORT, ImportConstants.SpringAnnotation.SERVICE));
         
         if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
             sb.append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
