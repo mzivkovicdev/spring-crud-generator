@@ -43,6 +43,12 @@ public final class ImportConstants {
         public static final String VERSION = "jakarta.persistence.Version";
     }
 
+    public static final class Logger {
+        private Logger() {}
+        public static final String LOGGER = "org.slf4j.Logger";
+        public static final String LOGGER_FACTORY = "org.slf4j.LoggerFactory";
+    }
+
     public static final class Jackson {
         private Jackson() {}
         public static final String OBJECT_MAPPER = "com.fasterxml.jackson.databind.ObjectMapper";
