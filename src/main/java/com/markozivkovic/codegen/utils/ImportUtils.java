@@ -1,25 +1,6 @@
 package com.markozivkovic.codegen.utils;
 
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.TestConstants.COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_AFTER_EACH;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_BEFORE_EACH;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_TEST;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE;
-import static com.markozivkovic.codegen.constants.TestConstants.ORG_MAPSTRUCT_FACTORY_MAPPERS;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_HTTP_MEDIA_TYPE;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS;
 import static com.markozivkovic.codegen.constants.TransactionConstants.OPTIMISTIC_LOCKING_RETRY;
 import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
@@ -388,18 +369,18 @@ public class ImportUtils {
         final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
         final boolean hasCollectionRelation = FieldUtils.hasCollectionRelation(modelDefinition, entities);
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_BEFORE_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
-        addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST));
-        addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE));
+        addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
+        addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.ENUM_SOURCE));
         addIf(hasCollectionRelation, imports, String.format(IMPORT, ImportConstants.Java.COLLECTORS));
 
         return imports.stream()
@@ -416,12 +397,12 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_BEFORE_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
         return imports.stream()
                 .sorted()
@@ -791,20 +772,20 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
 
         return imports.stream()
                 .sorted()
@@ -820,19 +801,19 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_HTTP_MEDIA_TYPE));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
 
         return imports.stream()
                 .sorted()
@@ -848,16 +829,16 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
 
         return imports.stream()
                 .sorted()
@@ -909,7 +890,7 @@ public class ImportUtils {
             ));
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
-        imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
         return imports.stream()
@@ -977,7 +958,7 @@ public class ImportUtils {
             ));
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
-        imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
         return imports.stream()
@@ -1060,7 +1041,7 @@ public class ImportUtils {
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
         if (importObjectMapper) {
-            imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+            imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         }
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
@@ -1078,19 +1059,19 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_HTTP_MEDIA_TYPE));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
 
         return imports.stream()
                 .sorted()
@@ -1171,8 +1152,8 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringContext.BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));
@@ -1201,8 +1182,8 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringContext.BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));

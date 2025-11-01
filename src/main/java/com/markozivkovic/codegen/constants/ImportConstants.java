@@ -72,6 +72,7 @@ public final class ImportConstants {
         public static final String TEST = "org.junit.jupiter.api.Test";
         public static final String AFTER_EACH = "org.junit.jupiter.api.AfterEach";
         public static final String BEFORE_EACH = "org.junit.jupiter.api.BeforeEach";
+        public static final String EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
         public static final class Params {
             private Params() {}
             public static final String PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
@@ -95,6 +96,11 @@ public final class ImportConstants {
         public static final String CACHEABLE = "org.springframework.cache.annotation.Cacheable";
         public static final String CACHE_EVICT = "org.springframework.cache.annotation.CacheEvict";
         public static final String CACHE_PUT = "org.springframework.cache.annotation.CachePut";
+    }
+
+    public static final class SpringHttp {
+        private SpringHttp() {}
+        public static final String MEDIA_TYPE = "org.springframework.http.MediaType";
     }
 
     public static final class SpringStereotype {
@@ -134,10 +140,11 @@ public final class ImportConstants {
         public static final String MOCKMVC = "org.springframework.test.web.servlet.MockMvc";
         public static final String RESULT_ACTIONS = "org.springframework.test.web.servlet.ResultActions";
         public static final String TEST_PROPERTY_SORUCE = "org.springframework.test.context.TestPropertySource";
+        public static final String SPRING_EXTENSION = "org.springframework.test.context.junit.jupiter.SpringExtension";
     }
 
-    public static final class SecurityAutoConfig {
-        private SecurityAutoConfig() {}
+    public static final class SpringBootAutoConfigure {
+        private SpringBootAutoConfigure() {}
         public static final String OAUTH2_CLIENT_AUTO_CONFIGURATION =
                 "org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration";
         public static final String OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION =
