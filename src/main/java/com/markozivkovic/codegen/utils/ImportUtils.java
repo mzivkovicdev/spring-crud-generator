@@ -1,8 +1,6 @@
 package com.markozivkovic.codegen.utils;
 
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.TransactionConstants.OPTIMISTIC_LOCKING_RETRY;
-import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -11,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -425,7 +424,7 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
         if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+            imports.add(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
         }
 
         if (cache) {
@@ -467,7 +466,7 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
 
         if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + OPTIMISTIC_LOCKING_RETRY));
+            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY));
         }
 
         if (!relationModels.isEmpty()) {
@@ -508,7 +507,7 @@ public class ImportUtils {
         });
 
         if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + OPTIMISTIC_LOCKING_RETRY));
+            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY));
         }
 
         return imports.stream()

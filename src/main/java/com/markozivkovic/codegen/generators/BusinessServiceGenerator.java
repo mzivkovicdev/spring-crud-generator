@@ -2,7 +2,6 @@ package com.markozivkovic.codegen.generators;
 
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
-import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
 
 import java.util.List;
 import java.util.Map;
@@ -71,7 +70,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
                 .append(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
         
         if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            sb.append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+            sb.append(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
         }
         
         sb.append("\n")

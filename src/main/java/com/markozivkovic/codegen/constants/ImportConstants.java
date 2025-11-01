@@ -124,6 +124,11 @@ public final class ImportConstants {
         public static final String JPA_REPOSITORY = "org.springframework.data.jpa.repository.JpaRepository";
     }
 
+    public static final class SpringTransaction {
+        private SpringTransaction() {}
+        public static final String TRANSACTIONAL = "org.springframework.transaction.annotation.Transactional";
+    }
+
     public static final class SpringBootTest {
         private SpringBootTest() {}
         public static final String WEB_MVC_TEST = "org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest";
