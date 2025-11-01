@@ -2,7 +2,6 @@ package com.markozivkovic.codegen.generators;
 
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_JPA_REPOSITORY;
 
 import java.util.Map;
 
@@ -65,7 +64,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
                 "repository/repository-interface-template.ftl", context
         );
 
-        sb.append(String.format(IMPORT, SPRING_DATA_PACKAGE_JPA_REPOSITORY))
+        sb.append(String.format(IMPORT, ImportConstants.SpringData.JPA_REPOSITORY))
                 .append("\n")
                 .append(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()))
                 .append("\n")

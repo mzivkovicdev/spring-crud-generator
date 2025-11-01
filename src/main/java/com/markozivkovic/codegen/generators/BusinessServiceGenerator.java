@@ -68,7 +68,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         sb.append(String.format(IMPORT, ImportConstants.Logger.LOGGER))
                 .append(String.format(IMPORT, ImportConstants.Logger.LOGGER_FACTORY))
-                .append(String.format(IMPORT, ImportConstants.SpringAnnotation.SERVICE));
+                .append(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
         
         if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
             sb.append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));

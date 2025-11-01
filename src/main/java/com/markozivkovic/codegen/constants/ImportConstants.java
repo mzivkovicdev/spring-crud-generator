@@ -61,6 +61,12 @@ public final class ImportConstants {
         public static final String FACTORY_MAPPERS = "org.mapstruct.factory.Mappers";
     }
 
+    public static final class HibernateAnnotation {
+        private HibernateAnnotation() {}
+        public static final String JDBC_TYPE_CODE = "org.hibernate.annotations.JdbcTypeCode";
+        public static final String SQL_TYPES = "org.hibernate.type.SqlTypes";
+    }
+
     public static final class JUnit {
         private JUnit() {}
         public static final String TEST = "org.junit.jupiter.api.Test";
@@ -73,16 +79,27 @@ public final class ImportConstants {
         }
     }
 
-
-    public static final class SpringAnnotation {
-        private SpringAnnotation() {}
+    public static final class SpringBean {
+        private SpringBean() {}
         public static final String AUTOWIRED = "org.springframework.beans.factory.annotation.Autowired";
+    }
+
+    public static final class SpringContext {
+        private SpringContext() {}
         public static final String IMPORT = "org.springframework.context.annotation.Import";
         public static final String BEAN = "org.springframework.context.annotation.Bean";
-        public static final String SERVICE = "org.springframework.stereotype.Service";
+    }
+
+    public static final class SpringCache {
+        private SpringCache() {}
         public static final String CACHEABLE = "org.springframework.cache.annotation.Cacheable";
         public static final String CACHE_EVICT = "org.springframework.cache.annotation.CacheEvict";
         public static final String CACHE_PUT = "org.springframework.cache.annotation.CachePut";
+    }
+
+    public static final class SpringStereotype {
+        private SpringStereotype() {}
+        public static final String SERVICE = "org.springframework.stereotype.Service";
     }
 
     public static final class SpringCore {
@@ -95,6 +112,10 @@ public final class ImportConstants {
         public static final String PAGE = "org.springframework.data.domain.Page";
         public static final String PAGE_IMPL = "org.springframework.data.domain.PageImpl";
         public static final String PAGE_REQUEST = "org.springframework.data.domain.PageRequest";
+        public static final String CREATED_DATE = "org.springframework.data.annotation.CreatedDate";
+        public static final String LAST_MODIFIED_DATE = "org.springframework.data.annotation.LastModifiedDate";
+        public static final String AUDITING_ENTITY_LISTENER = "org.springframework.data.jpa.domain.support.AuditingEntityListener";
+        public static final String JPA_REPOSITORY = "org.springframework.data.jpa.repository.JpaRepository";
     }
 
     public static final class SpringBootTest {
@@ -102,6 +123,8 @@ public final class ImportConstants {
         public static final String WEB_MVC_TEST = "org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest";
         public static final String AUTO_CONFIGURE_MOCK_MVC = "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc";
         public static final String TEST_CONFIGURATION = "org.springframework.boot.test.context.TestConfiguration";
+        public static final String GRAPH_QL_TEST = "org.springframework.boot.test.autoconfigure.graphql.GraphQlTest";
+        public static final String AUTO_CONFIGURE_GRAPH_QL_TESTER = "org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureGraphQlTester";
     }
 
     public static final class SpringTest {
@@ -128,8 +151,6 @@ public final class ImportConstants {
 
     public static final class GraphQLTest {
         private GraphQLTest() {}
-        public static final String GRAPH_QL_TEST = "org.springframework.boot.test.autoconfigure.graphql.GraphQlTest";
-        public static final String AUTO_CONFIGURE_GRAPH_QL_TESTER = "org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureGraphQlTester";
         public static final String GRAPH_QL_TESTER = "org.springframework.graphql.test.tester.GraphQlTester";
     }
     

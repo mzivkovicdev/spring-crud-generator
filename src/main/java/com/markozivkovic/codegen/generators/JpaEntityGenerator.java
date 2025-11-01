@@ -1,10 +1,10 @@
 package com.markozivkovic.codegen.generators;
 
 import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
-import static com.markozivkovic.codegen.constants.JPAConstants.AUDITING_ENTITY_LISTENER_CLASS;
-import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_ANNOTATION;
-import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_LISTENERS_ANNOTATION;
-import static com.markozivkovic.codegen.constants.JPAConstants.TABLE_ANNOTATION;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.AUDITING_ENTITY_LISTENER_CLASS;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.ENTITY_ANNOTATION;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.ENTITY_LISTENERS_ANNOTATION;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.TABLE_ANNOTATION;
 
 import java.util.List;
 import java.util.Map;
