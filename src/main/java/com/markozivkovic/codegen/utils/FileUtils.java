@@ -26,7 +26,7 @@ public class FileUtils {
             if (StringUtils.isNotBlank(part)) {
                 final String parsed = part.trim();
                 if (sb.length() > 0) {
-                    sb.append(File.pathSeparator);
+                    sb.append(File.separator);
                 }
                 sb.append(parsed);
             }
