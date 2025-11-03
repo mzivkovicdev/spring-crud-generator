@@ -27,9 +27,6 @@ import com.markozivkovic.codegen.utils.StringUtils;
 public class MapperGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MapperGenerator.class);
-
-    private static final String MAPPERS_REST = "mappers/rest";
-    private static final String MAPPERS_GRAPHQL = "mappers/graphql";
     
     private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
 
@@ -166,7 +163,9 @@ public class MapperGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, resolvedPackagePath))
                 .append(mapperTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL : MAPPERS_REST, mapperName, sb.toString());
+        final String filePath = isGraphQl ? FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL)
+                : FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST);
+        FileWriterUtils.writeToFile(outputDir, filePath, mapperName, sb.toString());
     }
 
     /**
