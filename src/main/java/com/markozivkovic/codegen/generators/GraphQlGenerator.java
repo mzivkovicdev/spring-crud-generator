@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -29,9 +30,6 @@ public class GraphQlGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQlGenerator.class);
     
     private static final String GRAPHQL = "graphql";
-    private static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/" + GRAPHQL;
-    private static final String RESOLVERS = "resolvers";
-    private static final String RESOLVERS_PACKAGE = "." + RESOLVERS;
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -52,7 +50,7 @@ public class GraphQlGenerator implements CodeGenerator {
         }
 
         if (!GeneratorContext.isGenerated(GRAPHQL)) {
-            final String pathToGraphQlSchema = String.format("%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES_GRAPHQL);
+            final String pathToGraphQlSchema = String.format("%s/%s", projectMetadata.getProjectBaseDir(), GeneratorConstants.SRC_MAIN_RESOURCES_GRAPHQL);
     
             entities.stream()
                 .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
@@ -72,7 +70,7 @@ public class GraphQlGenerator implements CodeGenerator {
         final String baseImport = ImportUtils.computeResolverBaseImports(modelDefinition);
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + RESOLVERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
         if (StringUtils.isNotBlank(baseImport)) {
             sb.append(baseImport);
         }
@@ -80,7 +78,7 @@ public class GraphQlGenerator implements CodeGenerator {
 
         FileWriterUtils.writeToFile(
                 outputDir,
-                RESOLVERS,
+                GeneratorConstants.DefaultPackageLayout.RESOLVERS,
                 String.format("%sResolver.java", ModelNameUtils.stripSuffix(modelDefinition.getName())),
                 sb.toString()
         );

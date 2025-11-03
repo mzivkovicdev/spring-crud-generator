@@ -9,6 +9,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -22,9 +23,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class JpaServiceGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaServiceGenerator.class);
-
-    private static final String SERVICES = "services";
-    private static final String SERVICES_PACKAGE = "." + SERVICES;
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entites;
@@ -51,8 +49,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         final String className = String.format("%sService", modelWithoutSuffix);
 
         final StringBuilder sb = new StringBuilder();
-
-        sb.append(String.format(PACKAGE, packagePath + SERVICES_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.SERVICES)));
         sb.append(ImportUtils.getBaseImport(
                 modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false)
         );
@@ -66,7 +63,7 @@ public class JpaServiceGenerator implements CodeGenerator {
 
         sb.append(generateServiceClass(modelDefinition));
 
-        FileWriterUtils.writeToFile(outputDir, SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.SERVICES, className, sb.toString());
     }
 
     /**

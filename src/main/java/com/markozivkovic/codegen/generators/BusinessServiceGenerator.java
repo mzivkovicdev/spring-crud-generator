@@ -9,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -25,9 +26,6 @@ public class BusinessServiceGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessServiceGenerator.class);
 
     private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
-
-    private static final String BUSINESS_SERVICES = "businessservices";
-    private static final String BUSINESS_SERVICES_PACKAGE = "." + BUSINESS_SERVICES;
 
     private final List<ModelDefinition> entites;
 
@@ -58,7 +56,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + BUSINESS_SERVICES_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES)));
         sb.append(ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
 
         if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entites)) {
@@ -78,7 +76,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
                 .append("\n")
                 .append(generateBusinessServiceClass(modelDefinition));
 
-        FileWriterUtils.writeToFile(outputDir, BUSINESS_SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES, className, sb.toString());
     }
 
     /**

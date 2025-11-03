@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.AdditionalConfigurationConstants;
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -24,11 +25,6 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
     private static final String ADDITIONAL_CONFIG = "additionalConfig";
     private static final String OPTIMISTIC_LOCKING_RETRY = "optimisticLockingRetry";
     private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
-
-    private static final String ANNOTATIONS = "annotations";
-    private static final String ANNOTATIONS_PACKAGE = "." + ANNOTATIONS;
-    private static final String CONFIGURATIONS = "configurations";
-    private static final String CONFIGURATIONS_PACKAGE = "." + CONFIGURATIONS;
 
     private final CrudConfiguration configuration;
 
@@ -86,12 +82,14 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, packagePath + ANNOTATIONS_PACKAGE))
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "annotation/retryable-annotation.ftl", context
                 ));
 
-        FileWriterUtils.writeToFile(outputDir, ANNOTATIONS, "OptimisticLockingRetry.java", sb.toString());
+        FileWriterUtils.writeToFile(
+            outputDir, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS, "OptimisticLockingRetry.java", sb.toString()
+        );
 
         GeneratorContext.markGenerated(RETRYABLE_ANNOTATION);
     }
@@ -114,12 +112,15 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, packagePath + CONFIGURATIONS_PACKAGE))
+        
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
             "configuration/retry-configuration.ftl", Map.of()
                 ));
         
-        FileWriterUtils.writeToFile(outputDir, CONFIGURATIONS, "EnableRetryConfiguration.java", sb.toString());
+        FileWriterUtils.writeToFile(
+            outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "EnableRetryConfiguration.java", sb.toString()
+        );
 
         GeneratorContext.markGenerated(OPTIMISTIC_LOCKING_RETRY);
     }
@@ -142,12 +143,14 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, packagePath + CONFIGURATIONS_PACKAGE))
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
             "configuration/scalar-configuration.ftl", Map.of()
                 ));
         
-        FileWriterUtils.writeToFile(outputDir, CONFIGURATIONS, "GraphQlConfiguration.java", sb.toString());
+        FileWriterUtils.writeToFile(
+                outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "GraphQlConfiguration.java", sb.toString()
+        );
 
         GeneratorContext.markGenerated(GRAPHQL);
     }

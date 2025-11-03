@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -24,9 +25,6 @@ import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 
 public class GraphQlUnitTestGenerator implements CodeGenerator {
-
-    private static final String RESOLVERS = "resolvers";
-    private static final String RESOLVERS_PACKAGE = "." + RESOLVERS;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerUnitTestGenerator.class);
 
@@ -115,13 +113,13 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         });
         context.put("relations", relations);
 
-        sb.append(String.format(PACKAGE, packagePath + RESOLVERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/resolver/mutation-class-test-template.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, RESOLVERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS, className, sb.toString());
     }
 
     /**
@@ -154,13 +152,13 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("testImports", ImportUtils.computeQueryResolverTestImports());
         context.put("projectImports", ImportUtils.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition));
 
-        sb.append(String.format(PACKAGE, packagePath + RESOLVERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/resolver/query-class-test-template.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, RESOLVERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS, className, sb.toString());
     }
     
 }
