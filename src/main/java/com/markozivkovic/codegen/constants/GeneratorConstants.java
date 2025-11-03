@@ -5,6 +5,7 @@ public class GeneratorConstants {
     private GeneratorConstants() {}
 
     public static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/graphql";
+    public static final String SRC_MAIN_RESOURCES_DB_MIGRATION = "/src/main/resources/db/migration";
     
     public static final class Transaction {
         private Transaction() {}
