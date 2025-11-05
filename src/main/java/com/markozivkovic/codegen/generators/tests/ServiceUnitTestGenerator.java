@@ -75,9 +75,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateTestServiceClass(final ModelDefinition modelDefinition, final String outputDir) {
 
         final Map<String, Object> context = new HashMap<>();
-        final String baseImports = ImportUtils.getTestBaseImport(
-                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities)
-        );
+        final String baseImports = ImportUtils.getTestBaseImport(modelDefinition);
         final String projectImports = ImportUtils.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir);
         final String testImports = ImportUtils.computeTestServiceImports(modelDefinition, entities);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
