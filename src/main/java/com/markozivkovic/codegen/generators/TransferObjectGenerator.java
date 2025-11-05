@@ -130,6 +130,10 @@ public class TransferObjectGenerator implements CodeGenerator {
      */
     private void generateCreateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
 
+        if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
+            return;
+        }
+
         generateTO(
             modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
             TemplateContextUtils.computeCreateTransferObjectContext(modelDefinition, this.entities), true, false, true
@@ -145,6 +149,10 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param subDir          the sub directory where the generated class will be written
      */
     private void generateUpdateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
+
+        if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
+            return;
+        }
 
         generateTO(
             modelDefinition, outputDir, packagePath, subDir, String.format("%sUpdateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),

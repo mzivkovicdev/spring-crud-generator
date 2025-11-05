@@ -103,7 +103,7 @@ class ${className} {
         <#if !swagger>
         final PageTO<${transferObjectClass}> results = this.objectMapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                ${transferObjectClass?cap_first}.class
+                new TypeReference<PageTO<${transferObjectClass?cap_first}>>() {}
         );
         <#else>
         final ${responseClass} results = this.objectMapper.readValue(
@@ -119,10 +119,10 @@ class ${className} {
         assertThat(results.<#if swagger>getNumber<#else>number</#if>()).isNotNegative();
         assertThat(results.<#if swagger>getContent<#else>content</#if>()).isNotEmpty();
 
-        results.getContent().forEach(result -> {
+        results.<#if swagger>getContent<#else>content</#if>().forEach(result -> {
 
             final ${modelName} ${modelName?uncap_first} = ${modelName?uncap_first}s.stream()
-                    .filter(${strippedModelName?uncap_first} -> ${strippedModelName?uncap_first}.get${idField?cap_first}().toString().equals(result.<#if !swagger>${idField?uncap_first}<#else>get${idField?cap_first}</#if>().toString()))
+                    .filter(obj -> obj.get${idField?cap_first}().toString().equals(result.<#if !swagger>${idField?uncap_first}<#else>get${idField?cap_first}</#if>().toString()))
                     .findFirst()
                     .orElseThrow();
 
@@ -172,7 +172,7 @@ class ${className} {
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>
-        final ${transferObjectClass} mapped${modelName?cap_first} = ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
+        final ${transferObjectClass} mapped${modelName?cap_first} = ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(
                 ${modelName?uncap_first}
         );
         </#if>

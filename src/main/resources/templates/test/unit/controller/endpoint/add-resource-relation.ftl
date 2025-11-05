@@ -113,7 +113,7 @@ class ${className} {
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>
-        final ${transferObjectClass} mapped${modelName?cap_first} = ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
+        final ${transferObjectClass} mapped${modelName?cap_first} = ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(
                 ${modelName?uncap_first}
         );
         </#if>

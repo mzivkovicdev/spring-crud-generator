@@ -18,7 +18,7 @@
         results.getContent().forEach(result -> {
 
             final ${modelName} ${modelName?uncap_first} = ${modelName?uncap_first}s.stream()
-                    .filter(${strippedModelName?uncap_first} -> ${strippedModelName?uncap_first}.get${idField?cap_first}().equals(result.get${idField?cap_first}()))
+                    .filter(obj -> obj.get${idField?cap_first}().equals(result.get${idField?cap_first}()))
                     .findFirst()
                     .orElseThrow();
             

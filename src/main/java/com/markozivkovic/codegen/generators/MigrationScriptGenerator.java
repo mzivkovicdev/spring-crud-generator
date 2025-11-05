@@ -71,6 +71,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
             .collect(Collectors.toList());
 
         final List<ModelDefinition> models = this.entities.stream()
+                .filter(model -> FieldUtils.isAnyFieldId(model.getFields()))
                 .filter(model -> !jsonModels.contains(model))
                 .collect(Collectors.toList());
 

@@ -176,12 +176,11 @@ public class ImportUtils {
      * the java.util.List interface.
      *
      * @param modelDefinition The model definition containing field information used to determine necessary imports.
-     * @param importList      Whether to include the java.util.List import.
      * @return A string containing the necessary import statements for the model.
      */
-    public static String getTestBaseImport(final ModelDefinition modelDefinition, final boolean importList) {
+    public static String getTestBaseImport(final ModelDefinition modelDefinition) {
         
-        return getBaseImport(modelDefinition, List.of(), false, importList, false, false, true);
+        return getBaseImport(modelDefinition, List.of(), false, true, false, false, true);
     }
 
     /**
@@ -1028,6 +1027,7 @@ public class ImportUtils {
         if (!swagger) {
             imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
             imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
+            imports.add(String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
         } else {
             imports.add(String.format(
                 IMPORT,
