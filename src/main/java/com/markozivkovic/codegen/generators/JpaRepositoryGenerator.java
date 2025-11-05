@@ -1,15 +1,15 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_JPA_REPOSITORY;
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -22,10 +22,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class JpaRepositoryGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaRepositoryGenerator.class);
-    
-    private static final String REPOSITORIES = "repositories";
-    private static final String REPOSITORIES_PACKAGE = "." + REPOSITORIES;
-    private static final String MODELS_PACKAGE = ".models";
 
     /**
      * Generates a JPA repository interface for the given model definition.
@@ -52,11 +48,10 @@ public class JpaRepositoryGenerator implements CodeGenerator {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         final StringBuilder sb = new StringBuilder();
-
-        sb.append(String.format(PACKAGE, packagePath + REPOSITORIES_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.REPOSITORIES)));
 
         if (FieldUtils.isIdFieldUUID(idField)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID))
+            sb.append(String.format(IMPORT, ImportConstants.Java.UUID))
                     .append("\n");
         }
 
@@ -65,13 +60,13 @@ public class JpaRepositoryGenerator implements CodeGenerator {
                 "repository/repository-interface-template.ftl", context
         );
 
-        sb.append(String.format(IMPORT, SPRING_DATA_PACKAGE_JPA_REPOSITORY))
+        sb.append(String.format(IMPORT, ImportConstants.SpringData.JPA_REPOSITORY))
                 .append("\n")
-                .append(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()))
+                .append(String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, modelDefinition.getName())))
                 .append("\n")
                 .append(jpaInterface);
 
-        FileWriterUtils.writeToFile(outputDir, REPOSITORIES, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.REPOSITORIES, className, sb.toString());
         
         LOGGER.info("JPA repository generation completed for model: {}", modelDefinition.getName());
     }

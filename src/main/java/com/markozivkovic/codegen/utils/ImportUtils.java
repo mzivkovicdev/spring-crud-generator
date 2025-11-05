@@ -1,68 +1,6 @@
 package com.markozivkovic.codegen.utils;
 
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE;
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT;
-import static com.markozivkovic.codegen.constants.CacheConstants.ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENTITY_LISTENERS;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUMERATED;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ENUM_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATED_VALUE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_GENERATION_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_ID;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTANCE_TABLE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_CASCADE_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_COLUMN;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_FETCH_TYPE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_COLUMN;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_JOIN_TABLE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_MANY;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_MANY_TO_ONE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_MANY;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_ONE_TO_ONE;
-import static com.markozivkovic.codegen.constants.JPAConstants.JAKARTA_PERSISTENCE_VERSION;
-import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE;
-import static com.markozivkovic.codegen.constants.JPAConstants.ORG_HIBERNATE_TYPE_SQL_TYPES;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_ANNOTATION_CREATED_DATE;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_ANNOTATION_LAST_MODIFIED_DATE;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_JPA_DOMAIN_SUPPORT_AUDITING_ENTITY_LISTENER;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_IMPL;
-import static com.markozivkovic.codegen.constants.JPAConstants.SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST;
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_DECIMAL;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_MATH_BIG_INTEGER;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_TIME_LOCAL_DATE_TIME;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_LIST;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OBJECTS;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_OPTIONAL;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_STREAM_COLLECTORS;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
-import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
-import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
-import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
-import static com.markozivkovic.codegen.constants.TestConstants.COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_AFTER_EACH;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_BEFORE_EACH;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_API_TEST;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST;
-import static com.markozivkovic.codegen.constants.TestConstants.JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE;
-import static com.markozivkovic.codegen.constants.TestConstants.ORG_MAPSTRUCT_FACTORY_MAPPERS;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_HTTP_MEDIA_TYPE;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC;
-import static com.markozivkovic.codegen.constants.TestConstants.SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS;
-import static com.markozivkovic.codegen.constants.TransactionConstants.OPTIMISTIC_LOCKING_RETRY;
-import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -71,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -164,12 +103,12 @@ public class ImportUtils {
         final List<FieldDefinition> fields = modelDefinition.getFields();
         final Set<String> imports = new LinkedHashSet<>();
 
-        addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, JAVA_MATH_BIG_DECIMAL);
-        addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, JAVA_MATH_BIG_INTEGER);
-        addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, JAVA_TIME_LOCAL_DATE);
-        addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, JAVA_TIME_LOCAL_DATE_TIME);
-        addIf(importOptional, imports, JAVA_UTIL_OPTIONAL);
-        addIf(importObjects, imports, JAVA_UTIL_OBJECTS);
+        addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
+        addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
+        addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
+        addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
+        addIf(importOptional, imports, ImportConstants.Java.OPTIONAL);
+        addIf(importObjects, imports, ImportConstants.Java.OBJECTS);
         
         if (modelDefinition.getAudit() != null) {
             addIf(
@@ -178,7 +117,7 @@ public class ImportUtils {
                 AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())
             );
         }
-        addIf(FieldUtils.isAnyFieldUUID(fields), imports, JAVA_UTIL_UUID);
+        addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
 
         if (relationIds) {
             modelDefinition.getFields().stream()
@@ -194,14 +133,14 @@ public class ImportUtils {
                                 )
                             ));
                     final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
-                    addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
+                    addIf(FieldUtils.isIdFieldUUID(idField), imports, ImportConstants.Java.UUID);
                 });
         }
         
         final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
                 FieldUtils.isAnyRelationManyToMany(fields);
 
-        addIf(hasLists || importList, imports, JAVA_UTIL_LIST);
+        addIf(hasLists || importList, imports, ImportConstants.Java.LIST);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
@@ -272,30 +211,30 @@ public class ImportUtils {
         final List<String> relations = FieldUtils.extractRelationTypes(fields);
 
         imports.addAll(Set.of(
-            JAKARTA_PERSISTANCE_ENTITY, JAKARTA_PERSISTANCE_GENERATED_VALUE, JAKARTA_PERSISTANCE_GENERATION_TYPE,
-            JAKARTA_PERSISTANCE_ID, JAKARTA_PERSISTANCE_TABLE
+            ImportConstants.Jakarta.ENTITY, ImportConstants.Jakarta.GENERATED_VALUE, ImportConstants.Jakarta.GENERATION_TYPE,
+            ImportConstants.Jakarta.ID, ImportConstants.Jakarta.TABLE
         ));
         
         if (FieldUtils.isAnyFieldEnum(fields)) {
-            imports.add(JAKARTA_PERSISTANCE_ENUM_TYPE);
-            imports.add(JAKARTA_PERSISTANCE_ENUMERATED);
+            imports.add(ImportConstants.Jakarta.ENUM_TYPE);
+            imports.add(ImportConstants.Jakarta.ENUMERATED);
         }
 
         final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
                 .anyMatch(field -> Objects.nonNull(field.getColumn()));
         final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
         
-        addIf(!relations.isEmpty(), imports, JAKARTA_PERSISTENCE_JOIN_COLUMN);
-        addIf(relations.contains(MANY_TO_MANY), imports, JAKARTA_PERSISTENCE_JOIN_TABLE);
-        addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_MANY);
-        addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, JAKARTA_PERSISTENCE_MANY_TO_ONE);
-        addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, JAKARTA_PERSISTENCE_ONE_TO_MANY);
-        addIf(FieldUtils.isAnyRelationOneToOne(fields), imports, JAKARTA_PERSISTENCE_ONE_TO_ONE);
-        addIf(FieldUtils.isFetchTypeDefined(fields), imports, JAKARTA_PERSISTENCE_FETCH_TYPE);
-        addIf(FieldUtils.isCascadeTypeDefined(fields), imports, JAKARTA_PERSISTENCE_CASCADE_TYPE);
-        addIf(optimisticLocking, imports, JAKARTA_PERSISTENCE_VERSION);
-        addIf(hasAnyFieldColumn || isAuditingEnabled, imports, JAKARTA_PERSISTENCE_COLUMN);
-        addIf(isAuditingEnabled, imports, JAKARTA_PERSISTANCE_ENTITY_LISTENERS);
+        addIf(!relations.isEmpty(), imports, ImportConstants.Jakarta.JOIN_COLUMN);
+        addIf(relations.contains(MANY_TO_MANY), imports, ImportConstants.Jakarta.JOIN_TABLE);
+        addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, ImportConstants.Jakarta.MANY_TO_MANY);
+        addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, ImportConstants.Jakarta.MANY_TO_ONE);
+        addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, ImportConstants.Jakarta.ONE_TO_MANY);
+        addIf(FieldUtils.isAnyRelationOneToOne(fields), imports, ImportConstants.Jakarta.ONE_TO_ONE);
+        addIf(FieldUtils.isFetchTypeDefined(fields), imports, ImportConstants.Jakarta.FETCH_TYPE);
+        addIf(FieldUtils.isCascadeTypeDefined(fields), imports, ImportConstants.Jakarta.CASCADE_TYPE);
+        addIf(optimisticLocking, imports, ImportConstants.Jakarta.VERSION);
+        addIf(hasAnyFieldColumn || isAuditingEnabled, imports, ImportConstants.Jakarta.COLUMN);
+        addIf(isAuditingEnabled, imports, ImportConstants.Jakarta.ENTITY_LISTENERS);
 
         final String jakartaImports = imports.stream()
                   .map(imp -> String.format(IMPORT, imp))
@@ -303,9 +242,9 @@ public class ImportUtils {
                   .collect(Collectors.joining());
 
         final Set<String> orgImports = new LinkedHashSet<>();
-        addIf(isAuditingEnabled, orgImports, SPRING_DATA_JPA_DOMAIN_SUPPORT_AUDITING_ENTITY_LISTENER);
-        addIf(isAuditingEnabled, orgImports, SPRING_DATA_ANNOTATION_CREATED_DATE);
-        addIf(isAuditingEnabled, orgImports, SPRING_DATA_ANNOTATION_LAST_MODIFIED_DATE);
+        addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.AUDITING_ENTITY_LISTENER);
+        addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.CREATED_DATE);
+        addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.LAST_MODIFIED_DATE);
         
         if (!FieldUtils.isAnyFieldJson(fields)) {
             if (orgImports.isEmpty()) {
@@ -321,7 +260,7 @@ public class ImportUtils {
         }
 
         final String hibernateImports = Stream.concat(
-                    Set.of(ORG_HIBERNATE_ANNOTATIONS_JDBC_TYPE_CODE, ORG_HIBERNATE_TYPE_SQL_TYPES).stream(),
+                    Set.of(ImportConstants.HibernateAnnotation.JDBC_TYPE_CODE, ImportConstants.HibernateAnnotation.SQL_TYPES).stream(),
                     orgImports.stream()
                 )
                 .map(imp -> String.format(IMPORT, imp))
@@ -429,19 +368,19 @@ public class ImportUtils {
         final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
         final boolean hasCollectionRelation = FieldUtils.hasCollectionRelation(modelDefinition, entities);
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_BEFORE_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
-        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_IMPL));
-        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
-        addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST));
-        addIf(isAnyFieldEnum, imports, String.format(IMPORT, JUNIT_JUPITER_PARAMS_PROVIDER_ENUM_SOURCE));
-        addIf(hasCollectionRelation, imports, String.format(IMPORT, JAVA_UTIL_STREAM_COLLECTORS));
+        addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
+        addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.ENUM_SOURCE));
+        addIf(hasCollectionRelation, imports, String.format(IMPORT, ImportConstants.Java.COLLECTORS));
 
         return imports.stream()
                 .sorted()
@@ -457,12 +396,12 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_BEFORE_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
         return imports.stream()
                 .sorted()
@@ -479,19 +418,19 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, SL4J_LOGGER));
-        imports.add(String.format(IMPORT, SL4J_LOGGER_FACTORY));
-        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
-        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_REQUEST));
-        imports.add(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE));
+        imports.add(String.format(IMPORT, ImportConstants.Logger.LOGGER));
+        imports.add(String.format(IMPORT, ImportConstants.Logger.LOGGER_FACTORY));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
         if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+            imports.add(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
         }
 
         if (cache) {
-            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHEABLE));
-            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_EVICT));
-            imports.add(String.format(IMPORT, ORG_SPRINGFRAMEWORK_CACHE_ANNOTATION_CACHE_PUT));
+            imports.add(String.format(IMPORT, ImportConstants.SpringCache.CACHEABLE));
+            imports.add(String.format(IMPORT, ImportConstants.SpringCache.CACHE_EVICT));
+            imports.add(String.format(IMPORT, ImportConstants.SpringCache.CACHE_PUT));
         }
 
         return imports.stream()
@@ -527,7 +466,7 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
 
         if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + OPTIMISTIC_LOCKING_RETRY));
+            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY));
         }
 
         if (!relationModels.isEmpty()) {
@@ -568,7 +507,7 @@ public class ImportUtils {
         });
 
         if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + OPTIMISTIC_LOCKING_RETRY));
+            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY));
         }
 
         return imports.stream()
@@ -594,12 +533,12 @@ public class ImportUtils {
         final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
         if (FieldUtils.isIdFieldUUID(idField)) {
-            imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+            imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
         if (!manyToManyFields.isEmpty() || !oneToManyFields.isEmpty()) {
-            imports.add(String.format(IMPORT, JAVA_UTIL_LIST));
-            imports.add(String.format(IMPORT, JAVA_UTIL_STREAM_COLLECTORS));
+            imports.add(String.format(IMPORT, ImportConstants.Java.LIST));
+            imports.add(String.format(IMPORT, ImportConstants.Java.COLLECTORS));
         }
 
         relations.forEach(realtionField -> {
@@ -612,7 +551,7 @@ public class ImportUtils {
             final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
 
             if (FieldUtils.isIdFieldUUID(relationIdField)) {
-                imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+                imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
             }
         });
 
@@ -775,7 +714,7 @@ public class ImportUtils {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
         if (FieldUtils.isIdFieldUUID(idField)) {
-            imports.add(String.format(IMPORT, JAVA_UTIL_UUID));
+            imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
         return imports.stream()
@@ -832,20 +771,20 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE));
-        imports.add(String.format(IMPORT, SPRING_DATA_PACKAGE_DOMAIN_PAGE_IMPL));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
 
         return imports.stream()
                 .sorted()
@@ -861,19 +800,19 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_HTTP_MEDIA_TYPE));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
 
         return imports.stream()
                 .sorted()
@@ -889,16 +828,16 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
 
         return imports.stream()
                 .sorted()
@@ -950,7 +889,7 @@ public class ImportUtils {
             ));
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
-        imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
         return imports.stream()
@@ -1018,7 +957,7 @@ public class ImportUtils {
             ));
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
-        imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
         return imports.stream()
@@ -1101,7 +1040,7 @@ public class ImportUtils {
         }
         imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
         if (importObjectMapper) {
-            imports.add(String.format(IMPORT, COM_FASTERXML_JACKSON_DATABIND_OBJECTMAPPER));
+            imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         }
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
 
@@ -1119,19 +1058,19 @@ public class ImportUtils {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_AFTER_EACH));
-        imports.add(String.format(IMPORT, JUNIT_JUPITER_API_TEST));
-        imports.add(String.format(IMPORT, ORG_MAPSTRUCT_FACTORY_MAPPERS));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BEANS_FACTORY_ANNOTATION_AUTOWIRED));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_CLIENT_OAUTH2CLIENTAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_SECURITY_OAUTH2_RESOURCE_SERVLET_OAUTH2RESOURCEAUTOCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_WEB_SERVLET_AUTOCONFIGUREMOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_BOOT_TEST_AUTOCONFIGURE_WEB_SERVLET_WEBMVC_TEST));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_MOCK_MOCKITO_MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_HTTP_MEDIA_TYPE));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_CONTEXT_CONTEXTCONFIGURATION));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_MOCKMVC));
-        imports.add(String.format(IMPORT, SPRINGFRAMEWORK_TEST_WEB_SERVLET_RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
 
         return imports.stream()
                 .sorted()
@@ -1148,7 +1087,7 @@ public class ImportUtils {
         final Set<String> imports = new LinkedHashSet<>();
         
         final List<FieldDefinition> fields = modelDefinition.getFields();
-        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, JAVA_UTIL_UUID);
+        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, ImportConstants.Java.UUID);
 
         return imports.stream()
                 .sorted()
@@ -1168,7 +1107,7 @@ public class ImportUtils {
         final Set<String> imports = new LinkedHashSet<>();
         
         final List<FieldDefinition> fields = modelDefinition.getFields();
-        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, JAVA_UTIL_UUID);
+        addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, ImportConstants.Java.UUID);
 
         modelDefinition.getFields().stream()
             .filter(field -> Objects.nonNull(field.getRelation()))
@@ -1183,7 +1122,7 @@ public class ImportUtils {
                             )
                         ));
                 final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
-                addIf(FieldUtils.isIdFieldUUID(idField), imports, JAVA_UTIL_UUID);
+                addIf(FieldUtils.isIdFieldUUID(idField), imports, ImportConstants.Java.UUID);
             });
 
         return imports.stream()
@@ -1202,19 +1141,19 @@ public class ImportUtils {
 
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
-        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.AUTOWIRED));
-        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.IMPORT));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.IMPORT));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
         imports.add(String.format(IMPORT, ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
-        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));
         
@@ -1234,17 +1173,17 @@ public class ImportUtils {
 
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
-        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.AUTOWIRED));
-        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.IMPORT));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.IMPORT));
         imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
-        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SecurityAutoConfig.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringAnnotation.BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));
         

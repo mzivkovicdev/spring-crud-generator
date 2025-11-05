@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -28,9 +29,6 @@ public class MigrationScriptGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationScriptGenerator.class);
 
-    private static final String MIGRATION_SCRIPT = "migration-script";
-    private static final String SRC_MAIN_RESOURCES = "/src/main/resources";
-    private static final String DB_MIGRATION_PATH = "db/migration";
     private static Integer version = 1;
 
     private final CrudConfiguration configuration;
@@ -51,12 +49,12 @@ public class MigrationScriptGenerator implements CodeGenerator {
             return;
         }
         
-        if (GeneratorContext.isGenerated(MIGRATION_SCRIPT)) {
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT)) {
             return;
         }
 
         LOGGER.info("Generating migration scripts");
-        final String pathToDbScripts = String.format("%s/%s/%s", this.projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES, DB_MIGRATION_PATH);
+        final String pathToDbScripts = String.format("%s/%s", this.projectMetadata.getProjectBaseDir(), GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION);
         final MigrationState migrationState = FlywayUtils.loadOrEmpty(this.projectMetadata.getProjectBaseDir());
         final MigrationManifestBuilder manifest = new MigrationManifestBuilder(migrationState);
 
@@ -90,7 +88,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
 
         LOGGER.info("Migration scripts generated");
 
-        GeneratorContext.markGenerated(MIGRATION_SCRIPT);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT);
     }
 
     /**

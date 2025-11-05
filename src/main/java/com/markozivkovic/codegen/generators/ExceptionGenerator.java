@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -8,6 +8,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -18,9 +19,6 @@ public class ExceptionGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionGenerator.class);
 
-    private static final String EXCEPTIONS = "exceptions";
-    private static final String EXCEPTIONS_PACKAGE = "." + EXCEPTIONS;
-
     private static final List<String> EXCEPTION_CLASS_LIST = List.of(
             "ResourceNotFoundException", "InvalidResourceStateException"
     );
@@ -28,7 +26,7 @@ public class ExceptionGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
 
-        if (GeneratorContext.isGenerated(EXCEPTIONS)) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCEPTIONS)) { return; }
 
         LOGGER.info("Generating exceptions");
         
@@ -41,14 +39,14 @@ public class ExceptionGenerator implements CodeGenerator {
             final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/exception-template.ftl", Map.of("className", exceptionClassName)
             );
-            
-            sb.append(String.format(PACKAGE, packagePath + EXCEPTIONS_PACKAGE))
+
+            sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS)))
                     .append(exceptionTemplate);
     
-            FileWriterUtils.writeToFile(outputDir, EXCEPTIONS, exceptionClassName, sb.toString());
+            FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, exceptionClassName, sb.toString());
         });
 
-        GeneratorContext.markGenerated(EXCEPTIONS);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.EXCEPTIONS);
         
         LOGGER.info("Finished generating exceptions");
     }

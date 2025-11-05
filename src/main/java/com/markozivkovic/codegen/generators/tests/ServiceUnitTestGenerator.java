@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.generators.tests;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -24,9 +25,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class ServiceUnitTestGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceUnitTestGenerator.class);
-
-    private static final String SERVICES = "services";
-    private static final String SERVICES_PACKAGE = "." + SERVICES;
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
@@ -59,10 +57,10 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + SERVICES_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.SERVICES)));
         sb.append(this.generateTestServiceClass(modelDefinition, outputDir));
 
-        FileWriterUtils.writeToFile(testOutputDir, SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.SERVICES, className, sb.toString());
     }
 
     /**

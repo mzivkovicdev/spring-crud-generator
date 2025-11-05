@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.generators.tests;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -26,9 +27,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessServiceUnitTestGenerator.class);
-
-    private static final String BUSINESS_SERVICES = "businessservices";
-    private static final String BUSINESS_SERVICES_PACKAGE = "." + BUSINESS_SERVICES;
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entites;
@@ -66,10 +64,10 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + BUSINESS_SERVICES_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES)));
         sb.append(this.generateTestBusinessServiceClass(modelDefinition, outputDir));
 
-        FileWriterUtils.writeToFile(testOutputDir, BUSINESS_SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES, className, sb.toString());
     }
 
     /**

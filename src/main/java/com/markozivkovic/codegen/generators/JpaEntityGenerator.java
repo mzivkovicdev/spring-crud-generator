@@ -1,10 +1,10 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JPAConstants.AUDITING_ENTITY_LISTENER_CLASS;
-import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_ANNOTATION;
-import static com.markozivkovic.codegen.constants.JPAConstants.ENTITY_LISTENERS_ANNOTATION;
-import static com.markozivkovic.codegen.constants.JPAConstants.TABLE_ANNOTATION;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.AUDITING_ENTITY_LISTENER_CLASS;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.ENTITY_ANNOTATION;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.ENTITY_LISTENERS_ANNOTATION;
+import static com.markozivkovic.codegen.constants.AnnotationConstants.TABLE_ANNOTATION;
 
 import java.util.List;
 import java.util.Map;
@@ -13,9 +13,11 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
+import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
@@ -30,12 +32,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class JpaEntityGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaEntityGenerator.class);
-
-    private static final String MODELS = "models";
-    private static final String HELPERS = "helpers";
-    private static final String MODELS_HELPERS = MODELS + "/" + HELPERS;
-    private static final String MODELS_PACKAGE = "." + MODELS;
-    private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + "." + HELPERS;
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
@@ -92,7 +88,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         final String className = model.getName();
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, packagePath + MODELS_HELPERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, GeneratorConstants.DefaultPackageLayout.HELPERS)));
         sb.append(ImportUtils.getBaseImport(model, true, false));
 
         final String enumImports = ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir);
@@ -125,8 +121,11 @@ public class JpaEntityGenerator implements CodeGenerator {
         );
 
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));
-
-        FileWriterUtils.writeToFile(outputDir, MODELS_HELPERS, className, sb.toString());
+        
+        FileWriterUtils.writeToFile(
+                outputDir, FileUtils.join(GeneratorConstants.DefaultPackageLayout.MODELS, GeneratorConstants.DefaultPackageLayout.HELPERS),
+                className, sb.toString()
+        );
     }
 
     /**
@@ -149,7 +148,7 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + MODELS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS)));
         sb.append(ImportUtils.getBaseImport(model, true, true));
                 
         sb.append(ImportUtils.computeJakartaImports(model, optimisticLocking))
@@ -196,7 +195,7 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));
 
-        FileWriterUtils.writeToFile(outputDir, MODELS, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.MODELS, className, sb.toString());
     }
 
 }

@@ -1,6 +1,6 @@
 package com.markozivkovic.codegen.generators.tests;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -26,9 +27,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 
 public class RestControllerUnitTestGenerator implements CodeGenerator {
-
-    private static final String CONTROLLERS = "controllers";
-    private static final String CONTROLLERS_PACKAGE = "." + CONTROLLERS;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerUnitTestGenerator.class);
 
@@ -117,13 +115,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("testImports", ImportUtils.computeAddRelationEndpointTestImports());
                 context.put("swagger", swagger);
 
-                sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+                sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                         "test/unit/controller/endpoint/add-resource-relation.ftl",
                         context
                 ));
 
-                FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+                FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
         });
     }
 
@@ -185,13 +183,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 ));
                 context.put("testImports", ImportUtils.computeDeleteEndpointTestImports());
 
-                sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+                sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                         "test/unit/controller/endpoint/remove-resource-relation.ftl",
                         context
                 ));
 
-                FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+                FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
         });
     }
 
@@ -232,13 +230,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         ));
         context.put("jsonFields", jsonFields);
 
-        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/create-resource.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
     }
 
     /**
@@ -280,13 +278,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         ));
         context.put("jsonFields", jsonFields);
 
-        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/update-resource.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
     }
 
     /**
@@ -320,13 +318,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         ));
         context.put("testImports", ImportUtils.computeDeleteEndpointTestImports());
 
-        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/delete-resource.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
     }
 
     /**
@@ -363,13 +361,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 modelDefinition, outputDir, swagger, false, true
         ));
 
-        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/get-resource.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
     }
 
 }

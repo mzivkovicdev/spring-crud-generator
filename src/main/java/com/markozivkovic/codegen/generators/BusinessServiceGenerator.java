@@ -1,12 +1,7 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
-import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER;
-import static com.markozivkovic.codegen.constants.LoggerConstants.SL4J_LOGGER_FACTORY;
-import static com.markozivkovic.codegen.constants.SpringConstants.SPRING_FRAMEWORK_STEREOTYPE_SERVICE;
-import static com.markozivkovic.codegen.constants.TransactionConstants.SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +9,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -27,11 +24,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class BusinessServiceGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessServiceGenerator.class);
-
-    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
-
-    private static final String BUSINESS_SERVICES = "businessservices";
-    private static final String BUSINESS_SERVICES_PACKAGE = "." + BUSINESS_SERVICES;
 
     private final List<ModelDefinition> entites;
 
@@ -62,19 +54,19 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + BUSINESS_SERVICES_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES)));
         sb.append(ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
 
         if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entites)) {
-            sb.append(String.format(IMPORT, JAVA_UTIL_UUID));
+            sb.append(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
-        sb.append(String.format(IMPORT, SL4J_LOGGER))
-                .append(String.format(IMPORT, SL4J_LOGGER_FACTORY))
-                .append(String.format(IMPORT, SPRING_FRAMEWORK_STEREOTYPE_SERVICE));
+        sb.append(String.format(IMPORT, ImportConstants.Logger.LOGGER))
+                .append(String.format(IMPORT, ImportConstants.Logger.LOGGER_FACTORY))
+                .append(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
         
-        if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            sb.append(String.format(IMPORT, SPRING_FRAMEWORK_TRANSACTION_ANNOTATION_TRANSACTIONAL));
+        if (!GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION)) {
+            sb.append(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
         }
         
         sb.append("\n")
@@ -82,7 +74,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
                 .append("\n")
                 .append(generateBusinessServiceClass(modelDefinition));
 
-        FileWriterUtils.writeToFile(outputDir, BUSINESS_SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES, className, sb.toString());
     }
 
     /**

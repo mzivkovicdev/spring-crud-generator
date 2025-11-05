@@ -1,8 +1,7 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.JAVA_UTIL_UUID;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -11,11 +10,14 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.AuditUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
+import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
@@ -27,19 +29,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class TransferObjectGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(TransferObjectGenerator.class);
-
-    private static final String TRANSFER_OBJECTS = "transferobjects";
-
-    private static final String TRANSFER_OBJECTS_PACKAGE = "." + TRANSFER_OBJECTS;
-    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".graphql";
-    private static final String TRANSFER_OBJECTS_GRAPHQL_HELPERS_PACKAGE = TRANSFER_OBJECTS_GRAPHQL_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_GRAPHQL = "transferobjects/graphql";
-    private static final String TRANSFER_OBJECTS_GRAPHQL_HELPERS = "transferobjects/graphql/helpers";
-    
-    private static final String TRANSFER_OBJECTS_REST = TRANSFER_OBJECTS + "/rest";
-    private static final String TRANSFER_OBJECTS_REST_PACKAGE = TRANSFER_OBJECTS_PACKAGE + ".rest";
-    private static final String TRANSFER_OBJECTS_HELPERS = "transferobjects/rest/helpers";
-    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE =  TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
 
     private static boolean PAGE_TO_GENERATED = false;
 
@@ -76,20 +65,35 @@ public class TransferObjectGenerator implements CodeGenerator {
                                     "JSON model not found: %s", jsonFieldName
                                 )
                             ));
-                    
-                    this.generateHelperTO(jsonModel, outputDir, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE, TRANSFER_OBJECTS_HELPERS);
+                    final String restHelperPackagePath = PackageUtils.join(
+                            packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS
+                    );
+                    final String fileHelperPath = FileUtils.join(
+                        GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS
+                    );
+                    this.generateHelperTO(jsonModel, outputDir, restHelperPackagePath, fileHelperPath);
 
                     if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
-                        this.generateHelperTO(jsonModel, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_HELPERS_PACKAGE, TRANSFER_OBJECTS_GRAPHQL_HELPERS);
+                        final String graphQlHelperPackagePath = PackageUtils.join(
+                                packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS
+                        );
+                        final String fileGraphqlPath = FileUtils.join(
+                                GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS
+                        );
+                        this.generateHelperTO(jsonModel, outputDir, graphQlHelperPackagePath, fileGraphqlPath);
                     }
                 });
 
-        this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_REST_PACKAGE, TRANSFER_OBJECTS_REST, false);
+        final String packagePathRest = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
+        final String filePathRest = FileUtils.join(GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
+        this.generateTO(modelDefinition, outputDir, packagePathRest, filePathRest, false);
         
         if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
-            this.generateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL, true);
-            this.generateCreateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL);
-            this.generateUpdateTO(modelDefinition, outputDir, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE, TRANSFER_OBJECTS_GRAPHQL);
+            final String packagePathGraphql = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL);
+            final String filePathGraphql = FileUtils.join(GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL);
+            this.generateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, true);
+            this.generateCreateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
+            this.generateUpdateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
         }
 
         generatePageTO(packagePath, outputDir);
@@ -244,13 +248,14 @@ public class TransferObjectGenerator implements CodeGenerator {
                     .orElseThrow();
 
             final StringBuilder sb = new StringBuilder();
-            sb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_REST_PACKAGE));
+            final String packagePathRest = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
+            sb.append(String.format(PACKAGE, packagePathRest));
     
             final String transferObjName = String.format("%sInputTO", ModelNameUtils.stripSuffix(relationModelDefinition.getName()));
             final FieldDefinition idField = FieldUtils.extractIdField(relationModelDefinition.getFields());
     
             if (FieldUtils.isIdFieldUUID(idField)) {
-                sb.append(String.format(IMPORT, JAVA_UTIL_UUID))
+                sb.append(String.format(IMPORT, ImportConstants.Java.UUID))
                         .append("\n");
             }
     
@@ -260,8 +265,11 @@ public class TransferObjectGenerator implements CodeGenerator {
             );
     
             sb.append(transferObjectTemplate);
+            final String filePath = FileUtils.join(
+                    GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST
+            );
     
-            FileWriterUtils.writeToFile(outputDir, TRANSFER_OBJECTS_REST, transferObjName, sb.toString());
+            FileWriterUtils.writeToFile(outputDir, filePath, transferObjName, sb.toString());
         });
     }
 
@@ -278,7 +286,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         if (!PAGE_TO_GENERATED) {
 
             final StringBuilder pageSb = new StringBuilder();
-            pageSb.append(String.format(PACKAGE, packagePath + TRANSFER_OBJECTS_PACKAGE));
+            pageSb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS)));
 
             final String pageTOObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                     "transferobject/page-transfer-object-template.ftl",
@@ -287,7 +295,7 @@ public class TransferObjectGenerator implements CodeGenerator {
 
             pageSb.append(pageTOObjectTemplate);
 
-            FileWriterUtils.writeToFile(outputDir, TRANSFER_OBJECTS, "PageTO", pageSb.toString());
+            FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, "PageTO", pageSb.toString());
             PAGE_TO_GENERATED = true;
         }
     }

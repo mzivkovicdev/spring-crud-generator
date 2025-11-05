@@ -1,7 +1,7 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.JavaConstants.IMPORT;
-import static com.markozivkovic.codegen.constants.JavaConstants.PACKAGE;
+import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,10 +12,12 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
+import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
@@ -25,25 +27,6 @@ import com.markozivkovic.codegen.utils.StringUtils;
 public class MapperGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MapperGenerator.class);
-
-    private static final String MAPPERS_REST = "mappers/rest";
-    private static final String MAPPERS_REST_PACKAGE = ".mappers.rest";
-    private static final String MAPPERS_REST_HELPERS = "mappers/rest/helpers";
-    private static final String MAPPERS_HELPERS_PACKAGE = MAPPERS_REST_PACKAGE + ".helpers";
-    private static final String MODELS_PACKAGE = ".models";
-    private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS = "transferobjects";
-    private static final String TRANSFER_OBJECTS_REST_PACKAGE = "." + TRANSFER_OBJECTS + ".rest";
-    private static final String TRANSFER_OBJECTS_HELPERS_PACKAGE = TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
-    
-    private static final String MAPPERS_GRAPHQL = "mappers/graphql";
-    private static final String MAPPERS_GRAPHQL_HELPERS = "mappers/graphql/helpers";
-    private static final String MAPPERS_GRAPHQL_PACKAGE = ".mappers.graphql";
-    private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
-    private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = TRANSFER_OBJECTS_GRAPHQL_PACKAGE + ".helpers";
-    
-    private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
@@ -105,22 +88,29 @@ public class MapperGenerator implements CodeGenerator {
         final String mapperName = isGraphQl ? String.format("%sGraphQLMapper", strippedModelName) :
                 String.format("%sRestMapper", strippedModelName);
         final String transferObjectName = String.format("%sTO", strippedModelName);
-        final String modelImport = String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName());
+        final String modelImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, modelDefinition.getName()));
         final String transferObjectImport;
         
         if (isGraphQl) {
-            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + transferObjectName);
+            transferObjectImport = String.format(
+                IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, transferObjectName)
+            );
         } else {
-            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + transferObjectName);
+            transferObjectImport = String.format(
+                IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, transferObjectName)
+            );
         }
 
         final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
         final String helperMapperImports = jsonFields.stream()
                 .map(FieldUtils::extractJsonFieldName)
-                .map(field -> String.format(
-                    IMPORT, packagePath + (isGraphQl ? MAPPERS_GRAPHQL_HELPERS_PACKAGE : MAPPERS_HELPERS_PACKAGE) + "." + field + (isGraphQl ? "GraphQLMapper" : "RestMapper")
-                ))
+                .map(field -> {
+                    final String resolvedPackage = isGraphQl ?
+                            PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS, String.format("%sGraphQLMapper", field)) :
+                            PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS, String.format("%sRestMapper", field));
+                    return String.format(IMPORT, resolvedPackage);
+                })
                 .collect(Collectors.joining(", "));
 
         final Map<String, Object> context = new HashMap<>();
@@ -137,13 +127,11 @@ public class MapperGenerator implements CodeGenerator {
         context.put("swagger", swagger);
         if (swagger) {
             context.put("swaggerModel", ModelNameUtils.stripSuffix(modelDefinition.getName()));
-            context.put("generatedModelImport", String.format(
-                    IMPORT,
-                    String.format(
-                        packagePath + GENERATED_RESOURCE_MODEL_RESOURCE,
-                        StringUtils.uncapitalize(strippedModelName), strippedModelName
-                    )
-            ));
+            final String resolvedPackagePath = PackageUtils.join(
+                    packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(strippedModelName),
+                    GeneratorConstants.DefaultPackageLayout.MODEL, strippedModelName
+            );
+            context.put("generatedModelImport", String.format(IMPORT, resolvedPackagePath));
         }
         
         if (!relationFields.isEmpty() || !jsonFields.isEmpty()) {
@@ -164,13 +152,16 @@ public class MapperGenerator implements CodeGenerator {
         }
 
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);
-
+        final String resolvedPackagePath = isGraphQl ?
+                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL) : 
+                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST);
         final StringBuilder sb = new StringBuilder();
-
-        sb.append(String.format(PACKAGE, isGraphQl ? (packagePath + MAPPERS_GRAPHQL_PACKAGE) : (packagePath + MAPPERS_REST_PACKAGE)))
+        sb.append(String.format(PACKAGE, resolvedPackagePath))
                 .append(mapperTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL : MAPPERS_REST, mapperName, sb.toString());
+        final String filePath = isGraphQl ? FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL)
+                : FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST);
+        FileWriterUtils.writeToFile(outputDir, filePath, mapperName, sb.toString());
     }
 
     /**
@@ -189,13 +180,16 @@ public class MapperGenerator implements CodeGenerator {
         final String mapperName = isGraphQl ? String.format("%sGraphQLMapper", ModelNameUtils.stripSuffix(jsonModel.getName())) :
                 String.format("%sRestMapper", ModelNameUtils.stripSuffix(jsonModel.getName()));
         final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(jsonModel.getName()));
-
-        final String modelImport = String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + jsonModel.getName());
+        final String modelImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, GeneratorConstants.DefaultPackageLayout.HELPERS, jsonModel.getName()));
         final String transferObjectImport;
         if (isGraphQl) {
-            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE + "." + transferObjectName);
+            transferObjectImport = String.format(
+                IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS, transferObjectName)
+            );
         } else {
-            transferObjectImport = String.format(IMPORT, packagePath + TRANSFER_OBJECTS_HELPERS_PACKAGE + "." + transferObjectName);
+            transferObjectImport = String.format(
+                IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS, transferObjectName)
+            );
         }
 
         final Map<String, Object> context = new HashMap<>();
@@ -206,10 +200,11 @@ public class MapperGenerator implements CodeGenerator {
         context.put("transferObjectName", transferObjectName);
 
         if (swagger) {
-            context.put("generatedModelImport", String.format(
-                packagePath + GENERATED_RESOURCE_MODEL_RESOURCE,
-                StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName())), ModelNameUtils.stripSuffix(jsonModel.getName())    
-            ));
+            final String resolvedPackagePath = PackageUtils.join(
+                    packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName())),
+                    GeneratorConstants.DefaultPackageLayout.MODEL, ModelNameUtils.stripSuffix(jsonModel.getName())
+            );
+            context.put("generatedModelImport", resolvedPackagePath);
         }
 
         context.put("swagger", false);
@@ -218,12 +213,17 @@ public class MapperGenerator implements CodeGenerator {
 
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);
 
+        final String resolvedPackagePath = isGraphQl ? 
+                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS) :
+                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS);
         final StringBuilder sb = new StringBuilder();
-
-        sb.append(String.format(PACKAGE, isGraphQl ? (packagePath + MAPPERS_GRAPHQL_HELPERS_PACKAGE) : (packagePath + MAPPERS_HELPERS_PACKAGE)))
+        sb.append(String.format(PACKAGE, resolvedPackagePath))
                 .append(mapperTemplate);
 
-        FileWriterUtils.writeToFile(outputDir, isGraphQl ? MAPPERS_GRAPHQL_HELPERS : MAPPERS_REST_HELPERS, mapperName, sb.toString());
+        final String filePath = isGraphQl ?
+                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS) : 
+                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS);
+        FileWriterUtils.writeToFile(outputDir, filePath, mapperName, sb.toString());
     }
 
 }
