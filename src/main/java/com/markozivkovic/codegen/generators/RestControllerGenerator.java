@@ -9,6 +9,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -20,9 +21,6 @@ import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class RestControllerGenerator implements CodeGenerator {
-    
-    private static final String CONTROLLERS = "controllers";
-    private static final String CONTROLLERS_PACKAGE = "." + CONTROLLERS;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestControllerGenerator.class);
 
@@ -52,12 +50,12 @@ public class RestControllerGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, packagePath + CONTROLLERS_PACKAGE));
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(ImportUtils.computeControllerBaseImports(modelDefinition, entites))
             .append("\n")
             .append(generateControllerClass(modelDefinition, outputDir, swagger));
 
-        FileWriterUtils.writeToFile(outputDir, CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
     }
 
     /**

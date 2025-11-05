@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -26,7 +27,6 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SwaggerDocumentationGenerator.class);
     private static final String SWAGGER = "swagger";
-    private static final String SRC_MAIN_RESOURCES = "/src/main/resources";
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -50,7 +50,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
 
         LOGGER.info("Generating Swagger documentation");
 
-        final String pathToSwaggerDocs = String.format("%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES);
+        final String pathToSwaggerDocs = String.format("%s/%s", projectMetadata.getProjectBaseDir(), GeneratorConstants.SRC_MAIN_RESOURCES);
 
         entities.stream()
             .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))

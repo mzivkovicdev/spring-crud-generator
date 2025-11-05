@@ -4,8 +4,11 @@ public class GeneratorConstants {
     
     private GeneratorConstants() {}
 
+    public static final String SRC_MAIN_RESOURCES = "src/main/resources";
     public static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/graphql";
     public static final String SRC_MAIN_RESOURCES_DB_MIGRATION = "/src/main/resources/db/migration";
+    public static final String SRC_MAIN_RESOURCES_SWAGGER = "src/main/resources/swagger";
+    public static final String OPEN_API_GENERATOR_IGNORE = ".openapi-generator-ignore";
     
     public static final class Transaction {
         private Transaction() {}

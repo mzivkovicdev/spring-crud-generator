@@ -11,6 +11,7 @@ import org.openapitools.codegen.config.CodegenConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -28,10 +29,7 @@ import io.swagger.v3.parser.core.models.SwaggerParseResult;
 public class OpenApiCodeGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiCodeGenerator.class);
-
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
-    private static final String OPEN_API_GENERATOR_IGNORE = ".openapi-generator-ignore";
-    private static final String SRC_MAIN_RESOURCES_SWAGGER = "src/main/resources/swagger";
     
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -59,7 +57,7 @@ public class OpenApiCodeGenerator implements CodeGenerator {
 
         this.generateOpenApiGeneratorIgnore();
         
-        final String pathToSwaggerDocs = String.format("%s/%s", projectMetadata.getProjectBaseDir(), SRC_MAIN_RESOURCES_SWAGGER);
+        final String pathToSwaggerDocs = String.format("%s/%s", projectMetadata.getProjectBaseDir(), GeneratorConstants.SRC_MAIN_RESOURCES_SWAGGER);
 
         entities.stream()
             .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
@@ -119,7 +117,7 @@ public class OpenApiCodeGenerator implements CodeGenerator {
         
         FileWriterUtils.writeToFile(
                 projectMetadata.getProjectBaseDir(),
-                OPEN_API_GENERATOR_IGNORE,
+                GeneratorConstants.OPEN_API_GENERATOR_IGNORE,
                 fileContent
         );
     }
