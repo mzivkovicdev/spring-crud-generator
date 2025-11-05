@@ -25,8 +25,6 @@ public class BusinessServiceGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessServiceGenerator.class);
 
-    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
-
     private final List<ModelDefinition> entites;
 
     public BusinessServiceGenerator(final List<ModelDefinition> entites) {
@@ -67,7 +65,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
                 .append(String.format(IMPORT, ImportConstants.Logger.LOGGER_FACTORY))
                 .append(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
         
-        if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
+        if (!GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION)) {
             sb.append(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
         }
         

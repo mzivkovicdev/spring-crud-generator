@@ -29,7 +29,6 @@ import io.swagger.v3.parser.core.models.SwaggerParseResult;
 public class OpenApiCodeGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiCodeGenerator.class);
-    private static final String OPENAPI_CODEGEN = "openapi-codegen";
     
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -49,7 +48,7 @@ public class OpenApiCodeGenerator implements CodeGenerator {
             return;
         }
 
-        if (GeneratorContext.isGenerated(OPENAPI_CODEGEN)) {
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPENAPI_CODEGEN)) {
             return;
         }
 
@@ -102,7 +101,7 @@ public class OpenApiCodeGenerator implements CodeGenerator {
                 new DefaultGenerator().opts(opts).generate();
             });
 
-        GeneratorContext.markGenerated(OPENAPI_CODEGEN);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.OPENAPI_CODEGEN);
 
         LOGGER.info("OpenAPI code generation completed");
     }

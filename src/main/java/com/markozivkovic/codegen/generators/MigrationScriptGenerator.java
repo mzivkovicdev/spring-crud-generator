@@ -29,7 +29,6 @@ public class MigrationScriptGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationScriptGenerator.class);
 
-    private static final String MIGRATION_SCRIPT = "migration-script";
     private static Integer version = 1;
 
     private final CrudConfiguration configuration;
@@ -50,7 +49,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
             return;
         }
         
-        if (GeneratorContext.isGenerated(MIGRATION_SCRIPT)) {
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT)) {
             return;
         }
 
@@ -89,7 +88,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
 
         LOGGER.info("Migration scripts generated");
 
-        GeneratorContext.markGenerated(MIGRATION_SCRIPT);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT);
     }
 
     /**

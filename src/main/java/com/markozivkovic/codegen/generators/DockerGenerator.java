@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -16,9 +17,6 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 public class DockerGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DockerGenerator.class);
-    
-    private static final String DOCKER_FILE = "dockerfile";
-    private static final String DOCKER_COMPOSE = "docker-compose";
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -47,7 +45,7 @@ public class DockerGenerator implements CodeGenerator {
      */
     private void generateDockerCompose() {
         
-        if (GeneratorContext.isGenerated(DOCKER_COMPOSE)) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE)) { return; }
 
         if (Objects.isNull(this.configuration.getDocker().getDockerCompose()) || !this.configuration.getDocker().getDockerCompose()) { return; }
         
@@ -62,7 +60,7 @@ public class DockerGenerator implements CodeGenerator {
 
         FileWriterUtils.writeToFile(projectMetadata.getProjectBaseDir(), "docker-compose.yml", dockerCompose);
 
-        GeneratorContext.markGenerated(DOCKER_COMPOSE);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE);
         
         LOGGER.info("Finished generating Docker-compose");
     }
@@ -72,7 +70,7 @@ public class DockerGenerator implements CodeGenerator {
      */
     private void generateDockerfile() {
 
-        if (GeneratorContext.isGenerated(DOCKER_FILE)) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE)) { return; }
         
         LOGGER.info("Generating Dockerfile");
 
@@ -85,7 +83,7 @@ public class DockerGenerator implements CodeGenerator {
 
         FileWriterUtils.writeToFile(projectMetadata.getProjectBaseDir(), "Dockerfile", dockerFile);
 
-        GeneratorContext.markGenerated(DOCKER_FILE);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE);
         
         LOGGER.info("Finished generating Dockerfile");
     }

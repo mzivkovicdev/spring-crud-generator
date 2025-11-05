@@ -27,8 +27,6 @@ import com.markozivkovic.codegen.utils.StringUtils;
 public class MapperGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MapperGenerator.class);
-    
-    private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
@@ -129,13 +127,11 @@ public class MapperGenerator implements CodeGenerator {
         context.put("swagger", swagger);
         if (swagger) {
             context.put("swaggerModel", ModelNameUtils.stripSuffix(modelDefinition.getName()));
-            context.put("generatedModelImport", String.format(
-                    IMPORT,
-                    String.format(
-                        packagePath + GENERATED_RESOURCE_MODEL_RESOURCE,
-                        StringUtils.uncapitalize(strippedModelName), strippedModelName
-                    )
-            ));
+            final String resolvedPackagePath = PackageUtils.join(
+                    packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(strippedModelName),
+                    GeneratorConstants.DefaultPackageLayout.MODEL, strippedModelName
+            );
+            context.put("generatedModelImport", String.format(IMPORT, resolvedPackagePath));
         }
         
         if (!relationFields.isEmpty() || !jsonFields.isEmpty()) {
@@ -204,10 +200,11 @@ public class MapperGenerator implements CodeGenerator {
         context.put("transferObjectName", transferObjectName);
 
         if (swagger) {
-            context.put("generatedModelImport", String.format(
-                packagePath + GENERATED_RESOURCE_MODEL_RESOURCE,
-                StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName())), ModelNameUtils.stripSuffix(jsonModel.getName())    
-            ));
+            final String resolvedPackagePath = PackageUtils.join(
+                    packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName())),
+                    GeneratorConstants.DefaultPackageLayout.MODEL, ModelNameUtils.stripSuffix(jsonModel.getName())
+            );
+            context.put("generatedModelImport", resolvedPackagePath);
         }
 
         context.put("swagger", false);

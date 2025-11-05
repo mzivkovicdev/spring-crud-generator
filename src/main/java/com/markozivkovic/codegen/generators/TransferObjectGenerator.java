@@ -30,14 +30,6 @@ public class TransferObjectGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(TransferObjectGenerator.class);
 
-    // private static final String TRANSFER_OBJECTS = "transferobjects";
-
-    // private static final String TRANSFER_OBJECTS_GRAPHQL = "transferobjects/graphql";
-    // private static final String TRANSFER_OBJECTS_GRAPHQL_HELPERS = "transferobjects/graphql/helpers";
-    
-    // private static final String TRANSFER_OBJECTS_REST = TRANSFER_OBJECTS + "/rest";
-    // private static final String TRANSFER_OBJECTS_HELPERS = "transferobjects/rest/helpers";
-
     private static boolean PAGE_TO_GENERATED = false;
 
     private final CrudConfiguration configuration;

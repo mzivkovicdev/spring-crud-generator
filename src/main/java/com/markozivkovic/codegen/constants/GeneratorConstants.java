@@ -6,7 +6,7 @@ public class GeneratorConstants {
 
     public static final String SRC_MAIN_RESOURCES = "src/main/resources";
     public static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/graphql";
-    public static final String SRC_MAIN_RESOURCES_DB_MIGRATION = "/src/main/resources/db/migration";
+    public static final String SRC_MAIN_RESOURCES_DB_MIGRATION = "src/main/resources/db/migration";
     public static final String SRC_MAIN_RESOURCES_SWAGGER = "src/main/resources/swagger";
     public static final String OPEN_API_GENERATOR_IGNORE = ".openapi-generator-ignore";
     
@@ -16,7 +16,7 @@ public class GeneratorConstants {
         public static final String OPTIMISTIC_LOCKING_RETRY_ANNOTATION = "@OptimisticLockingRetry";
     }
 
-    public final class DefaultPackageLayout {
+    public static final class DefaultPackageLayout {
         private DefaultPackageLayout() {}
         public static final String ANNOTATIONS = "annotations";
         public static final String BUSINESS_SERVICES = "businessservices";
@@ -37,6 +37,22 @@ public class GeneratorConstants {
         public static final String RESPONSES = "responses";
         public static final String HANDLERS = "handlers";
         public static final String REPOSITORIES = "repositories";
+        public static final String SWAGGER = "swagger";
+    }
+
+    public static final class GeneratorContextKeys {
+        private GeneratorContextKeys() {}
+        public static final String GRAPHQL_CONFIGURATION = "graphql-configuration";
+        public static final String ADDITIONAL_CONFIG = "additionalConfig";
+        public static final String OPTIMISTIC_LOCKING_RETRY = "optimisticLockingRetry";
+        public static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
+        public static final String DOCKER_FILE = "dockerfile";
+        public static final String DOCKER_COMPOSE = "docker-compose";
+        public static final String EXCEPTIONS = "exceptions";
+        public static final String GRAPHQL = "graphql";
+        public static final String MIGRATION_SCRIPT = "migration-script";
+        public static final String OPENAPI_CODEGEN = "openapi-codegen";
+        public static final String SWAGGER = "swagger";
     }
 
 }

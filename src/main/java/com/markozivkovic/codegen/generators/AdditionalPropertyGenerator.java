@@ -20,11 +20,6 @@ import com.markozivkovic.codegen.utils.PackageUtils;
 public class AdditionalPropertyGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AdditionalPropertyGenerator.class);
-    
-    private static final String GRAPHQL = "graphql";
-    private static final String ADDITIONAL_CONFIG = "additionalConfig";
-    private static final String OPTIMISTIC_LOCKING_RETRY = "optimisticLockingRetry";
-    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
 
     private final CrudConfiguration configuration;
 
@@ -39,7 +34,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
             return;
         }
 
-        if (GeneratorContext.isGenerated(ADDITIONAL_CONFIG)) {
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG)) {
             return;
         }
 
@@ -47,7 +42,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         this.generateOptimisticLockingRetryConfiguration(outputDir);
         this.generateRetryableAnnotationConfiguration(outputDir);
 
-        GeneratorContext.markGenerated(ADDITIONAL_CONFIG);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG);
     }
 
     /**
@@ -57,7 +52,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
      */
     private void generateRetryableAnnotationConfiguration(final String outputDir) {
 
-        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION)) { return; }
         
         final Integer maxAttempts = (Integer) this.configuration.getAdditionalProperties()
                 .get(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS);
@@ -91,7 +86,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
             outputDir, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS, "OptimisticLockingRetry.java", sb.toString()
         );
 
-        GeneratorContext.markGenerated(RETRYABLE_ANNOTATION);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION);
     }
 
     /**
@@ -105,7 +100,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final boolean retryConfig = (Boolean) configuration.getAdditionalProperties()
                 .getOrDefault(AdditionalConfigurationConstants.OPT_LOCK_RETRY_CONFIGURATION, false);
 
-        if (GeneratorContext.isGenerated(OPTIMISTIC_LOCKING_RETRY) || !retryConfig) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY) || !retryConfig) { return; }
 
         LOGGER.info("Generating Optimistic Locking Retry configuration");
 
@@ -122,7 +117,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
             outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "EnableRetryConfiguration.java", sb.toString()
         );
 
-        GeneratorContext.markGenerated(OPTIMISTIC_LOCKING_RETRY);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY);
     }
 
     /**
@@ -136,7 +131,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final boolean scalarConfig = (Boolean) configuration.getAdditionalProperties()
                 .getOrDefault(AdditionalConfigurationConstants.GRAPHQL_SCALAR_CONFIG, false);
 
-        if (GeneratorContext.isGenerated(GRAPHQL) || !scalarConfig) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION) || !scalarConfig) { return; }
 
         LOGGER.info("Generating GraphQL configuration");
 
@@ -152,7 +147,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
                 outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "GraphQlConfiguration.java", sb.toString()
         );
 
-        GeneratorContext.markGenerated(GRAPHQL);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION);
     }
     
 }

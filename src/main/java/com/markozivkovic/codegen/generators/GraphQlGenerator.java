@@ -28,8 +28,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class GraphQlGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQlGenerator.class);
-    
-    private static final String GRAPHQL = "graphql";
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -49,7 +47,7 @@ public class GraphQlGenerator implements CodeGenerator {
             return;
         }
 
-        if (!GeneratorContext.isGenerated(GRAPHQL)) {
+        if (!GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL)) {
             final String pathToGraphQlSchema = String.format("%s/%s", projectMetadata.getProjectBaseDir(), GeneratorConstants.SRC_MAIN_RESOURCES_GRAPHQL);
     
             entities.stream()
@@ -83,7 +81,7 @@ public class GraphQlGenerator implements CodeGenerator {
                 sb.toString()
         );
         
-        GeneratorContext.markGenerated(GRAPHQL);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL);
 
         LOGGER.info("Finished generating GraphQL code");
     }

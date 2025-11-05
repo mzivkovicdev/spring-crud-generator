@@ -26,7 +26,6 @@ import com.markozivkovic.codegen.utils.TemplateContextUtils;
 public class SwaggerDocumentationGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SwaggerDocumentationGenerator.class);
-    private static final String SWAGGER = "swagger";
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -46,7 +45,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
             return;
         }
 
-        if (GeneratorContext.isGenerated(SWAGGER)) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)) { return; }
 
         LOGGER.info("Generating Swagger documentation");
 
@@ -82,7 +81,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
             .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
             .forEach(e -> this.generateSwaggerDocumentation(relationModels, e, pathToSwaggerDocs));
 
-        GeneratorContext.markGenerated(SWAGGER);
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER);
 
         LOGGER.info("Swagger documentation generated successfully at: {}", pathToSwaggerDocs);
     }
@@ -112,7 +111,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
             "swagger/schema/object-template.ftl", model
         );
-        final String subDir = String.format("%s/%s", SWAGGER, "components/schemas");
+        final String subDir = String.format("%s/%s", GeneratorConstants.DefaultPackageLayout.SWAGGER, "components/schemas");
 
         FileWriterUtils.writeToFile(
             pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
@@ -197,7 +196,8 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         );
 
         FileWriterUtils.writeToFile(
-                pathToSwaggerDocs, SWAGGER, String.format("%s-api.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerDocumentation
+                pathToSwaggerDocs, GeneratorConstants.DefaultPackageLayout.SWAGGER,
+                String.format("%s-api.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerDocumentation
         );
     }
 
@@ -226,7 +226,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
             "swagger/schema/object-template.ftl", model
         );
-        final String subDir = String.format("%s/%s", SWAGGER, "components/schemas");
+        final String subDir = String.format("%s/%s", GeneratorConstants.DefaultPackageLayout.SWAGGER, "components/schemas");
 
         FileWriterUtils.writeToFile(
             pathToSwaggerDocs, subDir, String.format("%sInput.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
