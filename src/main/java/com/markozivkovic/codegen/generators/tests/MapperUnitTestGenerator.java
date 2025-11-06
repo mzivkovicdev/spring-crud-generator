@@ -23,6 +23,7 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils;
 
 public class MapperUnitTestGenerator implements CodeGenerator {
 
@@ -39,10 +40,10 @@ public class MapperUnitTestGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
-        if (this.configuration == null || this.configuration.getUnitTests() == null || !this.configuration.getUnitTests()) {
+        if (!UnitTestUtils.isUnitTestsEnabled(configuration)) {
             return;
         }
-
+        
         if (FieldUtils.isModelUsedAsJsonField(modelDefinition, this.entities)) {
             return;
         }

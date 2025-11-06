@@ -39,8 +39,8 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
-        if (this.configuration == null || this.configuration.getUnitTests() == null || !this.configuration.getUnitTests()
-                || this.configuration.getGraphQl() == null || !this.configuration.getGraphQl()) {
+        if (!UnitTestUtils.isUnitTestsEnabled(configuration) || this.configuration.getGraphQl() == null
+                || !this.configuration.getGraphQl()) {
             return;
         }
 

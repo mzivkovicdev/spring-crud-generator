@@ -41,7 +41,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
-        if (this.configuration == null || this.configuration.getUnitTests() == null || !this.configuration.getUnitTests()) {
+        if (!UnitTestUtils.isUnitTestsEnabled(configuration)) {
             return;
         }
 

@@ -1,7 +1,9 @@
 package com.markozivkovic.codegen.utils;
 
 import com.markozivkovic.codegen.enums.SupportedIdTypeEnum;
+import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 
 public class UnitTestUtils {
     
@@ -38,6 +40,36 @@ public class UnitTestUtils {
             default:
                 throw new IllegalArgumentException("Unsupported ID type: " + idField.getType());
         }
+    }
+
+    /**
+     * Returns true if unit tests are enabled in the given configuration, false otherwise.
+     * Unit tests are enabled if the configuration is null, or if the tests configuration in the
+     * given configuration is null, or if the unit tests flag in the tests configuration is true.
+     *
+     * @param configuration the configuration to check
+     * @return true if unit tests are enabled, false otherwise
+     */
+    public static boolean isUnitTestsEnabled(final CrudConfiguration configuration) {
+        
+        return configuration != null && configuration.getTests() != null &&
+                Boolean.TRUE.equals(configuration.getTests().getUnit());
+    }
+
+    /**
+     * Returns true if EasyRandom is enabled in the given configuration, false otherwise.
+     * EasyRandom is enabled if the configuration is not null, the tests configuration in the
+     * given configuration is not null, the data generator in the tests configuration is not null,
+     * and the data generator is set to {@link DataGeneratorEnum#EASYRANDOM}.
+     *
+     * @param configuration the configuration to check
+     * @return true if EasyRandom is enabled, false otherwise
+     */
+    public static boolean isEasyRandomEnabled(final CrudConfiguration configuration) {
+        
+        return configuration != null && configuration.getTests() != null &&
+                configuration.getTests().getDataGenerator() != null &&
+                configuration.getTests().getDataGenerator().equals(DataGeneratorEnum.EASYRANDOM);
     }
 
 }
