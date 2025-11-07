@@ -16,6 +16,7 @@ import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -89,7 +90,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("baseImport", ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
         context.put("projectImports", ImportUtils.computeModelsEnumsAndServiceImports(modelDefinition, outputDir));
         context.put("testImports", ImportUtils.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.putAll(TemplateContextUtils.computeBusinessServiceContext(modelDefinition));
+        context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
         context.put("className", className);
         context.put("modelName", modelDefinition.getName());
         context.put("strippedModelName", modelWithoutSuffix);
@@ -111,7 +112,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
@@ -128,7 +129,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
      */
     private String addRelationMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeAddRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(modelDefinition, entites);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
@@ -146,7 +147,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
     private String createResourceMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = new HashMap<>(
-                TemplateContextUtils.computeCreateResourceMethodServiceContext(modelDefinition, entites)
+                BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(modelDefinition, entites)
         );
         final FieldDefinition id = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<FieldDefinition> fields = modelDefinition.getFields().stream()

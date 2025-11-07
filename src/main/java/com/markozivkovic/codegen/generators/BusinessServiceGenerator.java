@@ -13,13 +13,13 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class BusinessServiceGenerator implements CodeGenerator {
     
@@ -53,7 +53,6 @@ public class BusinessServiceGenerator implements CodeGenerator {
         final String className = String.format("%sBusinessService", modelWithoutSuffix);
 
         final StringBuilder sb = new StringBuilder();
-
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES)));
         sb.append(ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
 
@@ -85,7 +84,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
      */
     private String generateBusinessServiceClass(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeBusinessServiceContext(modelDefinition);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition);
         context.put("createResource", createResourceMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
@@ -101,7 +100,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
      */
     private String createResourceMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeCreateResourceMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(modelDefinition, entites);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/create-resource.ftl", context);
     }
@@ -115,7 +114,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
      */
     private String addRelationMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeAddRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(modelDefinition, entites);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/add-relation.ftl", context);
     }
@@ -129,7 +128,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/remove-relation.ftl", context);
     }

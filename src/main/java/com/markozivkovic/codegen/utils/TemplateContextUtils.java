@@ -44,10 +44,8 @@ public class TemplateContextUtils {
     private static final String GENERATE_JAVA_DOC = "generateJavaDoc";
     private static final String TRANSACTIONAL_ANNOTATION = "transactionalAnnotation";
     private static final String INPUT_ARGS = "inputArgs";
-    private static final String TEST_INPUT_ARGS = "testInputArgs";
     private static final String CLASS_NAME = "className";
     private static final String STRIPPED_MODEL_NAME = "strippedModelName";
-    private static final String SERVICE_CLASSES = "serviceClasses";
     private static final String RELATION_ID_FIELD = "relationIdField";
     private static final String RELATION_ID_TYPE = "relationIdType";
     private static final String MODEL_SERVICE = "modelService";
@@ -456,112 +454,6 @@ public class TemplateContextUtils {
         context.put(ID_TYPE, idField.getType());
         
         return context;
-    }
-
-    /**
-     * Computes a template context for a business service class of a model.
-     * 
-     * @param modelDefinition the model definition containing the class and field details
-     * @return a template context for the business service class
-     */
-    public static Map<String, Object> computeBusinessServiceContext(final ModelDefinition modelDefinition) {
-        
-        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
-       
-        final List<String> serviceClasses = relationFields.stream()
-                .map(FieldDefinition::getType)
-                .map(ModelNameUtils::stripSuffix)
-                .map(modelName -> String.format("%sService", modelName))
-                .collect(Collectors.toList());
-                
-        serviceClasses.add(String.format("%sService", strippedModelName));
-        
-        final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, String.format("%sBusinessService", strippedModelName));
-        context.put(SERVICE_CLASSES, serviceClasses);
-
-        return context;
-    }
-
-    /**
-     * Computes a template context for the addRelation method of a model's service.
-     *
-     * @param modelDefinition the model definition containing the class and field details
-     * @param entities a list of model definitions representing entities related to the model
-     * @return a map representing the context for the addRelation method, or an empty map if no relation types are present
-     */
-    public static Map<String, Object> computeAddRelationMethodServiceContext(final ModelDefinition modelDefinition,
-            final List<ModelDefinition> entities) {
-        
-        return computeRelationMethodContext(modelDefinition, true, entities);
-    }
-
-    /**
-     * Computes a template context for the removeRelation method of a model's service.
-     *
-     * @param modelDefinition the model definition containing the class and field details
-     * @param entities a list of model definitions representing entities related to the model
-     * @return a map representing the context for the removeRelation method, or an empty map if no relation types are present
-     */
-    public static Map<String, Object> computeRemoveRelationMethodServiceContext(final ModelDefinition modelDefinition,
-            final List<ModelDefinition> entities) {
-        
-        return computeRelationMethodContext(modelDefinition, false, entities);
-    }
-
-    /**
-     * Computes a template context for the create resource method of a model's service.
-     *
-     * @param modelDefinition the model definition containing the class and field details
-     * @param entities a list of model definitions representing entities related to the model
-     * @return a map representing the context for the create resource method, or an empty map if no relation types are present
-     */
-    public static Map<String, Object> computeCreateResourceMethodServiceContext(final ModelDefinition modelDefinition,
-            final List<ModelDefinition> entities) {
-
-        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
-            return Map.of();
-        }
-
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
-
-        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final String inputArgs = FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields(), entities).stream()
-                .collect(Collectors.joining(", "));
-                
-        final String testInputArgs = FieldUtils.generateInputArgsExcludingIdForTest(modelDefinition.getFields(), entities).stream()
-                .collect(Collectors.joining(", "));
-
-        final String fieldNames = FieldUtils.generateInputArgsBusinessService(modelDefinition.getFields()).stream()
-                .collect(Collectors.joining(", "));
-
-        final Map<String, Object> model = new HashMap<>();
-        final List<Map<String, Object>> relations = new ArrayList<>();
-
-        model.put(MODEL_NAME, modelDefinition.getName());
-        model.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
-        model.put(TRANSACTIONAL_ANNOTATION, AnnotationConstants.TRANSACTIONAL_ANNOTATION);
-        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            model.put(TRANSACTIONAL_ANNOTATION, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
-        } else {
-            model.put(TRANSACTIONAL_ANNOTATION, AnnotationConstants.TRANSACTIONAL_ANNOTATION);
-        }
-        model.put(MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
-        model.put(INPUT_ARGS, inputArgs);
-        model.put(FIELD_NAMES, fieldNames);
-        model.put(TEST_INPUT_ARGS, testInputArgs);
-
-        relationFields.forEach(field -> {
-            relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, true, entities));
-        });
-
-        return Map.of(
-            MODEL, model,
-            RELATIONS, relations
-        );
     }
 
     /**
