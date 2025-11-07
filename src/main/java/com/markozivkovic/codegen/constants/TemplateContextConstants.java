@@ -4,6 +4,7 @@ public final class TemplateContextConstants {
 
     private TemplateContextConstants() {}
 
+    public static final String NAME = "name";
     public static final String FIELD = "field";
     public static final String FIELDS = "fields";
     public static final String ID_TYPE = "idType";
@@ -34,6 +35,12 @@ public final class TemplateContextConstants {
     public static final String IS_COLLECTION = "isCollection";
     public static final String JAVADOC_FIELDS = "javadocFields";
     public static final String METHOD_NAME = "methodName";
+
+    public static final String JSON_FIELDS = "jsonFields";
+    public static final String JSON_MODELS = "jsonModels";
+
+    public static final String INPUT_FIELDS_WITHOUT_RELATIONS = "inputFieldsWithoutRelations";
+    public static final String INPUT_FIELDS_WITH_RELATIONS = "inputFieldsWithRelations";
 
     public static final String ENUM_NAME = "enumName";
     public static final String VALUES = "values";
