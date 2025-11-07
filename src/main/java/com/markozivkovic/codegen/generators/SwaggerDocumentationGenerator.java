@@ -15,13 +15,13 @@ import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
+import com.markozivkovic.codegen.templates.SwaggerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 import com.markozivkovic.codegen.utils.SwaggerUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class SwaggerDocumentationGenerator implements CodeGenerator {
 
@@ -180,7 +180,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         final FieldDefinition idField = FieldUtils.extractIdField(e.getFields());
         final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
 
-        final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(e);
+        final Map<String, Object> context = SwaggerTemplateContext.computeSwaggerTemplateContext(e);
         context.put("id", idProperty);
         context.put("create", createEndpoint(e));
         context.put("getAll", getAllEndpoint(e));
@@ -241,31 +241,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      */
     private String relationEndpoints(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeSwaggerTemplateContext(modelDefinition);
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
-        context.put("id", idProperty);
-
-        final List<Map<String, Object>> relationEndpoints = modelDefinition.getFields().stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .map(field -> {
-                    final Map<String, Object> endpointContext = new HashMap<>();
-                    endpointContext.put("strippedModelName", ModelNameUtils.stripSuffix(field.getType()));
-                    endpointContext.put("relationType", field.getRelation().getType().toUpperCase());
-
-                    final ModelDefinition relationModel = this.entities.stream()
-                            .filter(e -> e.getName().equals(field.getType()))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalArgumentException("Relation model not found: " + field.getType()));
-                    final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
-                    endpointContext.put("relatedIdParam", relationIdField.getName());
-                    final Map<String, Object> relatedIdProperty = SwaggerUtils.toSwaggerProperty(relationIdField);
-                    endpointContext.put("relatedId", relatedIdProperty);
-                    return endpointContext;
-                })
-                .collect(Collectors.toList());
-
-        context.put("relations", relationEndpoints);
+        final Map<String, Object> context = SwaggerTemplateContext.computeRelationEndpointContext(modelDefinition, this.entities);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/relation-endpoint.ftl", context);
     }
@@ -278,7 +254,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      */
     private String updateByIdEndpoint(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = this.computeContextWithId(modelDefinition);
+        final Map<String, Object> context = SwaggerTemplateContext.computeContextWithId(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/update-by-id-endpoint.ftl", context);
     }
@@ -291,7 +267,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      */
     private String deleteByIdEndpoint(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = this.computeContextWithId(modelDefinition);
+        final Map<String, Object> context = SwaggerTemplateContext.computeContextWithId(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/delete-by-id-endpoint.ftl", context);
     }
@@ -304,7 +280,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      */
     private String getByIdEndpoint(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = this.computeContextWithId(modelDefinition);
+        final Map<String, Object> context = SwaggerTemplateContext.computeContextWithId(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/get-by-id-endpoint.ftl", context);
     }
@@ -317,7 +293,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      */
     private String createEndpoint(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = this.computeBaseContext(modelDefinition);
+        final Map<String, Object> context = SwaggerTemplateContext.computeBaseContext(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/create-endpoint.ftl", context);
     }
@@ -330,41 +306,9 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
      */
     private String getAllEndpoint(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = this.computeBaseContext(modelDefinition);
+        final Map<String, Object> context = SwaggerTemplateContext.computeBaseContext(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/get-all-endpoint.ftl", context);
-    }
-
-    /**
-     * Computes the base context for the given model definition.
-     *
-     * @param modelDefinition The model definition for which the base context is computed.
-     * @return A map containing the stripped model name as the value for the key "strippedModelName".
-     */
-    private Map<String, Object> computeBaseContext(final ModelDefinition modelDefinition) {
-        
-        final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final Map<String, Object> context = new HashMap<>(
-                Map.of("strippedModelName", strippedModelName)
-        );
-
-        return context;
-    }
-
-    /**
-     * Computes the context for the given model definition, including the ID field.
-     *
-     * @param modelDefinition The model definition for which the context is computed.
-     * @return A map containing the stripped model name as the value for the key "strippedModelName",
-     *         and the name of the ID field as the value for the key "idField".
-     */
-    private Map<String, Object> computeContextWithId(final ModelDefinition modelDefinition) {
-        
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final Map<String, Object> context = computeBaseContext(modelDefinition);
-        context.put("idField", idField.getName());
-
-        return context;
     }
 
 }

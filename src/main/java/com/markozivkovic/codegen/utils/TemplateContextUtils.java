@@ -668,23 +668,6 @@ public class TemplateContextUtils {
     }
 
     /**
-     * Computes a Swagger template context for a model definition.
-     * 
-     * @param modelDefinition the model definition
-     * @return a Swagger template context with stripped model name, ID field name, and ID description
-     */
-    public static Map<String, Object> computeSwaggerTemplateContext(final ModelDefinition modelDefinition) {
-        
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final Map<String, Object> context = new HashMap<>();
-        context.put(STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
-        context.put(ID_FIELD, idField.getName());
-        context.put(ID_DESCRIPTION, Objects.nonNull(idField.getDescription()) ? idField.getDescription() : "");
-        
-        return context;
-    }
-
-    /**
      * Computes a template context for a unit test data generator based on a TestDataGeneratorConfig object.
      * 
      * @param config the TestDataGeneratorConfig object
