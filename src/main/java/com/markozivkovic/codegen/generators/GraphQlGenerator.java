@@ -21,7 +21,6 @@ import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class GraphQlGenerator implements CodeGenerator {
 
@@ -151,7 +150,7 @@ public class GraphQlGenerator implements CodeGenerator {
      */
     private String generateQueryMappings(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeQueryMappingGraphQL(modelDefinition);
+        final Map<String, Object> context = GraphQlTemplateContext.computeQueryMappingGraphQL(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/mapping/queries.ftl", context
