@@ -24,6 +24,7 @@ import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
@@ -82,11 +83,12 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sBusinessServiceTest", modelWithoutSuffix);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("baseImport", ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
         context.put("projectImports", ImportUtils.computeModelsEnumsAndServiceImports(modelDefinition, outputDir));
-        context.put("testImports", ImportUtils.computeTestBusinessServiceImports());
+        context.put("testImports", ImportUtils.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.putAll(TemplateContextUtils.computeBusinessServiceContext(modelDefinition));
         context.put("className", className);
         context.put("modelName", modelDefinition.getName());
@@ -94,6 +96,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("createResource", createResourceMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/businessservice-test-class-template.ftl", context
@@ -109,6 +112,8 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = TemplateContextUtils.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/remove-relation.ftl", context
@@ -124,6 +129,8 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
     private String addRelationMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = TemplateContextUtils.computeAddRelationMethodServiceContext(modelDefinition, entites);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/add-relation.ftl", context
@@ -148,6 +155,9 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
                 .collect(Collectors.toList());
         context.put("fields", fields);
         
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/create-resource.ftl", context
         );

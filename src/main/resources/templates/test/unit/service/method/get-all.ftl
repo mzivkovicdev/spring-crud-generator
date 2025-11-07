@@ -1,12 +1,16 @@
     @Test
     void getAll() {
+        <#if dataGenerator == "PODAM">
+        final List<${modelName}> ${modelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${modelName}.class);
+        <#else>
+        final List<${modelName}> ${modelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(${modelName}.class)
+                        .size(10)
+                        .create();
 
-        final List<${modelName}> ${modelName?uncap_first}s = PODAM_FACTORY.manufacturePojo(
-                List.class, ${modelName}.class
-        );
+        </#if>
         final Page<${modelName}> page${strippedModelName?cap_first} = new PageImpl<>(${modelName?uncap_first}s);
-        final Integer pageNumber = PODAM_FACTORY.manufacturePojo(Integer.class);
-        final Integer pageSize = PODAM_FACTORY.manufacturePojo(Integer.class);
+        final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
+        final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
 
         when(this.${strippedModelName?uncap_first}Repository.findAll(PageRequest.of(pageNumber, pageSize)))
                 .thenReturn(page${strippedModelName?cap_first});

@@ -10,9 +10,9 @@
     @Test
     void ${rel.methodName}() {
 
-        final ${modelName} ${modelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
-        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = PODAM_FACTORY.manufacturePojo(${rel.relationClassName}.class);
+        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${rel.relationClassName}.class);
         final ${rel.relationIdType} ${relationField}Id = ${rel.relationClassName?uncap_first}.get${rel.relationIdField?cap_first}();
 
         when(this.${relationServiceClass}.getReferenceById(${relationField}Id)).thenReturn(${rel.relationClassName?uncap_first});

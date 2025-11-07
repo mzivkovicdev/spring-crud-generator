@@ -1,7 +1,7 @@
     @Test
     void getById() {
 
-        final ${modelName} ${modelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField} = ${modelName?uncap_first}.get${idField?cap_first}();
 
         when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
@@ -17,7 +17,7 @@
     @Test
     void getById_notFound() {
 
-        final ${idType} ${idField} = PODAM_FACTORY.manufacturePojo(${idType}.class);
+        final ${idType} ${idField} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
 
         when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
                 .thenReturn(Optional.empty());

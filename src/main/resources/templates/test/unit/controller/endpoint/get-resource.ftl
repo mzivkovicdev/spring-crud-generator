@@ -18,9 +18,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 ${testImports}
-${projectImports}
+${projectImports}<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
+import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @WebMvcTest(excludeAutoConfiguration = {
         OAuth2ClientAutoConfiguration.class, OAuth2ResourceServerAutoConfiguration.class
@@ -31,7 +31,8 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 })
 class ${className} {
 
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
     private final ${mapperClass} ${mapperField} = Mappers.getMapper(${mapperClass}.class);
 
@@ -58,7 +59,7 @@ class ${className} {
     @Test
     void ${uncapModelName}sIdGet() throws Exception {
 
-        final ${modelName} ${modelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
 
         when(this.${serviceField}.getById(${idField?uncap_first})).thenReturn(${modelName?uncap_first});
@@ -79,7 +80,7 @@ class ${className} {
     @Test
     void ${uncapModelName}sIdGet_invalid${idField?cap_first}Format() throws Exception {
 
-        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class);
+        final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
 
         this.mockMvc.perform(get("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isBadRequest());
@@ -87,11 +88,16 @@ class ${className} {
 
     @Test
     void ${uncapModelName}sGet() throws Exception {
-
-        final List<${modelName}> ${modelName?uncap_first}s = PODAM_FACTORY.manufacturePojo(List.class, ${modelName}.class);
+        <#if dataGenerator == "PODAM">
+        final List<${modelName}> ${modelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${modelName}.class);
+        <#else>
+        final List<${modelName}> ${modelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(${modelName}.class)
+                        .size(10)
+                        .create();
+        </#if>
         final Page<${modelName}> page${modelName}s = new PageImpl<>(${modelName?uncap_first}s);
-        final Integer pageNumber = PODAM_FACTORY.manufacturePojo(Integer.class);
-        final Integer pageSize = PODAM_FACTORY.manufacturePojo(Integer.class);
+        final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
+        final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
 
         when(this.${serviceField}.getAll(pageNumber, pageSize)).thenReturn(page${modelName}s);
 
@@ -135,7 +141,7 @@ class ${className} {
     @Test
     void ${uncapModelName}sGet_missingPageNumberParameter() throws Exception {
 
-        final Integer pageSize = PODAM_FACTORY.manufacturePojo(Integer.class);
+        final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
 
         this.mockMvc.perform(get("/api/v1/${uncapModelName}s")
                                 .queryParam("pageSize", String.format("%s", pageSize)))
@@ -145,7 +151,7 @@ class ${className} {
     @Test
     void ${uncapModelName}sGet_missingPageSizeParameter() throws Exception {
 
-        final Integer pageNumber = PODAM_FACTORY.manufacturePojo(Integer.class);
+        final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
 
         this.mockMvc.perform(get("/api/v1/${uncapModelName}s")
                                 .queryParam("pageNumber", String.format("%s", pageNumber)))
@@ -155,8 +161,8 @@ class ${className} {
     @Test
     void ${uncapModelName}sGet_typeMissmatch() throws Exception {
 
-        final String pageNumber = PODAM_FACTORY.manufacturePojo(String.class);
-        final String pageSize = PODAM_FACTORY.manufacturePojo(String.class);
+        final String pageNumber = ${generatorFieldName}.${singleObjectMethodName}(String.class);
+        final String pageSize = ${generatorFieldName}.${singleObjectMethodName}(String.class);
 
         this.mockMvc.perform(get("/api/v1/${uncapModelName}s")
                                 .queryParam("pageSize", String.format("%s", pageSize))

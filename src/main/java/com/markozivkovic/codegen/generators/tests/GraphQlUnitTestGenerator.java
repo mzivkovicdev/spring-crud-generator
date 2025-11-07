@@ -22,7 +22,9 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class GraphQlUnitTestGenerator implements CodeGenerator {
 
@@ -81,6 +83,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
                 .collect(Collectors.toList());
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
         final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
         final List<Map<String, Object>> relations = new ArrayList<>();
@@ -95,8 +98,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("createArgs", FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
         context.put("updateArgs", FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put("jsonFields", jsonFields);
-        context.put("testImports", ImportUtils.computeMutationResolverTestImports());
+        context.put("testImports", ImportUtils.computeMutationResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         relationFields.forEach(field -> {
             final ModelDefinition relationModel = this.entities.stream()
@@ -139,6 +143,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final String className = String.format("%sResolverQueryTest", modelWithoutSuffix);
         final String resolverClassName = String.format("%sResolver", modelWithoutSuffix);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("strippedModelName", modelWithoutSuffix);
@@ -149,8 +154,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("testImports", ImportUtils.computeQueryResolverTestImports());
+        context.put("testImports", ImportUtils.computeQueryResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition));
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

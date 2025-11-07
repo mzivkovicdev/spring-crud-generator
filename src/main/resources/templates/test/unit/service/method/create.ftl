@@ -2,7 +2,7 @@
     @Test
     void create() {
 
-        final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${strippedModelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
 
         when(this.${strippedModelName?uncap_first}Repository.saveAndFlush(any()))
                 .thenReturn(${strippedModelName?uncap_first});

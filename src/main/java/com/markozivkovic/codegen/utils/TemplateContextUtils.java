@@ -12,6 +12,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class TemplateContextUtils {
 
@@ -58,6 +59,10 @@ public class TemplateContextUtils {
     private static final String AUDIT_ENABLED = "auditEnabled";
     private static final String AUDIT_TYPE = "auditType";
     private static final String IS_ENUM = "isEnum";
+    private static final String DATA_GENERATOR = "dataGenerator";
+    private static final String DATA_GENERATOR_FIELD_NAME = "generatorFieldName";
+    private static final String DATA_GENERATOR_SINGLE_OBJ = "singleObjectMethodName";
+    private static final String DATA_GENERATOR_LIST_METHOD = "multipleObjectsMethodName";
 
     private TemplateContextUtils() {
         
@@ -933,6 +938,24 @@ public class TemplateContextUtils {
         context.put(CLASS_NAME, String.format("%sResolver", strippedModelName));
         context.put(JSON_FIELDS, jsonFields);
         context.put(RELATIONS, !FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty());
+        
+        return context;
+    }
+
+    /**
+     * Computes a template context for a unit test data generator based on a TestDataGeneratorConfig object.
+     * 
+     * @param config the TestDataGeneratorConfig object
+     * @return a template context containing the name of the data generator, the name of the random field name,
+     *         the name of the single object method, and the name of the list method
+     */
+    public static Map<String, Object> computeDataGeneratorContext(final TestDataGeneratorConfig config) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(DATA_GENERATOR, config.generator());
+        context.put(DATA_GENERATOR_FIELD_NAME, config.randomFieldName());
+        context.put(DATA_GENERATOR_SINGLE_OBJ, config.singleObjectMethodName());
+        context.put(DATA_GENERATOR_LIST_METHOD, config.multipleObjectsMethodName());
         
         return context;
     }

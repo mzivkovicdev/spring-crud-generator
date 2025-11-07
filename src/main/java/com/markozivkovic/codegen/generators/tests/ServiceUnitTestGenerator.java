@@ -22,6 +22,7 @@ import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class ServiceUnitTestGenerator implements CodeGenerator {
 
@@ -75,13 +76,14 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String generateTestServiceClass(final ModelDefinition modelDefinition, final String outputDir) {
 
-        final Map<String, Object> context = new HashMap<>();
         final String baseImports = ImportUtils.getTestBaseImport(modelDefinition);
         final String projectImports = ImportUtils.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir);
-        final String testImports = ImportUtils.computeTestServiceImports(modelDefinition, entities);
+        final String testImports = ImportUtils.computeTestServiceImports(modelDefinition, entities, UnitTestUtils.isInstancioEnabled(configuration));
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        
+        final Map<String, Object> context = new HashMap<>();
         context.put("baseImport", baseImports);
         context.put("projectImports", projectImports);
         context.put("testImports", testImports);
@@ -101,6 +103,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         context.put("removeRelationMethod", this.removeRelationMethod(modelDefinition));
         context.put("getAllByIds", this.getAllByIdsMethod(modelDefinition));
         context.put("getReferenceById", this.getReferenceByIdMethod(modelDefinition));
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/service/service-test-class-template.ftl",
@@ -121,6 +124,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         }
 
         final Map<String, Object> context = TemplateContextUtils.createGetReferenceByIdMethodContext(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/get-reference-by-id.ftl", context);
     }
@@ -137,6 +142,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
             return null;
         }
         final Map<String, Object> context = TemplateContextUtils.createGetAllByIdsMethodContext(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/get-all-by-ids.ftl", context);
     }
@@ -155,6 +162,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         if (context.isEmpty()) {
             return null;
         }
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/remove-relation.ftl", context);
     }
@@ -176,6 +185,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         if (context.isEmpty()) {
             return null;
         }
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/add-relation.ftl", context);
     }
@@ -189,6 +200,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateDeleteByIdMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = TemplateContextUtils.computeDeleteByIdContext(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/delete-by-id.ftl", context);
     }
@@ -202,6 +215,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateUpdateMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = TemplateContextUtils.computeUpdateByIdContext(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/update-by-id.ftl", context);
     }
@@ -216,6 +231,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         
         final Map<String, Object> context = TemplateContextUtils.computeCreateContext(modelDefinition);
         context.put("fieldNamesList", FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/create.ftl", context);
     }
@@ -229,6 +246,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateGetAllMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = TemplateContextUtils.computeGetAllContext(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/get-all.ftl", context);
     }
@@ -242,6 +261,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateGetByIdMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = TemplateContextUtils.computeGetByIdContext(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/get-by-id.ftl", context);
     }

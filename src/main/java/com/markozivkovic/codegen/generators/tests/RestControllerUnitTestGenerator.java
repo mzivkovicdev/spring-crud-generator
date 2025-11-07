@@ -25,6 +25,7 @@ import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class RestControllerUnitTestGenerator implements CodeGenerator {
 
@@ -86,6 +87,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         }
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         relationFields.forEach(relationField -> {
 
@@ -112,8 +114,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                         modelDefinition, outputDir, swagger, true, true
                 ));
-                context.put("testImports", ImportUtils.computeAddRelationEndpointTestImports());
+                context.put("testImports", ImportUtils.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.put("swagger", swagger);
+                context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
                 sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -146,6 +149,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         relationFields.forEach(relationField -> {
 
@@ -181,7 +185,8 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                         modelDefinition, outputDir, false, false, false
                 ));
-                context.put("testImports", ImportUtils.computeDeleteEndpointTestImports());
+                context.put("testImports", ImportUtils.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+                context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
                 sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -217,6 +222,8 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final Map<String, Object> context = new HashMap<>(
                 TemplateContextUtils.computeCreateEndpointContext(modelDefinition, entities)
         );
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
         context.put("strippedModelName", modelWithoutSuffix);
@@ -224,11 +231,12 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("hasCollectionRelations", FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields()) 
                 || FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()));
         context.put("swagger", swagger);
-        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports());
+        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeCreateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger
         ));
         context.put("jsonFields", jsonFields);
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -260,6 +268,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
                 .map(FieldUtils::extractJsonFieldName)
                 .collect(Collectors.toList());
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("controllerClassName", controllerClassName);
@@ -272,11 +281,12 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("swagger", swagger);
         context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
-        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports());
+        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeUpdateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger
         ));
         context.put("jsonFields", jsonFields);
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -304,6 +314,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final String className = String.format("%sDeleteByIdMockMvcTest", modelWithoutSuffix);
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("controllerClassName", controllerClassName);
@@ -316,7 +327,8 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                 modelDefinition, outputDir, false, false, false
         ));
-        context.put("testImports", ImportUtils.computeDeleteEndpointTestImports());
+        context.put("testImports", ImportUtils.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -345,6 +357,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final String className = String.format("%sGetMockMvcTest", modelWithoutSuffix);
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("controllerClassName", controllerClassName);
@@ -356,10 +369,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("testImports", ImportUtils.computeGetEndpointTestImports());
+        context.put("testImports", ImportUtils.computeGetEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                 modelDefinition, outputDir, swagger, false, true
         ));
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

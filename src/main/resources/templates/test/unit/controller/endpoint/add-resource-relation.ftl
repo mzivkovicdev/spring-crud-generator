@@ -16,9 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 ${baseImports}
 ${testImports}
-${projectImports}
+${projectImports}<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
+import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @WebMvcTest(excludeAutoConfiguration = {
         OAuth2ClientAutoConfiguration.class, OAuth2ResourceServerAutoConfiguration.class
@@ -29,7 +29,8 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 })
 class ${className} {
 
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
     private final ${mapperClass} ${mapperField} = Mappers.getMapper(${mapperClass}.class);
 
@@ -54,12 +55,12 @@ class ${className} {
     @Test
     void ${methodName}() throws Exception {
 
-        final ${modelName} ${modelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
         <#if swagger>
-        final ${strippedRelationClassName}Input body = PODAM_FACTORY.manufacturePojo(${strippedRelationClassName}Input.class);
+        final ${strippedRelationClassName}Input body = ${generatorFieldName}.${singleObjectMethodName}(${strippedRelationClassName}Input.class);
         <#else>
-        final ${strippedRelationClassName}InputTO body = PODAM_FACTORY.manufacturePojo(${strippedRelationClassName}InputTO.class);
+        final ${strippedRelationClassName}InputTO body = ${generatorFieldName}.${singleObjectMethodName}(${strippedRelationClassName}InputTO.class);
         </#if>
 
         when(this.${businessServiceField}.add${relationFieldModel}(${idField?uncap_first}, body.<#if swagger>getId<#else>id</#if>())).thenReturn(${modelName?uncap_first});
@@ -82,11 +83,11 @@ class ${className} {
     @Test
     void ${methodName}_invalid${idField?cap_first}Format() throws Exception {
 
-        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class);
+        final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
         <#if swagger>
-        final ${strippedRelationClassName}Input body = PODAM_FACTORY.manufacturePojo(${strippedRelationClassName}Input.class);
+        final ${strippedRelationClassName}Input body = ${generatorFieldName}.${singleObjectMethodName}(${strippedRelationClassName}Input.class);
         <#else>
-        final ${strippedRelationClassName}InputTO body = PODAM_FACTORY.manufacturePojo(${strippedRelationClassName}InputTO.class);
+        final ${strippedRelationClassName}InputTO body = ${generatorFieldName}.${singleObjectMethodName}(${strippedRelationClassName}InputTO.class);
         </#if>
         
         this.mockMvc.perform(post("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
@@ -98,7 +99,7 @@ class ${className} {
     @Test
     void ${methodName}_noRequestBody() throws Exception {
 
-        final ${idType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${idType}.class);
+        final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
         
         this.mockMvc.perform(post("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE))

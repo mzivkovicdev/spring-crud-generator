@@ -57,19 +57,57 @@ public class UnitTestUtils {
     }
 
     /**
-     * Returns true if EasyRandom is enabled in the given configuration, false otherwise.
-     * EasyRandom is enabled if the configuration is not null, the tests configuration in the
-     * given configuration is not null, the data generator in the tests configuration is not null,
-     * and the data generator is set to {@link DataGeneratorEnum#EASYRANDOM}.
+     * Returns true if Instancio is enabled in the given configuration, false otherwise.
+     * Instancio is enabled if the configuration is null, or if the tests configuration in the
+     * given configuration is null, or if the data generator in the tests configuration is Instancio.
      *
      * @param configuration the configuration to check
-     * @return true if EasyRandom is enabled, false otherwise
+     * @return true if Instancio is enabled, false otherwise
      */
-    public static boolean isEasyRandomEnabled(final CrudConfiguration configuration) {
+    public static boolean isInstancioEnabled(final CrudConfiguration configuration) {
         
         return configuration != null && configuration.getTests() != null &&
                 configuration.getTests().getDataGenerator() != null &&
-                configuration.getTests().getDataGenerator().equals(DataGeneratorEnum.EASYRANDOM);
+                configuration.getTests().getDataGenerator().equals(DataGeneratorEnum.INSTANCIO);
+    }
+
+    /**
+     * Returns a TestDataGeneratorConfig object based on the given DataGeneratorEnum.
+     * The TestDataGeneratorConfig object contains the name of the data generator, the name of the
+     * factory class, the name of the factory method, and the name of the method to
+     * manufacture the list of objects.
+     *
+     * @param dataGenerator the DataGeneratorEnum to resolve
+     * @return a TestDataGeneratorConfig object containing the resolved data generator config
+     */
+    public static TestDataGeneratorConfig resolveGeneratorConfig(final DataGeneratorEnum dataGenerator) {
+        
+        return switch (dataGenerator) {
+            case INSTANCIO -> new TestDataGeneratorConfig(
+                    DataGeneratorEnum.INSTANCIO.name().toUpperCase(),
+                    "Instancio",
+                    "create",
+                    "ofList");
+            case PODAM -> new TestDataGeneratorConfig(
+                    DataGeneratorEnum.PODAM.name().toUpperCase(),
+                    "PODAM_FACTORY",
+                    "manufacturePojo",
+                    "manufacturePojo");
+            default -> throw new IllegalArgumentException(
+                    String.format(
+                        "Unsupported data generator: %s",
+                        dataGenerator
+                    )
+            );
+        };
+    }
+
+    public static record TestDataGeneratorConfig(
+            String generator,
+            String randomFieldName,
+            String singleObjectMethodName,
+            String multipleObjectsMethodName) {
+        
     }
 
 }

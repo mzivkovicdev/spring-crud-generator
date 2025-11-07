@@ -19,9 +19,9 @@ import java.util.Map;
 ${testImports}
 ${projectImports}
 
-import graphql.scalars.ExtendedScalars;
+import graphql.scalars.ExtendedScalars;<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
+import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @GraphQlTest(
     controllers = ${resolverClassName}.class,
@@ -36,7 +36,9 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 })
 class ${strippedModelName}ResolverMutationTest {
 
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
+
     <#list jsonFields as jsonField>
     <#assign jsonFieldMapperClass = jsonField?cap_first + "GraphQLMapper">
     <#assign jsonFieldMapper = jsonField?cap_first + "Mapper">
@@ -65,8 +67,8 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void create${strippedModelName}() {
 
-        final ${modelName} saved = PODAM_FACTORY.manufacturePojo(${modelName}.class);
-        final ${createInputTO} input = PODAM_FACTORY.manufacturePojo(${createInputTO}.class);
+        final ${modelName} saved = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
+        final ${createInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${createInputTO}.class);
         final Map<String, Object> inputVars = this.objectMapper.convertValue(
                 input, new TypeReference<Map<String,Object>>() {}
         );
@@ -118,9 +120,9 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void update${strippedModelName}() {
 
-        final ${modelName} updated = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} updated = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = updated.get${idField?cap_first}();
-        final ${updateInputTO} input = PODAM_FACTORY.manufacturePojo(${updateInputTO}.class);
+        final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
         final Map<String, Object> inputVars = this.objectMapper.convertValue(
                 input, new TypeReference<Map<String,Object>>() {}
         );
@@ -157,8 +159,8 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void update${strippedModelName}_idTypeMismatch_error() {
 
-        final ${updateInputTO} input = PODAM_FACTORY.manufacturePojo(${updateInputTO}.class);
-        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class);
+        final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
+        final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
 
         final String mutation = """
             mutation($id: ID!, $input: ${updateInputGraphQL}!) {
@@ -177,7 +179,7 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void delete${strippedModelName}() {
 
-        final ${idType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${idType}.class);
+        final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
 
         final String mutation = """
             mutation($id: ID!) { delete${strippedModelName}(id: $id) }
@@ -198,7 +200,7 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void delete${strippedModelName}_idTypeMismatch_error() {
 
-        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class);
+        final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
         final String mutation = """
             mutation($id: ID!) { delete${strippedModelName}(id: $id) }
         """;
@@ -217,9 +219,9 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void add${relationField?cap_first}To${strippedModelName}() {
 
-        final ${modelName} saved = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} saved = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = saved.get${idField?cap_first}();
-        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class);
+        final ${relationIdType} ${relationField}Id = ${generatorFieldName}.${singleObjectMethodName}(${relationIdType}.class);
 
         when(this.${businessServiceField}.add${relationField?cap_first}(
             ${idField?uncap_first}, ${relationField}Id
@@ -252,8 +254,8 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void add${relationField?cap_first}To${strippedModelName}_idTypeMismatch_error() {
 
-        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class);
-        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class);
+        final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
+        final ${relationIdType} ${relationField}Id = ${generatorFieldName}.${singleObjectMethodName}(${relationIdType}.class);
 
         final String mutation = """
             mutation($id: ID!, $relId: ID!) {
@@ -272,9 +274,9 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void remove${relationField?cap_first}From${strippedModelName}() {
 
-        final ${modelName} saved = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} saved = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = saved.get${idField?cap_first}();<#if rel.isCollection>
-        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class)</#if>;
+        final ${relationIdType} ${relationField}Id = ${generatorFieldName}.${singleObjectMethodName}(${relationIdType}.class)</#if>;
 
         final String mutation = """
             mutation(<#if rel.isCollection>$id: ID!, $relId: ID!<#else>$id: ID!</#if>) {
@@ -311,9 +313,9 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void remove${relationField?cap_first}From${strippedModelName}_${idField?uncap_first}TypeMismatch_error() {
 
-        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class)
+        final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
         <#if rel.isCollection>;
-        final ${relationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${relationIdType}.class)</#if>;
+        final ${relationIdType} ${relationField}Id = ${generatorFieldName}.${singleObjectMethodName}(${relationIdType}.class)</#if>;
 
         final String mutation = """
             mutation(<#if rel.isCollection>$id: ID!, $relId: ID!<#else>$id: ID!</#if>) {
@@ -334,8 +336,8 @@ class ${strippedModelName}ResolverMutationTest {
     @Test
     void remove${relationField?cap_first}From${strippedModelName}_${relationField?uncap_first}IdTypeMismatch_error() {
 
-        final ${idType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${idType}.class);
-        final ${rel.invalidRelationIdType} ${relationField}Id = PODAM_FACTORY.manufacturePojo(${rel.invalidRelationIdType}.class);
+        final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
+        final ${rel.invalidRelationIdType} ${relationField}Id = ${generatorFieldName}.${singleObjectMethodName}(${rel.invalidRelationIdType}.class);
 
         final String mutation = """
             mutation($id: ID!, $relId: ID!$id: ID!) {

@@ -5,15 +5,15 @@ import static org.mockito.Mockito.when;
 
 ${baseImport}
 ${testImports}
-${projectImports}
+${projectImports}<#if dataGenerator == "PODAM">
 
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
+import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @ExtendWith(SpringExtension.class)
 class ${className} {
-
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
     <#list serviceClasses as serviceClass>
     @MockitoBean

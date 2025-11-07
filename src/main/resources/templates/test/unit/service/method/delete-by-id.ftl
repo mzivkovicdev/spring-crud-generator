@@ -2,7 +2,7 @@
     @Test
     void deleteById() {
 
-        final ${idType} ${idField} = PODAM_FACTORY.manufacturePojo(${idType}.class);
+        final ${idType} ${idField} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
 
         this.${strippedModelName?uncap_first}Service.deleteById(${idField});
 

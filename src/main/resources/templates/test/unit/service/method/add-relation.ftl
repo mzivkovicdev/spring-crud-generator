@@ -7,8 +7,8 @@
     @Test
     void ${rel.methodName}() {
 
-        final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
-        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = PODAM_FACTORY.manufacturePojo(${rel.relationClassName}.class);
+        final ${modelName} ${strippedModelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
+        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${rel.relationClassName}.class);
         final ${idType} ${idField} = ${strippedModelName?uncap_first}.get${idField?cap_first}();
         <#if !rel.isCollection?? || !rel.isCollection>${strippedModelName?uncap_first}.set${rel.relationField?cap_first}(null);</#if>
 
@@ -30,8 +30,8 @@
     @Test
     void ${rel.methodName}_notFound() {
 
-        final ${idType} ${idField} = PODAM_FACTORY.manufacturePojo(${idType}.class);
-        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = PODAM_FACTORY.manufacturePojo(${rel.relationClassName}.class);
+        final ${idType} ${idField} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
+        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${rel.relationClassName}.class);
 
         when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
                 .thenReturn(Optional.empty());
@@ -49,7 +49,7 @@
     @Test
     void ${rel.methodName}_invalidResourceState() {
 
-        final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${strippedModelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if !rel.isCollection?? || !rel.isCollection>
         final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${strippedModelName?uncap_first}.get${rel.relationField?cap_first}();
         <#else>

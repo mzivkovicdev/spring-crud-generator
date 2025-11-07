@@ -43,6 +43,11 @@ public final class ImportConstants {
         public static final String VERSION = "jakarta.persistence.Version";
     }
 
+    public static final class INSTANCIO {
+        private INSTANCIO() {}
+        public static final String INSTANCIO = "org.instancio.Instancio";
+    }
+
     public static final class Logger {
         private Logger() {}
         public static final String LOGGER = "org.slf4j.Logger";

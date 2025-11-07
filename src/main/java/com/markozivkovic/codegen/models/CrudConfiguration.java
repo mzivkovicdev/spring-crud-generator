@@ -294,7 +294,7 @@ public class CrudConfiguration {
         }
 
         public enum DataGeneratorEnum {
-            PODAM, EASYRANDOM
+            PODAM, INSTANCIO
         }
     }
 
