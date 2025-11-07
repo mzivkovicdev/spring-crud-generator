@@ -12,12 +12,12 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.JpaRepositoryTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class JpaRepositoryGenerator implements CodeGenerator {
 
@@ -55,7 +55,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
                     .append("\n");
         }
 
-        final Map<String, Object> context = TemplateContextUtils.computeJpaInterfaceContext(modelDefinition);
+        final Map<String, Object> context = JpaRepositoryTemplateContext.computeJpaInterfaceContext(modelDefinition);
         final String jpaInterface = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "repository/repository-interface-template.ftl", context
         );

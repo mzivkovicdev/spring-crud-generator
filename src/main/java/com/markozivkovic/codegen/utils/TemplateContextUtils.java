@@ -355,24 +355,6 @@ public class TemplateContextUtils {
     }
 
     /**
-     * Creates a template context for the JPA interface of a model.
-     * 
-     * @param modelDefinition the model definition
-     * @return a template context for the JPA interface
-     */
-    public static Map<String, Object> computeJpaInterfaceContext(final ModelDefinition modelDefinition) {
-    
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-
-        final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Repository");
-        context.put(MODEL_NAME, modelDefinition.getName());
-        context.put(ID_TYPE, idField.getType());
-        
-        return context;
-    }
-
-    /**
      * Creates a template context for a transfer object of a model.
      * 
      * @param modelDefinition the model definition containing the class and field details
