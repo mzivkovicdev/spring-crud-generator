@@ -48,8 +48,6 @@ public class TemplateContextUtils {
     private static final String RELATION_FIELD_MODEL = "relationFieldModel";
     private static final String JSON_FIELDS = "jsonFields";
     private static final String IS_JSON_FIELD = "isJsonField";
-    private static final String AUDIT_ENABLED = "auditEnabled";
-    private static final String AUDIT_TYPE = "auditType";
     private static final String IS_ENUM = "isEnum";
     private static final String DATA_GENERATOR = "dataGenerator";
     private static final String DATA_GENERATOR_FIELD_NAME = "generatorFieldName";
@@ -348,73 +346,6 @@ public class TemplateContextUtils {
         context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         context.put(ID_DESCRIPTION, idField.getDescription());
         context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
-        
-        return context;
-    }
-
-    /**
-     * Creates a template context for a transfer object of a model.
-     * 
-     * @param modelDefinition the model definition containing the class and field details
-     * @param modelDefinitions the list of model definitions
-     * @return a template context for the transfer object
-     */
-    public static Map<String, Object> computeCreateTransferObjectContext(final ModelDefinition modelDefinition, final List<ModelDefinition> modelDefinitions) {
-        
-        final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Create");
-        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinalCreateInputTO(modelDefinition.getFields(), modelDefinitions));
-    
-        return context;
-    }
-
-    /**
-     * Creates a template context for a transfer object of a model.
-     * 
-     * @param modelDefinition the model definition containing the class and field details
-     * @return a template context for the transfer object
-     */
-    public static Map<String, Object> computeUpdateTransferObjectContext(final ModelDefinition modelDefinition) {
-        
-        final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Update");
-        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(modelDefinition.getFields()));
-    
-        return context;
-    }
-
-    /**
-     * Creates a template context for a transfer object of a model.
-     * 
-     * @param modelDefinition the model definition containing the class and field details
-     * @return a template context for the transfer object
-     */
-    public static Map<String, Object> computeTransferObjectContext(final ModelDefinition modelDefinition) {
-        
-        final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
-        context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinal(modelDefinition.getFields()));
-        context.put(AUDIT_ENABLED, Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled());
-        if (Objects.nonNull(modelDefinition.getAudit())) {
-            context.put(AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
-        }
-
-        return context;
-    }
-
-    /**
-     * Creates a template context for the input transfer object of a model.
-     * 
-     * @param modelDefinition the model definition containing the class and field details
-     * @return a template context for the input transfer object
-     */
-    public static Map<String, Object> computeInputTransferObjectContext(final ModelDefinition modelDefinition) {
-
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-
-        final Map<String, Object> context = new HashMap<>();
-        context.put(CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
-        context.put(ID_TYPE, idField.getType());
         
         return context;
     }
