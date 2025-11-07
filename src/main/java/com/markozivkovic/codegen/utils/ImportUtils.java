@@ -356,11 +356,13 @@ public class ImportUtils {
     /**
      * Computes the necessary import statements for the generated test service.
      *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param entities        the list of all model definitions
+     * @param modelDefinition     the model definition containing the class name, table name, and field definitions
+     * @param entities            the list of all model definitions
+     * @param isInstancioEnabled  whether Instancio is enabled
      * @return A string containing the necessary import statements for the generated test service.
      */
-    public static String computeTestServiceImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+    public static String computeTestServiceImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, 
+            final boolean isInstancioEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -377,6 +379,7 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
+        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
         addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.ENUM_SOURCE));
         addIf(hasCollectionRelation, imports, String.format(IMPORT, ImportConstants.Java.COLLECTORS));
@@ -389,12 +392,16 @@ public class ImportUtils {
     /**
      * Computes the necessary import statements for the generated test business service.
      *
+     * @param isInstancioEnabled whether Instancio is enabled
      * @return A string containing the necessary import statements for the generated test business service.
      */
-    public static String computeTestBusinessServiceImports() {
+    public static String computeTestBusinessServiceImports(final boolean isInstancioEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
+        if (isInstancioEnabled) {
+            imports.add(String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        }
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
@@ -764,12 +771,14 @@ public class ImportUtils {
     /**
      * Compute the imports for a controller test.
      *
+     * @param isInstancioEnabled whether instancio is enabled
      * @return the imports string for a controller test
      */
-    public static String computeGetEndpointTestImports() {
+    public static String computeGetEndpointTestImports(final boolean isInstancioEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
+        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
@@ -793,12 +802,14 @@ public class ImportUtils {
     /**
      * Compute the imports for a controller test.
      *
+     * @param isInstancioEnabled whether Instancio is enabled
      * @return the imports string for a controller test
      */
-    public static String computeAddRelationEndpointTestImports() {
+    public static String computeAddRelationEndpointTestImports(final boolean isInstancioEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
+        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
@@ -821,12 +832,14 @@ public class ImportUtils {
     /**
      * Compute the necessary imports for a controller delete endpoint test.
      *
+     * @param isInstancioEnabled whether Instancio is enabled
      * @return A string containing the necessary import statements for a controller delete endpoint test.
      */
-    public static String computeDeleteEndpointTestImports() {
+    public static String computeDeleteEndpointTestImports(final boolean isInstancioEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
+        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
@@ -1052,12 +1065,14 @@ public class ImportUtils {
     /**
      * Compute the necessary imports for a controller update endpoint test.
      *
+     * @param isInstancioEnabled whether Instancio is enabled
      * @return a string containing the necessary import statements for a controller update endpoint test
      */
-    public static String computeUpdateEndpointTestImports() {
+    public static String computeUpdateEndpointTestImports(final boolean isInstancioEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
+        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
@@ -1133,12 +1148,14 @@ public class ImportUtils {
     /**
      * computes the necessary imports for a query resolver test.
      * 
+     * @param isInstancioEnabled whether Instancio is enabled
      * @return a string containing the necessary import statements for a query resolver test
      */
-    public static String computeQueryResolverTestImports() {
+    public static String computeQueryResolverTestImports(final boolean isInstancioEnabled) {
         
         final Set<String> imports = new LinkedHashSet<>();
 
+        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
@@ -1165,12 +1182,14 @@ public class ImportUtils {
     /**
      * computes the necessary imports for a mutation resolver test.
      * 
+     * @param isInstancioEnabled whether Instancio is enabled
      * @return a string containing the necessary import statements for a mutation resolver test
      */
-    public static String computeMutationResolverTestImports() {
+    public static String computeMutationResolverTestImports(final boolean isInstancioEnabled) {
         
         final Set<String> imports = new LinkedHashSet<>();
 
+        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));

@@ -1,7 +1,7 @@
     @Test
     void getReferenceById() {
 
-        final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${strippedModelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField} = ${strippedModelName?uncap_first}.get${idField?cap_first}();
 
         when(this.${strippedModelName?uncap_first}Repository.getReferenceById(${idField}))

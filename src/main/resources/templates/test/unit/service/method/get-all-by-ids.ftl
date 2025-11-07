@@ -1,8 +1,14 @@
 
     @Test
     void getAllByIds() {
+        <#if dataGenerator == "PODAM">
+        final List<${modelName}> ${strippedModelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${modelName}.class);
+        <#else>
+        final List<${modelName}> ${strippedModelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(${modelName}.class)
+                        .size(10)
+                        .create();
 
-        final List<${modelName}> ${strippedModelName?uncap_first}s = PODAM_FACTORY.manufacturePojo(List.class, ${modelName}.class);
+        </#if>
         final List<${idType}> ids = ${strippedModelName?uncap_first}s.stream()
                 .map(${modelName}::get${idField?cap_first})
                 .collect(Collectors.toList());

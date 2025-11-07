@@ -7,7 +7,7 @@
     @Test
     void create() {
 
-        final ${modelName} ${modelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#list relations as rel>
         <#assign relationField = rel.strippedRelationClassName?uncap_first>
         <#if rel.isCollection?? && rel.isCollection>

@@ -16,7 +16,7 @@ public class CrudConfiguration {
     private Boolean graphQl;
     private ErrorResponse errorResponse;
     private Boolean migrationScripts;
-    private Boolean unitTests;
+    private TestConfiguration tests;
     private Map<String, Object> additionalProperties = new HashMap<>();
     
     public CrudConfiguration() {
@@ -25,7 +25,7 @@ public class CrudConfiguration {
 
     public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
             final DockerConfiguration docker, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
-            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final Boolean unitTests,
+            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final TestConfiguration tests,
             final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
@@ -37,7 +37,7 @@ public class CrudConfiguration {
         this.graphQl = graphQl;
         this.errorResponse = errorResponse;
         this.migrationScripts = migrationScripts;
-        this.unitTests = unitTests;
+        this.tests = tests;
         this.additionalProperties = additionalProperties;
     }
 
@@ -143,16 +143,12 @@ public class CrudConfiguration {
         return this;
     }
 
-    public Boolean getUnitTests() {
-        return this.unitTests;
+    public TestConfiguration getTests() {
+        return this.tests;
     }
 
-    public Boolean isUnitTests() {
-        return this.unitTests;
-    }
-
-    public CrudConfiguration setUnitTests(final Boolean unitTests) {
-        this.unitTests = unitTests;
+    public CrudConfiguration setTests(final TestConfiguration tests) {
+        this.tests = tests;
         return this;
     }
 
@@ -183,7 +179,7 @@ public class CrudConfiguration {
                 Objects.equals(graphQl, crudConfiguration.graphQl) &&
                 Objects.equals(errorResponse, crudConfiguration.errorResponse) &&
                 Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
-                Objects.equals(unitTests, crudConfiguration.unitTests) &&
+                Objects.equals(tests, crudConfiguration.tests) &&
                 Objects.equals(additionalProperties, crudConfiguration.additionalProperties);
     }
 
@@ -191,7 +187,7 @@ public class CrudConfiguration {
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, optimisticLocking, docker, cache, swagger,
-            openApiCodegen, graphQl, errorResponse, migrationScripts, unitTests,
+            openApiCodegen, graphQl, errorResponse, migrationScripts, tests,
             additionalProperties
         );
     }
@@ -209,7 +205,7 @@ public class CrudConfiguration {
             ", graphQl='" + getGraphQl() + "'" +
             ", errorResponse='" + getErrorResponse() + "'" +
             ", migrationScripts='" + isMigrationScripts() + "'" +
-            ", unitTests='" + isUnitTests() + "'" +
+            ", tests='" + getTests() + "'" +
             ", additionalProperties='" + getAdditionalProperties() + "'" +
             "}";
     }    
@@ -225,6 +221,81 @@ public class CrudConfiguration {
         SIMPLE,
         MINIMAL,
         NONE
+    }
+
+    public static class TestConfiguration {
+
+        private Boolean unit;
+        private Boolean integration;
+        private DataGeneratorEnum dataGenerator;
+
+        public TestConfiguration() {
+
+        }
+
+        public TestConfiguration(final Boolean unit, final Boolean integration, final DataGeneratorEnum dataGenerator) {
+            this.unit = unit;
+            this.integration = integration;
+            this.dataGenerator = dataGenerator;
+        }
+
+        public Boolean getUnit() {
+            return this.unit;
+        }
+
+        public TestConfiguration setUnit(final Boolean unit) {
+            this.unit = unit;
+            return this;
+        }
+
+        public Boolean getIntegration() {
+            return this.integration;
+        }
+
+        public TestConfiguration setIntegration(final Boolean integration) {
+            this.integration = integration;
+            return this;
+        }
+
+        public DataGeneratorEnum getDataGenerator() {
+            return this.dataGenerator;
+        }
+
+        public TestConfiguration setDataGenerator(final DataGeneratorEnum dataGenerator) {
+            this.dataGenerator = dataGenerator;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof TestConfiguration)) {
+                return false;
+            }
+            final TestConfiguration testConfiguration = (TestConfiguration) o;
+            return Objects.equals(unit, testConfiguration.unit) &&
+                    Objects.equals(integration, testConfiguration.integration) &&
+                    Objects.equals(dataGenerator, testConfiguration.dataGenerator);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(unit, integration, dataGenerator);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " unit='" + getUnit() + "'" +
+                ", integration='" + getIntegration() + "'" +
+                ", dataGenerator='" + getDataGenerator() + "'" +
+                "}";
+        }
+
+        public enum DataGeneratorEnum {
+            PODAM, INSTANCIO
+        }
     }
 
     public static class DockerConfiguration {

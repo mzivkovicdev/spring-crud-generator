@@ -17,9 +17,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 <#if hasCollectionRelations>import java.util.List;</#if>
 
 ${testImports}
-${projectImports}
+${projectImports}<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
+import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @WebMvcTest(excludeAutoConfiguration = {
         OAuth2ClientAutoConfiguration.class, OAuth2ResourceServerAutoConfiguration.class
@@ -30,7 +30,8 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 })
 class ${className} {
 
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
     private final ${mapperClass} ${mapperField} = Mappers.getMapper(${mapperClass}.class);
     <#list jsonFields as jsonField>
@@ -66,11 +67,11 @@ class ${className} {
     @Test
     void ${uncapModelName}sPost() throws Exception {
 
-        final ${modelName} ${modelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if swagger>
-        final ${strippedModelName} body = PODAM_FACTORY.manufacturePojo(${strippedModelName}.class);
+        final ${strippedModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${strippedModelName}.class);
         <#else>
-        final ${transferObjectClass} body = PODAM_FACTORY.manufacturePojo(${transferObjectClass}.class);
+        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
         </#if>
 
         <#list inputFields?filter(f -> f.isRelation) as rel>

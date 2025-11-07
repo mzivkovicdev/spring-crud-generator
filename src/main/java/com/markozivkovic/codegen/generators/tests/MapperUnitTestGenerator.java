@@ -23,6 +23,9 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
+import com.markozivkovic.codegen.utils.TemplateContextUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils;
+import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class MapperUnitTestGenerator implements CodeGenerator {
 
@@ -39,10 +42,10 @@ public class MapperUnitTestGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
-        if (this.configuration == null || this.configuration.getUnitTests() == null || !this.configuration.getUnitTests()) {
+        if (!UnitTestUtils.isUnitTestsEnabled(configuration)) {
             return;
         }
-
+        
         if (FieldUtils.isModelUsedAsJsonField(modelDefinition, this.entities)) {
             return;
         }
@@ -105,6 +108,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
             transferObjectImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, transferObjectName));
         }
 
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final Map<String, Object> context = new HashMap<>();
         context.put("modelImport", modelImport);
         context.put("transferObjectImport", transferObjectImport);
@@ -124,6 +128,8 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                     PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(strippedModelName), GeneratorConstants.DefaultPackageLayout.MODEL, strippedModelName)
             ));
         }
+
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/mapper/mapper-test-template.ftl",
@@ -171,6 +177,8 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
 
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+
         final Map<String, Object> context = new HashMap<>();
         context.put("modelImport", modelImport);
         context.put("transferObjectImport", transferObjectImport);
@@ -185,6 +193,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
         context.put("enumFields", enumFields);
+        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
         if (swagger) {
             context.put("generatedModelImport", String.format(

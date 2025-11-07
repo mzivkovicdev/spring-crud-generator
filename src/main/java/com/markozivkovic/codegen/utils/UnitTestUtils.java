@@ -1,7 +1,9 @@
 package com.markozivkovic.codegen.utils;
 
 import com.markozivkovic.codegen.enums.SupportedIdTypeEnum;
+import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 
 public class UnitTestUtils {
     
@@ -38,6 +40,74 @@ public class UnitTestUtils {
             default:
                 throw new IllegalArgumentException("Unsupported ID type: " + idField.getType());
         }
+    }
+
+    /**
+     * Returns true if unit tests are enabled in the given configuration, false otherwise.
+     * Unit tests are enabled if the configuration is null, or if the tests configuration in the
+     * given configuration is null, or if the unit tests flag in the tests configuration is true.
+     *
+     * @param configuration the configuration to check
+     * @return true if unit tests are enabled, false otherwise
+     */
+    public static boolean isUnitTestsEnabled(final CrudConfiguration configuration) {
+        
+        return configuration != null && configuration.getTests() != null &&
+                Boolean.TRUE.equals(configuration.getTests().getUnit());
+    }
+
+    /**
+     * Returns true if Instancio is enabled in the given configuration, false otherwise.
+     * Instancio is enabled if the configuration is null, or if the tests configuration in the
+     * given configuration is null, or if the data generator in the tests configuration is Instancio.
+     *
+     * @param configuration the configuration to check
+     * @return true if Instancio is enabled, false otherwise
+     */
+    public static boolean isInstancioEnabled(final CrudConfiguration configuration) {
+        
+        return configuration != null && configuration.getTests() != null &&
+                configuration.getTests().getDataGenerator() != null &&
+                configuration.getTests().getDataGenerator().equals(DataGeneratorEnum.INSTANCIO);
+    }
+
+    /**
+     * Returns a TestDataGeneratorConfig object based on the given DataGeneratorEnum.
+     * The TestDataGeneratorConfig object contains the name of the data generator, the name of the
+     * factory class, the name of the factory method, and the name of the method to
+     * manufacture the list of objects.
+     *
+     * @param dataGenerator the DataGeneratorEnum to resolve
+     * @return a TestDataGeneratorConfig object containing the resolved data generator config
+     */
+    public static TestDataGeneratorConfig resolveGeneratorConfig(final DataGeneratorEnum dataGenerator) {
+        
+        return switch (dataGenerator) {
+            case INSTANCIO -> new TestDataGeneratorConfig(
+                    DataGeneratorEnum.INSTANCIO.name().toUpperCase(),
+                    "Instancio",
+                    "create",
+                    "ofList");
+            case PODAM -> new TestDataGeneratorConfig(
+                    DataGeneratorEnum.PODAM.name().toUpperCase(),
+                    "PODAM_FACTORY",
+                    "manufacturePojo",
+                    "manufacturePojo");
+            default -> throw new IllegalArgumentException(
+                    String.format(
+                        "Unsupported data generator: %s",
+                        dataGenerator
+                    )
+            );
+        };
+    }
+
+    public static record TestDataGeneratorConfig(
+            String generator,
+            String randomFieldName,
+            String singleObjectMethodName,
+            String multipleObjectsMethodName) {
+        
     }
 
 }

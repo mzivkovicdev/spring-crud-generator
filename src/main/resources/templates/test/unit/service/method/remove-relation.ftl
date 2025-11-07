@@ -7,7 +7,7 @@
     @Test
     void ${rel.methodName}() {
 
-        final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${strippedModelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if rel.isCollection?? && rel.isCollection>
         final ${rel.relationClassName} ${rel.relationClassName?uncap_first} =  ${strippedModelName?uncap_first}.get${rel.relationField?cap_first}().stream()
                 .findAny()
@@ -31,9 +31,9 @@
     @Test
     void ${rel.methodName}_notFound() {
 
-        final ${idType} ${idField} = PODAM_FACTORY.manufacturePojo(${idType}.class);
+        final ${idType} ${idField} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
         <#if rel.isCollection?? && rel.isCollection>
-        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = PODAM_FACTORY.manufacturePojo(${rel.relationClassName}.class);
+        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${rel.relationClassName}.class);
         </#if>
 
         when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
@@ -52,11 +52,11 @@
     @Test
     void ${rel.methodName}_invalidResourceState() {
 
-        final ${modelName} ${strippedModelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${strippedModelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if !rel.isCollection?? || !rel.isCollection>
         ${strippedModelName?uncap_first}.set${rel.relationField?cap_first}(null);
         <#else>
-        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = PODAM_FACTORY.manufacturePojo(${rel.relationClassName}.class);
+        final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${rel.relationClassName}.class);
         </#if>
         final ${idType} ${idField} = ${strippedModelName?uncap_first}.get${idField?cap_first}();
 

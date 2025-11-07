@@ -16,9 +16,9 @@ import java.util.List;
 ${testImports}
 ${projectImports}
 
-import graphql.scalars.ExtendedScalars;
+import graphql.scalars.ExtendedScalars;<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
+import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @GraphQlTest(
     controllers = ${resolverClassName}.class,
@@ -33,7 +33,8 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 })
 class ${className} {
 
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
     @MockitoBean
     private ${serviceClass} ${serviceField};
@@ -55,7 +56,7 @@ class ${className} {
     @Test
     void ${uncapModelName}ById() {
 
-        final ${modelName} ${modelName?uncap_first} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
 
         when(${serviceField}.getById(${idField?uncap_first})).thenReturn(${modelName?uncap_first});
@@ -88,7 +89,7 @@ class ${className} {
             ${uncapModelName}ById(id: $id) { ${idField?uncap_first} }
             }
         """;
-        final ${invalidIdType} ${idField?uncap_first} = PODAM_FACTORY.manufacturePojo(${invalidIdType}.class);
+        final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
 
         this.graphQlTester.document(query)
             .variable("id", ${idField?uncap_first})
@@ -100,10 +101,16 @@ class ${className} {
     @Test
     void ${uncapModelName}sPage() {
 
-        final List<${modelName}> ${modelName?uncap_first}s = PODAM_FACTORY.manufacturePojo(List.class, ${modelName}.class);
+        <#if dataGenerator == "PODAM">
+        final List<${modelName}> ${modelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${modelName}.class);
+        <#else>
+        final List<${modelName}> ${modelName?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(${modelName}.class)
+                .size(10)
+                .create();
+        </#if>
         final Page<${modelName}> pageObject = new PageImpl<>(${modelName?uncap_first}s);
-        final Integer pageNumber = PODAM_FACTORY.manufacturePojo(Integer.class);
-        final Integer pageSize = PODAM_FACTORY.manufacturePojo(Integer.class);
+        final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
+        final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
 
         when(${serviceField}.getAll(pageNumber, pageSize)).thenReturn(pageObject);
 
@@ -156,8 +163,8 @@ class ${className} {
             }
         """;
 
-        final String pageNumber = PODAM_FACTORY.manufacturePojo(String.class);
-        final String pageSize = PODAM_FACTORY.manufacturePojo(String.class);
+        final String pageNumber = ${generatorFieldName}.${singleObjectMethodName}(String.class);
+        final String pageSize = ${generatorFieldName}.${singleObjectMethodName}(String.class);
 
         this.graphQlTester.document(query)
             .variable("pageNumber", pageNumber)
@@ -170,7 +177,7 @@ class ${className} {
     @Test
     void ${uncapModelName}sPage_missingPageSize() {
 
-        final Integer pageNumber = PODAM_FACTORY.manufacturePojo(Integer.class);
+        final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         final String queryMissingPage = """
             query($pageSize: Int!) {
             ${uncapModelName}sPage(pageNumber: 0, pageSize: $pageSize) { totalPages }
@@ -187,7 +194,7 @@ class ${className} {
     @Test
     void ${uncapModelName}sPage_missingPageNumber() {
 
-        final Integer pageSize = PODAM_FACTORY.manufacturePojo(Integer.class);
+        final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         final String queryMissingSize = """
             query($pageNumber: Int!) {
             ${uncapModelName}sPage(pageNumber: $pageNumber, pageSize: 10) { totalPages }

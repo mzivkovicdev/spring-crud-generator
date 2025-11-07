@@ -4,16 +4,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+<#if dataGenerator == "INSTANCIO">
+import org.instancio.Instancio;
+</#if>import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
-<#if swagger?? && swagger && !(generateAllHelperMethods?? && !generateAllHelperMethods)>${generatedModelImport}</#if>${modelImport}${transferObjectImport}
+<#if swagger?? && swagger && !(generateAllHelperMethods?? && !generateAllHelperMethods)>${generatedModelImport}</#if>${modelImport}${transferObjectImport}<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
+import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 class ${className} {
 
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
     <#if isGraphQL>
     private final ${strippedModelName?cap_first}GraphQLMapper ${strippedModelName?uncap_first}Mapper = Mappers.getMapper(${strippedModelName?cap_first}GraphQLMapper.class);
@@ -24,7 +27,7 @@ class ${className} {
     @Test
     void map${modelName}To${transferObjectName}() {
 
-        final ${modelName} ${modelNameUncapFirst} = PODAM_FACTORY.manufacturePojo(${modelName}.class);
+        final ${modelName} ${modelNameUncapFirst} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
 
         final ${transferObjectName} result = this.${strippedModelName?uncap_first}Mapper.map${modelName}To${transferObjectName}(${modelNameUncapFirst});
 
@@ -34,7 +37,13 @@ class ${className} {
     @Test
     void map${modelName}To${transferObjectName}_list() {
 
-        final List<${modelName}> ${modelNameUncapFirst}s = PODAM_FACTORY.manufacturePojo(List.class, ${modelName}.class);
+        <#if dataGenerator == "PODAM">
+        final List<${modelName}> ${modelNameUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${modelName}.class);
+        <#else>
+        final List<${modelName}> ${modelNameUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(${modelName}.class)
+                .size(10)
+                .create();
+        </#if>
 
         final List<${transferObjectName}> results = this.${strippedModelName?uncap_first}Mapper.map${modelName}To${transferObjectName}(${modelNameUncapFirst}s);
 
@@ -52,7 +61,7 @@ class ${className} {
     @Test
     void map${transferObjectName}To${modelName}() {
 
-        final ${transferObjectName} ${transferObjectUncapFirst} = PODAM_FACTORY.manufacturePojo(${transferObjectName}.class);
+        final ${transferObjectName} ${transferObjectUncapFirst} = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectName}.class);
 
         final ${modelName} result = this.${strippedModelName?uncap_first}Mapper.map${transferObjectName}To${modelName}(${transferObjectUncapFirst});
 
@@ -62,7 +71,13 @@ class ${className} {
     @Test
     void map${transferObjectName}To${modelName}_list() {
 
-        final List<${transferObjectName}> ${transferObjectUncapFirst}s = PODAM_FACTORY.manufacturePojo(List.class, ${transferObjectName}.class);
+        <#if dataGenerator == "PODAM">
+        final List<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${transferObjectName}.class);
+        <#else>
+        final List<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(${transferObjectName}.class)
+                .size(10)
+                .create();
+        </#if>
 
         final List<${modelName}> results = this.${strippedModelName?uncap_first}Mapper.map${transferObjectName}To${modelName}(${transferObjectUncapFirst}s);
 
@@ -81,7 +96,7 @@ class ${className} {
     @Test
     void map${transferObjectName}To${swaggerModel}() {
 
-        final ${transferObjectName} ${transferObjectUncapFirst} = PODAM_FACTORY.manufacturePojo(${transferObjectName}.class);
+        final ${transferObjectName} ${transferObjectUncapFirst} = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectName}.class);
 
         final ${swaggerModel} result = this.${strippedModelName?uncap_first}Mapper.map${transferObjectName}To${swaggerModel}(${transferObjectUncapFirst});
 
@@ -91,7 +106,13 @@ class ${className} {
     @Test
     void map${transferObjectName}To${swaggerModel}_list() {
 
-        final List<${transferObjectName}> ${transferObjectUncapFirst}s = PODAM_FACTORY.manufacturePojo(List.class, ${transferObjectName}.class);
+        <#if dataGenerator == "PODAM">
+        final List<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${transferObjectName}.class);
+        <#else>
+        final List<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(${transferObjectName}.class)
+                .size(10)
+                .create();
+        </#if>
 
         final List<${swaggerModel}> results = this.${strippedModelName?uncap_first}Mapper.map${transferObjectName}To${swaggerModel}(${transferObjectUncapFirst}s);
 
@@ -110,7 +131,7 @@ class ${className} {
     @Test
     void map${swaggerModel}To${modelName}() {
 
-        final ${generatedModelImport} ${swaggerModel?uncap_first} = PODAM_FACTORY.manufacturePojo(${generatedModelImport}.class);
+        final ${generatedModelImport} ${swaggerModel?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${generatedModelImport}.class);
 
         final ${modelName} result = this.${strippedModelName?uncap_first}Mapper.map${swaggerModel}To${modelName}(${swaggerModel?uncap_first});
 
@@ -120,7 +141,13 @@ class ${className} {
     @Test
     void map${swaggerModel}To${modelName}_list() {
 
-        final List<${generatedModelImport}> ${swaggerModel?uncap_first}s = PODAM_FACTORY.manufacturePojo(List.class, ${generatedModelImport}.class);
+        <#if dataGenerator == "PODAM">
+        final List<${generatedModelImport}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${generatedModelImport}.class);
+        <#else>
+        final List<${generatedModelImport}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(${generatedModelImport}.class)
+                .size(10)
+                .create();
+        </#if>
 
         final List<${modelName}> results = this.${strippedModelName?uncap_first}Mapper.map${swaggerModel}To${modelName}(${swaggerModel?uncap_first}s);
 
