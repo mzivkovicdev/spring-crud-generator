@@ -34,4 +34,7 @@ public final class TemplateContextConstants {
     public static final String IS_COLLECTION = "isCollection";
     public static final String JAVADOC_FIELDS = "javadocFields";
     public static final String METHOD_NAME = "methodName";
+
+    public static final String ENUM_NAME = "enumName";
+    public static final String VALUES = "values";
 }

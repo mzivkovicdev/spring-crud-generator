@@ -27,8 +27,6 @@ public class TemplateContextUtils {
     private static final String STRIPPED_RELATION_CLASS_NAME = "strippedRelationClassName";
     private static final String RELATIONS = "relations";
     private static final String MODEL = "model";
-    private static final String ENUM_NAME = "enumName";
-    private static final String VALUES = "values";
     private static final String FIELD = "field";
     private static final String FIELD_TYPE = "fieldType";
     private static final String FIELD_NAMES = "fieldNames";
@@ -62,21 +60,6 @@ public class TemplateContextUtils {
 
     private TemplateContextUtils() {
         
-    }
-
-    /**
-     * Creates a template context for the enum class of a model.
-     * 
-     * @param enumName the name of the enum
-     * @param enumValues the values of the enum
-     * @return a template context for the enum class
-     */
-    public static Map<String, Object> createEnumContext(final String enumName, final List<String> enumValues) {
-
-        final Map<String, Object> context = new HashMap<>();
-        context.put(ENUM_NAME, enumName);
-        context.put(VALUES, enumValues);
-        return context;
     }
 
     /**
