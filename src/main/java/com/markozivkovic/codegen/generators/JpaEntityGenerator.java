@@ -1,10 +1,10 @@
 package com.markozivkovic.codegen.generators;
 
-import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 import static com.markozivkovic.codegen.constants.AnnotationConstants.AUDITING_ENTITY_LISTENER_CLASS;
 import static com.markozivkovic.codegen.constants.AnnotationConstants.ENTITY_ANNOTATION;
 import static com.markozivkovic.codegen.constants.AnnotationConstants.ENTITY_LISTENERS_ANNOTATION;
 import static com.markozivkovic.codegen.constants.AnnotationConstants.TABLE_ANNOTATION;
+import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.JpaEntityTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -23,7 +24,6 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 /**
  * Generates a JPA entity class based on the provided model definition.
@@ -98,7 +98,7 @@ public class JpaEntityGenerator implements CodeGenerator {
                 .append("\n");
         }
 
-        final Map<String, Object> classContext = TemplateContextUtils.computeJpaModelContext(model);
+        final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(model);
         classContext.put("embedded", true);
 
         final String fieldsTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/fields-template.ftl", classContext);
@@ -171,7 +171,7 @@ public class JpaEntityGenerator implements CodeGenerator {
                     .append("\n");
         }
 
-        final Map<String, Object> classContext = TemplateContextUtils.computeJpaModelContext(model);
+        final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(model);
         classContext.put("optimisticLocking", optimisticLocking);
         
         final String fieldsTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/fields-template.ftl", classContext);

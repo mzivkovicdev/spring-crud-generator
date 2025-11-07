@@ -30,7 +30,6 @@ public class TemplateContextUtils {
     private static final String ENUM_NAME = "enumName";
     private static final String VALUES = "values";
     private static final String FIELD = "field";
-    private static final String FIELDS = "fields";
     private static final String FIELD_TYPE = "fieldType";
     private static final String FIELD_NAMES = "fieldNames";
     private static final String JAVADOC_FIELDS = "javadocFields";
@@ -47,7 +46,6 @@ public class TemplateContextUtils {
     private static final String INPUT_ARGS = "inputArgs";
     private static final String TEST_INPUT_ARGS = "testInputArgs";
     private static final String CLASS_NAME = "className";
-    private static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     private static final String STRIPPED_MODEL_NAME = "strippedModelName";
     private static final String SERVICE_CLASSES = "serviceClasses";
     private static final String RELATION_ID_FIELD = "relationIdField";
@@ -391,33 +389,6 @@ public class TemplateContextUtils {
         context.put(ID_TYPE, idField.getType());
         
         return context;
-    }
-
-    /**
-     * Creates a template context for the JPA model of a given model definition.
-     * 
-     * @param modelDefinition the model definition containing class and field details
-     * @return a map representing the context for the JPA model
-     */
-    public static Map<String, Object> computeJpaModelContext(final ModelDefinition modelDefinition) {
-        
-        final Map<String, Object> context = new HashMap<>();
-        context.put(FIELDS, modelDefinition.getFields());
-        context.put(FIELD_NAMES, FieldUtils.extractFieldNames(modelDefinition.getFields()));
-        context.put(CLASS_NAME, modelDefinition.getName());
-        try {
-            context.put(INPUT_ARGS, FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields()));
-            context.put(NON_ID_FIELD_NAMES, FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
-        } catch (final IllegalArgumentException e) {
-            context.put(INPUT_ARGS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
-            context.put(NON_ID_FIELD_NAMES, FieldUtils.extractFieldNames(modelDefinition.getFields()));
-        }
-        if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()) {
-            context.put(AUDIT_ENABLED, modelDefinition.getAudit().isEnabled());
-            context.put(AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
-        }
-
-        return context;  
     }
 
     /**
