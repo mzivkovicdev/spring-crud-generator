@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
+import com.markozivkovic.codegen.imports.ServiceImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -78,8 +79,8 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateTestServiceClass(final ModelDefinition modelDefinition, final String outputDir) {
 
         final String baseImports = ImportUtils.getTestBaseImport(modelDefinition);
-        final String projectImports = ImportUtils.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir);
-        final String testImports = ImportUtils.computeTestServiceImports(modelDefinition, entities, UnitTestUtils.isInstancioEnabled(configuration));
+        final String projectImports = ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir);
+        final String testImports = ServiceImports.computeTestServiceImports(modelDefinition, entities, UnitTestUtils.isInstancioEnabled(configuration));
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());

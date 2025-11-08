@@ -10,13 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.imports.ServiceImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.templates.ServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
@@ -50,15 +50,15 @@ public class JpaServiceGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.SERVICES)));
-        sb.append(ImportUtils.getBaseImport(
-                modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false)
+        sb.append(ServiceImports.getBaseImport(
+                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entites))
         );
         
-        sb.append(ImportUtils.computeJpaServiceBaseImport(
+        sb.append(ServiceImports.computeJpaServiceBaseImport(
                     Objects.nonNull(configuration) && Objects.nonNull(configuration.isCache()) && configuration.isCache())
                 )
                 .append("\n")
-                .append(ImportUtils.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir))
+                .append(ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir))
                 .append("\n");
 
         sb.append(generateServiceClass(modelDefinition));

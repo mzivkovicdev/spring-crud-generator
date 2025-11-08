@@ -25,7 +25,6 @@ public class ImportUtils {
     private static final String ANNOTATIONS_PACKAGE = ".annotations";
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
-    private static final String REPOSITORIES_PACKAGE = ".repositories";
     private static final String EXCEPTIONS_PACKAGE = ".exceptions";
     private static final String EXCEPTIONS_RESPONSES_PACKAGE = EXCEPTIONS_PACKAGE + ".responses";
     private static final String MODELS_PACKAGE = ".models";
@@ -257,42 +256,6 @@ public class ImportUtils {
     }
 
     /**
-     * Computes the necessary import statements for the generated test service.
-     *
-     * @param modelDefinition     the model definition containing the class name, table name, and field definitions
-     * @param entities            the list of all model definitions
-     * @param isInstancioEnabled  whether Instancio is enabled
-     * @return A string containing the necessary import statements for the generated test service.
-     */
-    public static String computeTestServiceImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, 
-            final boolean isInstancioEnabled) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-
-        final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
-        final boolean hasCollectionRelation = FieldUtils.hasCollectionRelation(modelDefinition, entities);
-
-        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
-        imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
-        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
-        imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
-        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
-        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
-        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
-
-        addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
-        addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
-        addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.ENUM_SOURCE));
-        addIf(hasCollectionRelation, imports, String.format(IMPORT, ImportConstants.Java.COLLECTORS));
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
-    /**
      * Computes the necessary import statements for the generated test business service.
      *
      * @param isInstancioEnabled whether Instancio is enabled
@@ -311,78 +274,6 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
-    /**
-     * Computes the base import statements for a JPA service.
-     *
-     * @param cache Whether to include the Spring caching annotations.
-     * @return A string containing the necessary import statements for the base JPA service.
-     */
-    public static String computeJpaServiceBaseImport(final boolean cache) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-
-        imports.add(String.format(IMPORT, ImportConstants.Logger.LOGGER));
-        imports.add(String.format(IMPORT, ImportConstants.Logger.LOGGER_FACTORY));
-        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
-        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
-        imports.add(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
-        if (!GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
-        }
-
-        if (cache) {
-            imports.add(String.format(IMPORT, ImportConstants.SpringCache.CACHEABLE));
-            imports.add(String.format(IMPORT, ImportConstants.SpringCache.CACHE_EVICT));
-            imports.add(String.format(IMPORT, ImportConstants.SpringCache.CACHE_PUT));
-        }
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
-    /**
-     * Computes the necessary imports for the given model definition, including the enums if any exist, the model itself, the repository, and any related models.
-     *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @return A string containing the necessary import statements for the given model.
-     */
-    public static String computeModelsEnumsAndRepositoryImports(final ModelDefinition modelDefinition, final String outputDir) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-
-        final List<String> relationModels = modelDefinition.getFields().stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .map(field -> field.getType())
-                .collect(Collectors.toList());
-
-        final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
-
-        imports.add(enumsImport);
-        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
-        imports.add(String.format(IMPORT, packagePath + REPOSITORIES_PACKAGE + "." + modelWithoutSuffix + "Repository"));
-
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
-
-        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY));
-        }
-
-        if (!relationModels.isEmpty()) {
-            imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + INVALID_RESOURCE_STATE_EXCEPTION));
-        }
-
-        relationModels.forEach(relation -> imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + relation)));
 
         return imports.stream()
                 .sorted()
