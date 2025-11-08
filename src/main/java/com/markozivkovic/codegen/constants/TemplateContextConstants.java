@@ -50,4 +50,15 @@ public final class TemplateContextConstants {
 
     public static final String ENUM_NAME = "enumName";
     public static final String VALUES = "values";
+
+    public static final String MODEL_IMPORT = "modelImport";
+    public static final String TRANSFER_OBJECT_IMPORT = "transferObjectImport";
+    public static final String MAPPER_NAME = "mapperName";
+    public static final String TRANSFER_OBJECT_NAME = "transferObjectName";
+    public static final String SWAGGER = "swagger";
+    public static final String SWAGGER_MODEL = "swaggerModel";
+    public static final String GENERATED_MODEL_IMPORT = "generatedModelImport";
+    public static final String GENERATE_ALL_HELPER_METHODS = "generateAllHelperMethods";
+    public static final String HELPER_MAPPER_IMPORTS = "helperMapperImports";
+    public static final String PARAMETERS = "parameters";
 }
