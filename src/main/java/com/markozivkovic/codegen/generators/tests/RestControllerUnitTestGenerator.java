@@ -16,6 +16,7 @@ import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -220,7 +221,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 .collect(Collectors.toList());
 
         final Map<String, Object> context = new HashMap<>(
-                TemplateContextUtils.computeCreateEndpointContext(modelDefinition, entities)
+                RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entities)
         );
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 

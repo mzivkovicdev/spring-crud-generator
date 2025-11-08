@@ -43,6 +43,10 @@ public final class TemplateContextConstants {
     public static final String GENERATE_JAVA_DOC = "generateJavaDoc";
     public static final String INPUT_FIELDS = "inputFields";
     public static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
+    
+    public static final String IS_RELATION = "isRelation";
+    public static final String IS_JSON_FIELD = "isJsonField";
+    public static final String IS_ENUM = "isEnum";
 
     public static final String JSON_FIELDS = "jsonFields";
     public static final String JSON_MODELS = "jsonModels";

@@ -10,15 +10,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class RestControllerGenerator implements CodeGenerator {
 
@@ -77,7 +78,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeControllerClassContext(modelDefinition);
+        final Map<String, Object> context = RestControllerTemplateContext.computeControllerClassContext(modelDefinition);
         context.put("projectImports", ImportUtils.computeControllerProjectImports(modelDefinition, outputDir, swagger));
 
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger));
@@ -87,7 +88,7 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition, swagger));
         context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition, swagger));
         context.put("removeResourceRelation", generateRemoveResourceRelationEndpoint(modelDefinition, swagger));
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/controller-template.ftl", context);
     }
@@ -102,7 +103,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeCreateEndpointContext(modelDefinition, entites);
+        final Map<String, Object> context = RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entites);
         context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-resource.ftl", context);
@@ -118,7 +119,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateGetResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeGetByIdEndpointContext(modelDefinition);
+        final Map<String, Object> context = RestControllerTemplateContext.computeGetByIdEndpointContext(modelDefinition);
         context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-resource.ftl", context);
@@ -134,7 +135,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateGetAllResourcesEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeGetAllEndpointContext(modelDefinition);
+        final Map<String, Object> context = RestControllerTemplateContext.computeGetAllEndpointContext(modelDefinition);
         context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-all-resources.ftl", context);
@@ -150,7 +151,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeUpdateEndpointContext(modelDefinition, swagger);
+        final Map<String, Object> context = RestControllerTemplateContext.computeUpdateEndpointContext(modelDefinition, swagger);
         context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/update-resource.ftl", context);
@@ -166,7 +167,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateDeleteResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeDeleteEndpointContext(modelDefinition);
+        final Map<String, Object> context = RestControllerTemplateContext.computeDeleteEndpointContext(modelDefinition);
         context.put("swagger", swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/delete-resource.ftl", context);
@@ -182,7 +183,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeAddResourceRelationEndpointContext(modelDefinition);
+        final Map<String, Object> context = RestControllerTemplateContext.computeAddResourceRelationEndpointContext(modelDefinition);
         
         if (context.isEmpty()) {
             return null;
@@ -204,7 +205,7 @@ public class RestControllerGenerator implements CodeGenerator {
      */
     private String generateRemoveResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeRemoveResourceRelationEndpointContext(modelDefinition, entites);
+        final Map<String, Object> context = RestControllerTemplateContext.computeRemoveResourceRelationEndpointContext(modelDefinition, entites);
         
         if (context.isEmpty()) {
             return null;
