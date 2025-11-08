@@ -40,6 +40,7 @@ public final class TemplateContextConstants {
     public static final String RELATION_TYPE = "relationType";
     public static final String RELATED_ID = "relatedId";
     public static final String RELATED_ID_PARAM = "relatedIdParam";
+    public static final String GENERATE_JAVA_DOC = "generateJavaDoc";
 
     public static final String JSON_FIELDS = "jsonFields";
     public static final String JSON_MODELS = "jsonModels";

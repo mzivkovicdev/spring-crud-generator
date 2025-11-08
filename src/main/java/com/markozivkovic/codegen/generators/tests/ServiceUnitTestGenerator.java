@@ -14,6 +14,7 @@ import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.ServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -123,7 +124,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
             return null;
         }
 
-        final Map<String, Object> context = TemplateContextUtils.createGetReferenceByIdMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createGetReferenceByIdMethodContext(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
@@ -141,7 +142,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         if (!FieldUtils.hasCollectionRelation(modelDefinition, entities)) {
             return null;
         }
-        final Map<String, Object> context = TemplateContextUtils.createGetAllByIdsMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createGetAllByIdsMethodContext(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
@@ -158,7 +159,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.createRemoveRelationMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createRemoveRelationMethodContext(modelDefinition);
         if (context.isEmpty()) {
             return null;
         }
@@ -181,7 +182,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private Object addRelationMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.createAddRelationMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createAddRelationMethodContext(modelDefinition);
         if (context.isEmpty()) {
             return null;
         }

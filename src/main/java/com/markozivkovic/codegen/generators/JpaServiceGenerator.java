@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.ServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -88,7 +89,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String generateServiceClass(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.createServiceClassContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createServiceClassContext(modelDefinition);
         context.put("getByIdMethod", generateGetByIdMethod(modelDefinition));
         context.put("getAllMethod", generateGetAllMethod(modelDefinition));
         context.put("createMethod", generateCreateMethod(modelDefinition));
@@ -115,7 +116,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         if (!FieldUtils.hasCollectionRelation(modelDefinition, entites)) {
             return null;
         }
-        final Map<String, Object> context = TemplateContextUtils.createGetAllByIdsMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createGetAllByIdsMethodContext(modelDefinition);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-all-by-ids.ftl", context);
     }
@@ -134,7 +135,7 @@ public class JpaServiceGenerator implements CodeGenerator {
             return null;
         }
 
-        final Map<String, Object> context = TemplateContextUtils.createGetReferenceByIdMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createGetReferenceByIdMethodContext(modelDefinition);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-reference-by-id.ftl", context);
     }
@@ -151,7 +152,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.createRemoveRelationMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createRemoveRelationMethodContext(modelDefinition);
         if (context.isEmpty()) {
             return null;
         }
@@ -173,7 +174,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String addRelationMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.createAddRelationMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createAddRelationMethodContext(modelDefinition);
         if (context.isEmpty()) {
             return null;
         }
