@@ -26,7 +26,6 @@ public class ImportUtils {
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String EXCEPTIONS_PACKAGE = ".exceptions";
-    private static final String EXCEPTIONS_RESPONSES_PACKAGE = EXCEPTIONS_PACKAGE + ".responses";
     private static final String MODELS_PACKAGE = ".models";
     private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS = "transferobjects";
@@ -45,11 +44,6 @@ public class ImportUtils {
     private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
     private static final String MAPPERS_GRAPHQL_PACKAGE = MAPPERS_PACKAGE + ".graphql";
     private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
-
-    private static final String INVALID_RESOURCE_STATE_EXCEPTION = "InvalidResourceStateException";
-    private static final String RESOURCE_NOT_FOUND_EXCEPTION = "ResourceNotFoundException";
-
-    private static final String HTTP_RESPONSE = "HttpResponse";
     
     private ImportUtils() {
 
@@ -447,58 +441,6 @@ public class ImportUtils {
         return imports.stream()
                 .sorted()
                 .collect(Collectors.joining());
-    }
-
-    /**
-     * Computes the necessary imports for the global exception handler, given the relations configuration.
-     *
-     * @param hasRelations       whether the project has any relations
-     * @param outputDir          the directory where the generated code will be written
-     * @param importHttpResponse whether to include the HttpResponse import
-     * @return A string containing the necessary import statements for the global exception handler.
-     */
-    private static String computeGlobalExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir, final boolean importHttpResponse) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + RESOURCE_NOT_FOUND_EXCEPTION));
-        if (importHttpResponse) {
-            imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_RESPONSES_PACKAGE + "." + HTTP_RESPONSE));
-        }
-
-        if (hasRelations) {
-            imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + "." + INVALID_RESOURCE_STATE_EXCEPTION));
-        }
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
-    /**
-     * Computes the necessary imports for the global rest exception handler, given the relations configuration.
-     * 
-     * @param hasRelations whether the project has any relations
-     * @param outputDir the directory where the generated code will be written
-     * @return A string containing the necessary import statements for the global rest exception handler.
-     */
-    public static String computeGlobalRestExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir) {
-
-        return computeGlobalExceptionHandlerProjectImports(hasRelations, outputDir, true);
-    }
-
-    /**
-     * Computes the necessary imports for the global graphql exception handler, given the relations configuration.
-     * 
-     * @param hasRelations whether the project has any relations
-     * @param outputDir the directory where the generated code will be written
-     * @return A string containing the necessary import statements for the global graphql exception handler.
-     */
-    public static String computeGlobalGraphQlExceptionHandlerProjectImports(final boolean hasRelations, final String outputDir) {
-
-        return computeGlobalExceptionHandlerProjectImports(hasRelations, outputDir, false);
     }
 
     /**
