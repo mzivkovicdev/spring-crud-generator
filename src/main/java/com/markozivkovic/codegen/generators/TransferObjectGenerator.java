@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
+import com.markozivkovic.codegen.imports.TransferObjectImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -213,7 +214,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath));
 
-        final String imports = ImportUtils.getBaseImport(modelDefinition, false, false);
+        final String imports = TransferObjectImports.getBaseImport(modelDefinition);
         sb.append(imports);
 
         final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(

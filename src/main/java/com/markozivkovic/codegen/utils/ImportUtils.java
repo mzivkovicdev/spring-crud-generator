@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
+import com.markozivkovic.codegen.imports.ModelImports;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 
@@ -20,7 +21,6 @@ public class ImportUtils {
     private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
 
     private static final String PAGE_TO = "PageTO";
-    private static final String MANY_TO_MANY = "ManyToMany";
 
     private static final String ANNOTATIONS_PACKAGE = ".annotations";
     private static final String ENUMS = "enums";
@@ -54,18 +54,6 @@ public class ImportUtils {
     
     private ImportUtils() {
 
-    }
-
-    /**
-     * Generates a string of import statements based on the fields present in the given model definition.
-     *
-     * @param modelDefinition The model definition containing field information used to determine necessary imports.
-     * @param importObjects   Whether to include the java.util.Objects import.
-     * @return A string containing the necessary import statements for the model.
-     */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importAuditing) {
-
-        return getBaseImport(modelDefinition, List.of(), importObjects, false, false, importAuditing, false);
     }
 
     /**
@@ -194,91 +182,6 @@ public class ImportUtils {
         if (condition) {
             set.add(value);
         }
-    }
-
-    /**
-     * Generates a string of import statements for the base jakarta persistence annotations.
-     * 
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param optimisticLocking whether to include the version field
-     * @return A string containing the necessary import statements for the base jakarta persistence annotations.
-     */
-    public static String computeJakartaImports(final ModelDefinition modelDefinition, final Boolean optimisticLocking) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-        final List<FieldDefinition> fields = modelDefinition.getFields();
-        final List<String> relations = FieldUtils.extractRelationTypes(fields);
-
-        imports.addAll(Set.of(
-            ImportConstants.Jakarta.ENTITY, ImportConstants.Jakarta.GENERATED_VALUE, ImportConstants.Jakarta.GENERATION_TYPE,
-            ImportConstants.Jakarta.ID, ImportConstants.Jakarta.TABLE
-        ));
-        
-        if (FieldUtils.isAnyFieldEnum(fields)) {
-            imports.add(ImportConstants.Jakarta.ENUM_TYPE);
-            imports.add(ImportConstants.Jakarta.ENUMERATED);
-        }
-
-        final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
-                .anyMatch(field -> Objects.nonNull(field.getColumn()));
-        final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
-        
-        addIf(!relations.isEmpty(), imports, ImportConstants.Jakarta.JOIN_COLUMN);
-        addIf(relations.contains(MANY_TO_MANY), imports, ImportConstants.Jakarta.JOIN_TABLE);
-        addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, ImportConstants.Jakarta.MANY_TO_MANY);
-        addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, ImportConstants.Jakarta.MANY_TO_ONE);
-        addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, ImportConstants.Jakarta.ONE_TO_MANY);
-        addIf(FieldUtils.isAnyRelationOneToOne(fields), imports, ImportConstants.Jakarta.ONE_TO_ONE);
-        addIf(FieldUtils.isFetchTypeDefined(fields), imports, ImportConstants.Jakarta.FETCH_TYPE);
-        addIf(FieldUtils.isCascadeTypeDefined(fields), imports, ImportConstants.Jakarta.CASCADE_TYPE);
-        addIf(optimisticLocking, imports, ImportConstants.Jakarta.VERSION);
-        addIf(hasAnyFieldColumn || isAuditingEnabled, imports, ImportConstants.Jakarta.COLUMN);
-        addIf(isAuditingEnabled, imports, ImportConstants.Jakarta.ENTITY_LISTENERS);
-
-        final String jakartaImports = imports.stream()
-                  .map(imp -> String.format(IMPORT, imp))
-                  .sorted()
-                  .collect(Collectors.joining());
-
-        final Set<String> orgImports = new LinkedHashSet<>();
-        addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.AUDITING_ENTITY_LISTENER);
-        addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.CREATED_DATE);
-        addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.LAST_MODIFIED_DATE);
-        
-        if (!FieldUtils.isAnyFieldJson(fields)) {
-            if (orgImports.isEmpty()) {
-                return jakartaImports;
-            }
-
-            final String orgImportsFormatted = orgImports.stream()
-                    .map(imp -> String.format(IMPORT, imp))
-                    .sorted()
-                    .collect(Collectors.joining());
-
-            return String.format("%s\n%s", jakartaImports, orgImportsFormatted);
-        }
-
-        final String hibernateImports = Stream.concat(
-                    Set.of(ImportConstants.HibernateAnnotation.JDBC_TYPE_CODE, ImportConstants.HibernateAnnotation.SQL_TYPES).stream(),
-                    orgImports.stream()
-                )
-                .map(imp -> String.format(IMPORT, imp))
-                .sorted()
-                .collect(Collectors.joining());
-
-        return String.format("%s\n%s", jakartaImports, hibernateImports);
-    }
-
-    /**
-     * Generates a string of import statements for the generated enums, if any.
-     * 
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @return A string containing the necessary import statements for the generated enums.
-     */
-    public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir) {
-
-        return computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, true, false, false);
     }
 
     /**
@@ -463,7 +366,7 @@ public class ImportUtils {
                 .map(field -> field.getType())
                 .collect(Collectors.toList());
 
-        final String enumsImport = computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
+        final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
 
         imports.add(enumsImport);
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
@@ -501,7 +404,7 @@ public class ImportUtils {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final List<FieldDefinition> relationModels = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final String enumsImport = computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
+        final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
 
         imports.add(enumsImport);
         imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));

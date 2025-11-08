@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.imports.ModelImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.templates.JpaEntityTemplateContext;
@@ -21,7 +22,6 @@ import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 
@@ -89,12 +89,12 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, GeneratorConstants.DefaultPackageLayout.HELPERS)));
-        sb.append(ImportUtils.getBaseImport(model, true, false));
+        sb.append(ModelImports.getBaseImport(model, true, false));
 
-        final String enumImports = ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir);
+        final String enumImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir);
         
         if (StringUtils.isNotBlank(enumImports)) {
-            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir))
+            sb.append(enumImports)
                 .append("\n");
         }
 
@@ -149,15 +149,15 @@ public class JpaEntityGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS)));
-        sb.append(ImportUtils.getBaseImport(model, true, true));
+        sb.append(ModelImports.getBaseImport(model, true, true));
                 
-        sb.append(ImportUtils.computeJakartaImports(model, optimisticLocking))
+        sb.append(ModelImports.computeJakartaImports(model, optimisticLocking))
                 .append("\n");
 
-        final String enumAndHelperEntitiesImports = ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir);
+        final String enumAndHelperEntitiesImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir);
         
         if (StringUtils.isNotBlank(enumAndHelperEntitiesImports)) {
-            sb.append(ImportUtils.computeEnumsAndHelperEntitiesImport(model, outputDir))
+            sb.append(enumAndHelperEntitiesImports)
                 .append("\n");
         }
 
