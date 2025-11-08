@@ -16,6 +16,7 @@ import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -24,7 +25,6 @@ import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -117,7 +117,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 ));
                 context.put("testImports", ImportUtils.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.put("swagger", swagger);
-                context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+                context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
                 sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -187,7 +187,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                         modelDefinition, outputDir, false, false, false
                 ));
                 context.put("testImports", ImportUtils.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-                context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+                context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
                 sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -237,7 +237,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 modelDefinition, outputDir, swagger
         ));
         context.put("jsonFields", jsonFields);
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -287,7 +287,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 modelDefinition, outputDir, swagger
         ));
         context.put("jsonFields", jsonFields);
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -329,7 +329,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 modelDefinition, outputDir, false, false, false
         ));
         context.put("testImports", ImportUtils.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -374,7 +374,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                 modelDefinition, outputDir, swagger, false, true
         ));
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

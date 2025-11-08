@@ -17,13 +17,13 @@ import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
+import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -97,7 +97,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("createResource", createResourceMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/businessservice-test-class-template.ftl", context
@@ -114,7 +114,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
         final Map<String, Object> context = BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/remove-relation.ftl", context
@@ -131,7 +131,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
         final Map<String, Object> context = BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(modelDefinition, entites);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/add-relation.ftl", context
@@ -157,7 +157,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("fields", fields);
         
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/create-resource.ftl", context

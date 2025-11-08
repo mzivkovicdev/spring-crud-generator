@@ -67,4 +67,9 @@ public final class TemplateContextConstants {
     public static final String GENERATE_ALL_HELPER_METHODS = "generateAllHelperMethods";
     public static final String HELPER_MAPPER_IMPORTS = "helperMapperImports";
     public static final String PARAMETERS = "parameters";
+
+    public static final String DATA_GENERATOR = "dataGenerator";
+    public static final String DATA_GENERATOR_FIELD_NAME = "generatorFieldName";
+    public static final String DATA_GENERATOR_SINGLE_OBJ = "singleObjectMethodName";
+    public static final String DATA_GENERATOR_LIST_METHOD = "multipleObjectsMethodName";
 }
