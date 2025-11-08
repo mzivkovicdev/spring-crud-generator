@@ -7,16 +7,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.markozivkovic.codegen.constants.AnnotationConstants;
-import com.markozivkovic.codegen.constants.GeneratorConstants;
-import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class TemplateContextUtils {
-
-    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
 
     private static final String METHOD_NAME = "methodName";
     private static final String IS_COLLECTION = "isCollection";
@@ -27,17 +22,9 @@ public class TemplateContextUtils {
     private static final String MODEL = "model";
     private static final String FIELD = "field";
     private static final String FIELD_TYPE = "fieldType";
-    private static final String FIELD_NAMES = "fieldNames";
-    private static final String JAVADOC_FIELDS = "javadocFields";
-    private static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
     private static final String INPUT_FIELDS = "inputFields";
     private static final String MODEL_NAME = "modelName";
     private static final String ID_TYPE = "idType";
-    private static final String ID_FIELD = "idField";
-    private static final String ID_DESCRIPTION = "idDescription";
-    private static final String GENERATE_JAVA_DOC = "generateJavaDoc";
-    private static final String TRANSACTIONAL_ANNOTATION = "transactionalAnnotation";
-    private static final String INPUT_ARGS = "inputArgs";
     private static final String CLASS_NAME = "className";
     private static final String STRIPPED_MODEL_NAME = "strippedModelName";
     private static final String RELATION_ID_FIELD = "relationIdField";
@@ -53,135 +40,6 @@ public class TemplateContextUtils {
 
     private TemplateContextUtils() {
         
-    }
-
-    /**
-     * Creates a template context for the ID field of a model.
-     * 
-     * @param modelDefinition the model definition
-     * @return a template context for the ID field
-     */
-    public static Map<String, Object> computeGetByIdContext(final ModelDefinition modelDefinition) {
-
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        
-        final Map<String, Object> context = new HashMap<>();
-        context.put(MODEL_NAME, modelDefinition.getName());
-        context.put(ID_TYPE, idField.getType());
-        context.put(ID_FIELD, idField.getName());
-        context.put(ID_DESCRIPTION, idField.getDescription());
-        context.put(GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
-        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
-        
-        return context;
-    }
-
-    /**
-     * Creates a template context for the create method of a model.
-     * 
-     * The generated context contains the model name, transactional annotation, input fields as strings,
-     * field names without the ID field, a list of fields to be documented in the JavaDoc comment.
-     * 
-     * @param modelDefinition the model definition
-     * @return a template context for the create method
-     */
-    public static Map<String, Object> computeCreateContext(final ModelDefinition modelDefinition) {
-
-        final List<String> inputFields = FieldUtils.generateInputArgsExcludingId(modelDefinition.getFields());
-        final List<String> fieldNames = FieldUtils.extractNonIdFieldNames(modelDefinition.getFields());
-        final List<String> javadocFields = FieldUtils.extractNonIdFieldForJavadoc(modelDefinition.getFields());
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-
-        final Map<String, Object> context = new HashMap<>();
-        context.put(MODEL_NAME, modelDefinition.getName());
-        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            context.put(TRANSACTIONAL_ANNOTATION, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
-        } else {
-            context.put(TRANSACTIONAL_ANNOTATION, AnnotationConstants.TRANSACTIONAL_ANNOTATION);
-        }
-        context.put(INPUT_ARGS, String.join(", ", inputFields));
-        context.put(FIELD_NAMES, String.join(", ", fieldNames));
-        context.put(JAVADOC_FIELDS, javadocFields);
-        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
-        context.put(ID_FIELD, idField.getName());
-
-        return context;
-    }
-
-    /**
-     * Creates a template context for the deleteById method of a model.
-     * 
-     * The generated context contains the model name, the ID type, the ID description and a flag
-     * indicating whether a JavaDoc comment should be generated. The transactional annotation is
-     * also included.
-     * 
-     * @param modelDefinition the model definition
-     * @return a template context for the deleteById method
-     */
-    public static Map<String, Object> computeDeleteByIdContext(final ModelDefinition modelDefinition) {
-        
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final Map<String, Object> context = computeGetByIdContext(modelDefinition);
-        
-        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            context.put(TRANSACTIONAL_ANNOTATION, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
-        } else {
-            context.put(TRANSACTIONAL_ANNOTATION, AnnotationConstants.TRANSACTIONAL_ANNOTATION);
-        }
-        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
-        context.put(ID_FIELD, idField.getName());
-        context.put(ID_TYPE, idField.getType());
-        
-        return context;
-    }
-
-    /**
-     * Creates a template context for the updateById method of a model.
-     * 
-     * The generated context contains the model name, a list of input fields as strings, a list of field names
-     * without the ID field, a list of fields to be documented in the JavaDoc comment, and the transactional
-     * annotation.
-     * 
-     * @param modelDefinition the model definition
-     * @return a template context for the updateById method
-     */
-    public static Map<String, Object> computeUpdateByIdContext(final ModelDefinition modelDefinition) {
-
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        
-        final Map<String, Object> context = new HashMap<>();
-        context.put(MODEL_NAME, modelDefinition.getName());
-        context.put(ID_FIELD, idField.getName());
-        context.put(ID_TYPE, idField.getType());
-        context.put(INPUT_FIELDS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
-        context.put(FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
-        context.put(JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
-        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            context.put(TRANSACTIONAL_ANNOTATION, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
-        } else {
-            context.put(TRANSACTIONAL_ANNOTATION, AnnotationConstants.TRANSACTIONAL_ANNOTATION);
-        }
-        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
-
-        return context;
-    }
-
-    /**
-     * Creates a template context for the getAll method of a model.
-     * 
-     * @param modelDefinition the model definition
-     * @return a template context for the getAll method
-     */
-    public static Map<String, Object> computeGetAllContext(final ModelDefinition modelDefinition) {
-    
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final Map<String, Object> context = new HashMap<>();
-        context.put(MODEL_NAME, modelDefinition.getName());
-        context.put(STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
-        context.put(ID_FIELD, idField.getName());
-        context.put(ID_TYPE, idField.getType());
-        
-        return context;
     }
 
     /**

@@ -41,6 +41,8 @@ public final class TemplateContextConstants {
     public static final String RELATED_ID = "relatedId";
     public static final String RELATED_ID_PARAM = "relatedIdParam";
     public static final String GENERATE_JAVA_DOC = "generateJavaDoc";
+    public static final String INPUT_FIELDS = "inputFields";
+    public static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
 
     public static final String JSON_FIELDS = "jsonFields";
     public static final String JSON_MODELS = "jsonModels";

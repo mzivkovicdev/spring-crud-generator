@@ -200,7 +200,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String generateDeleteByIdMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeDeleteByIdContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.computeDeleteByIdContext(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
@@ -215,7 +215,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String generateUpdateMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeUpdateByIdContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.computeUpdateByIdContext(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
@@ -230,7 +230,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String generateCreateMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeCreateContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.computeCreateContext(modelDefinition);
         context.put("fieldNamesList", FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
@@ -246,7 +246,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String generateGetAllMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeGetAllContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.computeGetAllContext(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
         
@@ -261,7 +261,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String generateGetByIdMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = TemplateContextUtils.computeGetByIdContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.computeGetByIdContext(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
 
