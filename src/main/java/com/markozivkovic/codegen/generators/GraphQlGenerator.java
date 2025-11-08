@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
+import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
@@ -17,7 +18,6 @@ import com.markozivkovic.codegen.templates.GraphQlTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
@@ -62,7 +62,7 @@ public class GraphQlGenerator implements CodeGenerator {
         LOGGER.info("Generating GraphQL code");
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String baseImport = ImportUtils.computeResolverBaseImports(modelDefinition);
+        final String baseImport = ResolverImports.computeResolverBaseImports(modelDefinition);
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
@@ -118,7 +118,7 @@ public class GraphQlGenerator implements CodeGenerator {
         final Map<String, Object> context = GraphQlTemplateContext.computeGraphQlResolver(modelDefinition);
         context.put("queries", this.generateQueryMappings(modelDefinition));
         context.put("mutations", this.generateMutationMappings(modelDefinition));
-        context.put("projectImports", ImportUtils.computeGraphQlResolverImports(modelDefinition, outputDir));
+        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(modelDefinition, outputDir));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/resolver-template.ftl", context
