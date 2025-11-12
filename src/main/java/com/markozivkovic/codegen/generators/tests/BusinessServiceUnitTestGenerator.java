@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
+import com.markozivkovic.codegen.imports.BusinessServiceImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -88,7 +89,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
         final Map<String, Object> context = new HashMap<>();
         context.put("baseImport", ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
-        context.put("projectImports", ImportUtils.computeModelsEnumsAndServiceImports(modelDefinition, outputDir));
+        context.put("projectImports", BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir));
         context.put("testImports", ImportUtils.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
         context.put("className", className);

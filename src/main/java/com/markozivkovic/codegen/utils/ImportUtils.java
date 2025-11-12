@@ -9,20 +9,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
-import com.markozivkovic.codegen.context.GeneratorContext;
-import com.markozivkovic.codegen.imports.ModelImports;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 
 public class ImportUtils {
 
-    private static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
-
     private static final String PAGE_TO = "PageTO";
-
-    private static final String ANNOTATIONS_PACKAGE = ".annotations";
     private static final String ENUMS = "enums";
     private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String EXCEPTIONS_PACKAGE = ".exceptions";
@@ -268,41 +261,6 @@ public class ImportUtils {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
-    /**
-     * Computes the necessary imports for the given model definition, including the enums if any exist, the model itself,
-     * the related service, and any related models.
-     *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @return A string containing the necessary import statements for the given model.
-     */
-    public static String computeModelsEnumsAndServiceImports(final ModelDefinition modelDefinition, final String outputDir) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final List<FieldDefinition> relationModels = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
-
-        imports.add(enumsImport);
-        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
-        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
-
-        relationModels.forEach(relation -> {
-            imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + relation.getType()));
-            imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + ModelNameUtils.stripSuffix(relation.getType()) + "Service"));
-        });
-
-        if (GeneratorContext.isGenerated(RETRYABLE_ANNOTATION)) {
-            imports.add(String.format(IMPORT, packagePath + ANNOTATIONS_PACKAGE + "." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY));
-        }
 
         return imports.stream()
                 .sorted()

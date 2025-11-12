@@ -12,12 +12,12 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
+import com.markozivkovic.codegen.imports.BusinessServiceImports;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
@@ -54,7 +54,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES)));
-        sb.append(ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
+        sb.append(BusinessServiceImports.getBaseImport(modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entites)));
 
         if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entites)) {
             sb.append(String.format(IMPORT, ImportConstants.Java.UUID));
@@ -69,7 +69,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
         }
         
         sb.append("\n")
-                .append(ImportUtils.computeModelsEnumsAndServiceImports(modelDefinition, outputDir))
+                .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir))
                 .append("\n")
                 .append(generateBusinessServiceClass(modelDefinition));
 
