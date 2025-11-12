@@ -11,13 +11,13 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.TemplateContextConstants;
+import com.markozivkovic.codegen.imports.RestControllerImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
@@ -52,7 +52,7 @@ public class RestControllerGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
-        sb.append(ImportUtils.computeControllerBaseImports(modelDefinition, entites))
+        sb.append(RestControllerImports.computeControllerBaseImports(modelDefinition, entites))
             .append("\n")
             .append(generateControllerClass(modelDefinition, outputDir, swagger));
 
@@ -79,7 +79,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeControllerClassContext(modelDefinition);
-        context.put("projectImports", ImportUtils.computeControllerProjectImports(modelDefinition, outputDir, swagger));
+        context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger));
 
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger));
         context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger));

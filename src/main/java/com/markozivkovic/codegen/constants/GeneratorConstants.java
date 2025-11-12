@@ -4,6 +4,7 @@ public class GeneratorConstants {
     
     private GeneratorConstants() {}
 
+    public static final String PAGE_TO = "PageTO";
     public static final String SRC_MAIN_RESOURCES = "src/main/resources";
     public static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/graphql";
     public static final String SRC_MAIN_RESOURCES_DB_MIGRATION = "src/main/resources/db/migration";
@@ -29,6 +30,7 @@ public class GeneratorConstants {
         public static final String HELPERS = "helpers";
         public static final String REST = "rest";
         public static final String GENERATED = "generated";
+        public static final String API = "api";
         public static final String GRAPHQL = "graphql";
         public static final String CONTROLLERS = "controllers";
         public static final String SERVICES = "services";
