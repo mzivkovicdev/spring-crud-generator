@@ -10,17 +10,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.ImportConstants;
+import com.markozivkovic.codegen.imports.EnumImports;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 
 public class ImportUtils {
 
     private static final String PAGE_TO = "PageTO";
-    private static final String ENUMS = "enums";
-    private static final String ENUMS_PACKAGE = "." + ENUMS;
     private static final String EXCEPTIONS_PACKAGE = ".exceptions";
     private static final String MODELS_PACKAGE = ".models";
-    private static final String MODELS_HELPERS_PACKAGE = MODELS_PACKAGE + ".helpers";
     private static final String TRANSFER_OBJECTS = "transferobjects";
     private static final String TRANSFER_OBJECTS_PACKAGE = "." + TRANSFER_OBJECTS;
     private static final String TRANSFER_OBJECTS_REST_PACKAGE = "." + TRANSFER_OBJECTS + ".rest";
@@ -29,8 +27,6 @@ public class ImportUtils {
     private static final String MAPPERS_PACKAGE = ".mappers";
     private static final String MAPPERS_REST_PACKAGE = MAPPERS_PACKAGE + ".rest";
     private static final String MAPPERS_REST_HELPERS_PACKAGE = MAPPERS_REST_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_REST_HELPERS_PACKAGE = TRANSFER_OBJECTS_REST_PACKAGE + ".helpers";
-    private static final String TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql.helpers";
     private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
 
     private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
@@ -39,20 +35,6 @@ public class ImportUtils {
     
     private ImportUtils() {
 
-    }
-
-    /**
-     * Computes the necessary imports for the given model definition, including imports for the types of its fields,
-     * as well as imports for the types of its relations, if any.
-     *
-     * @param modelDefinition the model definition containing field information used to determine necessary imports.
-     * @param entities        the list of all model definitions, used to determine the necessary imports for relations.
-     * @param realtionIds     whether to include the imports for the relation IDs.
-     * @return A string containing the necessary import statements for the model.
-     */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean realtionIds) {
-
-        return getBaseImport(modelDefinition, entities, false, false, realtionIds, false, false);
     }
 
     /**
@@ -167,78 +149,6 @@ public class ImportUtils {
         if (condition) {
             set.add(value);
         }
-    }
-
-    /**
-     * Computes the necessary imports for the given model definition, including the enums if any exist.
-     *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @param packagePath   the package path where the generated code will be written
-     * @return A set of strings containing the necessary import statements for the given model.
-     */
-    private static Set<String> computeEnumImports(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
-        
-        final List<FieldDefinition> enumFields = FieldUtils.extractEnumFields(modelDefinition.getFields());
-        final Set<String> imports = new LinkedHashSet<>();
-
-        enumFields.forEach(enumField -> {
-            
-            final String enumName;
-            if (!enumField.getName().endsWith("Enum")) {
-                enumName = String.format("%sEnum", StringUtils.capitalize(enumField.getName()));
-            } else {
-                enumName = StringUtils.capitalize(enumField.getName());
-            }
-
-            imports.add(String.format(IMPORT, packagePath + ENUMS_PACKAGE + "." + enumName));
-        });
-
-        return imports;
-    }
-
-    /**
-     * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
-     * if any.
-     * 
-     * @param modelDefinition  the model definition containing the class name, table name, and field definitions
-     * @param outputDir        the directory where the generated code will be written
-     * @param importJsonFields whether to include the helper entities for JSON fields
-     * @param restTOs          whether to include the REST transfer objects
-     * @param graphqlTOs       whether to include the GraphQL transfer objects
-     * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
-     *         transfer objects.
-     */
-    public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
-            final boolean importJsonFields, final boolean restTOs, final boolean graphqlTOs) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-
-        if (!FieldUtils.isAnyFieldEnum(modelDefinition.getFields()) && !FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
-            return "";
-        }
-
-        imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
-
-        if (importJsonFields) {
-            final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
-            jsonFields.stream()
-                    .map(FieldUtils::extractJsonFieldName)
-                    .forEach(fieldName -> {
-                        if (graphqlTOs) {
-                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPH_QL_HELPERS_PACKAGE + "." + fieldName + "TO"));
-                        } else if (restTOs) {
-                            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_HELPERS_PACKAGE + "." + fieldName + "TO"));
-                        } else {
-                            imports.add(String.format(IMPORT, packagePath + MODELS_HELPERS_PACKAGE + "." + fieldName));
-                        }
-                    });
-        }
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
     }
 
     /**
@@ -372,7 +282,7 @@ public class ImportUtils {
         final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
 
         if (swagger) {
-            imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
+            imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
         }
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
@@ -440,7 +350,7 @@ public class ImportUtils {
         });
 
         if (swagger) {
-            imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
+            imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
         }
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
@@ -500,7 +410,7 @@ public class ImportUtils {
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
 
         if (swagger) {
-            imports.addAll(computeEnumImports(modelDefinition, outputDir, packagePath));
+            imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
         }
 
         Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {

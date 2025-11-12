@@ -91,8 +91,6 @@ public class RestControllerImports {
 
         if (swagger) {
             imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
-            // private static final String GENERATED_RESOURCE_API_RESOURCE_API = ".generated.%s.api.%ssApi";
-            // private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
             imports.add(String.format(
                 IMPORT,
                 PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.API, String.format("%sApi", modelWithoutSuffix))
