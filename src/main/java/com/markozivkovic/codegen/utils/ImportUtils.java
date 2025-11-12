@@ -4,7 +4,6 @@ import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,108 +34,6 @@ public class ImportUtils {
     
     private ImportUtils() {
 
-    }
-
-    /**
-     * Computes the necessary imports for the given model definition, including imports for the types of its fields,
-     * as well as imports for the types of its relations, if any.
-     *
-     * @param modelDefinition the model definition containing field information used to determine necessary imports.
-     * @param entities        the list of all model definitions.
-     * @param importObjects   whether to include the java.util.Objects import.
-     * @param importList      whether to include the java.util.List import.
-     * @param relationIds     whether to include the UUID import if any of the relations have a UUID ID.
-     * @param importAuditing  whether to include the auditing imports
-     * @param importOptional  whether to include the java.util.Optional import
-     * @return A string containing the necessary import statements for the model.
-     */
-    private static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean importObjects,
-            final boolean importList, final boolean relationIds, final boolean importAuditing, final boolean importOptional) {
-        
-        final StringBuilder sb = new StringBuilder();
-
-        final List<FieldDefinition> fields = modelDefinition.getFields();
-        final Set<String> imports = new LinkedHashSet<>();
-
-        addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
-        addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
-        addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
-        addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
-        addIf(importOptional, imports, ImportConstants.Java.OPTIONAL);
-        addIf(importObjects, imports, ImportConstants.Java.OBJECTS);
-        
-        if (modelDefinition.getAudit() != null) {
-            addIf(
-                importAuditing && Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled(),
-                imports,
-                AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())
-            );
-        }
-        addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
-
-        if (relationIds) {
-            modelDefinition.getFields().stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .forEach(field -> {
-
-                    final ModelDefinition relatedEntity = entities.stream()
-                            .filter(entity -> entity.getName().equals(field.getType()))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                String.format(
-                                    "Related entity not found: %s", field.getType()
-                                )
-                            ));
-                    final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
-                    addIf(FieldUtils.isIdFieldUUID(idField), imports, ImportConstants.Java.UUID);
-                });
-        }
-        
-        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                FieldUtils.isAnyRelationManyToMany(fields);
-
-        addIf(hasLists || importList, imports, ImportConstants.Java.LIST);
-
-        final String sortedImports = imports.stream()
-                .map(imp -> String.format(IMPORT, imp))
-                .sorted()
-                .collect(Collectors.joining());
-
-        sb.append(sortedImports);
-
-        if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * Generates a string of import statements based on the fields present in the given model definition, with options to include
-     * the java.util.Objects class and the java.util.List interface.
-     *
-     * @param modelDefinition The model definition containing field information used to determine necessary imports.
-     * @param importObjects   Whether to include the java.util.Objects import.
-     * @param importList      Whether to include the java.util.List import.
-     * @param importAuditing  Whether to include the auditing imports
-     * @return A string containing the necessary import statements for the model.
-     */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final boolean importObjects, final boolean importList, final boolean importAuditing) {
-
-        return getBaseImport(modelDefinition, List.of(), importObjects, importList, false, importAuditing, false);
-    }
-
-    /**
-     * Adds the given value to the given set if the condition is true.
-     *
-     * @param condition The condition to check.
-     * @param set       The set to add to.
-     * @param value     The value to add.
-     */
-    private static void addIf(final boolean condition, final Set<String> set, final String value) {
-        if (condition) {
-            set.add(value);
-        }
     }
 
     /**

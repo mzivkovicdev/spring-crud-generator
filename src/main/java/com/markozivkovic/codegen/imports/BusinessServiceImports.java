@@ -75,6 +75,46 @@ public class BusinessServiceImports {
     }
 
     /**
+     * Generates a string of import statements based on the fields present in the given model definition, with options to include
+     * the java.util.Objects class and the java.util.List interface.
+     *
+     * @param modelDefinition The model definition containing field information used to determine necessary imports.
+     * @param importList      Whether to include the java.util.List import.
+     * @return A string containing the necessary import statements for the model.
+     */
+    public static String getTestBaseImport(final ModelDefinition modelDefinition) {
+
+        final StringBuilder sb = new StringBuilder();
+
+        final List<FieldDefinition> fields = modelDefinition.getFields();
+        final Set<String> imports = new LinkedHashSet<>();
+
+        ImportCommon.addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
+        ImportCommon.addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
+        ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
+        ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
+        ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
+        
+        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
+                FieldUtils.isAnyRelationManyToMany(fields);
+
+        ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
+
+        final String sortedImports = imports.stream()
+                .map(imp -> String.format(IMPORT, imp))
+                .sorted()
+                .collect(Collectors.joining());
+
+        sb.append(sortedImports);
+
+        if (StringUtils.isNotBlank(sb.toString())) {
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
      * Computes the necessary imports for the given model definition, including the enums if any exist, the model itself,
      * the related service, and any related models.
      *
