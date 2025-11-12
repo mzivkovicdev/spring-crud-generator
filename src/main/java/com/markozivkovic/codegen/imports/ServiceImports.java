@@ -176,4 +176,39 @@ public class ServiceImports {
                 .collect(Collectors.joining());
     }
 
+    /**
+     * Computes the necessary import statements for the generated test service.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return A string containing the necessary import statements for the generated test service.
+     */
+    public static String getTestBaseImport(final ModelDefinition modelDefinition) {
+        
+        final StringBuilder sb = new StringBuilder();
+
+        final List<FieldDefinition> fields = modelDefinition.getFields();
+        final Set<String> imports = new LinkedHashSet<>();
+        imports.add(ImportConstants.Java.OBJECTS);
+        imports.add(ImportConstants.Java.LIST);
+
+        ImportCommon.addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
+        ImportCommon.addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
+        ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
+        ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
+        ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
+
+        final String sortedImports = imports.stream()
+                .map(imp -> String.format(IMPORT, imp))
+                .sorted()
+                .collect(Collectors.joining());
+
+        sb.append(sortedImports);
+
+        if (StringUtils.isNotBlank(sb.toString())) {
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
 }

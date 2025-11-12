@@ -127,18 +127,6 @@ public class ImportUtils {
     }
 
     /**
-     * Generates a string of import statements based on the fields present in the given model definition, with options to include
-     * the java.util.List interface.
-     *
-     * @param modelDefinition The model definition containing field information used to determine necessary imports.
-     * @return A string containing the necessary import statements for the model.
-     */
-    public static String getTestBaseImport(final ModelDefinition modelDefinition) {
-        
-        return getBaseImport(modelDefinition, List.of(), false, true, false, false, true);
-    }
-
-    /**
      * Adds the given value to the given set if the condition is true.
      *
      * @param condition The condition to check.
