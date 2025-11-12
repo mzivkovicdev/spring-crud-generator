@@ -90,7 +90,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         final Map<String, Object> context = new HashMap<>();
         context.put("baseImport", ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
         context.put("projectImports", BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir));
-        context.put("testImports", ImportUtils.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", BusinessServiceImports.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
         context.put("className", className);
         context.put("modelName", modelDefinition.getName());

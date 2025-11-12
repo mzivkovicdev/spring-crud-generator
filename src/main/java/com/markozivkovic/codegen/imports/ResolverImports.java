@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
+import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -77,6 +78,72 @@ public class ResolverImports {
             imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.BUSINESS_SERVICES, String.format("%sBusinessService", modelWithoutSuffix))));
         }
 
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * computes the necessary imports for a query resolver test.
+     * 
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @return a string containing the necessary import statements for a query resolver test
+     */
+    public static String computeQueryResolverTestImports(final boolean isInstancioEnabled) {
+        
+        final Set<String> imports = new LinkedHashSet<>();
+
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.IMPORT));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
+        imports.add(String.format(IMPORT, ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));
+        
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * computes the necessary imports for a mutation resolver test.
+     * 
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @return a string containing the necessary import statements for a mutation resolver test
+     */
+    public static String computeMutationResolverTestImports(final boolean isInstancioEnabled) {
+        
+        final Set<String> imports = new LinkedHashSet<>();
+
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.IMPORT));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringContext.BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.TEST_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringFrameworkGraphQL.RUNTIME_WIRING_CONFIGURER));
+        
         return imports.stream()
                 .sorted()
                 .collect(Collectors.joining());

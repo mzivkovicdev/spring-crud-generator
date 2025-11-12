@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
+import com.markozivkovic.codegen.imports.RestControllerImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -111,11 +112,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
                 context.put("strippedRelationClassName", strippedRelationField);
                 context.put("relationFieldModel", StringUtils.capitalize(relationField.getName()));
-                context.put("baseImports", ImportUtils.computeAddRelationEndpointBaseImports(modelDefinition));
+                context.put("baseImports", RestControllerImports.computeAddRelationEndpointBaseImports(modelDefinition));
                 context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                         modelDefinition, outputDir, swagger, true, true
                 ));
-                context.put("testImports", ImportUtils.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+                context.put("testImports", RestControllerImports.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.put("swagger", swagger);
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
@@ -182,11 +183,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("relIdType", relatedIdField.getType());
                 context.put("relIdField", relatedIdField.getName());
                 context.put("invalidRelIdType", UnitTestUtils.computeInvalidIdType(relatedIdField));
-                context.put("baseImports", ImportUtils.computeRemoveRelationEndpointBaseImports(modelDefinition, entities));
+                context.put("baseImports", RestControllerImports.computeRemoveRelationEndpointBaseImports(modelDefinition, entities));
                 context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                         modelDefinition, outputDir, false, false, false
                 ));
-                context.put("testImports", ImportUtils.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+                context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
                 sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
@@ -232,7 +233,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("hasCollectionRelations", FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields()) 
                 || FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()));
         context.put("swagger", swagger);
-        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeCreateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger
         ));
@@ -282,7 +283,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("swagger", swagger);
         context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
-        context.put("testImports", ImportUtils.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeUpdateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger
         ));
@@ -328,7 +329,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                 modelDefinition, outputDir, false, false, false
         ));
-        context.put("testImports", ImportUtils.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
@@ -370,7 +371,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("testImports", ImportUtils.computeGetEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeGetEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
                 modelDefinition, outputDir, swagger, false, true
         ));

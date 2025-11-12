@@ -109,4 +109,29 @@ public class BusinessServiceImports {
                 .sorted()
                 .collect(Collectors.joining());
     }
+
+    /**
+     * Computes the necessary import statements for the generated test business service.
+     *
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @return A string containing the necessary import statements for the generated test business service.
+     */
+    public static String computeTestBusinessServiceImports(final boolean isInstancioEnabled) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        if (isInstancioEnabled) {
+            imports.add(String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        }
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
 }

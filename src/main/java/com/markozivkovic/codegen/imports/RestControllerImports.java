@@ -4,12 +4,14 @@ import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
+import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -150,6 +152,177 @@ public class RestControllerImports {
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.REST, String.format("%sRestMapper", modelWithoutSuffix))));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for a controller add relation endpoint.
+     *
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return a string containing the necessary import statements for a controller add relation endpoint
+     */
+    public static String computeAddRelationEndpointBaseImports(final ModelDefinition modelDefinition) {
+        final Set<String> imports = new LinkedHashSet<>();
+        
+        final List<FieldDefinition> fields = modelDefinition.getFields();
+        ImportCommon.addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, ImportConstants.Java.UUID);
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+    
+    /**
+     * Compute the imports for a controller test.
+     *
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @return the imports string for a controller test
+     */
+    public static String computeAddRelationEndpointTestImports(final boolean isInstancioEnabled) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Compute the necessary imports for a controller delete endpoint test.
+     *
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @return A string containing the necessary import statements for a controller delete endpoint test.
+     */
+    public static String computeDeleteEndpointTestImports(final boolean isInstancioEnabled) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Compute the necessary imports for a controller update endpoint test.
+     *
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @return a string containing the necessary import statements for a controller update endpoint test
+     */
+    public static String computeUpdateEndpointTestImports(final boolean isInstancioEnabled) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Compute the imports for a controller test.
+     *
+     * @param isInstancioEnabled whether instancio is enabled
+     * @return the imports string for a controller test
+     */
+    public static String computeGetEndpointTestImports(final boolean isInstancioEnabled) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for a controller remove relation endpoint, including UUID if any model has a UUID as its ID,
+     * and List and Collectors if any model has a many-to-many or one-to-many relation.
+     *
+     * @param modelDefinition the model definition containing field information used to determine necessary imports.
+     * @param entities        the list of all model definitions.
+     * @return A string containing the necessary import statements for the controller remove relation endpoint.
+     */
+    public static String computeRemoveRelationEndpointBaseImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+        
+        final List<FieldDefinition> fields = modelDefinition.getFields();
+        ImportCommon.addIf(FieldUtils.isIdFieldUUID(FieldUtils.extractIdField(fields)), imports, ImportConstants.Java.UUID);
+
+        modelDefinition.getFields().stream()
+            .filter(field -> Objects.nonNull(field.getRelation()))
+            .forEach(field -> {
+
+                final ModelDefinition relatedEntity = entities.stream()
+                        .filter(entity -> entity.getName().equals(field.getType()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(
+                            String.format(
+                                "Related entity not found: %s", field.getType()
+                            )
+                        ));
+                final FieldDefinition idField = FieldUtils.extractIdField(relatedEntity.getFields());
+                ImportCommon.addIf(FieldUtils.isIdFieldUUID(idField), imports, ImportConstants.Java.UUID);
+            });
 
         return imports.stream()
                 .sorted()
