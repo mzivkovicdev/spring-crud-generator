@@ -11,12 +11,12 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.EnumTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class EnumGenerator implements CodeGenerator {
     
@@ -50,7 +50,7 @@ public class EnumGenerator implements CodeGenerator {
             final StringBuilder sb = new StringBuilder();
             sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.ENUMS)));
 
-            final Map<String, Object> context = TemplateContextUtils.createEnumContext(enumName, enumField.getValues());
+            final Map<String, Object> context = EnumTemplateContext.createEnumContext(enumName, enumField.getValues());
             final String enumTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("enum/enum-template.ftl", context);
 
             sb.append(enumTemplate);

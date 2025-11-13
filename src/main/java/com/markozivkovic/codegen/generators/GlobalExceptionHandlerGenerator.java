@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.imports.ExceptionImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -19,7 +20,6 @@ import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
 public class GlobalExceptionHandlerGenerator implements CodeGenerator {
@@ -79,7 +79,7 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/graphql-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ImportUtils.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir),
+                    PROJECT_IMPORTS, ExceptionImports.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir),
                     IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );
@@ -149,7 +149,7 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/rest-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ImportUtils.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir),
+                    PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir),
                     IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );

@@ -12,19 +12,19 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
+import com.markozivkovic.codegen.imports.TransferObjectImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.TransferObjectTemplateContext;
 import com.markozivkovic.codegen.utils.AuditUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class TransferObjectGenerator implements CodeGenerator {
     
@@ -116,7 +116,7 @@ public class TransferObjectGenerator implements CodeGenerator {
 
         generateTO(
             modelDefinition, outputDir, packagePath, subDir, String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
-            TemplateContextUtils.computeTransferObjectContext(modelDefinition), false, !graphqlTOs, graphqlTOs
+            TransferObjectTemplateContext.computeTransferObjectContext(modelDefinition), false, !graphqlTOs, graphqlTOs
         );
     }
 
@@ -136,7 +136,7 @@ public class TransferObjectGenerator implements CodeGenerator {
 
         generateTO(
             modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
-            TemplateContextUtils.computeCreateTransferObjectContext(modelDefinition, this.entities), true, false, true
+            TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition, this.entities), true, false, true
         );
     }
 
@@ -156,7 +156,7 @@ public class TransferObjectGenerator implements CodeGenerator {
 
         generateTO(
             modelDefinition, outputDir, packagePath, subDir, String.format("%sUpdateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
-            TemplateContextUtils.computeUpdateTransferObjectContext(modelDefinition), false, false, true
+            TransferObjectTemplateContext.computeUpdateTransferObjectContext(modelDefinition), false, false, true
         );
     }
 
@@ -177,13 +177,13 @@ public class TransferObjectGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath));
 
-        final String imports = ImportUtils.getBaseImport(modelDefinition, entities, relationIdsImport);
+        final String imports = TransferObjectImports.getBaseImport(modelDefinition, entities, relationIdsImport);
         if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()) {
             sb.append(String.format(IMPORT, AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())));
         }
         sb.append(imports);
 
-        final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(
+        final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
                 modelDefinition, outputDir, true, restTOs, graphql
         );
         
@@ -213,10 +213,10 @@ public class TransferObjectGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath));
 
-        final String imports = ImportUtils.getBaseImport(modelDefinition, false, false);
+        final String imports = TransferObjectImports.getBaseImport(modelDefinition);
         sb.append(imports);
 
-        final String enumAndHelperEntityImports = ImportUtils.computeEnumsAndHelperEntitiesImport(
+        final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
                 modelDefinition, outputDir, false, false, false
         );
         
@@ -225,7 +225,7 @@ public class TransferObjectGenerator implements CodeGenerator {
                 .append("\n");
         }
 
-        final Map<String, Object> toContext = TemplateContextUtils.computeTransferObjectContext(modelDefinition);
+        final Map<String, Object> toContext = TransferObjectTemplateContext.computeTransferObjectContext(modelDefinition);
         final String transferObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("transferobject/transfer-object-template.ftl", toContext);
         
         sb.append(transferObjectTemplate);
@@ -267,7 +267,7 @@ public class TransferObjectGenerator implements CodeGenerator {
                         .append("\n");
             }
     
-            final Map<String, Object> toContext = TemplateContextUtils.computeInputTransferObjectContext(relationModelDefinition);
+            final Map<String, Object> toContext = TransferObjectTemplateContext.computeInputTransferObjectContext(relationModelDefinition);
             final String transferObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                     "transferobject/transfer-object-input-template.ftl", toContext
             );

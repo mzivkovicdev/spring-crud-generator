@@ -13,16 +13,17 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
+import com.markozivkovic.codegen.imports.BusinessServiceImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
+import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -86,17 +87,17 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
-        context.put("baseImport", ImportUtils.getBaseImport(modelDefinition, false, FieldUtils.hasCollectionRelation(modelDefinition, entites), false));
-        context.put("projectImports", ImportUtils.computeModelsEnumsAndServiceImports(modelDefinition, outputDir));
-        context.put("testImports", ImportUtils.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.putAll(TemplateContextUtils.computeBusinessServiceContext(modelDefinition));
+        context.put("baseImport", BusinessServiceImports.getTestBaseImport(modelDefinition));
+        context.put("projectImports", BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir));
+        context.put("testImports", BusinessServiceImports.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
         context.put("className", className);
         context.put("modelName", modelDefinition.getName());
         context.put("strippedModelName", modelWithoutSuffix);
         context.put("createResource", createResourceMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/businessservice-test-class-template.ftl", context
@@ -111,9 +112,9 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/remove-relation.ftl", context
@@ -128,9 +129,9 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
      */
     private String addRelationMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeAddRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(modelDefinition, entites);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/add-relation.ftl", context
@@ -146,7 +147,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
     private String createResourceMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = new HashMap<>(
-                TemplateContextUtils.computeCreateResourceMethodServiceContext(modelDefinition, entites)
+                BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(modelDefinition, entites)
         );
         final FieldDefinition id = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<FieldDefinition> fields = modelDefinition.getFields().stream()
@@ -156,7 +157,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("fields", fields);
         
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/create-resource.ftl", context

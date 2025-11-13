@@ -13,16 +13,16 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
+import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -98,9 +98,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("createArgs", FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
         context.put("updateArgs", FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put("jsonFields", jsonFields);
-        context.put("testImports", ImportUtils.computeMutationResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ImportUtils.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.put("testImports", ResolverImports.computeMutationResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         relationFields.forEach(field -> {
             final ModelDefinition relationModel = this.entities.stream()
@@ -154,9 +154,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("testImports", ImportUtils.computeQueryResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ImportUtils.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition));
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.put("testImports", ResolverImports.computeQueryResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("projectImports", ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

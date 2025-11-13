@@ -16,6 +16,7 @@ import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -23,7 +24,6 @@ import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -129,7 +129,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
             ));
         }
 
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/mapper/mapper-test-template.ftl",
@@ -193,7 +193,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
         context.put("enumFields", enumFields);
-        context.putAll(TemplateContextUtils.computeDataGeneratorContext(generatorConfig));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         if (swagger) {
             context.put("generatedModelImport", String.format(

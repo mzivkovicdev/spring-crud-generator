@@ -4,26 +4,23 @@ import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
+import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
-import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
+import com.markozivkovic.codegen.templates.GraphQlTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
-import com.markozivkovic.codegen.utils.TemplateContextUtils;
 
 public class GraphQlGenerator implements CodeGenerator {
 
@@ -65,7 +62,7 @@ public class GraphQlGenerator implements CodeGenerator {
         LOGGER.info("Generating GraphQL code");
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String baseImport = ImportUtils.computeResolverBaseImports(modelDefinition);
+        final String baseImport = ResolverImports.computeResolverBaseImports(modelDefinition);
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
@@ -96,28 +93,8 @@ public class GraphQlGenerator implements CodeGenerator {
      *        schema will be written
      */
     private void generateGraphQlSchema(final ModelDefinition e, final String pathToGraphQlSchema) {
-
-        final List<FieldDefinition> fields = e.getFields().stream()
-            .map(field -> {
-                if (Objects.nonNull(field.getRelation())) {
-                    return FieldUtils.cloneFieldDefinition(field)
-                        .setType(ModelNameUtils.stripSuffix(field.getType()));
-                }
-                return field;
-            }).collect(Collectors.toList());
-            
-        final List<String> jsonFieldNames = FieldUtils.extractJsonFields(fields).stream()
-                .map(jsonField -> FieldUtils.extractJsonFieldName(jsonField))
-                .collect(Collectors.toList());
-        final List<ModelDefinition> jsonModels = this.entities.stream()
-                .filter(model -> jsonFieldNames.contains(model.getName()))
-                .collect(Collectors.toList());
-        
-        final Map<String, Object> context = Map.of(
-            "name", ModelNameUtils.stripSuffix(e.getName()),
-            "fields", fields,
-            "jsonModels", jsonModels
-        );
+       
+        final Map<String, Object> context = GraphQlTemplateContext.computeGraphQlSchemaContext(e, entities);
 
         final String graphQl = FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/entity.graphql.ftl", context
@@ -138,10 +115,10 @@ public class GraphQlGenerator implements CodeGenerator {
      */
     private String generateGraphqlResolver(final ModelDefinition modelDefinition, final String outputDir) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeGraphQlResolver(modelDefinition);
+        final Map<String, Object> context = GraphQlTemplateContext.computeGraphQlResolver(modelDefinition);
         context.put("queries", this.generateQueryMappings(modelDefinition));
         context.put("mutations", this.generateMutationMappings(modelDefinition));
-        context.put("projectImports", ImportUtils.computeGraphQlResolverImports(modelDefinition, outputDir));
+        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(modelDefinition, outputDir));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/resolver-template.ftl", context
@@ -157,7 +134,7 @@ public class GraphQlGenerator implements CodeGenerator {
      */
     private String generateMutationMappings(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeMutationMappingGraphQL(modelDefinition, entities);
+        final Map<String, Object> context = GraphQlTemplateContext.computeMutationMappingGraphQL(modelDefinition, entities);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/mapping/mutations.ftl", context
@@ -173,7 +150,7 @@ public class GraphQlGenerator implements CodeGenerator {
      */
     private String generateQueryMappings(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = TemplateContextUtils.computeQueryMappingGraphQL(modelDefinition);
+        final Map<String, Object> context = GraphQlTemplateContext.computeQueryMappingGraphQL(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/mapping/queries.ftl", context

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -37,7 +38,8 @@ public class ExceptionGenerator implements CodeGenerator {
             final StringBuilder sb = new StringBuilder();
             
             final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
-                "exception/exception-template.ftl", Map.of("className", exceptionClassName)
+                "exception/exception-template.ftl",
+                Map.of(TemplateContextConstants.CLASS_NAME, exceptionClassName)
             );
 
             sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS)))
