@@ -156,7 +156,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("testImports", ResolverImports.computeQueryResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ImportUtils.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition));
+        context.put("projectImports", ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));

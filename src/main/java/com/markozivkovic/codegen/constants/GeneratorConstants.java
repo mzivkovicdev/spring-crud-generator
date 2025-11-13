@@ -5,6 +5,7 @@ public class GeneratorConstants {
     private GeneratorConstants() {}
 
     public static final String PAGE_TO = "PageTO";
+    public static final String GLOBAL_GRAPHQL_EXCEPTION_HANDLER = "GlobalGraphQlExceptionHandler";
     public static final String SRC_MAIN_RESOURCES = "src/main/resources";
     public static final String SRC_MAIN_RESOURCES_GRAPHQL = "src/main/resources/graphql";
     public static final String SRC_MAIN_RESOURCES_DB_MIGRATION = "src/main/resources/db/migration";

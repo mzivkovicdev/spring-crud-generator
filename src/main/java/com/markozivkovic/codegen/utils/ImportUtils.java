@@ -297,33 +297,4 @@ public class ImportUtils {
                 .collect(Collectors.joining());
     }
 
-    /**
-     * Computes the necessary imports for a query unit test, including the necessary enums, models, services, and transfer objects.
-     *
-     * @param outputDir the directory where the generated code will be written
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @return a string containing the necessary import statements for a query unit test
-     */
-    public static String computeProjectImportsForQueryUnitTests(final String outputDir, final ModelDefinition modelDefinition) {
-     
-        final Set<String> imports = new LinkedHashSet<>();
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-
-        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
-            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
-        }
-
-        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
-        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "TO"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_PACKAGE + "." + PAGE_TO));
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalGraphQlExceptionHandler"));
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
 }
