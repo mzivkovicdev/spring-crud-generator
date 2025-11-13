@@ -3,8 +3,10 @@ package com.markozivkovic.codegen.imports;
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
@@ -173,6 +175,64 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sTO", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.PAGE_TO)));
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.EXCEPTIONS, DefaultPackageLayout.HANDLERS, GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));        
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * computes the necessary imports for a mutation unit test, including the necessary imports for the fields, relations, and service.
+     *
+     * @param outputDir the directory where the generated code will be written
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @return a string containing the necessary import statements for a mutation unit test
+     */
+    public static String computeProjectImportsForMutationUnitTests(final String outputDir, final ModelDefinition modelDefinition) {
+     
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+
+        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sTO", relationModel))));
+        });
+
+        relations.forEach(field -> {
+            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sInputTO", relationModel))));
+        });
+
+        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
+            modelDefinition.getFields().stream()
+                .filter(field -> FieldUtils.isJsonField(field))
+                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .forEach(jsonField -> {
+                    imports.add(String.format(
+                        IMPORT,
+                        PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sGraphQLMapper", jsonField))
+                    ));
+                });
+        }
+
+        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.BUSINESS_SERVICES, String.format("%sBusinessService", modelWithoutSuffix))));
+        }
+
+        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
+        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, String.format("%sService", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sCreateTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sUpdateTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.EXCEPTIONS, DefaultPackageLayout.HANDLERS, GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
+        imports.add(String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
 
         return imports.stream()
                 .sorted()

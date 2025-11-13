@@ -27,10 +27,6 @@ public class ImportUtils {
     private static final String MAPPERS_REST_PACKAGE = MAPPERS_PACKAGE + ".rest";
     private static final String MAPPERS_REST_HELPERS_PACKAGE = MAPPERS_REST_PACKAGE + ".helpers";
     private static final String GENERATED_RESOURCE_MODEL_RESOURCE = ".generated.%s.model.%s";
-
-    private static final String TRANSFER_OBJECTS_GRAPHQL_PACKAGE = "." + TRANSFER_OBJECTS + ".graphql";
-    private static final String MAPPERS_GRAPHQL_PACKAGE = MAPPERS_PACKAGE + ".graphql";
-    private static final String MAPPERS_GRAPHQL_HELPERS_PACKAGE = MAPPERS_GRAPHQL_PACKAGE + ".helpers";
     
     private ImportUtils() {
 
@@ -236,61 +232,6 @@ public class ImportUtils {
             imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         }
         imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
-    /**
-     * computes the necessary imports for a mutation unit test, including the necessary imports for the fields, relations, and service.
-     *
-     * @param outputDir the directory where the generated code will be written
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @return a string containing the necessary import statements for a mutation unit test
-     */
-    public static String computeProjectImportsForMutationUnitTests(final String outputDir, final ModelDefinition modelDefinition) {
-     
-        final Set<String> imports = new LinkedHashSet<>();
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-
-        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
-
-        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
-            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "TO"));
-        });
-
-        relations.forEach(field -> {
-            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + relationModel + "InputTO"));
-        });
-
-        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
-            modelDefinition.getFields().stream()
-                .filter(field -> FieldUtils.isJsonField(field))
-                .map(field -> FieldUtils.extractJsonFieldName(field))
-                .forEach(jsonField -> {
-                    imports.add(String.format(IMPORT, packagePath + MAPPERS_GRAPHQL_HELPERS_PACKAGE + "." + jsonField + "GraphQLMapper"));
-                });
-        }
-
-        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
-            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
-        }
-        
-        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
-        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "TO"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "CreateTO"));
-        imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_GRAPHQL_PACKAGE + "." + modelWithoutSuffix + "UpdateTO"));
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalGraphQlExceptionHandler"));
-        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
-        imports.add(String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
 
         return imports.stream()
                 .sorted()

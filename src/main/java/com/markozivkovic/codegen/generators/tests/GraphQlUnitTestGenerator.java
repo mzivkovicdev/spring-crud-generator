@@ -21,7 +21,6 @@ import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
@@ -100,7 +99,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("updateArgs", FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put("jsonFields", jsonFields);
         context.put("testImports", ResolverImports.computeMutationResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ImportUtils.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
+        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         relationFields.forEach(field -> {
