@@ -22,7 +22,6 @@ import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.ImportUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
@@ -113,7 +112,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("strippedRelationClassName", strippedRelationField);
                 context.put("relationFieldModel", StringUtils.capitalize(relationField.getName()));
                 context.put("baseImports", RestControllerImports.computeAddRelationEndpointBaseImports(modelDefinition));
-                context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
+                context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                         modelDefinition, outputDir, swagger, true, true
                 ));
                 context.put("testImports", RestControllerImports.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
@@ -184,7 +183,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("relIdField", relatedIdField.getName());
                 context.put("invalidRelIdType", UnitTestUtils.computeInvalidIdType(relatedIdField));
                 context.put("baseImports", RestControllerImports.computeRemoveRelationEndpointBaseImports(modelDefinition, entities));
-                context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
+                context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                         modelDefinition, outputDir, false, false, false
                 ));
                 context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
@@ -234,7 +233,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 || FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()));
         context.put("swagger", swagger);
         context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ImportUtils.computeCreateEndpointTestProjectImports( 
+        context.put("projectImports", RestControllerImports.computeCreateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger
         ));
         context.put("jsonFields", jsonFields);
@@ -326,7 +325,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
+        context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                 modelDefinition, outputDir, false, false, false
         ));
         context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
@@ -372,7 +371,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("testImports", RestControllerImports.computeGetEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ImportUtils.computeControllerTestProjectImports(
+        context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                 modelDefinition, outputDir, swagger, false, true
         ));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
