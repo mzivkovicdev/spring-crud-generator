@@ -284,7 +284,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("swagger", swagger);
         context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
         context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ImportUtils.computeUpdateEndpointTestProjectImports( 
+        context.put("projectImports", RestControllerImports.computeUpdateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger
         ));
         context.put("jsonFields", jsonFields);

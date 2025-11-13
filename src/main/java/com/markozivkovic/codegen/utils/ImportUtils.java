@@ -41,59 +41,6 @@ public class ImportUtils {
      * @param swagger         whether to include Swagger annotations
      * @return A string containing the necessary import statements for the generated update endpoint test.
      */
-    public static String computeUpdateEndpointTestProjectImports(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
-
-        final Set<String> imports = new LinkedHashSet<>();
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
-
-        if (swagger) {
-            imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
-        }
-
-        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
-            imports.add(String.format(IMPORT, packagePath + BUSINESS_SERVICES_PACKAGE + "." + modelWithoutSuffix + "BusinessService"));
-        }
-
-        if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
-            modelDefinition.getFields().stream()
-                .filter(field -> FieldUtils.isJsonField(field))
-                .map(field -> FieldUtils.extractJsonFieldName(field))
-                .forEach(jsonField -> {
-                    imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_HELPERS_PACKAGE + "." + jsonField + "RestMapper"));
-                });
-        }
-
-        imports.add(String.format(IMPORT, packagePath + MODELS_PACKAGE + "." + modelDefinition.getName()));
-        imports.add(String.format(IMPORT, packagePath + SERVICES_PACKAGE + "." + modelWithoutSuffix + "Service"));
-        if (!swagger) {
-            imports.add(String.format(IMPORT, packagePath + TRANSFER_OBJECTS_REST_PACKAGE + "." + modelWithoutSuffix + "TO"));
-        } else {
-            imports.add(String.format(
-                IMPORT,
-                String.format(packagePath + GENERATED_RESOURCE_MODEL_RESOURCE, unCapModelWithoutSuffix, modelWithoutSuffix)
-            ));
-        }
-        imports.add(String.format(IMPORT, packagePath + MAPPERS_REST_PACKAGE + "." + modelWithoutSuffix + "RestMapper"));
-        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
-        imports.add(String.format(IMPORT, packagePath + EXCEPTIONS_PACKAGE + ".handlers.GlobalRestExceptionHandler"));
-
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
-    }
-
-    /**
-     * Computes the necessary imports for the generated update endpoint test, including the enums if any exist, the model itself,
-     * the related service, and any related models.
-     *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @param swagger         whether to include Swagger annotations
-     * @return A string containing the necessary import statements for the generated update endpoint test.
-     */
     public static String computeCreateEndpointTestProjectImports(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Set<String> imports = new LinkedHashSet<>();
