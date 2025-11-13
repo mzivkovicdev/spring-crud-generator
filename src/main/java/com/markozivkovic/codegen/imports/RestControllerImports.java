@@ -95,7 +95,7 @@ public class RestControllerImports {
             imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.API, String.format("%sApi", modelWithoutSuffix))
+                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.API, String.format("%ssApi", modelWithoutSuffix))
             ));
         }
 
@@ -132,7 +132,7 @@ public class RestControllerImports {
                 .filter(field -> FieldUtils.isJsonField(field))
                 .map(field -> FieldUtils.extractJsonFieldName(field))
                 .forEach(jsonField -> {
-                    imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.HELPERS, String.format("%sRestMapper", jsonField))));
+                    imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.REST, DefaultPackageLayout.HELPERS, String.format("%sRestMapper", jsonField))));
                 });
         }
         

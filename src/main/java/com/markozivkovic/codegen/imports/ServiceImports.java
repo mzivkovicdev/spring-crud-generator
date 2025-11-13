@@ -188,7 +188,7 @@ public class ServiceImports {
 
         final List<FieldDefinition> fields = modelDefinition.getFields();
         final Set<String> imports = new LinkedHashSet<>();
-        imports.add(ImportConstants.Java.OBJECTS);
+        imports.add(ImportConstants.Java.OPTIONAL);
         imports.add(ImportConstants.Java.LIST);
 
         ImportCommon.addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);

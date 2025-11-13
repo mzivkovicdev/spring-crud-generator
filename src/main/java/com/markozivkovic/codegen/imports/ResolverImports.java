@@ -64,7 +64,7 @@ public class ResolverImports {
                 .forEach(jsonField -> {
                     imports.add(String.format(
                         IMPORT,
-                        PackageUtils.join(packagePath, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sGraphQLMapper", jsonField))
+                        PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sGraphQLMapper", jsonField))
                     ));
                 });
         }
