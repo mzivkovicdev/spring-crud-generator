@@ -105,7 +105,7 @@ public class ServiceImports {
      * @param outputDir       the directory where the generated code will be written
      * @return A string containing the necessary import statements for the given model.
      */
-    public static String computeModelsEnumsAndRepositoryImports(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeModelsEnumsAndRepositoryImports(final ModelDefinition modelDefinition, final String outputDir, final ServiceImportScope importScope) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -117,15 +117,19 @@ public class ServiceImports {
                 .map(field -> field.getType())
                 .collect(Collectors.toList());
 
-        final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
-
-        imports.add(enumsImport);
+        if (ServiceImportScope.SERVICE.equals(importScope)) {
+            final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
+            imports.add(enumsImport);
+        } else {
+            final Set<String> enumsImport = EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath);
+            imports.addAll(enumsImport);
+        }
         
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.REPOSITORIES, String.format("%sRepository", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.EXCEPTIONS, RESOURCE_NOT_FOUND_EXCEPTION)));
 
-        if (GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION)) {
+        if (GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION) && ServiceImportScope.SERVICE.equals(importScope)) {
             imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.ANNOTATIONS, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY)));
         }
 
@@ -154,7 +158,6 @@ public class ServiceImports {
         final Set<String> imports = new LinkedHashSet<>();
 
         final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
-        final boolean hasCollectionRelation = FieldUtils.hasCollectionRelation(modelDefinition, entities);
 
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
@@ -169,7 +172,6 @@ public class ServiceImports {
         ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         ImportCommon.addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
         ImportCommon.addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.ENUM_SOURCE));
-        ImportCommon.addIf(hasCollectionRelation, imports, String.format(IMPORT, ImportConstants.Java.COLLECTORS));
 
         return imports.stream()
                 .sorted()
@@ -185,17 +187,12 @@ public class ServiceImports {
     public static String getTestBaseImport(final ModelDefinition modelDefinition) {
         
         final StringBuilder sb = new StringBuilder();
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
 
-        final List<FieldDefinition> fields = modelDefinition.getFields();
         final Set<String> imports = new LinkedHashSet<>();
         imports.add(ImportConstants.Java.OPTIONAL);
         imports.add(ImportConstants.Java.LIST);
-
-        ImportCommon.addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
-        ImportCommon.addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
-        ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
-        ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
-        ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
+        ImportCommon.addIf(FieldUtils.isIdFieldUUID(idField), imports, ImportConstants.Java.UUID);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
@@ -209,6 +206,11 @@ public class ServiceImports {
         }
 
         return sb.toString();
+    }
+
+    public enum ServiceImportScope {
+        SERVICE,
+        SERVICE_TEST
     }
 
 }

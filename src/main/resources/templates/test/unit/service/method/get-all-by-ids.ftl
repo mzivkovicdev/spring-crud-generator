@@ -11,7 +11,7 @@
         </#if>
         final List<${idType}> ids = ${strippedModelName?uncap_first}s.stream()
                 .map(${modelName}::get${idField?cap_first})
-                .collect(Collectors.toList());
+                .toList();
 
         when(this.${strippedModelName?uncap_first}Repository.findAllById(ids))
                 .thenReturn(${strippedModelName?uncap_first}s);
