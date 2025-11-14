@@ -86,12 +86,12 @@ public class TransferObjectGenerator implements CodeGenerator {
 
         final String packagePathRest = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
         final String filePathRest = FileUtils.join(GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
-        this.generateTO(modelDefinition, outputDir, packagePathRest, filePathRest, false);
+        this.generateTO(modelDefinition, outputDir, packagePathRest, filePathRest, TransferObjectTarget.REST);
         
         if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
             final String packagePathGraphql = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL);
             final String filePathGraphql = FileUtils.join(GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL);
-            this.generateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, true);
+            this.generateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, TransferObjectTarget.GRAPHQL);
             this.generateCreateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
             this.generateUpdateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
         }
@@ -112,11 +112,11 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param graphqlTOs      whether to generate GraphQL transfer objects
      */
     private void generateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath,
-                final String subDir, final boolean graphqlTOs) {
+                final String subDir, final TransferObjectTarget target) {
 
         generateTO(
             modelDefinition, outputDir, packagePath, subDir, String.format("%sTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
-            TransferObjectTemplateContext.computeTransferObjectContext(modelDefinition), false, !graphqlTOs, graphqlTOs
+            TransferObjectTemplateContext.computeTransferObjectContext(modelDefinition), TransferObjectType.BASE, target
         );
     }
 
@@ -136,7 +136,7 @@ public class TransferObjectGenerator implements CodeGenerator {
 
         generateTO(
             modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
-            TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition, this.entities), true, false, true
+            TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition, this.entities), TransferObjectType.CREATE, TransferObjectTarget.GRAPHQL
         );
     }
 
@@ -154,9 +154,11 @@ public class TransferObjectGenerator implements CodeGenerator {
             return;
         }
 
+        final String transferObjName = String.format("%sUpdateTO", ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        final Map<String, Object> toContext = TransferObjectTemplateContext.computeUpdateTransferObjectContext(modelDefinition);
+
         generateTO(
-            modelDefinition, outputDir, packagePath, subDir, String.format("%sUpdateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
-            TransferObjectTemplateContext.computeUpdateTransferObjectContext(modelDefinition), false, false, true
+            modelDefinition, outputDir, packagePath, subDir, transferObjName, toContext, TransferObjectType.UPDATE, TransferObjectTarget.GRAPHQL
         );
     }
 
@@ -169,22 +171,23 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param subDir          the sub directory where the generated class will be written
      * @param transferObjName the name of the transfer object
      * @param toContext       the map of context for the transfer object template
+     * @param type            the type of the transfer object
+     * @param target          the target of the transfer object
      */
     private void generateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir,
-            final String transferObjName, final Map<String, Object> toContext, final Boolean relationIdsImport, final boolean restTOs,
-            final boolean graphql) {
+            final String transferObjName, final Map<String, Object> toContext, final TransferObjectType type, final TransferObjectTarget target) {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, packagePath));
 
-        final String imports = TransferObjectImports.getBaseImport(modelDefinition, entities, relationIdsImport);
+        final String imports = TransferObjectImports.getBaseImport(modelDefinition, entities, type);
         if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()) {
             sb.append(String.format(IMPORT, AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())));
         }
         sb.append(imports);
 
         final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
-                modelDefinition, outputDir, true, restTOs, graphql
+                modelDefinition, outputDir, true, target
         );
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
@@ -217,7 +220,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         sb.append(imports);
 
         final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
-                modelDefinition, outputDir, false, false, false
+                modelDefinition, outputDir, false, null
         );
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
@@ -306,6 +309,14 @@ public class TransferObjectGenerator implements CodeGenerator {
             FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, "PageTO", pageSb.toString());
             PAGE_TO_GENERATED = true;
         }
+    }
+
+    public enum TransferObjectTarget {
+        REST, GRAPHQL
+    }
+
+    public enum TransferObjectType {
+        INPUT, CREATE, UPDATE, BASE
     }
 
 }

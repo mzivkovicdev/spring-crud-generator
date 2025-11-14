@@ -3,14 +3,12 @@ package com.markozivkovic.codegen.imports;
 import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
-import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -124,18 +122,19 @@ public class ResolverImports {
      * computes the necessary imports for a mutation resolver test.
      * 
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param hasJsonFields whether the model has json fields
      * @return a string containing the necessary import statements for a mutation resolver test
      */
-    public static String computeMutationResolverTestImports(final boolean isInstancioEnabled) {
+    public static String computeMutationResolverTestImports(final boolean isInstancioEnabled, final boolean hasJsonFields) {
         
         final Set<String> imports = new LinkedHashSet<>();
 
         ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        ImportCommon.addIf(hasJsonFields, imports, String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
         imports.add(String.format(IMPORT, ImportConstants.SpringContext.IMPORT));
-        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
@@ -194,20 +193,6 @@ public class ResolverImports {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-
-        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
-
-        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
-            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sTO", relationModel))));
-        });
-
-        relations.forEach(field -> {
-            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sInputTO", relationModel))));
-        });
 
         if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
             modelDefinition.getFields().stream()

@@ -460,17 +460,33 @@ public class RestControllerImports {
     }
 
     /**
+     * Computes the necessary imports for the generated controller test, including the enums if any exist, the model itself,
+     * the related service, and any related models.
+     *
+     * @param modelDefinition    the model definition containing the class name, table name, and field definitions
+     * @param outputDir          the directory where the generated code will be written
+     * @param swagger            whether to include Swagger annotations
+     * @param restEndpointOperation the rest endpoint operation for which the imports are computed
+     * @return A string containing the necessary import statements for the generated controller test.
+     */
+    public static String computeControllerTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
+                final boolean swagger, final RestEndpointOperation restEndpointOperation) {
+
+        return computeControllerTestProjectImports(modelDefinition, outputDir, swagger, restEndpointOperation, null);
+    }
+
+    /**
      * Compute the imports for a controller test.
      *
      * @param modelDefinition    the model definition containing the class name, table name, and field definitions
      * @param outputDir          the directory where the generated code will be written
      * @param swagger            whether to generate swagger imports
-     * @param importInputObjects whether to import the input objects of the relations
-     * @param importObjectMapper whether to import the object mapper
+     * @param restEndpointOperation the rest endpoint operation for which the imports are computed
+     * @param fieldToBeAdded the field to be added
      * @return the imports string for a controller test
      */
     public static String computeControllerTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
-                final boolean swagger, final boolean importInputObjects, final boolean importObjectMapper) {
+                final boolean swagger, final RestEndpointOperation restEndpointOperation, final FieldDefinition fieldToBeAdded) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -478,62 +494,41 @@ public class RestControllerImports {
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
 
-        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
-
-        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
-
-        if (swagger) {
-            imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
-        }
-
-        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
-            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+        if (RestEndpointOperation.ADD_RELATION.equals(restEndpointOperation)) {
+            final String relationModel = ModelNameUtils.stripSuffix(fieldToBeAdded.getType());
             if (!swagger) {
-                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sTO", relationModel))));
+                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sInputTO", relationModel))));
             } else {
                 imports.add(String.format(
-                    IMPORT,
-                    PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, relationModel)
-                ));
-            }
-        });
-
-        if (importInputObjects) {
-            relations.forEach(field -> {
-                final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-                if (!swagger) {
-                    imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sInputTO", relationModel))));
-                } else {
-                    imports.add(String.format(
                         IMPORT,
                         PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, String.format("%sInput", relationModel))
-                    ));
-                }
-            });
+                ));
+            }
         }
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
             imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.BUSINESS_SERVICES, String.format("%sBusinessService", modelWithoutSuffix))));
         }
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
+
+        if (!RestEndpointOperation.REMOVE_RELATION.equals(restEndpointOperation) && !RestEndpointOperation.DELETE.equals(restEndpointOperation)) {
+            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
+        }
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, String.format("%sService", modelWithoutSuffix))));
         if (!swagger) {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sTO", modelWithoutSuffix))));
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.PAGE_TO)));
-            imports.add(String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
+            if (!RestEndpointOperation.DELETE.equals(restEndpointOperation) && !RestEndpointOperation.REMOVE_RELATION.equals(restEndpointOperation)) {
+                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sTO", modelWithoutSuffix))));
+            }
+            ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.PAGE_TO)));
+            ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
         } else {
             imports.add(String.format(
                 IMPORT,
                 PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, modelWithoutSuffix)
             ));
-            imports.add(String.format(
-                IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, String.format("%ssGet200Response", modelWithoutSuffix))
-            ));
+            ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, String.format("%ssGet200Response", modelWithoutSuffix))));
         }
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.REST, String.format("%sRestMapper", modelWithoutSuffix))));
-        if (importObjectMapper) {
+        if (!RestEndpointOperation.DELETE.equals(restEndpointOperation) && !RestEndpointOperation.REMOVE_RELATION.equals(restEndpointOperation)) {
+            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.REST, String.format("%sRestMapper", modelWithoutSuffix))));
             imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         }
         imports.add(String.format(
@@ -546,4 +541,7 @@ public class RestControllerImports {
                 .collect(Collectors.joining());
     }
 
+    public enum RestEndpointOperation {
+        GET, CREATE, ADD_RELATION, REMOVE_RELATION, UPDATE, DELETE
+    }
 }

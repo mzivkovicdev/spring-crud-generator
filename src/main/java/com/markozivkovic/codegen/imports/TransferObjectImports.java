@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
+import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectTarget;
+import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectType;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -65,10 +67,11 @@ public class TransferObjectImports {
      *
      * @param modelDefinition the model definition containing field information used to determine necessary imports.
      * @param entities        the list of all model definitions, used to determine the necessary imports for relations.
-     * @param realtionIds     whether to include the imports for the relation IDs.
+     * @param type            the type of the generated transfer object
      * @return A string containing the necessary import statements for the model.
      */
-    public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, final boolean relationIds) {
+    public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, 
+            final TransferObjectType type) {
 
         final StringBuilder sb = new StringBuilder();
 
@@ -81,7 +84,7 @@ public class TransferObjectImports {
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
         ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
 
-        if (relationIds) {
+        if (TransferObjectType.CREATE.equals(type) || TransferObjectType.INPUT.equals(type)) {
             modelDefinition.getFields().stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
                 .forEach(field -> {
@@ -99,10 +102,11 @@ public class TransferObjectImports {
                 });
         }
         
-        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                FieldUtils.isAnyRelationManyToMany(fields);
-
-        ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
+        if (TransferObjectType.BASE.equals(type) || TransferObjectType.CREATE.equals(type)) {
+            final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
+                    FieldUtils.isAnyRelationManyToMany(fields);
+            ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
+        }
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
@@ -125,13 +129,12 @@ public class TransferObjectImports {
      * @param modelDefinition  the model definition containing the class name, table name, and field definitions
      * @param outputDir        the directory where the generated code will be written
      * @param importJsonFields whether to include the helper entities for JSON fields
-     * @param restTOs          whether to include the REST transfer objects
-     * @param graphqlTOs       whether to include the GraphQL transfer objects
+     * @param target           the target of the generated code
      * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
      *         transfer objects.
      */
     public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
-            final boolean importJsonFields, final boolean restTOs, final boolean graphqlTOs) {
+            final boolean importJsonFields, final TransferObjectTarget target) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
@@ -147,13 +150,16 @@ public class TransferObjectImports {
             jsonFields.stream()
                     .map(FieldUtils::extractJsonFieldName)
                     .forEach(fieldName -> {
-                        if (graphqlTOs) {
-                            
-                            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sTO", fieldName))));
-                        } else if (restTOs) {
-                            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, DefaultPackageLayout.HELPERS, String.format("%sTO", fieldName))));
-                        } else {
-                            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, DefaultPackageLayout.HELPERS, fieldName)));
+                        switch (target) {
+                            case GRAPHQL:
+                                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sTO", fieldName))));
+                                break;
+                            case REST:
+                                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, DefaultPackageLayout.HELPERS, String.format("%sTO", fieldName))));
+                                break;
+                            default:
+                                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, DefaultPackageLayout.HELPERS, fieldName)));
+                                break;
                         }
                     });
         }

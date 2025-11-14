@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.imports.ServiceImports;
+import com.markozivkovic.codegen.imports.ServiceImports.ServiceImportScope;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.templates.ServiceTemplateContext;
@@ -58,7 +59,7 @@ public class JpaServiceGenerator implements CodeGenerator {
                     Objects.nonNull(configuration) && Objects.nonNull(configuration.isCache()) && configuration.isCache())
                 )
                 .append("\n")
-                .append(ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir))
+                .append(ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE))
                 .append("\n");
 
         sb.append(generateServiceClass(modelDefinition));
