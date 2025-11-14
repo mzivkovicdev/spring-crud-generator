@@ -120,9 +120,11 @@ public class BusinessServiceImports {
      *
      * @param modelDefinition the model definition containing the class name, table name, and field definitions
      * @param outputDir       the directory where the generated code will be written
+     * @param importScope     the import scope
      * @return A string containing the necessary import statements for the given model.
      */
-    public static String computeModelsEnumsAndServiceImports(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeModelsEnumsAndServiceImports(final ModelDefinition modelDefinition, final String outputDir,
+            final BusinessServiceImportScope importScope) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -141,7 +143,7 @@ public class BusinessServiceImports {
             imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, ModelNameUtils.stripSuffix(relation.getType()) + "Service")));
         });
 
-        if (GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION)) {
+        if (GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION) && BusinessServiceImportScope.BUSINESS_SERVICE.equals(importScope)) {
             imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.ANNOTATIONS, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY)));
         }
 
@@ -173,5 +175,10 @@ public class BusinessServiceImports {
         return imports.stream()
                 .sorted()
                 .collect(Collectors.joining());
+    }
+
+    public enum BusinessServiceImportScope {
+        BUSINESS_SERVICE,
+        BUSINESS_SERVICE_TEST
     }
 }

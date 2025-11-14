@@ -67,7 +67,7 @@ public class TransferObjectImports {
      *
      * @param modelDefinition the model definition containing field information used to determine necessary imports.
      * @param entities        the list of all model definitions, used to determine the necessary imports for relations.
-     * @param realtionIds     whether to include the imports for the relation IDs.
+     * @param type            the type of the generated transfer object
      * @return A string containing the necessary import statements for the model.
      */
     public static String getBaseImport(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, 
@@ -129,8 +129,7 @@ public class TransferObjectImports {
      * @param modelDefinition  the model definition containing the class name, table name, and field definitions
      * @param outputDir        the directory where the generated code will be written
      * @param importJsonFields whether to include the helper entities for JSON fields
-     * @param restTOs          whether to include the REST transfer objects
-     * @param graphqlTOs       whether to include the GraphQL transfer objects
+     * @param target           the target of the generated code
      * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
      *         transfer objects.
      */

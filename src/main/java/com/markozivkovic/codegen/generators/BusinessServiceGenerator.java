@@ -13,6 +13,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.imports.BusinessServiceImports;
+import com.markozivkovic.codegen.imports.BusinessServiceImports.BusinessServiceImportScope;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -69,7 +70,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
         }
         
         sb.append("\n")
-                .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir))
+                .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE))
                 .append("\n")
                 .append(generateBusinessServiceClass(modelDefinition));
 
