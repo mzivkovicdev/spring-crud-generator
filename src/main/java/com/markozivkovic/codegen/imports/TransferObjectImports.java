@@ -84,7 +84,7 @@ public class TransferObjectImports {
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
         ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
 
-        if (Objects.nonNull(type) && (type.equals(TransferObjectType.CREATE) || type.equals(TransferObjectType.INPUT))) {
+        if (TransferObjectType.CREATE.equals(type) || TransferObjectType.INPUT.equals(type)) {
             modelDefinition.getFields().stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
                 .forEach(field -> {
@@ -102,7 +102,7 @@ public class TransferObjectImports {
                 });
         }
         
-        if (Objects.nonNull(type) && (type.equals(TransferObjectType.BASE) || type.equals(TransferObjectType.CREATE))) {
+        if (TransferObjectType.BASE.equals(type) || TransferObjectType.CREATE.equals(type)) {
             final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
                     FieldUtils.isAnyRelationManyToMany(fields);
             ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
