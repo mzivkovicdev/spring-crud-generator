@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKeys;
+import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
@@ -57,8 +59,34 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
 
+        if (!GeneratorContext.isGenerated(GeneratorContextKeys.RESOLVER_TEST_CONFIG)) {
+            this.generateConfigFile(testOutputDir, packagePath);
+        }
+
         this.generateQueryUnitTests(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix);
         this.generateMutationUnitTests(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix);
+    }
+
+    /**
+     * Generates a test configuration class for the GraphQL unit tests.
+     *
+     * @param testOutputDir    the directory where the generated unit test will be written
+     * @param packagePath      the package path of the directory where the generated code will be written
+     */
+    private void generateConfigFile(final String testOutputDir, final String packagePath) {
+        
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)))
+                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/resolver/test-config-class-template.ftl", Map.of()
+                ));
+
+        FileWriterUtils.writeToFile(
+                testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS,
+                "ResolverTestConfiguration.java", sb.toString()
+        );
+
+        GeneratorContext.markGenerated(GeneratorContextKeys.RESOLVER_TEST_CONFIG);
     }
 
     /**

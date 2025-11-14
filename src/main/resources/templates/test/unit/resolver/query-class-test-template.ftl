@@ -15,9 +15,7 @@ import java.util.List;
 
 ${testImports}
 ${projectImports}
-
-import graphql.scalars.ExtendedScalars;<#if dataGenerator == "PODAM">
-import uk.co.jemos.podam.api.PodamFactory;
+<#if dataGenerator == "PODAM">import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @GraphQlTest(
@@ -27,7 +25,7 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
     }
 )
 @AutoConfigureGraphQlTester
-@Import(GlobalGraphQlExceptionHandler.class)
+@Import({ GlobalGraphQlExceptionHandler.class, ResolverTestConfiguration.class })
 @TestPropertySource(properties = {
     "spring.graphql.schema.locations=classpath:graphql/"
 })
@@ -212,20 +210,6 @@ class ${className} {
         
         assertThat(result).isNotNull();
         assertThat(result.${idField?uncap_first}()).isEqualTo(src.get${idField?cap_first}());
-    }
-
-    @TestConfiguration
-    static class RuntimeWiringTestConfig {
-        @Bean
-        RuntimeWiringConfigurer scalarWiring() {
-            return builder -> builder
-                    .scalar(ExtendedScalars.GraphQLLong)
-                    .scalar(ExtendedScalars.UUID)
-                    .scalar(ExtendedScalars.Date)
-                    .scalar(ExtendedScalars.DateTime)
-                    .scalar(ExtendedScalars.GraphQLBigDecimal)
-                    .scalar(ExtendedScalars.Json);
-        }
     }
 
 }

@@ -93,7 +93,6 @@ public final class ImportConstants {
     public static final class SpringContext {
         private SpringContext() {}
         public static final String IMPORT = "org.springframework.context.annotation.Import";
-        public static final String BEAN = "org.springframework.context.annotation.Bean";
     }
 
     public static final class SpringCache {
@@ -138,7 +137,6 @@ public final class ImportConstants {
         private SpringBootTest() {}
         public static final String WEB_MVC_TEST = "org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest";
         public static final String AUTO_CONFIGURE_MOCK_MVC = "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc";
-        public static final String TEST_CONFIGURATION = "org.springframework.boot.test.context.TestConfiguration";
         public static final String GRAPH_QL_TEST = "org.springframework.boot.test.autoconfigure.graphql.GraphQlTest";
         public static final String AUTO_CONFIGURE_GRAPH_QL_TESTER = "org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureGraphQlTester";
     }
@@ -159,11 +157,6 @@ public final class ImportConstants {
                 "org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration";
         public static final String OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION =
                 "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration";
-    }
-
-    public static final class SpringFrameworkGraphQL {
-        private SpringFrameworkGraphQL() {}
-        public static final String RUNTIME_WIRING_CONFIGURER = "org.springframework.graphql.execution.RuntimeWiringConfigurer";
     }
 
     public static final class GraphQLTest {
