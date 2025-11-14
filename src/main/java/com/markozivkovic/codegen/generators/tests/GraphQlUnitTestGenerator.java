@@ -98,7 +98,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("createArgs", FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
         context.put("updateArgs", FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put("jsonFields", jsonFields);
-        context.put("testImports", ResolverImports.computeMutationResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", ResolverImports.computeMutationResolverTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), !jsonFields.isEmpty()
+        ));
         context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
