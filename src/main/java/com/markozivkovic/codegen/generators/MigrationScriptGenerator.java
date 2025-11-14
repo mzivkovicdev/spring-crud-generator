@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,15 +15,18 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
-import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
+import com.markozivkovic.codegen.models.flyway.EntityState;
 import com.markozivkovic.codegen.models.flyway.MigrationState;
+import com.markozivkovic.codegen.models.flyway.SchemaDiff.Result;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FlywayUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.MigrationDiffer;
 import com.markozivkovic.codegen.utils.MigrationManifestBuilder;
 
 public class MigrationScriptGenerator implements CodeGenerator {
@@ -56,6 +60,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
         LOGGER.info("Generating migration scripts");
         final String pathToDbScripts = String.format("%s/%s", this.projectMetadata.getProjectBaseDir(), GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION);
         final MigrationState migrationState = FlywayUtils.loadOrEmpty(this.projectMetadata.getProjectBaseDir());
+        version = migrationState.getLastScriptVersion() + 1;
         final MigrationManifestBuilder manifest = new MigrationManifestBuilder(migrationState);
 
         final List<ModelDefinition> jsonModels = this.entities.stream()
@@ -179,24 +184,65 @@ public class MigrationScriptGenerator implements CodeGenerator {
 
         final Map<String, List<Map<String,Object>>> extrasByChildTable =
             FlywayUtils.collectReverseOneToManyExtras(models, this.configuration.getDatabase(), modelsByName);
+        final MigrationState ms = manifest.build();
+        final Map<String, EntityState> previousByTable = ms.getEntities() == null ?
+                Collections.emptyMap() :
+                ms.getEntities().stream().collect(Collectors.toMap(
+                    EntityState::getTable, e -> e, (a,b)->a, LinkedHashMap::new
+                ));
 
         models.forEach(model -> {
                 
                 final List<Map<String,Object>> extraCols = extrasByChildTable.getOrDefault(model.getStorageName(), Collections.emptyList());
                 final Map<String, Object> context = FlywayUtils.toCreateTableContext(model, this.configuration.getDatabase(), modelsByName, extraCols);
-                final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
-                    "migration/flyway/create-table.sql.ftl", context
-                );
                 final String tableName = model.getStorageName();
-                final String dbSciptName = String.format(
-                    "V%d__create_%s_table.sql", version, tableName
-                );
-                
-                FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
-                version++;
+                final EntityState oldState = previousByTable.get(tableName);
 
-                manifest.applyCreateContext(model.getName(), tableName, context);
-                manifest.addEntityFile(tableName, dbSciptName, dbScript);
+                if (Objects.isNull(oldState)) {
+                    final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
+                        "migration/flyway/create-table.sql.ftl", context
+                    );
+                    final String dbSciptName = String.format(
+                        "V%d__create_%s_table.sql", version, tableName
+                    );
+                    
+                    FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
+                    version++;
+    
+                    manifest.applyCreateContext(model.getName(), tableName, context);
+                    manifest.addEntityFile(tableName, dbSciptName, dbScript);
+                } else {
+                    final Map<String,Object> fkCtx = FlywayUtils.toForeignKeysContext(model, modelsByName);
+                    if (fkCtx != null && !fkCtx.isEmpty()) {
+                        context.put("fksCtx", fkCtx);
+                    }
+                    final Result diff = MigrationDiffer.diff(oldState, context);
+                    if (diff.isEmpty()) {
+                        manifest.applyCreateContext(model.getName(), tableName, context);
+                        return;
+                    }
+
+                    final Map<String,Object> alterCtx = new LinkedHashMap<>();
+                    alterCtx.put("table", tableName);
+                    alterCtx.put("addedColumns", diff.getAddedColumns());
+                    alterCtx.put("removedColumns", diff.getRemovedColumns());
+                    alterCtx.put("modifiedColumns", diff.getModifiedColumns());
+                    alterCtx.put("pkChanged", diff.getPkChanged());
+                    alterCtx.put("newPk", diff.getNewPk());
+                    alterCtx.put("addedFks", diff.getAddedFks());
+                    alterCtx.put("removedFks", diff.getRemovedFks());
+                    alterCtx.put("db", this.configuration.getDatabase());
+                    final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
+                        "migration/flyway/alter-table-combined.sql.ftl", alterCtx
+                    );
+                    final String dbSciptName = String.format("V%d__alter_table_%s.sql", version, tableName);
+                    FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
+                    version++;
+    
+                    manifest.applyCreateContext(model.getName(), tableName, alterCtx);
+                    manifest.addEntityFile(tableName, dbSciptName, dbScript);
+                }
+
             });
     }
 
