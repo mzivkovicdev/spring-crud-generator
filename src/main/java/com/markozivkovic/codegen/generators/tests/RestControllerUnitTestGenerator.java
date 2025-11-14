@@ -114,7 +114,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("relationFieldModel", StringUtils.capitalize(relationField.getName()));
                 context.put("baseImports", RestControllerImports.computeAddRelationEndpointBaseImports(modelDefinition));
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                        modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION
+                        modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION, relationField
                 ));
                 context.put("testImports", RestControllerImports.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.put("swagger", swagger);

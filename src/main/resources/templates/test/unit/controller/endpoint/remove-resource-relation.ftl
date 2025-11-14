@@ -45,6 +45,7 @@ class ${className} {
         verifyNoInteractions(this.${serviceField});
         <#else>
         verifyNoMoreInteractions(this.${serviceField});
+        verifyNoInteractions(this.${businessServiceField});
         </#if>
     }
 
