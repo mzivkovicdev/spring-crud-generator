@@ -470,7 +470,7 @@ public class RestControllerImports {
      * @return the imports string for a controller test
      */
     public static String computeControllerTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
-                final boolean swagger, final boolean importInputObjects, final boolean importObjectMapper) {
+                final boolean swagger, final RestEndpointOperation restEndpointOperation) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -483,23 +483,22 @@ public class RestControllerImports {
         final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
         final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
 
-        if (swagger) {
+        if (!RestEndpointOperation.GET.equals(restEndpointOperation)) {
             imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
+            Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
+                final String relationModel = ModelNameUtils.stripSuffix(field.getType());
+                if (!swagger) {
+                    imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sTO", relationModel))));
+                } else {
+                    imports.add(String.format(
+                        IMPORT,
+                        PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, relationModel)
+                    ));
+                }
+            });
         }
 
-        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
-            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            if (!swagger) {
-                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, String.format("%sTO", relationModel))));
-            } else {
-                imports.add(String.format(
-                    IMPORT,
-                    PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, relationModel)
-                ));
-            }
-        });
-
-        if (importInputObjects) {
+        if (!RestEndpointOperation.GET.equals(restEndpointOperation)) {
             relations.forEach(field -> {
                 final String relationModel = ModelNameUtils.stripSuffix(field.getType());
                 if (!swagger) {
@@ -533,7 +532,7 @@ public class RestControllerImports {
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.REST, String.format("%sRestMapper", modelWithoutSuffix))));
-        if (importObjectMapper) {
+        if (!RestEndpointOperation.DELETE.equals(restEndpointOperation) || !RestEndpointOperation.REMOVE_RELATION.equals(restEndpointOperation)) {
             imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         }
         imports.add(String.format(
@@ -546,4 +545,7 @@ public class RestControllerImports {
                 .collect(Collectors.joining());
     }
 
+    public enum RestEndpointOperation {
+        GET, CREATE, ADD_RELATION, REMOVE_RELATION, UPDATE, DELETE
+    }
 }
