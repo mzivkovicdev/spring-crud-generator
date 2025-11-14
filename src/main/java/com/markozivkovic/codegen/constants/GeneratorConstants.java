@@ -57,6 +57,7 @@ public class GeneratorConstants {
         public static final String MIGRATION_SCRIPT = "migration-script";
         public static final String OPENAPI_CODEGEN = "openapi-codegen";
         public static final String SWAGGER = "swagger";
+        public static final String RESOLVER_TEST_CONFIG = "resolver-test-config";
     }
 
 }
