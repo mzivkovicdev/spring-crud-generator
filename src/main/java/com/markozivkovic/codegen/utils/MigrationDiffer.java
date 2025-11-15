@@ -22,6 +22,12 @@ public class MigrationDiffer {
 
     private MigrationDiffer() {}
     
+    /**
+     * Computes the difference between two states of a database entity
+     * @param oldState the old state of the entity
+     * @param newCreateCtx the new state of the entity
+     * @return a Result object containing the differences between the two states
+     */
     @SuppressWarnings("unchecked")
     public static Result diff(final EntityState oldState, final Map<String,Object> newCreateCtx) {
 
@@ -38,20 +44,33 @@ public class MigrationDiffer {
         final Map<String, ColumnState> oldCols = oldState != null && oldState.getColumns() != null ?
                 oldState.getColumns() : Collections.emptyMap();
 
+        diffColumns(r, oldCols, newCols);
+
+        diffPrimaryKey(r, oldState, newCreateCtx);
+
+        diffForeignKeys(r, oldState, newCreateCtx);
+
+        return r;
+    }
+
+    /**
+     * Compares two maps of column states and finds the differences between them.
+     * Adds the differences to the result object.
+     *
+     * @param r the result object to add the differences to
+     * @param oldCols the map of column states from the old database
+     * @param newCols the map of column states from the new database
+     */
+    private static void diffColumns(final Result r, final Map<String, ColumnState> oldCols, final Map<String, Map<String, Object>> newCols) {
+
         for (final String n : newCols.keySet()) {
             if (!oldCols.containsKey(n)) {
                 final Map<String,Object> v = newCols.get(n);
-
                 final String nt = String.valueOf(v.get("sqlType"));
                 final Boolean nn = Boolean.TRUE.equals(v.get("nullable"));
                 final Boolean nu = Boolean.TRUE.equals(v.get("unique"));
                 final String nd = (String) v.get("defaultExpr");
-
-                r.getAddedColumns().add(new AddedColumn().setName(n)
-                        .setType(nt)
-                        .setNullable(nn)
-                        .setUnique(nu)
-                        .setDefaultValue(nd));
+                r.getAddedColumns().add(new AddedColumn(n, nt, nn, nu, nd));
             }
         }
 
@@ -61,46 +80,53 @@ public class MigrationDiffer {
             }
         }
 
-        for (String n : newCols.keySet()) {
+        for (final String n : newCols.keySet()) {
             if (oldCols.containsKey(n)) {
                 final ColumnState o = oldCols.get(n);
                 final Map<String,Object> nv = newCols.get(n);
+                final String newType = String.valueOf(nv.get("sqlType"));
+                final Boolean newNullable = Boolean.TRUE.equals(nv.get("nullable"));
+                final Boolean newUnique = Boolean.TRUE.equals(nv.get("unique"));
+                final String newDefaultExpression = (String) nv.get("defaultExpr");
 
-                final String nt = String.valueOf(nv.get("sqlType"));
-                final Boolean nn = Boolean.TRUE.equals(nv.get("nullable"));
-                final Boolean nu = Boolean.TRUE.equals(nv.get("unique"));
-                final String nd = (String) nv.get("defaultExpr");
+                final ColumnChange columnChange = new ColumnChange(
+                        n, o.getType(), newType, o.getNullable(), newNullable, o.getUnique(), newUnique,
+                        o.getDefaultExpr(), newDefaultExpression, !Objects.equals(o.getType(), newType),
+                        !Objects.equals(o.getNullable(), newNullable), !Objects.equals(o.getUnique(), newUnique),
+                        !Objects.equals(o.getDefaultExpr(), newDefaultExpression)
+                );
 
-                final ColumnChange cc = new ColumnChange();
-                cc.setName(n)
-                    .setOldType(o.getType())
-                    .setNewType(nt)
-                    .setOldNullable(o.getNullable())
-                    .setNewNullable(nn)
-                    .setOldUnique(o.getUnique())
-                    .setNewUnique(nu)
-                    .setOldDefault(o.getDefaultExpr())
-                    .setNewDefault(nd);
-
-                cc.setTypeChanged(!Objects.equals(o.getType(), nt))
-                        .setNullableChanged(!Objects.equals(o.getNullable(), nn))
-                        .setUniqueChanged(!Objects.equals(o.getUnique(), nu))
-                        .setDefaultChanged(!Objects.equals(o.getDefaultExpr(), nd));
-
-                if (cc.getTypeChanged() || cc.getNullableChanged() || cc.getUniqueChanged() || cc.getDefaultChanged()) {
-                    r.getModifiedColumns().add(cc);
+                if (columnChange.getTypeChanged() || columnChange.getNullableChanged() || columnChange.getUniqueChanged() || columnChange.getDefaultChanged()) {
+                    r.getModifiedColumns().add(columnChange);
                 }
             }
         }
+    }
+
+    /**
+     * Compares the primary key of the old state of the entity with the primary key from the new state.
+     * If the primary keys are different, adds the new primary key to the result object.
+     * 
+     * @param r the result object to add the differences to
+     * @param oldState the old state of the entity
+     * @param newCreateCtx the new state of the entity
+     */
+    private static void diffPrimaryKey(final Result r, final EntityState oldState, final Map<String,Object> newCreateCtx) {
 
         final List<String> newPk = splitCsv(String.valueOf(newCreateCtx.get("pkColumns")));
-        final List<String> oldPk = oldState != null && oldState.getPk() != null ? oldState.getPk() : Collections.emptyList();
+        final List<String> oldPk = oldState != null && oldState.getPk() != null
+                ? oldState.getPk() 
+                : Collections.emptyList();
 
         if (!equalListIgnoreOrder(oldPk, newPk)) {
-            r.setPkChanged(true);
-            r.setNewPk(newPk);
+            r.setPkChanged(true)
+                    .setNewPk(newPk);
         }
+    }
 
+    @SuppressWarnings("unchecked")
+    private static void diffForeignKeys(final Result r, final EntityState oldState, final Map<String,Object> newCreateCtx) {
+        
         final Set<String> oldFkKeys = new LinkedHashSet<>();
         final Map<String, FkState> oldFkByKey = new LinkedHashMap<>();
         if (oldState != null && oldState.getFks() != null) {
@@ -111,18 +137,18 @@ public class MigrationDiffer {
             }
         }
         final Set<String> newFkKeys = new LinkedHashSet<>();
-        Map<String, Map<String,Object>> newFkByKey = new LinkedHashMap<>();
+        final Map<String, Map<String,Object>> newFkByKey = new LinkedHashMap<>();
         final Map<String,Object> fkCtx = (Map<String,Object>) newCreateCtx.get("fksCtx");
-        List<Map<String,Object>> fks = fkCtx != null
+        final List<Map<String,Object>> fks = fkCtx != null
                 ? (List<Map<String,Object>>) fkCtx.get("fks")
                 : (List<Map<String,Object>>) newCreateCtx.get("fks");
 
         if (fks != null) {
             for (Map<String,Object> m : fks) {
-                String col = String.valueOf(m.get("column"));
-                String rt  = String.valueOf(m.get("refTable"));
-                String rc  = String.valueOf(m.get("refColumn"));
-                String key = fkKey(col, rt, rc);
+                final String col = String.valueOf(m.get("column"));
+                final String rt  = String.valueOf(m.get("refTable"));
+                final String rc  = String.valueOf(m.get("refColumn"));
+                final String key = fkKey(col, rt, rc);
                 newFkKeys.add(key);
                 newFkByKey.put(key, m);
             }
@@ -149,26 +175,50 @@ public class MigrationDiffer {
                 r.getRemovedFks().add(fc);
             }
         }
-
-        return r;
     }
 
+    /**
+     * Creates a string that uniquely identifies a foreign key.
+     * 
+     * The string is in the format of:
+     * <column_name>-><referenced_table_name>(<referenced_column_name>)
+     * 
+     * @param col the column name of the foreign key
+     * @param rt the referenced table name of the foreign key
+     * @param rc the referenced column name of the foreign key
+     * @return the string that uniquely identifies the foreign key
+     */
     public static String fkKey(String col, String rt, String rc) {
         return col + "->" + rt + "(" + rc + ")";
     }
 
+    /**
+     * Splits a given string into a list of strings using comma as delimiter.
+     * Trims each element of the resulting list.
+     * If the given string is null or "null", returns an empty list.
+     * 
+     * @param raw the string to be split
+     * @return a list of strings
+     */
     private static List<String> splitCsv(final String raw) {
         if (raw == null || "null".equals(raw))
             return Collections.emptyList();
         
         final List<String> out = new ArrayList<>();
         for (String p : raw.split(",")) {
-            String t = p.trim();
+            final String t = p.trim();
             if (!t.isEmpty()) out.add(t);
         }
         return out;
     }
 
+    /**
+     * Compares two lists ignoring order.
+     * 
+     * @param a the first list
+     * @param b the second list
+     * @return true if the lists are equal ignoring order, false otherwise
+     */
     private static boolean equalListIgnoreOrder(final List<String> a, final List<String> b) {
         return new HashSet<>(a)
                 .equals(new HashSet<>(b));

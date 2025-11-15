@@ -104,6 +104,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param pathToDbScripts the path to which to write the generated scripts
      * @param models the list of models for which to generate the join tables
      * @param modelsByName the mapping of model names to ModelDefinition objects
+     * @param manifest the migration manifest
      */
     private void generateJoinTables(final String pathToDbScripts, final List<ModelDefinition> models,
             final Map<String, ModelDefinition> modelsByName, final MigrationManifestBuilder manifest) {
@@ -113,7 +114,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
         final MigrationState ms = manifest.build();
         final Set<String> existingJoinTables = new HashSet<>();
 
-        if (ms.getEntities() != null) {
+        if (Objects.nonNull(ms.getEntities())) {
             ms.getEntities().forEach(e -> {
                 if (e.getJoins() != null) {
                     e.getJoins().forEach(j -> existingJoinTables.add(j.getTable()));
@@ -122,11 +123,11 @@ public class MigrationScriptGenerator implements CodeGenerator {
         }
 
         for (final ModelDefinition owner : models) {
-            if (owner.getFields() == null || owner.getFields().isEmpty())
+            if (Objects.isNull(owner.getFields()) || owner.getFields().isEmpty())
                 continue;
 
             for (final FieldDefinition f : owner.getFields()) {
-                if (f.getRelation() == null || !"ManyToMany".equals(f.getRelation().getType())) continue;
+                if (Objects.isNull(f.getRelation()) || !"ManyToMany".equals(f.getRelation().getType())) continue;
 
                 final String joinTable = f.getRelation().getJoinTable().getName();
                 if (existingJoinTables.contains(joinTable)) {
@@ -161,13 +162,14 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param pathToDbScripts the path to which to write the generated scripts
      * @param models the list of models that are not JSON models
      * @param modelsByName the mapping of model names to ModelDefinition objects
+     * @param manifest the migration manifest
      */
     @SuppressWarnings("unchecked")
     private void generateAlterTableScripts(final String pathToDbScripts, final List<ModelDefinition> models,
             final Map<String, ModelDefinition> modelsByName, final MigrationManifestBuilder manifest) {
 
         final MigrationState migrationState = manifest.build();
-        final Map<String, EntityState> previousByTable = migrationState.getEntities() == null
+        final Map<String, EntityState> previousByTable = Objects.isNull(migrationState.getEntities())
                 ? Collections.emptyMap()
                 : migrationState.getEntities().stream()
                         .collect(Collectors.toMap(EntityState::getTable, e -> e));
@@ -175,14 +177,14 @@ public class MigrationScriptGenerator implements CodeGenerator {
         models.forEach(model -> {
 
             final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, modelsByName);
-            if (context == null || context.isEmpty()) {
+            if (Objects.isNull(context) || context.isEmpty()) {
                 return;
             }
             final String tableName = model.getStorageName();
             final EntityState oldState = previousByTable.get(tableName);
             final List<Map<String, Object>> fks = (List<Map<String, Object>>) context.get("fks");
 
-            if (fks == null || fks.isEmpty()) return;
+            if (Objects.isNull(fks) || fks.isEmpty()) return;
 
             final Set<String> newFkKeys = new HashSet<>();
             for (final Map<String, Object> m : fks) {
@@ -193,7 +195,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
             }
 
             final Set<String> oldFkKeys = new HashSet<>();
-            if (oldState != null && oldState.getFks() != null) {
+            if (Objects.nonNull(oldState) && Objects.nonNull(oldState.getFks())) {
                 for (final FkState existing : oldState.getFks()) {
                     oldFkKeys.add(MigrationDiffer.fkKey(existing.getColumn(), existing.getRefTable(), existing.getRefColumn()));
                 }
@@ -241,6 +243,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param pathToDbScripts the path to which to write the generated scripts
      * @param models the list of models that are not JSON models
      * @param modelsByName the mapping of model names to ModelDefinition objects
+     * @param manifest the migration manifest
      */
     private void generateCreateTableScripts(final String pathToDbScripts, final List<ModelDefinition> models,
             final Map<String, ModelDefinition> modelsByName, final MigrationManifestBuilder manifest) {
@@ -276,7 +279,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     manifest.addEntityFile(tableName, dbSciptName, dbScript);
                 } else {
                     final Map<String,Object> fkCtx = FlywayUtils.toForeignKeysContext(model, modelsByName);
-                    if (fkCtx != null && !fkCtx.isEmpty()) {
+                    if (Objects.nonNull(fkCtx) && !fkCtx.isEmpty()) {
                         context.put("fksCtx", fkCtx);
                     }
                     final Result diff = MigrationDiffer.diff(oldState, context);
