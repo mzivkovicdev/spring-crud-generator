@@ -13,11 +13,14 @@ import java.util.Set;
 import com.markozivkovic.codegen.models.flyway.ColumnState;
 import com.markozivkovic.codegen.models.flyway.EntityState;
 import com.markozivkovic.codegen.models.flyway.FkState;
+import com.markozivkovic.codegen.models.flyway.SchemaDiff;
 import com.markozivkovic.codegen.models.flyway.SchemaDiff.AddedColumn;
 import com.markozivkovic.codegen.models.flyway.SchemaDiff.ColumnChange;
 import com.markozivkovic.codegen.models.flyway.SchemaDiff.Result;
 
 public class MigrationDiffer {
+
+    private MigrationDiffer() {}
     
     @SuppressWarnings("unchecked")
     public static Result diff(final EntityState oldState, final Map<String,Object> newCreateCtx) {
@@ -35,7 +38,7 @@ public class MigrationDiffer {
         final Map<String, ColumnState> oldCols = oldState != null && oldState.getColumns() != null ?
                 oldState.getColumns() : Collections.emptyMap();
 
-        for (String n : newCols.keySet()) {
+        for (final String n : newCols.keySet()) {
             if (!oldCols.containsKey(n)) {
                 final Map<String,Object> v = newCols.get(n);
 
@@ -99,32 +102,59 @@ public class MigrationDiffer {
         }
 
         final Set<String> oldFkKeys = new LinkedHashSet<>();
+        final Map<String, FkState> oldFkByKey = new LinkedHashMap<>();
         if (oldState != null && oldState.getFks() != null) {
             for (FkState f : oldState.getFks()) {
-                oldFkKeys.add(f.getColumn() + "->" + f.getRefTable() + "(" + f.getRefColumn() + ")");
+                final String key = fkKey(f.getColumn(), f.getRefTable(), f.getRefColumn());
+                oldFkKeys.add(key);
+                oldFkByKey.put(key, f);
             }
         }
         final Set<String> newFkKeys = new LinkedHashSet<>();
+        Map<String, Map<String,Object>> newFkByKey = new LinkedHashMap<>();
         final Map<String,Object> fkCtx = (Map<String,Object>) newCreateCtx.get("fksCtx");
-        List<Map<String,Object>> fks = fkCtx != null ? (List<Map<String,Object>>) fkCtx.get("fks") : null;
-
-        if (fks == null) {
-            fks = (List<Map<String,Object>>) newCreateCtx.get("fks");
-        }
+        List<Map<String,Object>> fks = fkCtx != null
+                ? (List<Map<String,Object>>) fkCtx.get("fks")
+                : (List<Map<String,Object>>) newCreateCtx.get("fks");
 
         if (fks != null) {
-            for (final Map<String,Object> m : fks) {
-                final String col = String.valueOf(m.get("column"));
-                final String rt  = String.valueOf(m.get("refTable"));
-                final String rc  = String.valueOf(m.get("refColumn"));
-                newFkKeys.add(col + "->" + rt + "(" + rc + ")");
+            for (Map<String,Object> m : fks) {
+                String col = String.valueOf(m.get("column"));
+                String rt  = String.valueOf(m.get("refTable"));
+                String rc  = String.valueOf(m.get("refColumn"));
+                String key = fkKey(col, rt, rc);
+                newFkKeys.add(key);
+                newFkByKey.put(key, m);
             }
         }
 
-        for (final String k : newFkKeys) if (!oldFkKeys.contains(k)) r.getAddedFks().add(k);
-        for (final String k : oldFkKeys) if (!newFkKeys.contains(k)) r.getRemovedFks().add(k);
+        for (final String k : newFkKeys) {
+            if (!oldFkKeys.contains(k)) {
+                final Map<String,Object> m = newFkByKey.get(k);
+                final SchemaDiff.FkChange fc = new SchemaDiff.FkChange();
+                fc.setColumn(String.valueOf(m.get("column")));
+                fc.setRefTable(String.valueOf(m.get("refTable")));
+                fc.setRefColumn(String.valueOf(m.get("refColumn")));
+                r.getAddedFks().add(fc);
+            }
+        }
+
+        for (final String k : oldFkKeys) {
+            if (!newFkKeys.contains(k)) {
+                final FkState f = oldFkByKey.get(k);
+                final SchemaDiff.FkChange fc = new SchemaDiff.FkChange();
+                fc.setColumn(f.getColumn());
+                fc.setRefTable(f.getRefTable());
+                fc.setRefColumn(f.getRefColumn());
+                r.getRemovedFks().add(fc);
+            }
+        }
 
         return r;
+    }
+
+    public static String fkKey(String col, String rt, String rc) {
+        return col + "->" + rt + "(" + rc + ")";
     }
 
     private static List<String> splitCsv(final String raw) {

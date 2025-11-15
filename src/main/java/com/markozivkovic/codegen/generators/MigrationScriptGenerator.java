@@ -20,6 +20,7 @@ import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.models.flyway.EntityState;
+import com.markozivkovic.codegen.models.flyway.FkState;
 import com.markozivkovic.codegen.models.flyway.MigrationState;
 import com.markozivkovic.codegen.models.flyway.SchemaDiff.Result;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -109,6 +110,16 @@ public class MigrationScriptGenerator implements CodeGenerator {
         
         final DatabaseType db = this.configuration.getDatabase();
         final Set<String> emittedJoinTables = new HashSet<>();
+        final MigrationState ms = manifest.build();
+        final Set<String> existingJoinTables = new HashSet<>();
+
+        if (ms.getEntities() != null) {
+            ms.getEntities().forEach(e -> {
+                if (e.getJoins() != null) {
+                    e.getJoins().forEach(j -> existingJoinTables.add(j.getTable()));
+                }
+            });
+        }
 
         for (final ModelDefinition owner : models) {
             if (owner.getFields() == null || owner.getFields().isEmpty())
@@ -118,8 +129,13 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 if (f.getRelation() == null || !"ManyToMany".equals(f.getRelation().getType())) continue;
 
                 final String joinTable = f.getRelation().getJoinTable().getName();
-                if (!emittedJoinTables.add(joinTable))
+                if (existingJoinTables.contains(joinTable)) {
                     continue;
+                }
+
+                if (!emittedJoinTables.add(joinTable)) {
+                    continue;
+                }
 
                 final Map<String, Object> ctx = FlywayUtils.toJoinTableContext(owner, f, db, modelsByName);
 
@@ -146,28 +162,75 @@ public class MigrationScriptGenerator implements CodeGenerator {
      * @param models the list of models that are not JSON models
      * @param modelsByName the mapping of model names to ModelDefinition objects
      */
+    @SuppressWarnings("unchecked")
     private void generateAlterTableScripts(final String pathToDbScripts, final List<ModelDefinition> models,
             final Map<String, ModelDefinition> modelsByName, final MigrationManifestBuilder manifest) {
-        
+
+        final MigrationState migrationState = manifest.build();
+        final Map<String, EntityState> previousByTable = migrationState.getEntities() == null
+                ? Collections.emptyMap()
+                : migrationState.getEntities().stream()
+                        .collect(Collectors.toMap(EntityState::getTable, e -> e));
+
         models.forEach(model -> {
-                final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, modelsByName);
-                
-                if (context != null && !context.isEmpty()) {
-                    final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
-                        "migration/flyway/add-foreign-keys.sql.ftl", context
-                    );
-                    final String tableName = model.getStorageName();
-                    final String dbSciptName = String.format(
-                        "V%d__alter_table_%s.sql", version, tableName
-                    );
-                    
-                    FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
-                    version++;
-                    
-                    manifest.addForeignKeys(tableName, context);
-                    manifest.addEntityFile(tableName, dbSciptName, dbScript);
+
+            final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, modelsByName);
+            if (context == null || context.isEmpty()) {
+                return;
+            }
+            final String tableName = model.getStorageName();
+            final EntityState oldState = previousByTable.get(tableName);
+            final List<Map<String, Object>> fks = (List<Map<String, Object>>) context.get("fks");
+
+            if (fks == null || fks.isEmpty()) return;
+
+            final Set<String> newFkKeys = new HashSet<>();
+            for (final Map<String, Object> m : fks) {
+                final String col = String.valueOf(m.get("column"));
+                final String rt  = String.valueOf(m.get("refTable"));
+                final String rc  = String.valueOf(m.get("refColumn"));
+                newFkKeys.add(MigrationDiffer.fkKey(col, rt, rc));
+            }
+
+            final Set<String> oldFkKeys = new HashSet<>();
+            if (oldState != null && oldState.getFks() != null) {
+                for (final FkState existing : oldState.getFks()) {
+                    oldFkKeys.add(MigrationDiffer.fkKey(existing.getColumn(), existing.getRefTable(), existing.getRefColumn()));
                 }
-            });
+            }
+
+            final Set<String> reallyNewFkKeys = new HashSet<>(newFkKeys);
+            reallyNewFkKeys.removeAll(oldFkKeys);
+
+            if (reallyNewFkKeys.isEmpty()) {
+                return;
+            }
+
+            final List<Map<String, Object>> filteredFks = fks.stream()
+                    .filter(m -> {
+                        final String col = String.valueOf(m.get("column"));
+                        final String rt  = String.valueOf(m.get("refTable"));
+                        final String rc  = String.valueOf(m.get("refColumn"));
+                        final String key = MigrationDiffer.fkKey(col, rt, rc);
+                        return reallyNewFkKeys.contains(key);
+                    })
+                    .collect(Collectors.toList());
+
+            context.put("fks", filteredFks);
+
+            final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "migration/flyway/add-foreign-keys.sql.ftl", context
+            );
+            final String dbSciptName = String.format(
+                "V%d__alter_table_%s.sql", version, tableName
+            );
+            
+            FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
+            version++;
+            
+            manifest.addForeignKeys(tableName, context);
+            manifest.addEntityFile(tableName, dbSciptName, dbScript);
+        });
     }
 
     /**

@@ -349,6 +349,75 @@ public class SchemaDiff {
         }
     }
 
+    public static class FkChange {
+
+        private String column;
+        private String refTable;
+        private String refColumn;
+
+        public FkChange() {}
+
+        public FkChange(final String column, final String refTable, final String refColumn) {
+            this.column = column;
+            this.refTable = refTable;
+            this.refColumn = refColumn;
+        }
+
+        public String getColumn() {
+            return this.column;
+        }
+
+        public FkChange setColumn(final String column) {
+            this.column = column;
+            return this;
+        }
+
+        public String getRefTable() {
+            return this.refTable;
+        }
+
+        public FkChange setRefTable(final String refTable) {
+            this.refTable = refTable;
+            return this;
+        }
+
+        public String getRefColumn() {
+            return this.refColumn;
+        }
+
+        public FkChange setRefColumn(final String refColumn) {
+            this.refColumn = refColumn;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof FkChange)) {
+                return false;
+            }
+            final FkChange fkChange = (FkChange) o;
+            return Objects.equals(column, fkChange.column) &&
+                    Objects.equals(refTable, fkChange.refTable) &&
+                    Objects.equals(refColumn, fkChange.refColumn);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(column, refTable, refColumn);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " column='" + getColumn() + "'" +
+                ", refTable='" + getRefTable() + "'" +
+                ", refColumn='" + getRefColumn() + "'" +
+                "}";
+        }
+    }
+
     public static class Result {
 
         private List<AddedColumn> addedColumns = new ArrayList<>();
@@ -356,14 +425,14 @@ public class SchemaDiff {
         private List<ColumnChange> modifiedColumns = new ArrayList<>();
         private boolean pkChanged = false;
         private List<String> newPk = new ArrayList<>();
-        private List<String> addedFks = new ArrayList<>();
-        private List<String> removedFks = new ArrayList<>();
+        private List<FkChange> addedFks = new ArrayList<>();
+        private List<FkChange> removedFks = new ArrayList<>();
 
         public Result() {}
 
         public Result(final List<AddedColumn> addedColumns, final List<String> removedColumns,
                 final List<ColumnChange> modifiedColumns, final boolean pkChanged, 
-                final List<String> newPk, final List<String> addedFks, final List<String> removedFks) {
+                final List<String> newPk, final List<FkChange> addedFks, final List<FkChange> removedFks) {
             this.addedColumns = addedColumns;
             this.removedColumns = removedColumns;
             this.modifiedColumns = modifiedColumns;
@@ -422,20 +491,20 @@ public class SchemaDiff {
             return this;
         }
 
-        public List<String> getAddedFks() {
+        public List<FkChange> getAddedFks() {
             return this.addedFks;
         }
 
-        public Result setAddedFks(final List<String> addedFks) {
+        public Result setAddedFks(final List<FkChange> addedFks) {
             this.addedFks = addedFks;
             return this;
         }
 
-        public List<String> getRemovedFks() {
+        public List<FkChange> getRemovedFks() {
             return this.removedFks;
         }
 
-        public Result setRemovedFks(final List<String> removedFks) {
+        public Result setRemovedFks(final List<FkChange> removedFks) {
             this.removedFks = removedFks;
             return this;
         }
