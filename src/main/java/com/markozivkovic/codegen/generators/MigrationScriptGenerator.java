@@ -302,7 +302,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
                     version++;
     
-                    manifest.applyCreateContext(model.getName(), tableName, alterCtx);
+                    manifest.applyCreateContext(model.getName(), tableName, context);
                     manifest.addEntityFile(tableName, dbSciptName, dbScript);
                 }
 
