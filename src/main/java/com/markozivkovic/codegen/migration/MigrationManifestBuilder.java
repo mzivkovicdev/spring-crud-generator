@@ -1,4 +1,4 @@
-package com.markozivkovic.codegen.utils;
+package com.markozivkovic.codegen.migration;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -16,8 +16,9 @@ import com.markozivkovic.codegen.models.flyway.EntityState;
 import com.markozivkovic.codegen.models.flyway.FileState;
 import com.markozivkovic.codegen.models.flyway.FkState;
 import com.markozivkovic.codegen.models.flyway.JoinState;
-import com.markozivkovic.codegen.models.flyway.MigrationState;
 import com.markozivkovic.codegen.models.flyway.JoinState.JoinSide;
+import com.markozivkovic.codegen.models.flyway.MigrationState;
+import com.markozivkovic.codegen.utils.FlywayUtils;
 
 public class MigrationManifestBuilder {
     
