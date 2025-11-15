@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
+import com.markozivkovic.codegen.migration.MigrationDiffer;
+import com.markozivkovic.codegen.migration.MigrationManifestBuilder;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -27,8 +29,6 @@ import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FlywayUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
-import com.markozivkovic.codegen.utils.MigrationDiffer;
-import com.markozivkovic.codegen.utils.MigrationManifestBuilder;
 
 public class MigrationScriptGenerator implements CodeGenerator {
     

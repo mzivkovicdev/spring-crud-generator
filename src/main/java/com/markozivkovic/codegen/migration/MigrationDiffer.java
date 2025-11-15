@@ -1,4 +1,4 @@
-package com.markozivkovic.codegen.utils;
+package com.markozivkovic.codegen.migration;
 
 import java.util.ArrayList;
 import java.util.Collections;
