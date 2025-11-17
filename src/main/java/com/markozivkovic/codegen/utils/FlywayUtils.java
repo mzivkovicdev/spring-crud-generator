@@ -1,12 +1,10 @@
 package com.markozivkovic.codegen.utils;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,99 +13,24 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.RelationDefinition;
-import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
-import com.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.models.flyway.MigrationState;
 
 public class FlywayUtils {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(FlywayUtils.class);
-    private static final String MIGRATIONS = "migrations";
-    private static final String MIGRATIONS_JSON = "migrations.json";
+    private static final String CRUD_GENERATOR_DIR = ".crud-generator";
+    private static final String MIGRATION_STATE_FILE = "migration-state.json";
     private static final int DEFAULT_VARCHAR = 255;
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private FlywayUtils() {
 
-    }
-
-    /**
-     * Calculate the SHA-256 hash of a given string.
-     *
-     * @param str String to hash
-     * @return SHA-256 hash of the given string
-     */
-    public static String sha256(final byte[] data) {
-        try {
-            final MessageDigest md = MessageDigest.getInstance("SHA-256");
-            final byte[] dig = md.digest(data);
-            final StringBuilder sb = new StringBuilder(dig.length * 2);
-            for (final byte b : dig) {
-                sb.append(String.format("%02x", b & 0xff));
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Calculate the SHA-256 hash of a given string.
-     * The string is converted to a byte array using UTF-8 encoding before being hashed.
-     * 
-     * @param text String to hash
-     * @return SHA-256 hash of the given string
-     */
-    public static String sha256(final String text) {
-        return sha256(text.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * Writes the given content to a file at the specified output directory with the given
-     * name if the file does not exist or if the file exists but the content is different.
-     * Logs the operation result.
-     *
-     * @param outputDir the directory where the file should be written
-     * @param content   the content to be written to the file
-     * @return true if the file was written, false if the file was not written
-     * @throws RuntimeException if an I/O error occurs during file writing
-     */
-    public static boolean writeIfNotExistsOrDifferent(final String outputDir, final String content) {
-
-        try {
-            Files.createDirectories(Paths.get(outputDir, MIGRATIONS));
-        } catch (final Exception e) {
-            LOGGER.error("Error creating migrations directory", e);
-            throw new RuntimeException(e);
-        }
-        final Path directoryPath = Paths.get(outputDir, MIGRATIONS);
-        final Path migrationFile = directoryPath.resolve(MIGRATIONS_JSON);
-        
-        try {
-            if (Files.exists(migrationFile)) {
-                final String existing = Files.readString(migrationFile);
-                if (existing.equals(content)) {
-                    return false;
-                }
-
-                Files.writeString(migrationFile, content, StandardCharsets.UTF_8);
-            } else {
-                Files.writeString(migrationFile, content, StandardCharsets.UTF_8);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Error reading migration file", e);
-            throw new RuntimeException(e);
-        }
-
-        return true;
     }
 
     /**
@@ -782,15 +705,17 @@ public class FlywayUtils {
      * @param migrationState the migration state to save
      */
     public static void save(final String baseDir, final MigrationState migrationState) {
-        final Path migrationStatePath = Paths.get(baseDir, ".crud-generator", "migration-state.json");
+        final Path migrationStatePath = Paths.get(baseDir, CRUD_GENERATOR_DIR, MIGRATION_STATE_FILE);
         try {
             final Path dir = migrationStatePath.getParent();
             if (dir != null && Files.notExists(dir)) {
                 Files.createDirectories(dir);
             }
             Files.write(
-                migrationStatePath, OBJECT_MAPPER.writeValueAsBytes(migrationState),
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING
+                migrationStatePath,
+                OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(migrationState),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING
             );
         } catch (final IOException e) {
             throw new RuntimeException(
