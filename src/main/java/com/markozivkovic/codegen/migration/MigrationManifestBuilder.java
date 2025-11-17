@@ -18,7 +18,7 @@ import com.markozivkovic.codegen.models.flyway.FkState;
 import com.markozivkovic.codegen.models.flyway.JoinState;
 import com.markozivkovic.codegen.models.flyway.JoinState.JoinSide;
 import com.markozivkovic.codegen.models.flyway.MigrationState;
-import com.markozivkovic.codegen.utils.FlywayUtils;
+import com.markozivkovic.codegen.utils.HashUtils;
 
 public class MigrationManifestBuilder {
     
@@ -308,7 +308,7 @@ public class MigrationManifestBuilder {
      */
     private static FileState newFileState(final String fileName, final String content) {
         
-        return new FileState(fileName, FlywayUtils.sha256(content));
+        return new FileState(fileName, HashUtils.sha256(content));
     }
 
     /**
@@ -342,7 +342,7 @@ public class MigrationManifestBuilder {
             canonical.put("columns", colsMap);
 
             final byte[] bytes = OBJECT_MAPPER.writer().writeValueAsBytes(canonical);
-            return FlywayUtils.sha256(new String(bytes, StandardCharsets.UTF_8));
+            return HashUtils.sha256(new String(bytes, StandardCharsets.UTF_8));
         } catch (Exception e) {
             throw new RuntimeException("fingerprint build failed", e);
         }

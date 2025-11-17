@@ -8,6 +8,7 @@ public class ModelDefinition {
     private String name;
     private String storageName;
     private String description;
+    private Boolean ignore = false;
     private List<FieldDefinition> fields; 
     private AuditDefinition audit;
 
@@ -16,10 +17,11 @@ public class ModelDefinition {
     }
 
     public ModelDefinition(final String name, final String storageName, final String description,
-            final List<FieldDefinition> fields, final AuditDefinition audit) {
+            final Boolean ignore, final List<FieldDefinition> fields, final AuditDefinition audit) {
         this.name = name;
         this.storageName = storageName;
         this.description = description;
+        this.ignore = ignore;
         this.fields = fields;
         this.audit = audit;
     }
@@ -48,6 +50,15 @@ public class ModelDefinition {
 
     public ModelDefinition setDescription(final String description) {
         this.description = description;
+        return this;
+    }
+
+    public Boolean getIgnore() {
+        return this.ignore;
+    }
+
+    public ModelDefinition setIgnore(final Boolean ignore) {
+        this.ignore = ignore;
         return this;
     }
 
@@ -80,13 +91,14 @@ public class ModelDefinition {
         return Objects.equals(name, modelDefinition.name) &&
                 Objects.equals(storageName, modelDefinition.storageName) &&
                 Objects.equals(description, modelDefinition.description) &&
+                Objects.equals(ignore, modelDefinition.ignore) &&
                 Objects.equals(fields, modelDefinition.fields) &&
                 Objects.equals(audit, modelDefinition.audit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, storageName, description, fields, audit);
+        return Objects.hash(name, storageName, description, ignore, fields, audit);
     }
 
     @Override
@@ -95,6 +107,7 @@ public class ModelDefinition {
             " name='" + getName() + "'" +
             ", storageName='" + getStorageName() + "'" +
             ", description='" + getDescription() + "'" +
+            ", ignore='" + getIgnore() + "'" +
             ", fields='" + getFields() + "'" +
             ", audit='" + getAudit() + "'" +
             "}";
