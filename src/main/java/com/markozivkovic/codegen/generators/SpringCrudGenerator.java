@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 
 public class SpringCrudGenerator implements CodeGenerator {
@@ -34,14 +35,14 @@ public class SpringCrudGenerator implements CodeGenerator {
     private final Map<String, CodeGenerator> GENERATORS;
 
     public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites,
-            final ProjectMetadata projectMetadata) {
+            final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
         this.GENERATORS = Map.ofEntries(
             Map.entry(ENUM, new EnumGenerator()),
             Map.entry(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites)),
             Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator()),
             Map.entry(EXCEPTION, new ExceptionGenerator()),
             Map.entry(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entites)),
-            Map.entry(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration)),
+            Map.entry(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration)),
             Map.entry(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entites)),
             Map.entry(BUSINESS_SERVICE, new BusinessServiceGenerator(entites)),
             Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entites)),

@@ -3,10 +3,22 @@ package com.markozivkovic.codegen.utils;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.markozivkovic.codegen.constants.AdditionalConfigurationConstants;
+import com.markozivkovic.codegen.constants.GeneratorConstants;
+import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 
 public class PackageUtils {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PackageUtils.class);
     private static final String SOURCE_JAVA = "src/main/java/";
     
     private PackageUtils() {
@@ -74,6 +86,155 @@ public class PackageUtils {
         });
 
         return sb.toString();
+    }
+
+    /**
+     * Computes the configuration package by joining the base package with either the user-defined configuration package or the default
+     * configuration package path.
+     * If the user-defined configuration package is not null or empty, it is used, otherwise the default configuration package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed package path
+     */
+    public static String computeConfigurationPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        final String configuration = Objects.nonNull(packageConfiguration) ? packageConfiguration.getConfigurations() : null;
+
+        return computePackage(basePackage, configuration, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS);
+    }
+
+    /**
+     * Computes the package path by joining the base package with either the user-defined annotation package or the default annotation
+     * package path.
+     * If the user-defined annotation package is not null or empty, it is used, otherwise the default annotation package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed package path
+     */
+    public static String computeAnnotationPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        final String annotation = Objects.nonNull(packageConfiguration) ? packageConfiguration.getAnnotations() : null;
+
+        return computePackage(basePackage, annotation, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS);
+    }
+
+    /**
+     * Computes the package path by joining the base package with either the user-defined package or the default package path.
+     * If the user-defined package is not null or empty, it is used, otherwise the default package path is used.
+     * 
+     * @param basePackage        the base package path
+     * @param userDefinedPackage the user-defined package path
+     * @param defaultPackagePath the default package path
+     * @return the computed package path
+     */
+    private static String computePackage(final String basePackage, final String userDefinedPackage, final String defaultPackagePath) {
+
+        if (StringUtils.isNotBlank(userDefinedPackage)) {
+            return PackageUtils.join(basePackage, userDefinedPackage);
+        }
+
+        return PackageUtils.join(basePackage, defaultPackagePath);
+    }
+
+    /**
+     * Validates the package configuration.
+     * If the package configuration is not defined, it uses the default package structure.
+     * If any of the package groups are defined, it checks if all required packages are defined.
+     * If any of the required packages are missing, it throws an {@link IllegalArgumentException}.
+     * If the graphQl configuration is enabled, it checks if the resolvers package is defined.
+     * If the openApiCodegen configuration is enabled, it checks if the generated package is defined.
+     * 
+     * @param packageConfiguration the package configuration
+     * @param configuration the crud configuration
+     */
+    public static void validate(final PackageConfiguration packageConfiguration, final CrudConfiguration configuration) {
+
+        if (Objects.isNull(packageConfiguration)) {
+            LOGGER.info("Package configuration is not defined, using default package structure");
+            return;
+        }
+
+        final List<String> missing = new ArrayList<>();
+        validateAdditionalPropertiesPackages(packageConfiguration, configuration, missing);
+
+        final boolean anyGroupDefined = StringUtils.isNotBlank(packageConfiguration.getBusinessservices()) ||
+                StringUtils.isNotBlank(packageConfiguration.getControllers()) ||
+                StringUtils.isNotBlank(packageConfiguration.getEnums()) ||
+                StringUtils.isNotBlank(packageConfiguration.getExceptions()) ||
+                StringUtils.isNotBlank(packageConfiguration.getMappers()) ||
+                StringUtils.isNotBlank(packageConfiguration.getModels()) ||
+                StringUtils.isNotBlank(packageConfiguration.getRepositories()) ||
+                StringUtils.isNotBlank(packageConfiguration.getServices()) ||
+                StringUtils.isNotBlank(packageConfiguration.getTransferobjects());
+    
+        if (anyGroupDefined) {
+            if (StringUtils.isBlank(packageConfiguration.getBusinessservices())) missing.add("bussinessservices");
+            if (StringUtils.isBlank(packageConfiguration.getControllers())) missing.add("controllers");
+            if (StringUtils.isBlank(packageConfiguration.getEnums())) missing.add("enums");
+            if (StringUtils.isBlank(packageConfiguration.getExceptions())) missing.add("exceptions");
+            if (StringUtils.isBlank(packageConfiguration.getMappers())) missing.add("mappers");
+            if (StringUtils.isBlank(packageConfiguration.getModels())) missing.add("models");
+            if (StringUtils.isBlank(packageConfiguration.getRepositories())) missing.add("repositories");
+            if (StringUtils.isBlank(packageConfiguration.getServices())) missing.add("services");
+            if (StringUtils.isBlank(packageConfiguration.getTransferobjects())) missing.add("transferobjects");
+        }
+
+        if (Boolean.TRUE.equals(configuration.getGraphQl()) && anyGroupDefined) {
+            if (StringUtils.isBlank(packageConfiguration.getResolvers())) {
+                missing.add("resolvers (required when graphQl is enabled)");
+            }
+        }
+
+        if (Boolean.TRUE.equals(configuration.getOpenApiCodegen()) && anyGroupDefined) {
+            if (StringUtils.isBlank(packageConfiguration.getGenerated())) {
+                missing.add("generated (required when openApiCodegen is enabled)");
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            final String message = String.format(
+                    "Invalid package configuration. Missing required package(s): %s", String.join(", ", missing)
+            );
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Validates the additional properties configuration.
+     * If optimistic locking is enabled, all retry and backoff parameters must be defined.
+     * If any of the parameters are missing, an IllegalArgumentException is thrown.
+     * 
+     * @param packageConfiguration the package configuration
+     * @param configuration the crud configuration
+     * @param missing the list of missing configurations
+     */
+    private static void validateAdditionalPropertiesPackages(final PackageConfiguration packageConfiguration,
+            final CrudConfiguration configuration, final List<String> missing) {
+
+        if (configuration.getOptimisticLocking() == null || !configuration.getOptimisticLocking()) {
+            return;
+        }
+     
+        final Integer maxAttempts = (Integer) configuration.getAdditionalProperties()
+                .get(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS);
+        final Integer delayMs = (Integer) configuration.getAdditionalProperties()
+                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS);
+        final Integer maxDelayMs = (Integer) configuration.getAdditionalProperties()
+                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS);
+        final Double multiplier = (Double) configuration.getAdditionalProperties()
+                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER);
+
+        final List<Object> parameters = Arrays.asList(maxAttempts, delayMs, maxDelayMs, multiplier);
+
+        if (parameters.stream().allMatch(Objects::isNull)) {
+            return;
+        }
+
+        if (parameters.stream().anyMatch(Objects::isNull)) {
+            missing.add("optimisticLocking.retry and optimisticLocking.backoff (all retry/backoff parameters must be defined)");
+        }
     }
 
 }
