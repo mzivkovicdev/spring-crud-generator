@@ -51,7 +51,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata)),
             Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entites)),
             Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entites)),
-            Map.entry(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entites)),
+            Map.entry(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entites, packageConfiguration)),
             Map.entry(MIGRATION_SCRIPT, new MigrationScriptGenerator(crudConfiguration, projectMetadata, entites))
         );
     }

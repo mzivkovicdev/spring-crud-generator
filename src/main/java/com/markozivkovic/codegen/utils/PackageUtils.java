@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,13 +113,9 @@ public class PackageUtils {
      */
     public static String computeConfigurationSubPackage(final PackageConfiguration packageConfiguration) {
         
-        final String configuration = Objects.nonNull(packageConfiguration) ? packageConfiguration.getConfigurations() : null;
-
-        if (StringUtils.isNotBlank(configuration)) {
-            return configuration;
-        }
-
-        return GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS;
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getConfigurations, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS
+        );
     }
 
     /**
@@ -144,13 +141,9 @@ public class PackageUtils {
      */
     public static String computeExceptionSubPackage(final PackageConfiguration packageConfiguration) {
         
-        final String exceptions = Objects.nonNull(packageConfiguration) ? packageConfiguration.getExceptions() : null;
-
-        if (StringUtils.isNotBlank(exceptions)) {
-            return exceptions;
-        }
-
-        return GeneratorConstants.DefaultPackageLayout.EXCEPTIONS;
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getExceptions, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS
+        );
     }
 
     /**
@@ -237,13 +230,9 @@ public class PackageUtils {
      */
     public static String computeEnumSubPackage(final PackageConfiguration packageConfiguration) {
 
-        final String enums = Objects.nonNull(packageConfiguration) ? packageConfiguration.getEnums() : null;
-
-        if (StringUtils.isNotBlank(enums)) {
-            return enums;
-        }
-
-        return GeneratorConstants.DefaultPackageLayout.ENUMS;
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getEnums, GeneratorConstants.DefaultPackageLayout.ENUMS
+        );
     }
 
     /**
@@ -270,13 +259,9 @@ public class PackageUtils {
      */
     public static String computeAnnotationSubPackage(final PackageConfiguration packageConfiguration) {
 
-        final String annotation = Objects.nonNull(packageConfiguration) ? packageConfiguration.getAnnotations() : null;
-
-        if (StringUtils.isNotBlank(annotation)) {
-            return annotation;
-        }
-
-        return GeneratorConstants.DefaultPackageLayout.ANNOTATIONS;
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getAnnotations, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS
+        );
     }
 
     /**
@@ -301,13 +286,62 @@ public class PackageUtils {
      */
     public static String computeBusinessServiceSubPackage(final PackageConfiguration packageConfiguration) {
 
-        final String businessservices = Objects.nonNull(packageConfiguration) ? packageConfiguration.getBusinessservices() : null;
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getBusinessservices, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES
+        );
+    }
 
-        if (StringUtils.isNotBlank(businessservices)) {
-            return businessservices;
+    /**
+     * Computes the resolvers package by joining the base package with either the user-defined resolvers package or the default resolvers package path.
+     * If the user-defined resolvers package is not null or empty, it is used, otherwise the default resolvers package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed resolvers package path
+     */
+    public static String computeResolversPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeResolversSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the resolvers sub package by joining the base package with either the user-defined resolvers package or the default resolvers sub package path.
+     * If the user-defined resolvers package is not null or empty, it is used, otherwise the default resolvers sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed resolvers sub package path
+     */
+    public static String computeResolversSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getResolvers, GeneratorConstants.DefaultPackageLayout.RESOLVERS
+        );
+    }
+
+    /**
+     * Resolves the sub package by checking if the given package configuration object is not null, and if so, applies
+     * the given getter function to retrieve the sub package.
+     * If the retrieved value is not null or empty, it is returned, otherwise the default sub package is returned.
+     * 
+     * @param pkg               the package configuration object
+     * @param getter            the function to retrieve the sub package from the package configuration object
+     * @param defaultSubPackage the default sub package to return if the retrieved value is null or empty
+     * @return the resolved sub package path
+     */
+    private static String resolveSubPackage(final PackageConfiguration pkg, final Function<PackageConfiguration, String> getter,
+            final String defaultSubPackage) {
+
+        if (Objects.isNull(pkg)) {
+            return defaultSubPackage;
         }
 
-        return GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES;
+        final String value = getter.apply(pkg);
+
+        if (StringUtils.isNotBlank(value)) {
+            return value;
+        }
+
+        return defaultSubPackage;
     }
 
     /**
