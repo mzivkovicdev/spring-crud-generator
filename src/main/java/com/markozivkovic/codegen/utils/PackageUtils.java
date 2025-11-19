@@ -154,6 +154,68 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the exception response package by joining the base package with either the user-defined exception response package or the default exception response package path.
+     * If the user-defined exception response package is not null or empty, it is used, otherwise the default exception response package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed exception response package path
+     */
+    public static String computeExceptionResponsePackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        
+        return join(basePackage, computeExceptionResponseSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the exception response sub package by joining the base package with either the user-defined exception response package or the default exception response sub package path.
+     * If the user-defined exception response package is not null or empty, it is used, otherwise the default exception response sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed exception response sub package path
+     */
+    public static String computeExceptionResponseSubPackage(final PackageConfiguration packageConfiguration) {
+        
+        final String exceptionResponses = Objects.nonNull(packageConfiguration) ? packageConfiguration.getExceptions() : null;
+
+        if (StringUtils.isNotBlank(exceptionResponses)) {
+            return PackageUtils.join(exceptionResponses, GeneratorConstants.DefaultPackageLayout.RESPONSES);
+        }
+
+        return join(GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.RESPONSES);
+    }
+
+    /**
+     * Computes the exception handler package by joining the base package with either the user-defined exception handler package or the default exception handler package path.
+     * If the user-defined exception handler package is not null or empty, it is used, otherwise the default exception handler package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed exception handler package path
+     */
+    public static String computeExceptionHandlerPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        
+        return join(basePackage, computeExceptionHandlerSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the exception handler sub package by joining the base package with either the user-defined exception handler package or the default exception handler sub package path.
+     * If the user-defined exception handler package is not null or empty, it is used, otherwise the default exception handler sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed exception handler sub package path
+     */
+    public static String computeExceptionHandlerSubPackage(final PackageConfiguration packageConfiguration) {
+        
+        final String exceptionResponses = Objects.nonNull(packageConfiguration) ? packageConfiguration.getExceptions() : null;
+
+        if (StringUtils.isNotBlank(exceptionResponses)) {
+            return PackageUtils.join(exceptionResponses, GeneratorConstants.DefaultPackageLayout.HANDLERS);
+        }
+
+        return join(GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.HANDLERS);
+    }
+
+    /**
      * Computes the enum package by joining the base package with either the user-defined enum package or the default enum package path.
      * If the user-defined enum package is not null or empty, it is used, otherwise the default enum package path is used.
      * 
