@@ -27,8 +27,12 @@ public class FileWriterUtils {
      */
     public static void writeToFile(final String outputDir, final String subDir, final String fileName,
             final String content) {
+    
+        final String normilizedSubDir = subDir.replace('.', File.separatorChar)
+                .replace('/', File.separatorChar)
+                .replace('\\', File.separatorChar);
+        final File directory = new File(outputDir + File.separator + normilizedSubDir);
         
-        final File directory = new File(outputDir + File.separator + subDir);
         if (!directory.exists()) {
             directory.mkdirs();
         }

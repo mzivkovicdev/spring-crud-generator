@@ -99,9 +99,26 @@ public class PackageUtils {
      */
     public static String computeConfigurationPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
 
+        return join(basePackage, computeConfigurationSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the configuration sub package by joining the base package with either the user-defined configuration package or the default
+     * configuration sub package path.
+     * If the user-defined configuration package is not null or empty, it is used, otherwise the default configuration sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed configuration sub package path
+     */
+    public static String computeConfigurationSubPackage(final PackageConfiguration packageConfiguration) {
+        
         final String configuration = Objects.nonNull(packageConfiguration) ? packageConfiguration.getConfigurations() : null;
 
-        return computePackage(basePackage, configuration, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS);
+        if (StringUtils.isNotBlank(configuration)) {
+            return configuration;
+        }
+
+        return GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS;
     }
 
     /**
@@ -115,27 +132,57 @@ public class PackageUtils {
      */
     public static String computeAnnotationPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
 
-        final String annotation = Objects.nonNull(packageConfiguration) ? packageConfiguration.getAnnotations() : null;
-
-        return computePackage(basePackage, annotation, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS);
+        return join(basePackage, computeAnnotationSubPackage(packageConfiguration));
     }
 
     /**
-     * Computes the package path by joining the base package with either the user-defined package or the default package path.
-     * If the user-defined package is not null or empty, it is used, otherwise the default package path is used.
-     * 
-     * @param basePackage        the base package path
-     * @param userDefinedPackage the user-defined package path
-     * @param defaultPackagePath the default package path
-     * @return the computed package path
+     * Computes the annotation sub package by joining the base package with either the user-defined annotation package or the default annotation
+     * package path.
+     * If the user-defined annotation package is not null or empty, it is used, otherwise the default annotation package path is used.
+     *
+     * @param packageConfiguration the package configuration object
+     * @return the computed annotation sub package path
      */
-    private static String computePackage(final String basePackage, final String userDefinedPackage, final String defaultPackagePath) {
+    public static String computeAnnotationSubPackage(final PackageConfiguration packageConfiguration) {
 
-        if (StringUtils.isNotBlank(userDefinedPackage)) {
-            return PackageUtils.join(basePackage, userDefinedPackage);
+        final String annotation = Objects.nonNull(packageConfiguration) ? packageConfiguration.getAnnotations() : null;
+
+        if (StringUtils.isNotBlank(annotation)) {
+            return annotation;
         }
 
-        return PackageUtils.join(basePackage, defaultPackagePath);
+        return GeneratorConstants.DefaultPackageLayout.ANNOTATIONS;
+    }
+
+    /**
+     * Computes the business service package by joining the base package with either the user-defined business service package or the default business service package path.
+     * If the user-defined business service package is not null or empty, it is used, otherwise the default business service package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed business service package path
+     */
+    public static String computeBusinessServicePackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeBusinessServiceSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the business service sub package by joining the base package with either the user-defined business service package or the default business service package path.
+     * If the user-defined business service package is not null or empty, it is used, otherwise the default business service package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed business service sub package path
+     */
+    public static String computeBusinessServiceSubPackage(final PackageConfiguration packageConfiguration) {
+
+        final String businessservices = Objects.nonNull(packageConfiguration) ? packageConfiguration.getBusinessservices() : null;
+
+        if (StringUtils.isNotBlank(businessservices)) {
+            return businessservices;
+        }
+
+        return GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES;
     }
 
     /**

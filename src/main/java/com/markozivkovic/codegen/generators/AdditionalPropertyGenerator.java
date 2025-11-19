@@ -86,7 +86,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
                 ));
 
         FileWriterUtils.writeToFile(
-            outputDir, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS, "OptimisticLockingRetry.java", sb.toString()
+            outputDir, PackageUtils.computeAnnotationSubPackage(packageConfiguration), "OptimisticLockingRetry.java", sb.toString()
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION);
@@ -117,7 +117,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
                 ));
         
         FileWriterUtils.writeToFile(
-            outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "EnableRetryConfiguration.java", sb.toString()
+            outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "EnableRetryConfiguration.java", sb.toString()
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY);
@@ -147,7 +147,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
                 ));
         
         FileWriterUtils.writeToFile(
-                outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "GraphQlConfiguration.java", sb.toString()
+                outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "GraphQlConfiguration.java", sb.toString()
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION);
