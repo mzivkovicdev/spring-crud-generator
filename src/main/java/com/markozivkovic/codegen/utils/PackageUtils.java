@@ -122,6 +122,38 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the exception package by joining the base package with either the user-defined exception package or the default exception package path.
+     * If the user-defined exception package is not null or empty, it is used, otherwise the default exception package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed exception package path
+     */
+    public static String computeExceptionPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeExceptionSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the exception sub package by joining the base package with either the user-defined exception package or the default
+     * exception sub package path.
+     * If the user-defined exception package is not null or empty, it is used, otherwise the default exception sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed exception sub package path
+     */
+    public static String computeExceptionSubPackage(final PackageConfiguration packageConfiguration) {
+        
+        final String exceptions = Objects.nonNull(packageConfiguration) ? packageConfiguration.getExceptions() : null;
+
+        if (StringUtils.isNotBlank(exceptions)) {
+            return exceptions;
+        }
+
+        return GeneratorConstants.DefaultPackageLayout.EXCEPTIONS;
+    }
+
+    /**
      * Computes the enum package by joining the base package with either the user-defined enum package or the default enum package path.
      * If the user-defined enum package is not null or empty, it is used, otherwise the default enum package path is used.
      * 
