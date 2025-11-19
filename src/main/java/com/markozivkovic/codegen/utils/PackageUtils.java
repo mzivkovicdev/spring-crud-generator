@@ -122,6 +122,37 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the enum package by joining the base package with either the user-defined enum package or the default enum package path.
+     * If the user-defined enum package is not null or empty, it is used, otherwise the default enum package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed enum package path
+     */
+    public static String computeEnumPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        
+        return join(basePackage, computeEnumSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the enum sub package by joining the base package with either the user-defined enum package or the default enum sub package path.
+     * If the user-defined enum package is not null or empty, it is used, otherwise the default enum sub package path is used.
+     *
+     * @param packageConfiguration the package configuration object
+     * @return the computed enum sub package path
+     */
+    public static String computeEnumSubPackage(final PackageConfiguration packageConfiguration) {
+
+        final String enums = Objects.nonNull(packageConfiguration) ? packageConfiguration.getEnums() : null;
+
+        if (StringUtils.isNotBlank(enums)) {
+            return enums;
+        }
+
+        return GeneratorConstants.DefaultPackageLayout.ENUMS;
+    }
+
+    /**
      * Computes the package path by joining the base package with either the user-defined annotation package or the default annotation
      * package path.
      * If the user-defined annotation package is not null or empty, it is used, otherwise the default annotation package path is used.

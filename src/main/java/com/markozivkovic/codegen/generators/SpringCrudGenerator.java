@@ -37,7 +37,7 @@ public class SpringCrudGenerator implements CodeGenerator {
     public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites,
             final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
         this.GENERATORS = Map.ofEntries(
-            Map.entry(ENUM, new EnumGenerator()),
+            Map.entry(ENUM, new EnumGenerator(packageConfiguration)),
             Map.entry(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites)),
             Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator()),
             Map.entry(EXCEPTION, new ExceptionGenerator()),
