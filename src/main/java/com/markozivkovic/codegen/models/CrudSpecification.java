@@ -7,14 +7,17 @@ public class CrudSpecification {
     
     private CrudConfiguration configuration;
     private List<ModelDefinition> entities;
+    private PackageConfiguration packages;
 
     public CrudSpecification() {
 
     }
 
-    public CrudSpecification(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+    public CrudSpecification(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+            final PackageConfiguration packages) {
         this.configuration = configuration;
         this.entities = entities;
+        this.packages = packages;
     }
 
     public CrudConfiguration getConfiguration() {
@@ -35,6 +38,15 @@ public class CrudSpecification {
         return this;
     }
 
+    public PackageConfiguration getPackages() {
+        return this.packages;
+    }
+
+    public CrudSpecification setPackages(final PackageConfiguration packages) {
+        this.packages = packages;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -44,12 +56,13 @@ public class CrudSpecification {
         }
         final CrudSpecification crudSpecification = (CrudSpecification) o;
         return Objects.equals(configuration, crudSpecification.configuration) &&
-                Objects.equals(entities, crudSpecification.entities);
+                Objects.equals(entities, crudSpecification.entities) &&
+                Objects.equals(packages, crudSpecification.packages);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(configuration, entities);
+        return Objects.hash(configuration, entities, packages);
     }
 
     @Override
@@ -57,6 +70,7 @@ public class CrudSpecification {
         return "{" +
             " configuration='" + getConfiguration() + "'" +
             " entities='" + getEntities() + "'" +
+            " packages='" + getPackages() + "'" +
             "}";
     }
     
