@@ -15,6 +15,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -33,12 +34,14 @@ public class OpenApiCodeGenerator implements CodeGenerator {
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
     
     public OpenApiCodeGenerator(final CrudConfiguration configuration, final ProjectMetadata projectMetadata,
-                                final List<ModelDefinition> entities) {
+                                final List<ModelDefinition> entities, final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.projectMetadata = projectMetadata;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -81,7 +84,14 @@ public class OpenApiCodeGenerator implements CodeGenerator {
                     throw new IllegalStateException("OpenAPI parse failed for: " + specUri + "\n" + msgs);
                 }
                 
-                final String outputPath = String.format("%s/generated/%s", outputDir, StringUtils.uncapitalize(strippedModelName));
+                final String outputPath;
+                if (Objects.nonNull(packageConfiguration)) {
+                    outputPath = String.format(
+                            "%s/%s/%s", outputDir, packageConfiguration.getGenerated(), StringUtils.uncapitalize(strippedModelName)
+                    );
+                } else {
+                    outputPath = String.format("%s/generated/%s", outputDir, StringUtils.uncapitalize(strippedModelName));
+                }
                 final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputPath);
                 
                 final CodegenConfigurator cfg = new CodegenConfigurator()
