@@ -119,6 +119,33 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the controller package by joining the base package with either the user-defined controller package or the default controller package path.
+     * If the user-defined controller package is not null or empty, it is used, otherwise the default controller package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed controller package path
+     */
+    public static String computeControllerPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeControllerSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the controller sub package by joining the base package with either the user-defined controller package or the default controller sub package path.
+     * If the user-defined controller package is not null or empty, it is used, otherwise the default controller sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed controller sub package path
+     */
+    public static String computeControllerSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getControllers, GeneratorConstants.DefaultPackageLayout.CONTROLLERS
+        );
+    }
+
+    /**
      * Computes the exception package by joining the base package with either the user-defined exception package or the default exception package path.
      * If the user-defined exception package is not null or empty, it is used, otherwise the default exception package path is used.
      * 
