@@ -39,7 +39,7 @@ public class SpringCrudGenerator implements CodeGenerator {
         this.GENERATORS = Map.ofEntries(
             Map.entry(ENUM, new EnumGenerator(packageConfiguration)),
             Map.entry(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites, packageConfiguration)),
-            Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator()),
+            Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator(packageConfiguration)),
             Map.entry(EXCEPTION, new ExceptionGenerator(packageConfiguration)),
             Map.entry(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entites, packageConfiguration)),
             Map.entry(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration)),
