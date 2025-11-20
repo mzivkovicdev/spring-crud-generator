@@ -399,6 +399,33 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the service package by joining the base package with either the user-defined service package or the default service package path.
+     * If the user-defined service package is not null or empty, it is used, otherwise the default service package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed service package path
+     */
+    public static String computeServicePackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        
+        return join(basePackage, computeServiceSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the service sub package by joining the base package with either the user-defined service package or the default service package path.
+     * If the user-defined service package is not null or empty, it is used, otherwise the default service package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed service sub package path
+     */
+    public static String computeServiceSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getServices, GeneratorConstants.DefaultPackageLayout.SERVICES
+        );
+    }
+
+    /**
      * Resolves the sub package by checking if the given package configuration object is not null, and if so, applies
      * the given getter function to retrieve the sub package.
      * If the retrieved value is not null or empty, it is returned, otherwise the default sub package is returned.
