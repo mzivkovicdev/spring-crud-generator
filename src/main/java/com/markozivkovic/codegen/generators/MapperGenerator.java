@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.MapperTemplateContexts;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileUtils;
@@ -25,10 +26,13 @@ public class MapperGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public MapperGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+    public MapperGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+            final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -85,9 +89,10 @@ public class MapperGenerator implements CodeGenerator {
         final Map<String, Object> context = MapperTemplateContexts.computeMapperContext(modelDefinition, packagePath, swagger, isGraphQl);
         
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);
+        
         final String resolvedPackagePath = isGraphQl ?
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL) : 
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST);
+                PackageUtils.computeGraphQlMapperPackage(packagePath, packageConfiguration) :
+                PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration);
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, resolvedPackagePath))
                 .append(mapperTemplate);
@@ -116,15 +121,15 @@ public class MapperGenerator implements CodeGenerator {
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);
 
         final String resolvedPackagePath = isGraphQl ? 
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS) :
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS);
+                PackageUtils.computeHelperGraphQlMapperPackage(packagePath, packageConfiguration) :
+                PackageUtils.computeHelperRestMapperPackage(packagePath, packageConfiguration);
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, resolvedPackagePath))
                 .append(mapperTemplate);
 
         final String filePath = isGraphQl ?
-                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS) : 
-                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS);
+                PackageUtils.computeHelperGraphQlMappersSubPackage(packageConfiguration) :
+                PackageUtils.computeHelperRestMappersSubPackage(packageConfiguration);
         FileWriterUtils.writeToFile(outputDir, filePath, mapperName, sb.toString());
     }
 

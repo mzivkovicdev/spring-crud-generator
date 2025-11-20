@@ -426,6 +426,113 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the rest mapper package by joining the base package with either the user-defined rest mappers package or the default rest mappers package path.
+     * If the user-defined rest mappers package is not null or empty, it is used, otherwise the default rest mappers package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed rest mapper package path
+     */
+    public static String computeRestMapperPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        return join(basePackage, computeRestMappersSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the helper rest mapper package by joining the base package with either the user-defined helper rest mappers package or the default helper rest mappers package path.
+     * If the user-defined helper rest mappers package is not null or empty, it is used, otherwise the default helper rest mappers package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper rest mapper package path
+     */
+    public static String computeHelperRestMapperPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        return join(basePackage, computeHelperRestMappersSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the graphql mapper package by joining the base package with either the user-defined graphql mappers package or the default graphql mappers package path.
+     * If the user-defined graphql mappers package is not null or empty, it is used, otherwise the default graphql mappers package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed graphql mapper package path
+     */
+    public static String computeGraphQlMapperPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeGraphQlMappersSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the helper graphql mapper package by joining the base package with either the user-defined helper graphql mappers package or the default helper graphql mappers package path.
+     * If the user-defined helper graphql mappers package is not null or empty, it is used, otherwise the default helper graphql mappers package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper graphql mapper package path
+     */
+    public static String computeHelperGraphQlMapperPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        return join(basePackage, computeHelperGraphQlMappersSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the rest mappers sub package by joining the base package with either the user-defined mappers package or the default mappers sub package path,
+     * and then joining the result with the default rest sub package path.
+     * If the user-defined mappers package is not null or empty, it is used, otherwise the default mappers sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed rest mappers sub package path
+     */
+    public static String computeRestMappersSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return join(
+                resolveSubPackage(packageConfiguration, PackageConfiguration::getMappers, GeneratorConstants.DefaultPackageLayout.MAPPERS),
+                GeneratorConstants.DefaultPackageLayout.REST
+        );
+    }
+
+    /**
+     * Computes the graphql mappers sub package by joining the base package with either the user-defined mappers package or the default mappers sub package path,
+     * and then joining the result with the default graphql sub package path.
+     * If the user-defined mappers package is not null or empty, it is used, otherwise the default mappers sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed graphql mappers sub package path
+     */
+    public static String computeGraphQlMappersSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return join(
+                resolveSubPackage(packageConfiguration, PackageConfiguration::getMappers, GeneratorConstants.DefaultPackageLayout.MAPPERS),
+                GeneratorConstants.DefaultPackageLayout.GRAPHQL
+        );
+    }
+
+    /**
+     * Computes the helper rest mappers sub package by joining the rest mappers sub package with the default helper sub package path.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper rest mappers sub package path
+     */
+    public static String computeHelperRestMappersSubPackage(final PackageConfiguration packageConfiguration) {
+        return join(
+                computeRestMappersSubPackage(packageConfiguration),
+                GeneratorConstants.DefaultPackageLayout.HELPERS
+        );
+    }
+
+    /**
+     * Computes the helper graphql mappers sub package by joining the graphql mappers sub package with the default helper sub package path.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper graphql mappers sub package path
+     */
+    public static String computeHelperGraphQlMappersSubPackage(final PackageConfiguration packageConfiguration) {
+        return join(
+                computeGraphQlMappersSubPackage(packageConfiguration),
+                GeneratorConstants.DefaultPackageLayout.HELPERS
+        );
+    }
+
+    /**
      * Resolves the sub package by checking if the given package configuration object is not null, and if so, applies
      * the given getter function to retrieve the sub package.
      * If the retrieved value is not null or empty, it is returned, otherwise the default sub package is returned.
