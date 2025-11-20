@@ -415,6 +415,137 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the transfer object package by joining the base package with either the user-defined transfer object package or the default transfer object package path.
+     * If the user-defined transfer object package is not null or empty, it is used, otherwise the default transfer object package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed transfer object package path
+     */
+    public static String computeTransferObjectPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeTransferObjectSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the transfer object sub package by joining the base package with either the user-defined transfer object package or the default transfer object sub package path.
+     * If the user-defined transfer object package is not null or empty, it is used, otherwise the default transfer object sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed transfer object sub package path
+     */
+    public static String computeTransferObjectSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getTransferobjects, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS
+        );
+    }
+
+    /**
+     * Computes the rest transfer object package by joining the base package with either the user-defined rest transfer object package or the default rest transfer object package path.
+     * If the user-defined rest transfer object package is not null or empty, it is used, otherwise the default rest transfer object package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed rest transfer object package path
+     */
+    public static String computeRestTransferObjectPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        return join(basePackage, computeRestTransferObjectSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the rest transfer object sub package by joining the base package with either the user-defined rest transfer object package or the default rest transfer object sub package path.
+     * If the user-defined rest transfer object package is not null or empty, it is used, otherwise the default rest transfer object sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed rest transfer object sub package path
+     */
+    public static String computeRestTransferObjectSubPackage(final PackageConfiguration packageConfiguration) {
+        return join(
+                resolveSubPackage(packageConfiguration, PackageConfiguration::getTransferobjects, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS),
+                GeneratorConstants.DefaultPackageLayout.REST
+        );
+    }
+
+    /**
+     * Computes the helper rest transfer object package by joining the base package with either the user-defined helper rest transfer object package or the default helper rest transfer object package path.
+     * If the user-defined helper rest transfer object package is not null or empty, it is used, otherwise the default helper rest transfer object package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper rest transfer object package path
+     */
+    public static String computeHelperRestTransferObjectPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        return join(basePackage, computeHelperRestTransferObjectSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the helper rest transfer object sub package by joining the rest transfer object sub package with the default helper sub package path.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper rest transfer object sub package path
+     */
+    public static String computeHelperRestTransferObjectSubPackage(final PackageConfiguration packageConfiguration) {
+        return join(
+                computeRestTransferObjectSubPackage(packageConfiguration),
+                GeneratorConstants.DefaultPackageLayout.HELPERS
+        );
+    }
+
+    /**
+     * Computes the graphql transfer object package by joining the base package with either the user-defined graphql transfer object package or the default graphql transfer object package path.
+     * If the user-defined graphql transfer object package is not null or empty, it is used, otherwise the default graphql transfer object package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed graphql transfer object package path
+     */
+    public static String computeGraphqlTransferObjectPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeGraphqlTransferObjectSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the graphql transfer object sub package by joining the graphql sub package with either the user-defined transfer object package or the default transfer object sub package path.
+     * If the user-defined transfer object package is not null or empty, it is used, otherwise the default transfer object sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed graphql transfer object sub package path
+     */
+    public static String computeGraphqlTransferObjectSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return join(
+                resolveSubPackage(packageConfiguration, PackageConfiguration::getTransferobjects, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS),
+                GeneratorConstants.DefaultPackageLayout.GRAPHQL
+        );
+    }
+
+    /**
+     * Computes the helper graphql transfer object sub package by joining the graphql transfer object sub package with the default helper
+     * sub package path.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper graphql transfer object sub package path
+     */
+    public static String computeHelperGraphqlTransferObjectSubPackage(final PackageConfiguration packageConfiguration) {
+        return join(
+                computeGraphqlTransferObjectSubPackage(packageConfiguration),
+                GeneratorConstants.DefaultPackageLayout.HELPERS
+        );
+    }
+
+    /**
+     * Computes the graphql transfer object helper package by joining the base package with the helper graphql transfer object sub package.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed graphql transfer object helper package path
+     */
+    public static String computeHelperGraphqlTransferObjectPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+        return join(basePackage, computeHelperGraphqlTransferObjectSubPackage(packageConfiguration));
+    }
+
+    /**
      * Computes the helper entity sub package by joining the entity sub package with the default helper sub package path.
      * 
      * @param packageConfiguration the package configuration object

@@ -10,16 +10,15 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.imports.TransferObjectImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.TransferObjectTemplateContext;
 import com.markozivkovic.codegen.utils.AuditUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
-import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
@@ -34,10 +33,13 @@ public class TransferObjectGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public TransferObjectGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+    public TransferObjectGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+                final PackageConfiguration packageConfiguration) {
         this.entities = entities;
         this.configuration = configuration;
+        this.packageConfiguration = packageConfiguration;
     }
 
 
@@ -65,32 +67,24 @@ public class TransferObjectGenerator implements CodeGenerator {
                                     "JSON model not found: %s", jsonFieldName
                                 )
                             ));
-                    final String restHelperPackagePath = PackageUtils.join(
-                            packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS
-                    );
-                    final String fileHelperPath = FileUtils.join(
-                        GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS
-                    );
+                    final String restHelperPackagePath = PackageUtils.computeHelperRestTransferObjectPackage(packagePath, packageConfiguration);
+                    final String fileHelperPath = PackageUtils.computeHelperRestTransferObjectSubPackage(packageConfiguration);
                     this.generateHelperTO(jsonModel, outputDir, restHelperPackagePath, fileHelperPath);
 
                     if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
-                        final String graphQlHelperPackagePath = PackageUtils.join(
-                                packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS
-                        );
-                        final String fileGraphqlPath = FileUtils.join(
-                                GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS
-                        );
+                        final String graphQlHelperPackagePath = PackageUtils.computeHelperGraphqlTransferObjectPackage(packagePath, packageConfiguration);
+                        final String fileGraphqlPath = PackageUtils.computeHelperGraphqlTransferObjectSubPackage(packageConfiguration);
                         this.generateHelperTO(jsonModel, outputDir, graphQlHelperPackagePath, fileGraphqlPath);
                     }
                 });
 
-        final String packagePathRest = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
-        final String filePathRest = FileUtils.join(GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
+        final String packagePathRest = PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration);
+        final String filePathRest = PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration);
         this.generateTO(modelDefinition, outputDir, packagePathRest, filePathRest, TransferObjectTarget.REST);
         
         if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
-            final String packagePathGraphql = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL);
-            final String filePathGraphql = FileUtils.join(GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL);
+            final String packagePathGraphql = PackageUtils.computeGraphqlTransferObjectPackage(packagePathRest, packageConfiguration);
+            final String filePathGraphql = PackageUtils.computeGraphqlTransferObjectSubPackage(packageConfiguration);
             this.generateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, TransferObjectTarget.GRAPHQL);
             this.generateCreateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
             this.generateUpdateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
@@ -259,7 +253,7 @@ public class TransferObjectGenerator implements CodeGenerator {
                     .orElseThrow();
 
             final StringBuilder sb = new StringBuilder();
-            final String packagePathRest = PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST);
+            final String packagePathRest = PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration);
             sb.append(String.format(PACKAGE, packagePathRest));
     
             final String transferObjName = String.format("%sInputTO", ModelNameUtils.stripSuffix(relationModelDefinition.getName()));
@@ -276,9 +270,7 @@ public class TransferObjectGenerator implements CodeGenerator {
             );
     
             sb.append(transferObjectTemplate);
-            final String filePath = FileUtils.join(
-                    GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST
-            );
+            final String filePath = PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration);
     
             FileWriterUtils.writeToFile(outputDir, filePath, transferObjName, sb.toString());
         });
@@ -292,12 +284,12 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param packagePath the package path to use as the prefix for the generated class
      * @param outputDir the directory where the generated class will be written
      */
-    private static void generatePageTO(final String packagePath, final String outputDir) {
+    private void generatePageTO(final String packagePath, final String outputDir) {
 
         if (!PAGE_TO_GENERATED) {
 
             final StringBuilder pageSb = new StringBuilder();
-            pageSb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS)));
+            pageSb.append(String.format(PACKAGE, PackageUtils.computeTransferObjectPackage(packagePath, packageConfiguration)));
 
             final String pageTOObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                     "transferobject/page-transfer-object-template.ftl",
@@ -306,7 +298,7 @@ public class TransferObjectGenerator implements CodeGenerator {
 
             pageSb.append(pageTOObjectTemplate);
 
-            FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, "PageTO", pageSb.toString());
+            FileWriterUtils.writeToFile(outputDir, PackageUtils.computeTransferObjectSubPackage(packageConfiguration), "PageTO", pageSb.toString());
             PAGE_TO_GENERATED = true;
         }
     }

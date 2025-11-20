@@ -45,7 +45,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration)),
             Map.entry(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entites, packageConfiguration)),
             Map.entry(BUSINESS_SERVICE, new BusinessServiceGenerator(entites, packageConfiguration)),
-            Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entites)),
+            Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entites, packageConfiguration)),
             Map.entry(MAPPER, new MapperGenerator(crudConfiguration, entites, packageConfiguration)),
             Map.entry(CONTROLLER, new RestControllerGenerator(crudConfiguration, entites, packageConfiguration)),
             Map.entry(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata)),
