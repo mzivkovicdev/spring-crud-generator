@@ -319,6 +319,58 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the entity package by joining the base package with either the user-defined entity package or the default entity package path.
+     * If the user-defined entity package is not null or empty, it is used, otherwise the default entity package path is used.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed entity package path
+     */
+    public static String computeEntityPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeEntitySubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the entity sub package by joining the base package with either the user-defined entity package or the default entity
+     * sub package path.
+     * If the user-defined entity package is not null or empty, it is used, otherwise the default entity sub package path is used.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed entity sub package path
+     */
+    public static String computeEntitySubPackage(final PackageConfiguration packageConfiguration) {
+
+        return resolveSubPackage(
+                packageConfiguration, PackageConfiguration::getModels, GeneratorConstants.DefaultPackageLayout.MODELS
+        );
+    }
+
+    /**
+     * Computes the helper entity package by joining the base package with either the user-defined helper entity package or
+     * the default helper entity package path.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper entity package path
+     */
+    public static String computeHelperEntityPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(computeEntityPackage(basePackage, packageConfiguration), GeneratorConstants.DefaultPackageLayout.HELPERS);
+    }
+
+    /**
+     * Computes the helper entity sub package by joining the entity sub package with the default helper sub package path.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @return the computed helper entity sub package path
+     */
+    public static String computeHelperEntitySubPackage(final PackageConfiguration packageConfiguration) {
+
+        return join(computeEntitySubPackage(packageConfiguration), GeneratorConstants.DefaultPackageLayout.HELPERS);
+    }
+
+    /**
      * Resolves the sub package by checking if the given package configuration object is not null, and if so, applies
      * the given getter function to retrieve the sub package.
      * If the retrieved value is not null or empty, it is returned, otherwise the default sub package is returned.

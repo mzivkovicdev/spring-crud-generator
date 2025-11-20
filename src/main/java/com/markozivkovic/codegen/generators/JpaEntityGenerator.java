@@ -13,13 +13,12 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.imports.ModelImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.JpaEntityTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
-import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -35,10 +34,13 @@ public class JpaEntityGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public JpaEntityGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+    public JpaEntityGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
     
     /**
@@ -88,7 +90,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         final String className = model.getName();
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, GeneratorConstants.DefaultPackageLayout.HELPERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeHelperEntityPackage(packagePath, packageConfiguration)));
         sb.append(ModelImports.getBaseImport(model, true, false));
 
         final String enumImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir);
@@ -123,8 +125,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));
         
         FileWriterUtils.writeToFile(
-                outputDir, FileUtils.join(GeneratorConstants.DefaultPackageLayout.MODELS, GeneratorConstants.DefaultPackageLayout.HELPERS),
-                className, sb.toString()
+                outputDir, PackageUtils.computeHelperEntitySubPackage(packageConfiguration), className, sb.toString()
         );
     }
 
@@ -148,7 +149,7 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeEntityPackage(packagePath, packageConfiguration)));
         sb.append(ModelImports.getBaseImport(model, true, true));
                 
         sb.append(ModelImports.computeJakartaImports(model, optimisticLocking))
@@ -195,7 +196,7 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));
 
-        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.MODELS, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, PackageUtils.computeEntitySubPackage(packageConfiguration), className, sb.toString());
     }
 
 }
