@@ -6,9 +6,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
@@ -20,12 +20,13 @@ public class EnumImports {
     /**
      * Computes the necessary imports for the given model definition, including the enums if any exist.
      *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @param packagePath   the package path where the generated code will be written
+     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
+     * @param packagePath          the package path where the generated code will be written
+     * @param packageConfiguration the package configuration for the project
      * @return A set of strings containing the necessary import statements for the given model.
      */
-    public static Set<String> computeEnumImports(final ModelDefinition modelDefinition, final String outputDir, final String packagePath) {
+    public static Set<String> computeEnumImports(final ModelDefinition modelDefinition, final String packagePath,
+                final PackageConfiguration packageConfiguration) {
         
         final List<FieldDefinition> enumFields = FieldUtils.extractEnumFields(modelDefinition.getFields());
         final Set<String> imports = new LinkedHashSet<>();
@@ -39,7 +40,7 @@ public class EnumImports {
                 enumName = StringUtils.capitalize(enumField.getName());
             }
 
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.ENUMS, enumName)));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEnumPackage(packagePath, packageConfiguration), enumName)));
         });
 
         return imports;

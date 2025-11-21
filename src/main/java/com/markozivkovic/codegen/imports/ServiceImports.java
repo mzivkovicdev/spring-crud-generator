@@ -9,13 +9,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
-import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
 import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKeys;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -101,12 +101,14 @@ public class ServiceImports {
     /**
      * Computes the necessary imports for the given model definition, including the enums if any exist, the model itself, the repository, and any related models.
      *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @param importScope     the import scope
+     * @param modelDefinition       the model definition containing the class name, table name, and field definitions
+     * @param outputDir             the directory where the generated code will be written
+     * @param importScope           the import scope
+     * @param packageConfiguration  the package configuration
      * @return A string containing the necessary import statements for the given model.
      */
-    public static String computeModelsEnumsAndRepositoryImports(final ModelDefinition modelDefinition, final String outputDir, final ServiceImportScope importScope) {
+    public static String computeModelsEnumsAndRepositoryImports(final ModelDefinition modelDefinition, final String outputDir,
+                final ServiceImportScope importScope, final PackageConfiguration packageConfiguration) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -119,26 +121,26 @@ public class ServiceImports {
                 .collect(Collectors.toList());
 
         if (ServiceImportScope.SERVICE.equals(importScope)) {
-            final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
+            final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, packageConfiguration);
             imports.add(enumsImport);
         } else {
-            final Set<String> enumsImport = EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath);
+            final Set<String> enumsImport = EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration);
             imports.addAll(enumsImport);
         }
         
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.REPOSITORIES, String.format("%sRepository", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.EXCEPTIONS, RESOURCE_NOT_FOUND_EXCEPTION)));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRepositoryPackage(packagePath, packageConfiguration), String.format("%sRepository", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionPackage(packagePath, packageConfiguration), RESOURCE_NOT_FOUND_EXCEPTION)));
 
         if (GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION) && ServiceImportScope.SERVICE.equals(importScope)) {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.ANNOTATIONS, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY)));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeAnnotationPackage(packagePath, packageConfiguration), GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY)));
         }
 
         if (!relationModels.isEmpty()) {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.EXCEPTIONS, INVALID_RESOURCE_STATE_EXCEPTION)));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionPackage(packagePath, packageConfiguration), INVALID_RESOURCE_STATE_EXCEPTION)));
         }
 
-        relationModels.forEach(relation -> imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, relation))));
+        relationModels.forEach(relation -> imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), relation))));
 
         return imports.stream()
                 .sorted()

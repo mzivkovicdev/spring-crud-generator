@@ -18,6 +18,7 @@ import com.markozivkovic.codegen.imports.RestControllerImports.RestEndpointOpera
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -35,10 +36,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public RestControllerUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+    public RestControllerUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
     
     @Override
@@ -114,13 +118,13 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("relationFieldModel", StringUtils.capitalize(relationField.getName()));
                 context.put("baseImports", RestControllerImports.computeAddRelationEndpointBaseImports(modelDefinition));
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                        modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION, relationField
+                        modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION, relationField, packageConfiguration
                 ));
                 context.put("testImports", RestControllerImports.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.put("swagger", swagger);
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-                sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
+                sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                         "test/unit/controller/endpoint/add-resource-relation.ftl",
                         context
@@ -185,12 +189,12 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("invalidRelIdType", UnitTestUtils.computeInvalidIdType(relatedIdField));
                 context.put("baseImports", RestControllerImports.computeRemoveRelationEndpointBaseImports(modelDefinition, entities));
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                        modelDefinition, outputDir, false, RestEndpointOperation.REMOVE_RELATION
+                        modelDefinition, outputDir, false, RestEndpointOperation.REMOVE_RELATION, packageConfiguration
                 ));
                 context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-                sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
+                sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                         "test/unit/controller/endpoint/remove-resource-relation.ftl",
                         context
@@ -235,12 +239,12 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("swagger", swagger);
         context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", RestControllerImports.computeCreateEndpointTestProjectImports( 
-                modelDefinition, outputDir, swagger
+                modelDefinition, outputDir, swagger, packageConfiguration
         ));
         context.put("jsonFields", jsonFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/create-resource.ftl",
                 context
@@ -285,12 +289,12 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
         context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", RestControllerImports.computeUpdateEndpointTestProjectImports( 
-                modelDefinition, outputDir, swagger
+                modelDefinition, outputDir, swagger, packageConfiguration
         ));
         context.put("jsonFields", jsonFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/update-resource.ftl",
                 context
@@ -327,12 +331,12 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                modelDefinition, outputDir, false, RestEndpointOperation.DELETE
+                modelDefinition, outputDir, false, RestEndpointOperation.DELETE, packageConfiguration
         ));
         context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/delete-resource.ftl",
                 context
@@ -373,11 +377,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("testImports", RestControllerImports.computeGetEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                modelDefinition, outputDir, swagger, RestEndpointOperation.GET
+                modelDefinition, outputDir, swagger, RestEndpointOperation.GET, packageConfiguration
         ));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/get-resource.ftl",
                 context

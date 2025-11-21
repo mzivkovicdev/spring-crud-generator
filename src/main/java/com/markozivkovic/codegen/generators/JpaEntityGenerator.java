@@ -93,7 +93,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeHelperEntityPackage(packagePath, packageConfiguration)));
         sb.append(ModelImports.getBaseImport(model, true, false));
 
-        final String enumImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir);
+        final String enumImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir, packageConfiguration);
         
         if (StringUtils.isNotBlank(enumImports)) {
             sb.append(enumImports)
@@ -155,7 +155,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(ModelImports.computeJakartaImports(model, optimisticLocking))
                 .append("\n");
 
-        final String enumAndHelperEntitiesImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir);
+        final String enumAndHelperEntitiesImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir, packageConfiguration);
         
         if (StringUtils.isNotBlank(enumAndHelperEntitiesImports)) {
             sb.append(enumAndHelperEntitiesImports)

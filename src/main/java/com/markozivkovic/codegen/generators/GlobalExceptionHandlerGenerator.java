@@ -81,7 +81,7 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/graphql-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ExceptionImports.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir),
+                    PROJECT_IMPORTS, ExceptionImports.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
                     IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );
@@ -149,7 +149,7 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/rest-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir),
+                    PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
                     IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );

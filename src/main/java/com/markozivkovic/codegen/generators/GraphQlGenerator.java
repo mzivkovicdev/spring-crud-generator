@@ -121,7 +121,7 @@ public class GraphQlGenerator implements CodeGenerator {
         final Map<String, Object> context = GraphQlTemplateContext.computeGraphQlResolver(modelDefinition);
         context.put("queries", this.generateQueryMappings(modelDefinition));
         context.put("mutations", this.generateMutationMappings(modelDefinition));
-        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(modelDefinition, outputDir));
+        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(modelDefinition, outputDir, packageConfiguration));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/resolver-template.ftl", context

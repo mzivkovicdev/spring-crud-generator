@@ -181,7 +181,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         sb.append(imports);
 
         final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
-                modelDefinition, outputDir, true, target
+                modelDefinition, outputDir, true, target, packageConfiguration
         );
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
@@ -214,7 +214,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         sb.append(imports);
 
         final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
-                modelDefinition, outputDir, false, null
+                modelDefinition, outputDir, false, null, packageConfiguration
         );
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {

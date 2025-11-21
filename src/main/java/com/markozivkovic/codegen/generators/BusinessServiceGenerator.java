@@ -73,7 +73,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
         }
         
         sb.append("\n")
-                .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE))
+                .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE, packageConfiguration))
                 .append("\n")
                 .append(generateBusinessServiceClass(modelDefinition));
 

@@ -11,10 +11,10 @@ import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.constants.RelationTypesConstants;
-import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.AuditUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -150,12 +150,14 @@ public class ModelImports {
      * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
      * if any.
      * 
-     * @param modelDefinition  the model definition containing the class name, table name, and field definitions
-     * @param outputDir        the directory where the generated code will be written
+     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
+     * @param outputDir            the directory where the generated code will be written
+     * @param packageConfiguration the package configuration for the project
      * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
      *         transfer objects.
      */
-    public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
+                final PackageConfiguration packageConfiguration) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
@@ -164,13 +166,13 @@ public class ModelImports {
             return "";
         }
 
-        imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
+        imports.addAll(EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration));
 
         final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
         jsonFields.stream()
                 .map(FieldUtils::extractJsonFieldName)
                 .forEach(fieldName -> {
-                    imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, DefaultPackageLayout.HELPERS, fieldName)));
+                    imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperEntityPackage(packagePath, packageConfiguration), fieldName)));
                 });
 
         return imports.stream()

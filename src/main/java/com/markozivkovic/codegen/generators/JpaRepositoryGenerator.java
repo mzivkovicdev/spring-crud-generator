@@ -8,7 +8,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -69,7 +68,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
 
         sb.append(String.format(IMPORT, ImportConstants.SpringData.JPA_REPOSITORY))
                 .append("\n")
-                .append(String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, modelDefinition.getName())))
+                .append(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())))
                 .append("\n")
                 .append(jpaInterface);
 

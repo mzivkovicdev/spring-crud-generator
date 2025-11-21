@@ -16,6 +16,7 @@ import com.markozivkovic.codegen.imports.ServiceImports.ServiceImportScope;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.templates.ServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -32,10 +33,13 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public ServiceUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
+    public ServiceUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entites;
+        this.packageConfiguration = packageConfiguration;
     }
     
     @Override
@@ -61,7 +65,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.SERVICES)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeServicePackage(packagePath, packageConfiguration)));
         sb.append(this.generateTestServiceClass(modelDefinition, outputDir));
 
         FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.SERVICES, className, sb.toString());
@@ -79,7 +83,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateTestServiceClass(final ModelDefinition modelDefinition, final String outputDir) {
 
         final String baseImports = ServiceImports.getTestBaseImport(modelDefinition);
-        final String projectImports = ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE_TEST);
+        final String projectImports = ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE_TEST, packageConfiguration);
         final String testImports = ServiceImports.computeTestServiceImports(modelDefinition, entities, UnitTestUtils.isInstancioEnabled(configuration));
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());

@@ -18,6 +18,7 @@ import com.markozivkovic.codegen.imports.BusinessServiceImports.BusinessServiceI
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
 import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -34,10 +35,13 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entites;
+    private final PackageConfiguration packageConfiguration;
 
-    public BusinessServiceUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
+    public BusinessServiceUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entites = entites;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -68,7 +72,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration)));
         sb.append(this.generateTestBusinessServiceClass(modelDefinition, outputDir));
 
         FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES, className, sb.toString());
@@ -89,7 +93,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
         final Map<String, Object> context = new HashMap<>();
         context.put("baseImport", BusinessServiceImports.getTestBaseImport(modelDefinition));
-        context.put("projectImports", BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST));
+        context.put("projectImports", BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST, packageConfiguration));
         context.put("testImports", BusinessServiceImports.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
         context.put("className", className);

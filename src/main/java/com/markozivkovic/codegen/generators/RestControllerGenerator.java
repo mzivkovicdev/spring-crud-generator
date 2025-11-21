@@ -81,7 +81,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeControllerClassContext(modelDefinition);
-        context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger));
+        context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger, packageConfiguration));
 
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger));
         context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger));

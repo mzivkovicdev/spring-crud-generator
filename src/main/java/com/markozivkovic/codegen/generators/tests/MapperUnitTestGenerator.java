@@ -16,9 +16,9 @@ import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
-import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
@@ -33,10 +33,13 @@ public class MapperUnitTestGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public MapperUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+    public MapperUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -98,14 +101,14 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         final String className = isGraphQl ? String.format("%sGraphQlMapperTest", strippedModelName) :
                 String.format("%sRestMapperTest", strippedModelName);
         final String transferObjectName = String.format("%sTO", strippedModelName);
-        final String modelImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, modelDefinition.getName()));
+        final String modelImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName()));
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final String transferObjectImport;
         
         if (isGraphQl) {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, transferObjectName));
+            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
         } else {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, transferObjectName));
+            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
         }
 
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
@@ -138,11 +141,11 @@ public class MapperUnitTestGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         final String packagePathResolved = isGraphQl ?
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL) :
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST);
+                PackageUtils.computeGraphQlMapperPackage(packagePath, packageConfiguration) :
+                PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration);
         final String filePathResolved = isGraphQl ? 
-                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL) :
-                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST);
+                PackageUtils.computeGraphQlMappersSubPackage(packageConfiguration) :
+                PackageUtils.computeRestMappersSubPackage(packageConfiguration);
         sb.append(String.format(PACKAGE, packagePathResolved))
                 .append(mapperTemplate);
 
@@ -166,12 +169,12 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         final String className = isGraphQl ? String.format("%sGraphQlMapperTest", strippedModelName) :
                 String.format("%sRestMapperTest", strippedModelName);
         final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(jsonModel.getName()));
-        final String modelImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MODELS, GeneratorConstants.DefaultPackageLayout.HELPERS, jsonModel.getName()));
+        final String modelImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperEntityPackage(packagePath, packageConfiguration), jsonModel.getName()));
         final String transferObjectImport;
         if (isGraphQl) {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS, transferObjectName));
+            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperGraphqlTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
         } else {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS, transferObjectName));
+            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperRestTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
         }
         final List<String> enumFields = FieldUtils.extractEnumFields(jsonModel.getFields()).stream()
                 .map(FieldDefinition::getName)
@@ -211,11 +214,11 @@ public class MapperUnitTestGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         final String packagePathResolved = isGraphQl ?
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS) :
-                PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS);
+                PackageUtils.computeHelperGraphQlMapperPackage(packagePath, packageConfiguration) :
+                PackageUtils.computeHelperRestMapperPackage(packagePath, packageConfiguration);
         final String filePathResolved = isGraphQl ? 
-                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.GRAPHQL, GeneratorConstants.DefaultPackageLayout.HELPERS) :
-                FileUtils.join(GeneratorConstants.DefaultPackageLayout.MAPPERS, GeneratorConstants.DefaultPackageLayout.REST, GeneratorConstants.DefaultPackageLayout.HELPERS);
+                PackageUtils.computeGraphQlMappersSubPackage(packageConfiguration) :
+                PackageUtils.computeRestMappersSubPackage(packageConfiguration);
         sb.append(String.format(PACKAGE, packagePathResolved))
                 .append(mapperTemplate);
         
