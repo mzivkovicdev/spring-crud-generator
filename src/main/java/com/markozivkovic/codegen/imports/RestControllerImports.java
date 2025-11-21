@@ -10,9 +10,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
-import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
-import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.constants.ImportConstants;
+import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
@@ -98,7 +97,7 @@ public class RestControllerImports {
             imports.addAll(EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration));
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.API, String.format("%ssApi", modelWithoutSuffix))
+                PackageUtils.join(PackageUtils.computeGeneratedApiPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%ssApi", modelWithoutSuffix))
             ));
         }
 
@@ -109,7 +108,7 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, relationModel)
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), relationModel)
                 ));
             }
         });
@@ -121,7 +120,7 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, String.format("%sInput", relationModel))
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%sInput", relationModel))
                 ));
             }
         });
@@ -147,11 +146,11 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
             ));
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, String.format("%ssGet200Response", modelWithoutSuffix))
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%ssGet200Response", modelWithoutSuffix))
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
@@ -375,7 +374,7 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
@@ -416,7 +415,7 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, relationModel)
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), relationModel)
                 ));
             }
         });
@@ -451,7 +450,7 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
@@ -513,7 +512,7 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                         IMPORT,
-                        PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, String.format("%sInput", relationModel))
+                        PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%sInput", relationModel))
                 ));
             }
         }
@@ -535,9 +534,9 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
             ));
-            ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.GENERATED, unCapModelWithoutSuffix, DefaultPackageLayout.MODEL, String.format("%ssGet200Response", modelWithoutSuffix))));
+            ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%ssGet200Response", modelWithoutSuffix))));
         }
         if (!RestEndpointOperation.DELETE.equals(restEndpointOperation) && !RestEndpointOperation.REMOVE_RELATION.equals(restEndpointOperation)) {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));

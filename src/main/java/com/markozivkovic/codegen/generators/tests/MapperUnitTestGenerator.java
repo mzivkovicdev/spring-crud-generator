@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -128,7 +127,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
             context.put("swaggerModel", ModelNameUtils.stripSuffix(modelDefinition.getName()));
             context.put("generatedModelImport", String.format(
                     IMPORT,
-                    PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(strippedModelName), GeneratorConstants.DefaultPackageLayout.MODEL, strippedModelName)
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(strippedModelName)), strippedModelName)
             ));
         }
 
@@ -201,8 +200,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         if (swagger) {
             context.put("generatedModelImport", String.format(
                 PackageUtils.join(
-                    packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName())),
-                    GeneratorConstants.DefaultPackageLayout.MODEL, ModelNameUtils.stripSuffix(jsonModel.getName())
+                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName()))), ModelNameUtils.stripSuffix(jsonModel.getName())
                 )
             ));
         }

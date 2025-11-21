@@ -263,6 +263,64 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the generated model package by joining the base package with the generated model sub package.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @param strippedModel        the stripped model name
+     * @return the computed generated model package path
+     */
+    public static String computeGeneratedModelPackage(final String basePackage, final PackageConfiguration packageConfiguration,
+                final String strippedModel) {
+        return join(
+                basePackage, computeGeneratedModelSubPackage(packageConfiguration, strippedModel)
+        );
+    }
+
+    /**
+     * computes the generated model sub package by joining the generated sub package with the stripped model name and the default model sub package path.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @param strippedModel        the stripped model name
+     * @return the computed generated model sub package path
+     */
+    private static String computeGeneratedModelSubPackage(final PackageConfiguration packageConfiguration, final String strippedModel) {
+
+        final String generated = resolveSubPackage(packageConfiguration, PackageConfiguration::getGenerated, GeneratorConstants.DefaultPackageLayout.GENERATED);
+
+        return join(generated, strippedModel, GeneratorConstants.DefaultPackageLayout.MODEL);
+    }
+
+    /**
+     * computes the generated api package by joining the base package with the generated api sub package.
+     * 
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @param strippedModel        the stripped model name
+     * @return the computed generated api package path
+     */
+    public static String computeGeneratedApiPackage(final String basePackage, final PackageConfiguration packageConfiguration,
+                final String strippedModel) {
+        return join(
+                basePackage, computeGeneratedApiSubPackage(packageConfiguration, strippedModel)
+        );
+    }
+
+    /**
+     * computes the generated api sub package by joining the generated sub package with the stripped model name and the default api sub package path.
+     * 
+     * @param packageConfiguration the package configuration object
+     * @param strippedModel         the stripped model name
+     * @return the computed generated api sub package path
+     */
+    private static String computeGeneratedApiSubPackage(final PackageConfiguration packageConfiguration, final String strippedModel) {
+
+        final String generated = resolveSubPackage(packageConfiguration, PackageConfiguration::getGenerated, GeneratorConstants.DefaultPackageLayout.GENERATED);
+
+        return join(generated, strippedModel, GeneratorConstants.DefaultPackageLayout.API);
+    }
+
+    /**
      * Computes the package path by joining the base package with either the user-defined annotation package or the default annotation
      * package path.
      * If the user-defined annotation package is not null or empty, it is used, otherwise the default annotation package path is used.

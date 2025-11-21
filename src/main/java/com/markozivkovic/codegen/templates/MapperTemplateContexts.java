@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -79,8 +78,7 @@ public class MapperTemplateContexts {
         if (swagger) {
             context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.stripSuffix(modelDefinition.getName()));
             final String resolvedPackagePath = PackageUtils.join(
-                    packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(strippedModelName),
-                    GeneratorConstants.DefaultPackageLayout.MODEL, strippedModelName
+                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(strippedModelName)), strippedModelName
             );
             context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, String.format(IMPORT, resolvedPackagePath));
         }
@@ -135,8 +133,8 @@ public class MapperTemplateContexts {
 
         if (swagger) {
             final String resolvedPackagePath = PackageUtils.join(
-                    packagePath, GeneratorConstants.DefaultPackageLayout.GENERATED, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName())),
-                    GeneratorConstants.DefaultPackageLayout.MODEL, ModelNameUtils.stripSuffix(jsonModel.getName())
+                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName()))),
+                    ModelNameUtils.stripSuffix(jsonModel.getName())
             );
             context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, resolvedPackagePath);
         }
