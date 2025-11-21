@@ -13,6 +13,7 @@ import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.templates.GraphQlTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -29,12 +30,14 @@ public class GraphQlGenerator implements CodeGenerator {
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
     public GraphQlGenerator(final CrudConfiguration configuration, final ProjectMetadata projectMetadata,
-            final List<ModelDefinition> entities) {
+            final List<ModelDefinition> entities, final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.projectMetadata = projectMetadata;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -65,7 +68,7 @@ public class GraphQlGenerator implements CodeGenerator {
         final String baseImport = ResolverImports.computeResolverBaseImports(modelDefinition);
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeResolversPackage(packagePath, packageConfiguration)));
         if (StringUtils.isNotBlank(baseImport)) {
             sb.append(baseImport);
         }
@@ -73,7 +76,7 @@ public class GraphQlGenerator implements CodeGenerator {
 
         FileWriterUtils.writeToFile(
                 outputDir,
-                GeneratorConstants.DefaultPackageLayout.RESOLVERS,
+                PackageUtils.computeResolversSubPackage(packageConfiguration),
                 String.format("%sResolver.java", ModelNameUtils.stripSuffix(modelDefinition.getName())),
                 sb.toString()
         );
@@ -118,7 +121,7 @@ public class GraphQlGenerator implements CodeGenerator {
         final Map<String, Object> context = GraphQlTemplateContext.computeGraphQlResolver(modelDefinition);
         context.put("queries", this.generateQueryMappings(modelDefinition));
         context.put("mutations", this.generateMutationMappings(modelDefinition));
-        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(modelDefinition, outputDir));
+        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(modelDefinition, outputDir, packageConfiguration));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/resolver-template.ftl", context

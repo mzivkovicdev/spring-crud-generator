@@ -7,11 +7,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
-import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -44,11 +44,13 @@ public class ResolverImports {
     /**
      * Computes the necessary imports for the given model definition, including the graphql mappers, graphql mappers helpers, and the page transfer object.
      *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
+     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
+     * @param outputDir            the directory where the generated code will be written
+     * @param packageConfiguration the package configuration for the project
      * @return A string containing the necessary import statements for the given model.
      */
-    public static String computeGraphQlResolverImports(final ModelDefinition modelDefinition, final String outputDir) {
+    public static String computeGraphQlResolverImports(final ModelDefinition modelDefinition, final String outputDir,
+                final PackageConfiguration packageConfiguration) {
         
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -62,21 +64,21 @@ public class ResolverImports {
                 .forEach(jsonField -> {
                     imports.add(String.format(
                         IMPORT,
-                        PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sGraphQLMapper", jsonField))
+                        PackageUtils.join(PackageUtils.computeHelperGraphQlMapperPackage(packagePath, packageConfiguration), String.format("%sGraphQLMapper", jsonField))
                     ));
                 });
         }
-        
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, String.format("%sService", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sCreateTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sUpdateTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.GRAPHQL, String.format("%sGraphQLMapper", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, "PageTO")));
+
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sCreateTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sUpdateTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphQlMapperPackage(packagePath, packageConfiguration), String.format("%sGraphQLMapper", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeTransferObjectPackage(packagePath, packageConfiguration), "PageTO")));
 
         if (!FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.BUSINESS_SERVICES, String.format("%sBusinessService", modelWithoutSuffix))));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration), String.format("%sBusinessService", modelWithoutSuffix))));
         }
 
         return imports.stream()
@@ -148,11 +150,13 @@ public class ResolverImports {
     /**
      * Computes the necessary imports for a query unit test, including the necessary enums, models, services, and transfer objects.
      *
-     * @param outputDir the directory where the generated code will be written
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir            the directory where the generated code will be written
+     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
+     * @param packageConfiguration the package configuration for the project
      * @return a string containing the necessary import statements for a query unit test
      */
-    public static String computeProjectImportsForQueryUnitTests(final String outputDir, final ModelDefinition modelDefinition) {
+    public static String computeProjectImportsForQueryUnitTests(final String outputDir, final ModelDefinition modelDefinition,
+                final PackageConfiguration packageConfiguration) {
      
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -160,14 +164,14 @@ public class ResolverImports {
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.BUSINESS_SERVICES, String.format("%sBusinessService", modelWithoutSuffix))));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration), String.format("%sBusinessService", modelWithoutSuffix))));
         }
-        
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, String.format("%sService", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, GeneratorConstants.PAGE_TO)));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.EXCEPTIONS, DefaultPackageLayout.HANDLERS, GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));        
+
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeTransferObjectPackage(packagePath, packageConfiguration), GeneratorConstants.PAGE_TO)));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
 
         return imports.stream()
                 .sorted()
@@ -177,11 +181,13 @@ public class ResolverImports {
     /**
      * computes the necessary imports for a mutation unit test, including the necessary imports for the fields, relations, and service.
      *
-     * @param outputDir the directory where the generated code will be written
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param outputDir            the directory where the generated code will be written
+     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
+     * @param packageConfiguration the package configuration for the project
      * @return a string containing the necessary import statements for a mutation unit test
      */
-    public static String computeProjectImportsForMutationUnitTests(final String outputDir, final ModelDefinition modelDefinition) {
+    public static String computeProjectImportsForMutationUnitTests(final String outputDir, final ModelDefinition modelDefinition,
+                final PackageConfiguration packageConfiguration) {
      
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -195,21 +201,21 @@ public class ResolverImports {
                 .forEach(jsonField -> {
                     imports.add(String.format(
                         IMPORT,
-                        PackageUtils.join(packagePath, DefaultPackageLayout.MAPPERS, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sGraphQLMapper", jsonField))
+                        PackageUtils.join(PackageUtils.computeHelperGraphQlMapperPackage(packagePath, packageConfiguration), String.format("%sGraphQLMapper", jsonField))
                     ));
                 });
         }
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.BUSINESS_SERVICES, String.format("%sBusinessService", modelWithoutSuffix))));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration), String.format("%sBusinessService", modelWithoutSuffix))));
         }
 
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, String.format("%sService", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sCreateTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, String.format("%sUpdateTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.EXCEPTIONS, DefaultPackageLayout.HANDLERS, GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sCreateTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sUpdateTO", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
         imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         imports.add(String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
 

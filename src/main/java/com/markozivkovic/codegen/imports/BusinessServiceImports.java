@@ -9,13 +9,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
-import com.markozivkovic.codegen.constants.ImportConstants;
-import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
 import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKeys;
+import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.AuditUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
@@ -118,33 +118,34 @@ public class BusinessServiceImports {
      * Computes the necessary imports for the given model definition, including the enums if any exist, the model itself,
      * the related service, and any related models.
      *
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param outputDir       the directory where the generated code will be written
-     * @param importScope     the import scope
+     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
+     * @param outputDir            the directory where the generated code will be written
+     * @param importScope          the import scope
+     * @param packageConfiguration the package configuration
      * @return A string containing the necessary import statements for the given model.
      */
     public static String computeModelsEnumsAndServiceImports(final ModelDefinition modelDefinition, final String outputDir,
-            final BusinessServiceImportScope importScope) {
+            final BusinessServiceImportScope importScope, final PackageConfiguration packageConfiguration) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final List<FieldDefinition> relationModels = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir);
+        final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, packageConfiguration);
 
         imports.add(enumsImport);
         
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, modelDefinition.getName())));
-        imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, String.format("%sService", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
 
         relationModels.forEach(relation -> {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, relation.getType())));
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.SERVICES, ModelNameUtils.stripSuffix(relation.getType()) + "Service")));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), relation.getType())));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), ModelNameUtils.stripSuffix(relation.getType()) + "Service")));
         });
 
         if (GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION) && BusinessServiceImportScope.BUSINESS_SERVICE.equals(importScope)) {
-            imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.ANNOTATIONS, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY)));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeAnnotationPackage(packagePath, packageConfiguration), GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY)));
         }
 
         return imports.stream()

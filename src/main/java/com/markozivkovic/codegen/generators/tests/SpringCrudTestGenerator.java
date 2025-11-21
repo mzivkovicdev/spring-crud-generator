@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 
 public class SpringCrudTestGenerator implements CodeGenerator {
     
@@ -22,13 +23,14 @@ public class SpringCrudTestGenerator implements CodeGenerator {
 
     private final Map<String, CodeGenerator> GENERATORS;
 
-    public SpringCrudTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
+    public SpringCrudTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites,
+                final PackageConfiguration packageConfiguration) {
         this.GENERATORS = Map.ofEntries(
-            Map.entry(JPA_SERVICE_TEST, new ServiceUnitTestGenerator(configuration, entites)),
-            Map.entry(BUSINESS_SERVICE_TEST, new BusinessServiceUnitTestGenerator(configuration, entites)),
-            Map.entry(MAPPER_TEST, new MapperUnitTestGenerator(configuration, entites)),
-            Map.entry(CONTROLLER_TEST, new RestControllerUnitTestGenerator(configuration, entites)),
-            Map.entry(GRAPHQL_TEST, new GraphQlUnitTestGenerator(configuration, entites))
+            Map.entry(JPA_SERVICE_TEST, new ServiceUnitTestGenerator(configuration, entites, packageConfiguration)),
+            Map.entry(BUSINESS_SERVICE_TEST, new BusinessServiceUnitTestGenerator(configuration, entites, packageConfiguration)),
+            Map.entry(MAPPER_TEST, new MapperUnitTestGenerator(configuration, entites, packageConfiguration)),
+            Map.entry(CONTROLLER_TEST, new RestControllerUnitTestGenerator(configuration, entites, packageConfiguration)),
+            Map.entry(GRAPHQL_TEST, new GraphQlUnitTestGenerator(configuration, entites, packageConfiguration))
         );
     }
 

@@ -9,12 +9,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.markozivkovic.codegen.constants.ImportConstants;
-import com.markozivkovic.codegen.constants.GeneratorConstants.DefaultPackageLayout;
 import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectTarget;
 import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectType;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
@@ -126,15 +126,16 @@ public class TransferObjectImports {
      * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
      * if any.
      * 
-     * @param modelDefinition  the model definition containing the class name, table name, and field definitions
-     * @param outputDir        the directory where the generated code will be written
-     * @param importJsonFields whether to include the helper entities for JSON fields
-     * @param target           the target of the generated code
+     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
+     * @param outputDir            the directory where the generated code will be written
+     * @param importJsonFields     whether to include the helper entities for JSON fields
+     * @param target               the target of the generated code
+     * @param packageConfiguration the package configuration for the project
      * @return A string containing the necessary import statements for the generated enums, helper entities for JSON fields and
      *         transfer objects.
      */
     public static String computeEnumsAndHelperEntitiesImport(final ModelDefinition modelDefinition, final String outputDir,
-            final boolean importJsonFields, final TransferObjectTarget target) {
+            final boolean importJsonFields, final TransferObjectTarget target, final PackageConfiguration packageConfiguration) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
@@ -143,7 +144,7 @@ public class TransferObjectImports {
             return "";
         }
 
-        imports.addAll(EnumImports.computeEnumImports(modelDefinition, outputDir, packagePath));
+        imports.addAll(EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration));
 
         if (importJsonFields) {
             final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
@@ -152,13 +153,13 @@ public class TransferObjectImports {
                     .forEach(fieldName -> {
                         switch (target) {
                             case GRAPHQL:
-                                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.GRAPHQL, DefaultPackageLayout.HELPERS, String.format("%sTO", fieldName))));
+                                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", fieldName))));
                                 break;
                             case REST:
-                                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.TRANSFEROBJECTS, DefaultPackageLayout.REST, DefaultPackageLayout.HELPERS, String.format("%sTO", fieldName))));
+                                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", fieldName))));
                                 break;
                             default:
-                                imports.add(String.format(IMPORT, PackageUtils.join(packagePath, DefaultPackageLayout.MODELS, DefaultPackageLayout.HELPERS, fieldName)));
+                                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperEntityPackage(packagePath, packageConfiguration), fieldName)));
                                 break;
                         }
                     });

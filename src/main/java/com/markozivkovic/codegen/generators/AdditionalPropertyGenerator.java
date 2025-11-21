@@ -13,6 +13,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -22,9 +23,11 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(AdditionalPropertyGenerator.class);
 
     private final CrudConfiguration configuration;
+    private final PackageConfiguration packageConfiguration;
 
-    public AdditionalPropertyGenerator(final CrudConfiguration configuration) {
+    public AdditionalPropertyGenerator(final CrudConfiguration configuration, final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -77,13 +80,13 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeAnnotationPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "annotation/retryable-annotation.ftl", context
                 ));
 
         FileWriterUtils.writeToFile(
-            outputDir, GeneratorConstants.DefaultPackageLayout.ANNOTATIONS, "OptimisticLockingRetry.java", sb.toString()
+            outputDir, PackageUtils.computeAnnotationSubPackage(packageConfiguration), "OptimisticLockingRetry.java", sb.toString()
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION);
@@ -108,13 +111,13 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
             "configuration/retry-configuration.ftl", Map.of()
                 ));
         
         FileWriterUtils.writeToFile(
-            outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "EnableRetryConfiguration.java", sb.toString()
+            outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "EnableRetryConfiguration.java", sb.toString()
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY);
@@ -138,13 +141,13 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
             "configuration/scalar-configuration.ftl", Map.of()
                 ));
         
         FileWriterUtils.writeToFile(
-                outputDir, GeneratorConstants.DefaultPackageLayout.CONFIGURATIONS, "GraphQlConfiguration.java", sb.toString()
+                outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "GraphQlConfiguration.java", sb.toString()
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION);

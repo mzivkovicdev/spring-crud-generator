@@ -9,11 +9,11 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.imports.ServiceImports;
 import com.markozivkovic.codegen.imports.ServiceImports.ServiceImportScope;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.ServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -27,10 +27,13 @@ public class JpaServiceGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entites;
+    private final PackageConfiguration packageConfiguration;
 
-    public JpaServiceGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
+    public JpaServiceGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entites = entites;
+        this.packageConfiguration = packageConfiguration;
     }
     
     @Override
@@ -50,7 +53,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         final String className = String.format("%sService", modelWithoutSuffix);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.SERVICES)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeServicePackage(packagePath, packageConfiguration)));
         sb.append(ServiceImports.getBaseImport(
                 modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entites))
         );
@@ -59,12 +62,12 @@ public class JpaServiceGenerator implements CodeGenerator {
                     Objects.nonNull(configuration) && Objects.nonNull(configuration.isCache()) && configuration.isCache())
                 )
                 .append("\n")
-                .append(ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE))
+                .append(ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE, packageConfiguration))
                 .append("\n");
 
         sb.append(generateServiceClass(modelDefinition));
 
-        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, PackageUtils.computeServiceSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**

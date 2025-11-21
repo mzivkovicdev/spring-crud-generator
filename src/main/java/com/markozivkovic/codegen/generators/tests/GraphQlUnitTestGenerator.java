@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKeys;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.generators.CodeGenerator;
@@ -19,6 +18,7 @@ import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -34,10 +34,13 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public GraphQlUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities) {
+    public GraphQlUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -76,13 +79,13 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
     private void generateConfigFile(final String testOutputDir, final String packagePath) {
         
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeResolversPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/resolver/test-config-class-template.ftl", Map.of()
                 ));
 
         FileWriterUtils.writeToFile(
-                testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS,
+                testOutputDir, PackageUtils.computeResolversSubPackage(packageConfiguration),
                 "ResolverTestConfiguration.java", sb.toString()
         );
 
@@ -129,7 +132,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("testImports", ResolverImports.computeMutationResolverTestImports(
                 UnitTestUtils.isInstancioEnabled(configuration), !jsonFields.isEmpty()
         ));
-        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition));
+        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         relationFields.forEach(field -> {
@@ -146,14 +149,14 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
             ));
         });
         context.put("relations", relations);
-
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
+;
+        sb.append(String.format(PACKAGE, PackageUtils.computeResolversPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/resolver/mutation-class-test-template.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeResolversSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**
@@ -185,16 +188,16 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("testImports", ResolverImports.computeQueryResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
-        context.put("projectImports", ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition));
+        context.put("projectImports", ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition, packageConfiguration));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.RESOLVERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeResolversPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/resolver/query-class-test-template.ftl",
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeResolversSubPackage(packageConfiguration), className, sb.toString());
     }
     
 }

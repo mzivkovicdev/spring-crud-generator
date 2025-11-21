@@ -9,11 +9,11 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.imports.RestControllerImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -27,10 +27,13 @@ public class RestControllerGenerator implements CodeGenerator {
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entites;
+    private final PackageConfiguration packageConfiguration;
 
-    public RestControllerGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites) {
+    public RestControllerGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites,
+                final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entites = entites;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -50,13 +53,12 @@ public class RestControllerGenerator implements CodeGenerator {
                 && this.configuration.isSwagger();
 
         final StringBuilder sb = new StringBuilder();
-
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.CONTROLLERS)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(RestControllerImports.computeControllerBaseImports(modelDefinition, entites))
             .append("\n")
             .append(generateControllerClass(modelDefinition, outputDir, swagger));
 
-        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**
@@ -79,7 +81,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeControllerClassContext(modelDefinition);
-        context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger));
+        context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger, packageConfiguration));
 
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger));
         context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger));

@@ -10,14 +10,13 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.imports.ExceptionImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FieldUtils;
-import com.markozivkovic.codegen.utils.FileUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -36,10 +35,13 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
 
     private final CrudConfiguration crudConfiguration;
     private final List<ModelDefinition> entities;
+    private final PackageConfiguration packageConfiguration;
 
-    public GlobalExceptionHandlerGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entities) {
+    public GlobalExceptionHandlerGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entities,
+            final PackageConfiguration packageConfiguration) {
         this.crudConfiguration = crudConfiguration;
         this.entities = entities;
+        this.packageConfiguration = packageConfiguration;
     }
     
     @Override
@@ -79,18 +81,17 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/graphql-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ExceptionImports.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir),
+                    PROJECT_IMPORTS, ExceptionImports.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
                     IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.HANDLERS)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration)))
                 .append(exceptionTemplate);
         
         FileWriterUtils.writeToFile(
-            outputDir, FileUtils.join(GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.HANDLERS),
-            GLOBAL_GRAPHQL_EXCEPTION_HANDLER, sb.toString()
+                outputDir, PackageUtils.computeExceptionHandlerSubPackage(packageConfiguration), GLOBAL_GRAPHQL_EXCEPTION_HANDLER, sb.toString()
         );
     }
 
@@ -122,12 +123,11 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         );
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.RESPONSES)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeExceptionResponsePackage(packagePath, packageConfiguration)))
                 .append(httpResponseTemplate);
 
         FileWriterUtils.writeToFile(
-            outputDir, FileUtils.join(GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.RESPONSES),
-            HTTP_RESPONSE, sb.toString()
+            outputDir, PackageUtils.computeExceptionResponseSubPackage(packageConfiguration), HTTP_RESPONSE, sb.toString()
         );
     }
 
@@ -149,18 +149,17 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/rest-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir),
+                    PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
                     IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.HANDLERS)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration)))
                 .append(exceptionTemplate);
 
         FileWriterUtils.writeToFile(
-                outputDir, FileUtils.join(GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, GeneratorConstants.DefaultPackageLayout.HANDLERS),
-                GLOBAL_REST_EXCEPTION_HANDLER, sb.toString()
+                outputDir, PackageUtils.computeExceptionHandlerSubPackage(packageConfiguration), GLOBAL_REST_EXCEPTION_HANDLER, sb.toString()
         );
     }
 

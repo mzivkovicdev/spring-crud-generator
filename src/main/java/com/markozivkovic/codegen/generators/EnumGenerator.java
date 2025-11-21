@@ -8,9 +8,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.EnumTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -21,6 +21,12 @@ import com.markozivkovic.codegen.utils.StringUtils;
 public class EnumGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(EnumGenerator.class);
+
+    private final PackageConfiguration packageConfiguration;
+
+    public EnumGenerator(final PackageConfiguration packageConfiguration) {
+        this.packageConfiguration = packageConfiguration;
+    }
 
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
@@ -48,14 +54,15 @@ public class EnumGenerator implements CodeGenerator {
             }
             
             final StringBuilder sb = new StringBuilder();
-            sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.ENUMS)));
+            sb.append(String.format(PACKAGE, PackageUtils.computeEnumPackage(packagePath, packageConfiguration)))
+                    .append("\n");
 
             final Map<String, Object> context = EnumTemplateContext.createEnumContext(enumName, enumField.getValues());
             final String enumTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("enum/enum-template.ftl", context);
 
             sb.append(enumTemplate);
 
-            FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.ENUMS, enumName, sb.toString());
+            FileWriterUtils.writeToFile(outputDir, PackageUtils.computeEnumSubPackage(packageConfiguration), enumName, sb.toString());
         });
 
         LOGGER.info("Finished generating enums for model: {}", modelDefinition.getName());

@@ -15,6 +15,7 @@ import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.imports.BusinessServiceImports;
 import com.markozivkovic.codegen.imports.BusinessServiceImports.BusinessServiceImportScope;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.BusinessServiceTemplateContext;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -27,9 +28,11 @@ public class BusinessServiceGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessServiceGenerator.class);
 
     private final List<ModelDefinition> entites;
+    private final PackageConfiguration packageConfiguration;
 
-    public BusinessServiceGenerator(final List<ModelDefinition> entites) {
+    public BusinessServiceGenerator(final List<ModelDefinition> entites, final PackageConfiguration packageConfiguration) {
         this.entites = entites;
+        this.packageConfiguration = packageConfiguration;
     }
 
     @Override
@@ -54,7 +57,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
         final String className = String.format("%sBusinessService", modelWithoutSuffix);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES)));
+        sb.append(String.format(PACKAGE, PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration)));
         sb.append(BusinessServiceImports.getBaseImport(modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entites)));
 
         if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entites)) {
@@ -70,11 +73,11 @@ public class BusinessServiceGenerator implements CodeGenerator {
         }
         
         sb.append("\n")
-                .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE))
+                .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE, packageConfiguration))
                 .append("\n")
                 .append(generateBusinessServiceClass(modelDefinition));
 
-        FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, PackageUtils.computeBusinessServiceSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**

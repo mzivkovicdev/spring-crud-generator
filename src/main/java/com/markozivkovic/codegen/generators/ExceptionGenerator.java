@@ -12,6 +12,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -23,6 +24,12 @@ public class ExceptionGenerator implements CodeGenerator {
     private static final List<String> EXCEPTION_CLASS_LIST = List.of(
             "ResourceNotFoundException", "InvalidResourceStateException"
     );
+
+    private final PackageConfiguration packageConfiguration;
+
+    public ExceptionGenerator(final PackageConfiguration packageConfiguration) {
+        this.packageConfiguration = packageConfiguration;
+    }
     
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
@@ -42,10 +49,12 @@ public class ExceptionGenerator implements CodeGenerator {
                 Map.of(TemplateContextConstants.CLASS_NAME, exceptionClassName)
             );
 
-            sb.append(String.format(PACKAGE, PackageUtils.join(packagePath, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS)))
+            sb.append(String.format(PACKAGE, PackageUtils.computeExceptionPackage(packagePath, packageConfiguration)))
                     .append(exceptionTemplate);
     
-            FileWriterUtils.writeToFile(outputDir, GeneratorConstants.DefaultPackageLayout.EXCEPTIONS, exceptionClassName, sb.toString());
+            FileWriterUtils.writeToFile(
+                    outputDir, PackageUtils.computeExceptionSubPackage(packageConfiguration), exceptionClassName, sb.toString()
+            );
         });
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.EXCEPTIONS);
