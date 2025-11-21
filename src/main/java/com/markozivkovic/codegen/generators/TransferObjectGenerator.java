@@ -83,7 +83,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         this.generateTO(modelDefinition, outputDir, packagePathRest, filePathRest, TransferObjectTarget.REST);
         
         if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
-            final String packagePathGraphql = PackageUtils.computeGraphqlTransferObjectPackage(packagePathRest, packageConfiguration);
+            final String packagePathGraphql = PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration);
             final String filePathGraphql = PackageUtils.computeGraphqlTransferObjectSubPackage(packageConfiguration);
             this.generateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, TransferObjectTarget.GRAPHQL);
             this.generateCreateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);

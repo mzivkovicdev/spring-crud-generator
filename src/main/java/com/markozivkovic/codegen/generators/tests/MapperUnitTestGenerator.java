@@ -215,8 +215,8 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                 PackageUtils.computeHelperGraphQlMapperPackage(packagePath, packageConfiguration) :
                 PackageUtils.computeHelperRestMapperPackage(packagePath, packageConfiguration);
         final String filePathResolved = isGraphQl ? 
-                PackageUtils.computeGraphQlMappersSubPackage(packageConfiguration) :
-                PackageUtils.computeRestMappersSubPackage(packageConfiguration);
+                PackageUtils.computeHelperGraphQlMappersSubPackage(packageConfiguration) :
+                PackageUtils.computeHelperRestMappersSubPackage(packageConfiguration);
         sb.append(String.format(PACKAGE, packagePathResolved))
                 .append(mapperTemplate);
         

@@ -97,8 +97,8 @@ public class MapperGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, resolvedPackagePath))
                 .append(mapperTemplate);
 
-        final String filePath = isGraphQl ? PackageUtils.computeGraphqlTransferObjectSubPackage(packageConfiguration)
-                : PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration);
+        final String filePath = isGraphQl ? PackageUtils.computeGraphQlMappersSubPackage(packageConfiguration)
+                : PackageUtils.computeRestMappersSubPackage(packageConfiguration);
         FileWriterUtils.writeToFile(outputDir, filePath, mapperName, sb.toString());
     }
 
