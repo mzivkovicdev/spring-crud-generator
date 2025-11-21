@@ -68,7 +68,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeServicePackage(packagePath, packageConfiguration)));
         sb.append(this.generateTestServiceClass(modelDefinition, outputDir));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeServiceSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**

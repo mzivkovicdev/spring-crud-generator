@@ -75,7 +75,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration)));
         sb.append(this.generateTestBusinessServiceClass(modelDefinition, outputDir));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.BUSINESS_SERVICES, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeBusinessServiceSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**

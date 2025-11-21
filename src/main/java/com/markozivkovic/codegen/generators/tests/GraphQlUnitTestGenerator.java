@@ -86,7 +86,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
                 ));
 
         FileWriterUtils.writeToFile(
-                testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS,
+                testOutputDir, PackageUtils.computeResolversSubPackage(packageConfiguration),
                 "ResolverTestConfiguration.java", sb.toString()
         );
 
@@ -157,7 +157,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeResolversSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**
@@ -198,7 +198,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.RESOLVERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeResolversSubPackage(packageConfiguration), className, sb.toString());
     }
     
 }

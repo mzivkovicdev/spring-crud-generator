@@ -130,7 +130,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                         context
                 ));
 
-                FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
+                FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
         });
     }
 
@@ -200,7 +200,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                         context
                 ));
 
-                FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
+                FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
         });
     }
 
@@ -250,7 +250,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**
@@ -300,7 +300,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**
@@ -342,7 +342,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
     }
 
     /**
@@ -387,7 +387,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context
         ));
 
-        FileWriterUtils.writeToFile(testOutputDir, GeneratorConstants.DefaultPackageLayout.CONTROLLERS, className, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
     }
 
 }
