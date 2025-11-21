@@ -12,7 +12,6 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.AdditionalConfigurationConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.PackageConfiguration;
@@ -793,8 +792,6 @@ public class PackageUtils {
         }
 
         final List<String> missing = new ArrayList<>();
-        validateAdditionalPropertiesPackages(packageConfiguration, configuration, missing);
-
         final boolean anyGroupDefined = StringUtils.isNotBlank(packageConfiguration.getBusinessservices()) ||
                 StringUtils.isNotBlank(packageConfiguration.getControllers()) ||
                 StringUtils.isNotBlank(packageConfiguration.getEnums()) ||
@@ -817,13 +814,13 @@ public class PackageUtils {
             if (StringUtils.isBlank(packageConfiguration.getTransferobjects())) missing.add("transferobjects");
         }
 
-        if (Boolean.TRUE.equals(configuration.getGraphQl()) && anyGroupDefined) {
+        if (Boolean.TRUE.equals(configuration.getGraphQl())) {
             if (StringUtils.isBlank(packageConfiguration.getResolvers())) {
                 missing.add("resolvers (required when graphQl is enabled)");
             }
         }
 
-        if (Boolean.TRUE.equals(configuration.getOpenApiCodegen()) && anyGroupDefined) {
+        if (Boolean.TRUE.equals(configuration.getOpenApiCodegen())) {
             if (StringUtils.isBlank(packageConfiguration.getGenerated())) {
                 missing.add("generated (required when openApiCodegen is enabled)");
             }
@@ -834,42 +831,6 @@ public class PackageUtils {
                     "Invalid package configuration. Missing required package(s): %s", String.join(", ", missing)
             );
             throw new IllegalArgumentException(message);
-        }
-    }
-
-    /**
-     * Validates the additional properties configuration.
-     * If optimistic locking is enabled, all retry and backoff parameters must be defined.
-     * If any of the parameters are missing, an IllegalArgumentException is thrown.
-     * 
-     * @param packageConfiguration the package configuration
-     * @param configuration the crud configuration
-     * @param missing the list of missing configurations
-     */
-    private static void validateAdditionalPropertiesPackages(final PackageConfiguration packageConfiguration,
-            final CrudConfiguration configuration, final List<String> missing) {
-
-        if (configuration.getOptimisticLocking() == null || !configuration.getOptimisticLocking()) {
-            return;
-        }
-     
-        final Integer maxAttempts = (Integer) configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS);
-        final Integer delayMs = (Integer) configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS);
-        final Integer maxDelayMs = (Integer) configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS);
-        final Double multiplier = (Double) configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER);
-
-        final List<Object> parameters = Arrays.asList(maxAttempts, delayMs, maxDelayMs, multiplier);
-
-        if (parameters.stream().allMatch(Objects::isNull)) {
-            return;
-        }
-
-        if (parameters.stream().anyMatch(Objects::isNull)) {
-            missing.add("optimisticLocking.retry and optimisticLocking.backoff (all retry/backoff parameters must be defined)");
         }
     }
 
