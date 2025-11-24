@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.markozivkovic.codegen.models.ColumnDefinition;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.RelationDefinition;
@@ -823,6 +824,7 @@ public class FieldUtils {
         return fields.stream()
                 .filter(field -> !field.equals(idField))
                 .map(field -> {
+                    final String annotations = computeValidationAnnotations(field);
 
                     if (Objects.nonNull(field.getRelation())) {
                         final String inputArg;
@@ -840,9 +842,9 @@ public class FieldUtils {
                     }
 
                     if (isJsonField(field)) {
-                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
+                        return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName());
                     }
-                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                    return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName());
                 })
                 .collect(Collectors.toList());
     }
@@ -865,10 +867,11 @@ public class FieldUtils {
                 .filter(field -> !field.equals(id))
                 .filter(field -> Objects.isNull(field.getRelation()))
                 .map(field -> {
+                    final String annotations = computeValidationAnnotations(field);
                     if (isJsonField(field)) {
-                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
+                        return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName()).trim();
                     }
-                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                    return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName()). trim();
                 })
                 .collect(Collectors.toList());
     }
@@ -886,22 +889,47 @@ public class FieldUtils {
         return fields.stream()
                 .map(field -> {
 
+                    final String annotations = computeValidationAnnotations(field);
+
                     if (Objects.nonNull(field.getRelation())) {
                         final String inputArg;
                         if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
-                            inputArg = String.format("List<%sTO> %s", ModelNameUtils.stripSuffix(field.getType()), field.getName());
+                            inputArg = String.format(
+                                "%sList<%sTO> %s", annotations, ModelNameUtils.stripSuffix(field.getType()), field.getName()
+                            );
                         } else {
-                            inputArg = String.format("%sTO %s", ModelNameUtils.stripSuffix(field.getType()), field.getName());
+                            inputArg = String.format("%s%sTO %s", annotations, ModelNameUtils.stripSuffix(field.getType()), field.getName());
                         }
                         return inputArg;
                     }
 
                     if (isJsonField(field)) {
-                        return String.format("%sTO %s", field.getResolvedType(), field.getName());
+                        return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName());
                     }
-                    return String.format("%s %s", field.getResolvedType(), field.getName());
+                    return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName());
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a string of validation annotations for the given field definition.
+     * 
+     * @param field The field definition for which to generate the validation annotations.
+     * @return A string of validation annotations for the given field definition.
+     */
+    private static String computeValidationAnnotations(final FieldDefinition field) {
+
+        final StringBuilder sb = new StringBuilder();
+
+        if (Objects.nonNull(field.getColumn()) && Boolean.FALSE.equals(field.getColumn().getNullable())) {
+            sb.append("@NotNull ");
+        }
+
+        if (Objects.nonNull(field.getColumn()) && Objects.nonNull(field.getColumn().getLength())) {
+            sb.append(String.format("@Size(max = %d) ", field.getColumn().getLength()));
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -1012,6 +1040,52 @@ public class FieldUtils {
         } catch (final JsonProcessingException e) {
             throw new RuntimeException("Failed to clone FieldDefinition", e);
         }
+    }
+
+    /**
+     * Checks if any of the fields in the given list have a column validation of type 'not null' or 'length'.
+     * 
+     * @param fields The list of fields to check for column validations.
+     * @return True if any of the fields has a column validation of type 'not null' or 'length', false otherwise.
+     */
+    public static boolean hasAnyColumnValidation(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ColumnDefinition column = field.getColumn();
+                    return Objects.nonNull(column) && (Boolean.FALSE.equals(column.getNullable()) ||
+                            Objects.nonNull(column.getLength()));
+                });
+    }
+
+    /**
+     * Checks if any of the fields in the given list have a column definition with nullable set to false.
+     * 
+     * @param fields The list of fields to check for non-nullability.
+     * @return True if any of the fields have a column definition with nullable set to false, false otherwise.
+     */
+    public static boolean isAnyFieldNonNullable(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ColumnDefinition column = field.getColumn();
+                    return Objects.nonNull(column) && Boolean.FALSE.equals(column.getNullable());
+                });
+    }
+
+    /**
+     * Checks if any of the fields in the given list have a column definition with length defined.
+     * 
+     * @param fields The list of fields to check for length validations.
+     * @return True if any of the fields have a column definition with length defined, false otherwise.
+     */
+    public static boolean hasAnyFieldLengthValidation(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ColumnDefinition column = field.getColumn();
+                    return Objects.nonNull(column) && Objects.nonNull(column.getLength());
+                });
     }
     
 }

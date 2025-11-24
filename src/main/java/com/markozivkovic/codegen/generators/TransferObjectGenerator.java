@@ -180,6 +180,10 @@ public class TransferObjectGenerator implements CodeGenerator {
         }
         sb.append(imports);
 
+        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields())) {
+            sb.append(TransferObjectImports.computeValidationImport(modelDefinition));
+        }
+
         final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
                 modelDefinition, outputDir, true, target, packageConfiguration
         );
@@ -212,6 +216,10 @@ public class TransferObjectGenerator implements CodeGenerator {
 
         final String imports = TransferObjectImports.getBaseImport(modelDefinition);
         sb.append(imports);
+
+        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields())) {
+            sb.append(TransferObjectImports.computeValidationImport(modelDefinition));
+        }
 
         final String enumAndHelperEntityImports = TransferObjectImports.computeEnumsAndHelperEntitiesImport(
                 modelDefinition, outputDir, false, null, packageConfiguration
