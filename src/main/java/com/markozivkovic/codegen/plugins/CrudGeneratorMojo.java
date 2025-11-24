@@ -28,7 +28,7 @@ import com.markozivkovic.codegen.models.GeneratorState;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.GeneratorStateUtils;
-import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.validators.PackageConfigurationValidator;
 
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class CrudGeneratorMojo extends AbstractMojo {
@@ -86,7 +86,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
                 return;
             }
             
-            PackageUtils.validate(spec.getPackages(), spec.getConfiguration());
+            PackageConfigurationValidator.validate(spec.getPackages(), spec.getConfiguration());
             final SpringCrudGenerator generator = new SpringCrudGenerator(
                     spec.getConfiguration(), entitiesToGenerate, projectMetadata, spec.getPackages()
             );
