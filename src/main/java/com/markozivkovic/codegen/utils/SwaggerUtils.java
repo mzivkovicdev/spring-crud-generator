@@ -134,6 +134,10 @@ public class SwaggerUtils {
             property.put("description", fieldDefinition.getDescription());
         }
 
+        if (Objects.nonNull(fieldDefinition.getColumn())) {
+            property.putAll(applySwaggerValidation(fieldDefinition));
+        }
+
         Map<String, Object> schema;
         final RelationDefinition rel = fieldDefinition.getRelation();
         final String type = fieldDefinition.getType();
@@ -165,6 +169,34 @@ public class SwaggerUtils {
         property.putAll(schema);
         
         return property;
+    }
+
+    /**
+     * Applies Swagger validation annotations to a given field definition.
+     * 
+     * If the nullable attribute is present on the field definition, it will be added to the validation schema.
+     * If the length attribute is present on the field definition, and the type of the field definition is either String or CharSequence,
+     * it will be added to the validation schema.
+     * 
+     * @param fieldDefinition the field definition to apply the Swagger validation annotations to
+     * @return a map containing the Swagger validation annotations
+     */
+    private static Map<String, Object> applySwaggerValidation(final FieldDefinition fieldDefinition) {
+
+        final Map<String, Object> validationSchema = new LinkedHashMap<>();
+
+        if (Objects.nonNull(fieldDefinition.getColumn().getNullable())) {
+            validationSchema.put("nullable", fieldDefinition.getColumn().getNullable());
+        }
+
+        if (Objects.nonNull(fieldDefinition.getColumn().getLength())) {
+            final String type = fieldDefinition.getResolvedType();
+            if (type.equalsIgnoreCase("String") || type.equalsIgnoreCase("CharSequence")) {
+                validationSchema.put("maxLength", fieldDefinition.getColumn().getLength());
+            }
+        }
+
+        return validationSchema;
     }
 
     /**

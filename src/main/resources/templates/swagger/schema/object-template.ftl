@@ -8,6 +8,8 @@ properties:
   <#else>
     type: ${p.type}
     <#if p.format??>format: ${p.format}</#if>
+    <#if p.nullable??>nullable: ${p.nullable?c}</#if>
+    <#if p.maxLength??>maxLength: ${p.maxLength?c}</#if>
     <#if p.items??>
     items:
       <#if p.items["$ref"]??>
