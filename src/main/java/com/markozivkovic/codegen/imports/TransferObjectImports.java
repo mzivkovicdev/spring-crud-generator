@@ -123,6 +123,34 @@ public class TransferObjectImports {
     }
 
     /**
+     * Computes the necessary imports for the given model definition, including imports for the validation constraints.
+     *
+     * @param modelDefinition the model definition containing field information used to determine necessary imports.
+     * @return A string containing the necessary import statements for the model.
+     */
+    public static String computeValidationImport(final ModelDefinition modelDefinition) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+        final List<FieldDefinition> fields = modelDefinition.getFields();
+        final StringBuilder sb = new StringBuilder();
+
+        ImportCommon.addIf(FieldUtils.isAnyFieldNonNullable(fields), imports, ImportConstants.Jakarta.NOT_NULL);
+        ImportCommon.addIf(FieldUtils.hasAnyFieldLengthValidation(fields), imports, ImportConstants.Jakarta.SIZE);
+
+        final String sortedImports = imports.stream()
+                .map(imp -> String.format(IMPORT, imp))
+                .sorted()
+                .collect(Collectors.joining());
+
+        if (StringUtils.isNotBlank(sortedImports)) {
+            sb.append(sortedImports);
+            sb.append("\n");
+        }
+        
+        return sb.toString();
+    }
+
+    /**
      * Generates a string of import statements for the generated enums, helper entities for JSON fields and transfer objects,
      * if any.
      * 

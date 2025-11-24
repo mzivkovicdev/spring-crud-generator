@@ -231,7 +231,7 @@ public class FlywayUtils {
             case "Instant": return instantType(databaseType);
             case "Enum": return varcharOrText(databaseType, DEFAULT_VARCHAR);
             case "String": {
-                final Integer length = (fieldDefinition.getColumn() != null) ?
+                final Integer length = (fieldDefinition.getColumn() != null && fieldDefinition.getColumn().getLength() != null) ?
                         fieldDefinition.getColumn().getLength() : DEFAULT_VARCHAR;
                 return varcharOrText(databaseType, length);
             }

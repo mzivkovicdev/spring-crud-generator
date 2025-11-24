@@ -41,6 +41,8 @@ public final class ImportConstants {
         public static final String ONE_TO_MANY = "jakarta.persistence.OneToMany";
         public static final String MANY_TO_ONE = "jakarta.persistence.ManyToOne";
         public static final String VERSION = "jakarta.persistence.Version";
+        public static final String NOT_NULL = "jakarta.validation.constraints.NotNull";
+        public static final String SIZE = "jakarta.validation.constraints.Size";
     }
 
     public static final class INSTANCIO {
