@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 ${projectImports}
 @RestController
-<#if swagger>@RequestMapping("/api/v1")<#else>@RequestMapping("/api/v1/${uncapModelName}s")</#if>
-public class ${className} <#if swagger>implements ${strippedModelName}sApi</#if>{
+<#if swagger>@RequestMapping("${basePath}")<#else>@RequestMapping("${basePath}/${uncapModelName}s")</#if>
+public class ${className}<#if swagger> implements ${strippedModelName}sApi</#if> {
 
     private final ${mapperClass} ${mapperField?uncap_first} = Mappers.getMapper(${mapperClass}.class);
     <#list jsonFields as jsonField>
