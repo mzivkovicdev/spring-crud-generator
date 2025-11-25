@@ -131,8 +131,8 @@ public class SpecificationValidator {
     /**
      * Validates the inner type of a JSON field.
      *
-     * Checks if the inner type of a JSON field is a primitive type or a reference to another model.
-     * If the inner type is neither a primitive type nor a reference to another model, an exception is thrown.
+     * Checks if the inner type of a JSON field is a basic type or a reference to another model.
+     * If the inner type is neither a basic type nor a reference to another model, an exception is thrown.
      *
      * @param model      the model definition containing the JSON field
      * @param field      the JSON field definition to validate
@@ -142,10 +142,11 @@ public class SpecificationValidator {
     private static void validateJsonType(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames) {
         
         if (!SpecialType.isJsonType(field.getType())) return;
-        
-        final String inner = FieldUtils.extractJsonFieldName(field);
 
-        if (StringUtils.isBlank(inner)) {
+        final String inner;
+        try {
+            inner = FieldUtils.extractJsonFieldName(field);
+        } catch (final IllegalStateException e) {
             throw new IllegalArgumentException(
                 String.format(
                     "JSON field %s.%s has invalid inner type. Please specify a valid inner type.",
@@ -160,8 +161,8 @@ public class SpecificationValidator {
         if (!isBasicType && !innerModel) {
             throw new IllegalArgumentException(
                 String.format(
-                    "Inner type %s of JSON field %s.%s is invalid. It must be a primitive type %s or reference to another model.",
-                    inner, model.getName(), field.getName(), BasicType.values()
+                    "Inner type %s of JSON field %s.%s is invalid. It must be a basic type [%s] or reference to another model.",
+                    inner, model.getName(), field.getName(), BasicType.getSupportedValues()
                 )
             );
         }
@@ -193,7 +194,7 @@ public class SpecificationValidator {
     /**
      * Validates the type of a field in a model definition.
      * 
-     * Checks if the field type is null or empty, and if it is not a primitive type, enum type, json type or reference to another model.
+     * Checks if the field type is null or empty, and if it is not a basic type, enum type, json type or reference to another model.
      * 
      * @param model      the model definition containing the field
      * @param field      the field definition to validate
@@ -217,8 +218,8 @@ public class SpecificationValidator {
         if (!isBasicType && !isEnumType && !isJsonType && !modelReference) {
             throw new IllegalArgumentException(
                 String.format(
-                    "Field type %s for field %s in model %s is invalid. It must be a primitive type %s, enum type, json type %s or reference to another model.",
-                    type, field.getName(), model.getName(), BasicType.values(), SpecialType.JSON
+                    "Field type %s for field %s in model %s is invalid. It must be a basic type [%s], special type [%s] or reference to another model.",
+                    type, field.getName(), model.getName(), BasicType.getSupportedValues(), SpecialType.getSupportedValues()
                 )
             );
         }

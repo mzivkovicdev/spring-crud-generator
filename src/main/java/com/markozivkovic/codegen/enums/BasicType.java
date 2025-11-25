@@ -50,4 +50,16 @@ public enum BasicType {
         return Objects.nonNull(type) && KEYS_UPPER.contains(type.toUpperCase());
     }
 
+    /**
+     * Returns a string containing all supported basic types, separated by commas.
+     * 
+     * @return a string containing all supported basic types, separated by commas
+     */
+    public static String getSupportedValues() {
+
+        return Stream.of(values())
+                .map(BasicType::getKey)
+                .collect(Collectors.joining(", "));
+    }
+
 }

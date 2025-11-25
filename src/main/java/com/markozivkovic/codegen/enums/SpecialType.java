@@ -1,6 +1,8 @@
 package com.markozivkovic.codegen.enums;
 
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public enum SpecialType {
     
@@ -40,5 +42,17 @@ public enum SpecialType {
         return Objects.nonNull(type) &&
                 type.toUpperCase().startsWith(JSON.getKey() + "[") &&
                 type.endsWith("]");
+    }
+
+    /**
+     * Returns a string containing all supported special types, separated by commas.
+     * 
+     * @return a string containing all supported special types, separated by commas
+     */
+    public static String getSupportedValues() {
+
+        return Stream.of(values())
+                .map(SpecialType::getKey)
+                .collect(Collectors.joining(", "));
     }
 }
