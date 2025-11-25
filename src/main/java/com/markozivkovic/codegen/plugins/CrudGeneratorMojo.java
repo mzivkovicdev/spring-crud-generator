@@ -29,6 +29,7 @@ import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.GeneratorStateUtils;
 import com.markozivkovic.codegen.validators.PackageConfigurationValidator;
+import com.markozivkovic.codegen.validators.SpecificationValidator;
 
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class CrudGeneratorMojo extends AbstractMojo {
@@ -69,6 +70,8 @@ public class CrudGeneratorMojo extends AbstractMojo {
             LOGGER.info("Generator started for file: {}", inputSpecFile);
 
             final CrudSpecification spec = mapper.readValue(new File(inputSpecFile), CrudSpecification.class);
+            SpecificationValidator.validate(spec);
+            
             final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir.getAbsolutePath());
             final GeneratorState generatorState = GeneratorStateUtils.loadOrEmpty(projectMetadata.getProjectBaseDir());
             final List<ModelDefinition> activeEntities = spec.getEntities().stream()
