@@ -141,7 +141,7 @@ public class SpecificationValidator {
      */
     private static void validateJsonType(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames) {
         
-        if (SpecialType.isJsonType(field.getType())) return;
+        if (!SpecialType.isJsonType(field.getType())) return;
         
         final String inner = FieldUtils.extractJsonFieldName(field);
 
