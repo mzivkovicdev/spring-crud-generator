@@ -47,7 +47,8 @@ public class OpenApiCodeGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
     
-        if (Objects.isNull(configuration) || Objects.isNull(configuration.getOpenApiCodegen()) || !configuration.getOpenApiCodegen()) {
+        if (Objects.isNull(configuration) || !Boolean.TRUE.equals(this.configuration.getOpenApiCodegen())
+                    || !Boolean.TRUE.equals(this.configuration.getSwagger())) {
             return;
         }
 
