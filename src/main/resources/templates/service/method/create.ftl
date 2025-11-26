@@ -8,7 +8,9 @@
      * @return the created {@link ${modelName}}
      */</#if>
     ${transactionalAnnotation}
-    <#if cache>@CachePut(value = "${strippedModelName}", key = "#result.${idField}")</#if>
+    <#if cache>
+    @CachePut(value = "${strippedModelName}", key = "#result.${idField}")
+    </#if><#t>
     public ${modelName} create(${inputArgs}) {
 
         LOGGER.info("Creating new ${strippedModelName}");

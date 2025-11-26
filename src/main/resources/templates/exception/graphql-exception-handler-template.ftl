@@ -13,7 +13,6 @@ import org.springframework.graphql.execution.ErrorType;
 import org.springframework.validation.BindException;
 
 ${projectImports}
-
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.schema.DataFetchingEnvironment;

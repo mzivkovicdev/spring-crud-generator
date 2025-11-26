@@ -1,7 +1,10 @@
 package com.markozivkovic.codegen.generators;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +39,7 @@ public class SpringCrudGenerator implements CodeGenerator {
 
     public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entites,
             final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
-        this.GENERATORS = Map.ofEntries(
+        this.GENERATORS = Stream.of(
             Map.entry(ENUM, new EnumGenerator(packageConfiguration)),
             Map.entry(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entites, packageConfiguration)),
             Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator(packageConfiguration)),
@@ -53,7 +56,7 @@ public class SpringCrudGenerator implements CodeGenerator {
             Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entites, packageConfiguration)),
             Map.entry(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entites, packageConfiguration)),
             Map.entry(MIGRATION_SCRIPT, new MigrationScriptGenerator(crudConfiguration, projectMetadata, entites))
-        );
+        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
     }
 
     @Override

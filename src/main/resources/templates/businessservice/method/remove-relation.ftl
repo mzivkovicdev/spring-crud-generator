@@ -9,6 +9,7 @@
     <#assign relationServiceClass = rel.strippedRelationClassName?uncap_first + "Service">
     <#assign relationField = rel.strippedRelationClassName?uncap_first>
     <#if javadocFields?has_content>
+    
     /**
      * Add {@link ${rel.relationClassName}} to {@link ${modelName}}
      *

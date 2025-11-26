@@ -16,7 +16,9 @@
      * @return Added {@link ${rel.relationClassName}} to {@link ${modelName}}
      */</#if>
     ${transactionalAnnotation}
-    <#if cache>@CachePut(value = "${strippedModelName}", key = "#${idField}")</#if>
+    <#if cache>
+    @CachePut(value = "${strippedModelName}", key = "#${idField}")
+    </#if><#t>
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}, final ${rel.relationClassName} ${rel.elementParam}) {
 
         final ${modelName} entity = this.getById(${idField});

@@ -10,7 +10,7 @@
 </#if>
 
     @MutationMapping
-    public ${transferObjectClass} create${strippedModelName}(@Argument ${createInputToClass} input) {
+    public ${transferObjectClass} create${strippedModelName}(@Argument final ${createInputToClass} input) {
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
             this.${serviceField}.create(
                 <#list inputFieldsWithRelations as arg>${arg}<#if arg_has_next>, </#if></#list>
@@ -19,8 +19,7 @@
     }
 
     @MutationMapping
-    public ${transferObjectClass} update${strippedModelName}(@Argument final ${idType} id,
-                                    @Argument final ${updateInputToClass} input) {
+    public ${transferObjectClass} update${strippedModelName}(@Argument final ${idType} id, @Argument final ${updateInputToClass} input) {
 
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                 this.${baseServiceField}.updateById(id, <#list inputFieldsWithoutRelations as arg>${arg}<#if arg_has_next>, </#if></#list>)
@@ -38,6 +37,7 @@
 <#list relations as rel>
 <#assign relationField = rel.relationField?uncap_first>
 <#assign relationIdType = rel.relationIdType>
+
     @MutationMapping
     public ${transferObjectClass} add${relationField?cap_first}To${strippedModelName?cap_first}(@Argument final ${idType} id, @Argument final ${relationIdType} ${relationField}Id) {
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
@@ -57,4 +57,4 @@
         );
     }
 </#list>
-</#if>
+</#if><#t>
