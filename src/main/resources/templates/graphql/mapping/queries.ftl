@@ -12,7 +12,7 @@
 
     @QueryMapping
     public PageTO<${transferObjectClass}> ${uncapModelName}sPage(@Argument final Integer pageNumber,
-                                            @Argument final Integer pageSize) {
+                                    @Argument final Integer pageSize) {
         
         final Page<${modelName?cap_first}> pageObject = this.${serviceField}.getAll(pageNumber, pageSize);
 

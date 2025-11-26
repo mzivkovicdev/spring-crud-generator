@@ -32,8 +32,6 @@ public class ${className} {
         this.${serviceField} = ${serviceField};<#if relations>
         this.${businessServiceField} = ${businessServiceField};</#if>
     }
-
     ${queries}
     ${mutations}
-
 }
