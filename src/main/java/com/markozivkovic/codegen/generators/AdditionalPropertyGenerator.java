@@ -66,7 +66,8 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final Double multiplier = (Double) this.configuration.getAdditionalProperties()
                 .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER);
 
-        if (maxAttempts == null || delayMs == null || maxDelayMs == null || multiplier == null) {
+        if (maxAttempts == null || delayMs == null || maxDelayMs == null || multiplier == null
+                    || !Boolean.TRUE.equals(this.configuration.getOptimisticLocking())) {
             return;
         }
 
