@@ -14,6 +14,7 @@ import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
+import com.markozivkovic.codegen.utils.ContainerUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
@@ -33,7 +34,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
-        if (configuration == null || configuration.getAdditionalProperties() == null || configuration.getAdditionalProperties().isEmpty()) {
+        if (ContainerUtils.isEmpty(configuration.getAdditionalProperties())) {
             return;
         }
 
@@ -104,7 +105,8 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final boolean retryConfig = (Boolean) configuration.getAdditionalProperties()
                 .getOrDefault(AdditionalConfigurationConstants.OPT_LOCK_RETRY_CONFIGURATION, false);
 
-        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY) || !retryConfig) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY) || !retryConfig
+                || !Boolean.TRUE.equals(this.configuration.getOptimisticLocking())) { return; }
 
         LOGGER.info("Generating Optimistic Locking Retry configuration");
 
@@ -135,7 +137,8 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
         final boolean scalarConfig = (Boolean) configuration.getAdditionalProperties()
                 .getOrDefault(AdditionalConfigurationConstants.GRAPHQL_SCALAR_CONFIG, false);
 
-        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION) || !scalarConfig) { return; }
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION) || !scalarConfig
+                || !Boolean.TRUE.equals(this.configuration.getGraphQl())) { return; }
 
         LOGGER.info("Generating GraphQL configuration");
 
