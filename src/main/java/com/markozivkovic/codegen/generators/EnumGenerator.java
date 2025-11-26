@@ -54,8 +54,7 @@ public class EnumGenerator implements CodeGenerator {
             }
             
             final StringBuilder sb = new StringBuilder();
-            sb.append(String.format(PACKAGE, PackageUtils.computeEnumPackage(packagePath, packageConfiguration)))
-                    .append("\n");
+            sb.append(String.format(PACKAGE, PackageUtils.computeEnumPackage(packagePath, packageConfiguration)));
 
             final Map<String, Object> context = EnumTemplateContext.createEnumContext(enumName, enumField.getValues());
             final String enumTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("enum/enum-template.ftl", context);
