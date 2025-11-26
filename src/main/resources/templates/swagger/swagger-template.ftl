@@ -21,7 +21,9 @@ paths:
     parameters:
       - in: path
         name: ${idField}
+        <#if idDescription?? && idDescription?has_content>
         description: ${idDescription}
+        </#if><#t>
         required: true
         schema:
           type: ${id.type}
