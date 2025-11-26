@@ -13,16 +13,17 @@ public interface ${mapperName} {
     ${modelName} map${transferObjectName}To${modelName}(final ${transferObjectName} transferObject);
 
     List<${modelName}> map${transferObjectName}To${modelName}(final List<${transferObjectName}> transferObject);
-    
     <#if swagger?? && swagger>
+
     ${swaggerModel} map${transferObjectName}To${swaggerModel}(final ${transferObjectName} transferObject);
 
     List<${swaggerModel}> map${transferObjectName}To${swaggerModel}(final List<${transferObjectName}> transferObject);
-    </#if>
-
+    </#if><#t>
     <#if generateAllHelperMethods?? && generateAllHelperMethods>
+
     ${modelName} map${swaggerModel}To${modelName}(final ${generatedModelImport} ${swaggerModel?uncap_first});
 
     List<${modelName}> map${swaggerModel}To${modelName}(final List<${generatedModelImport}> ${swaggerModel?uncap_first});
-    </#if>
+    </#if><#t>
+    
 }
