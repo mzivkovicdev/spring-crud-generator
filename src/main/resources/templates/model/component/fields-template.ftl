@@ -1,25 +1,33 @@
 <#list fields as field>
     <#if field.id?has_content>
     @Id
-    @GeneratedValue(strategy = GenerationType.${field.id.strategy})</#if><#if field.type?lower_case == "enum">
-    @Enumerated(EnumType.STRING)</#if><#if field.column??>
+    @GeneratedValue(strategy = GenerationType.${field.id.strategy})
+    </#if><#t>
+    <#if field.type?lower_case == "enum">
+    @Enumerated(EnumType.STRING)
+    </#if><#t>
+    <#if field.column??>
     @Column(
         <#assign first=true>
         <#if field.column.unique??><#if !first>, </#if>unique = ${field.column.unique?c}<#assign first=false></#if><#if field.column.nullable??><#if !first>, </#if>nullable = ${field.column.nullable?c}<#assign first=false></#if><#if field.column.insertable??><#if !first>, </#if>insertable = ${field.column.insertable?c}<#assign first=false></#if><#if field.column.updateable??><#if !first>, </#if>updatable = ${field.column.updateable?c}<#assign first=false></#if><#if field.column.length??><#if !first>, </#if>length = ${field.column.length?c}<#assign first=false></#if><#if field.column.precision??><#if !first>, </#if>precision = ${field.column.precision?c}</#if>
-    )</#if>
-    <#if field.relation??><#include "relation-field.ftl"></#if>
-    <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")>
+    )
+    </#if>
+    <#if field.relation??><#include "relation-field.ftl"></#if><#t>
+    <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")><#t>
     private List<${field.resolvedType}> ${field.name};
-    <#else><#if field.type?matches("JSONB?\\[.+\\]")>
+    <#else>
+    <#if field.type?matches("JSONB?\\[.+\\]")>
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")</#if>
-    private ${field.resolvedType} ${field.name};</#if>
+    @Column(columnDefinition = "jsonb")
+    </#if><#t>
+    private ${field.resolvedType} ${field.name};
+    </#if>
+
 </#list>
 <#if !(embedded?? && embedded) && optimisticLocking>
-
     @Version
     private Integer version;
-</#if>
+</#if><#t>
 <#if auditEnabled?? && auditEnabled>
 
     @CreatedDate
@@ -29,4 +37,4 @@
     @LastModifiedDate
     @Column(nullable = false)
     private ${auditType} updatedAt;
-</#if>
+</#if><#t>
