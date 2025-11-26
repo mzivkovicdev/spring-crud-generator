@@ -267,9 +267,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      * @param context the context to which the cache flag is to be added
      */
     private void putCacheFlagToContext(final Map<String, Object> context) {
-        if (Objects.nonNull(configuration) && Objects.nonNull(configuration.isCache())) {
-            context.put("cache", configuration.isCache());
-        }
+        context.put("cache", Boolean.TRUE.equals(this.configuration.getCache()));
     }
 
 }

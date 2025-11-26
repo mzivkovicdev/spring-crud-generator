@@ -16,7 +16,9 @@
      * @return Removed {@link ${rel.relationClassName}} from {@link ${modelName}}
      */</#if>
     ${transactionalAnnotation}
-    <#if cache>@CachePut(value = "${strippedModelName}", key = "#${idField}")</#if>
+    <#if cache>
+    @CachePut(value = "${strippedModelName}", key = "#${idField}")
+    </#if><#t>
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}<#if rel.isCollection?? && rel.isCollection>, final ${rel.relationClassName} ${rel.elementParam}</#if>) {
 
         final ${modelName} entity = this.getById(${idField});
