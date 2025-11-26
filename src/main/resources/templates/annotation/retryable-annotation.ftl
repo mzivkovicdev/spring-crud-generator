@@ -4,6 +4,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import jakarta.persistence.OptimisticLockException;
+
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Retention(RetentionPolicy.RUNTIME)
 @Retryable(
     retryFor = {
-        jakarta.persistence.OptimisticLockException.class,
-        org.springframework.orm.ObjectOptimisticLockingFailureException.class
+        OptimisticLockException.class,
+        ObjectOptimisticLockingFailureException.class
     }<#if maxAttempts?? || delayMs?? || maxDelayMs?? || multiplier??>,
     <#if maxAttempts??>maxAttempts = ${maxAttempts},</#if>
     <#if delayMs?? || maxDelayMs?? || multiplier??>backoff = @Backoff(
