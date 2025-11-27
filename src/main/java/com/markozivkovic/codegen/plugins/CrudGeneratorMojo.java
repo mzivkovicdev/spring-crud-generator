@@ -28,6 +28,7 @@ import com.markozivkovic.codegen.models.GeneratorState;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.GeneratorStateUtils;
+import com.markozivkovic.codegen.validators.DockerConfigurationValidator;
 import com.markozivkovic.codegen.validators.PackageConfigurationValidator;
 import com.markozivkovic.codegen.validators.SpecificationValidator;
 
@@ -71,6 +72,8 @@ public class CrudGeneratorMojo extends AbstractMojo {
 
             final CrudSpecification spec = mapper.readValue(new File(inputSpecFile), CrudSpecification.class);
             SpecificationValidator.validate(spec);
+            DockerConfigurationValidator.validate(spec.getConfiguration().getDocker());
+            PackageConfigurationValidator.validate(spec.getPackages(), spec.getConfiguration());
             
             final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir.getAbsolutePath());
             final GeneratorState generatorState = GeneratorStateUtils.loadOrEmpty(projectMetadata.getProjectBaseDir());
@@ -89,7 +92,6 @@ public class CrudGeneratorMojo extends AbstractMojo {
                 return;
             }
             
-            PackageConfigurationValidator.validate(spec.getPackages(), spec.getConfiguration());
             final SpringCrudGenerator generator = new SpringCrudGenerator(
                     spec.getConfiguration(), entitiesToGenerate, projectMetadata, spec.getPackages()
             );
