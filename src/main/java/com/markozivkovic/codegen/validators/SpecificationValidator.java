@@ -6,8 +6,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.markozivkovic.codegen.enums.BasicType;
 import com.markozivkovic.codegen.enums.SpecialType;
+import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudSpecification;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -16,6 +20,10 @@ import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 
 public class SpecificationValidator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpecificationValidator.class);
+    private static final int MIN_SUPPORTED_JAVA = 17;
+    private static final int MAX_SUPPORTED_JAVA = 25;
 
     private SpecificationValidator() {}
 
@@ -38,7 +46,49 @@ public class SpecificationValidator {
             throw new IllegalArgumentException("CRUD specification, configuration and entities must not be null");
         }
 
+        validateJavaVersion(specification.getConfiguration());
+
         specification.getEntities().forEach(model -> validateModel(model, specification.getEntities()));
+    }
+
+    /**
+     * Validates the Java version set in the CRUD configuration.
+     * 
+     * If the Java version is not set, it defaults to the minimum supported version.
+     * If the set Java version is less than the minimum supported version, it throws an {@link IllegalArgumentException}.
+     * If the set Java version is greater than the maximum supported version, it throws an {@link IllegalArgumentException}.
+     * 
+     * @param configuration the CRUD configuration containing the Java version to validate
+     * @throws IllegalArgumentException if the set Java version is not supported
+     */
+    private static void validateJavaVersion(final CrudConfiguration configuration) {
+        
+        if (Objects.isNull(configuration.getJavaVersion())) {
+            LOGGER.info(
+                String.format(
+                    "Java version is not set, defaulting to Java %d", MIN_SUPPORTED_JAVA
+                )
+            );
+            return;
+        }
+
+        if (configuration.getJavaVersion() < 17) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Java version %d is not supported. Minimum supported version is %d.",
+                    configuration.getJavaVersion(), MIN_SUPPORTED_JAVA
+                )
+            );
+        }
+
+        if (configuration.getJavaVersion() > 25) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Java version %d is not supported. Maximum supported version is %d.",
+                    configuration.getJavaVersion(), MAX_SUPPORTED_JAVA
+                )
+            );
+        }
     }
 
     /**

@@ -1,3 +1,4 @@
+<#setting number_format="computer">
 services:
     ${artifactId}:
         build:

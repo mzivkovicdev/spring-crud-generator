@@ -7,7 +7,7 @@ import java.util.Objects;
 public class CrudConfiguration {
     
     private DatabaseType database;
-    private String javaVersion;
+    private Integer javaVersion;
     private Boolean optimisticLocking;
     private DockerConfiguration docker;
     private Boolean cache;
@@ -23,7 +23,7 @@ public class CrudConfiguration {
 
     }
 
-    public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
+    public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final Boolean optimisticLocking,
             final DockerConfiguration docker, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
             final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final TestConfiguration tests,
             final Map<String, Object> additionalProperties) {
@@ -50,11 +50,11 @@ public class CrudConfiguration {
         return this;
     }
 
-    public String getJavaVersion() {
+    public Integer getJavaVersion() {
         return this.javaVersion;
     }
 
-    public CrudConfiguration setJavaVersion(final String javaVersion) {
+    public CrudConfiguration setJavaVersion(final Integer javaVersion) {
         this.javaVersion = javaVersion;
         return this;
     }
