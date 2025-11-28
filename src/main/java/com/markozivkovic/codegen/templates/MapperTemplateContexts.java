@@ -76,9 +76,9 @@ public class MapperTemplateContexts {
         context.put(TemplateContextConstants.TRANSFER_OBJECT_NAME, transferObjectName);
         context.put(TemplateContextConstants.SWAGGER, swagger);
         if (swagger) {
-            context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+            context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(modelDefinition.getName()));
             final String resolvedPackagePath = PackageUtils.join(
-                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(strippedModelName)), strippedModelName
+                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(strippedModelName)), ModelNameUtils.computeOpenApiModelName(strippedModelName)
             );
             context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, String.format(IMPORT, resolvedPackagePath));
         }
@@ -134,13 +134,13 @@ public class MapperTemplateContexts {
         if (swagger) {
             final String resolvedPackagePath = PackageUtils.join(
                     PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName()))),
-                    ModelNameUtils.stripSuffix(jsonModel.getName())
+                    ModelNameUtils.computeOpenApiModelName(jsonModel.getName())
             );
-            context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, resolvedPackagePath);
+            context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, String.format(IMPORT, resolvedPackagePath));
         }
 
-        context.put(TemplateContextConstants.SWAGGER, false);
-        context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.stripSuffix(jsonModel.getName()));
+        context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(jsonModel.getName()));
         context.put(TemplateContextConstants.GENERATE_ALL_HELPER_METHODS, swagger);
 
         return context;

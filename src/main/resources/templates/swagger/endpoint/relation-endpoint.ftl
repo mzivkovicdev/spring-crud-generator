@@ -1,5 +1,6 @@
 <#assign uncapModelName = strippedModelName?uncap_first>
-<#assign modelName = strippedModelName?cap_first>
+<#assign capModelName = strippedModelName?cap_first>
+<#assign modelName = strippedModelName?cap_first + "Payload">
 
   <#list relations as rel>
   <#assign relationField = rel.strippedModelName?uncap_first>
@@ -18,7 +19,7 @@
     post:
       summary: Add ${relationField} to ${uncapModelName}
       tags:
-        - ${modelName}
+        - ${capModelName}
       operationId: ${uncapModelName}sId${relationField?cap_first}sPost
       requestBody:
         required: true
@@ -38,7 +39,7 @@
     delete:
       summary: Remove ${relationField} from ${uncapModelName}
       tags:
-        - ${modelName}
+        - ${capModelName}
       operationId: ${uncapModelName}sId${relationField?cap_first}sDelete
       responses:
         '204':
@@ -63,7 +64,7 @@
     delete:
       summary: Remove ${relationField} from ${uncapModelName}
       tags:
-        - ${modelName}
+        - ${capModelName}
       operationId: ${uncapModelName}sId${relationField?cap_first}sDelete
       responses:
         '204':

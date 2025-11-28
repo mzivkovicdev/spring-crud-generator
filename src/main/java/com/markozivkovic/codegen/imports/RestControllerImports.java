@@ -108,7 +108,7 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), relationModel)
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(relationModel))
                 ));
             }
         });
@@ -146,7 +146,7 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(modelWithoutSuffix))
             ));
             imports.add(String.format(
                 IMPORT,

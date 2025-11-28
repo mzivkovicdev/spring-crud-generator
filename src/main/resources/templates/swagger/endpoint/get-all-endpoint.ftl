@@ -1,5 +1,6 @@
 <#assign uncapModelName = strippedModelName?uncap_first>
-<#assign modelName = strippedModelName?cap_first>
+<#assign capModelName = strippedModelName?cap_first>
+<#assign modelName = strippedModelName?cap_first + "Payload">
 get:
       parameters:
       - in: query
@@ -17,7 +18,7 @@ get:
       
       summary: Get the ${uncapModelName}s
       tags:
-          - "${modelName}"
+          - "${capModelName}"
       description: Get the ${uncapModelName}s
       operationId: ${uncapModelName}sGet
       responses:

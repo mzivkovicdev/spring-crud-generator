@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -124,10 +125,10 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("enumFields", FieldUtils.extractNamesOfEnumFields(modelDefinition.getFields()));
         context.put("swagger", swagger);
         if (swagger) {
-            context.put("swaggerModel", ModelNameUtils.stripSuffix(modelDefinition.getName()));
-            context.put("generatedModelImport", String.format(
+            context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(modelDefinition.getName()));
+            context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, String.format(
                     IMPORT,
-                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(strippedModelName)), strippedModelName)
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(strippedModelName)), ModelNameUtils.computeOpenApiModelName(strippedModelName))
             ));
         }
 
@@ -191,14 +192,14 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("swagger", false);
         context.put("isGraphQL", isGraphQl);
         context.put("idField", jsonModel.getFields().stream().findAny().orElseThrow().getName());
-        context.put("swaggerModel", strippedModelName);
+        context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(strippedModelName));
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
         context.put("enumFields", enumFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         if (swagger) {
-            context.put("generatedModelImport", String.format(
+            context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, String.format(
                 PackageUtils.join(
                     PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName()))), ModelNameUtils.stripSuffix(jsonModel.getName())
                 )

@@ -423,7 +423,7 @@ public class FieldUtils {
                         return String.format(
                             !swagger ? "%sMapper.map%sTOTo%s(body.%s())" : "%sMapper.map%sTo%s(body.get%s())",
                             StringUtils.uncapitalize(field.getResolvedType()),
-                            StringUtils.capitalize(field.getResolvedType()),
+                            !swagger ? StringUtils.capitalize(field.getResolvedType()) : ModelNameUtils.computeOpenApiModelName(field.getResolvedType()),
                             StringUtils.capitalize(field.getResolvedType()),
                             !swagger ? StringUtils.uncapitalize(field.getResolvedType()) : StringUtils.capitalize(field.getResolvedType())
                         );

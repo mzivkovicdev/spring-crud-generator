@@ -6,11 +6,13 @@
 </#if>
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
+<#assign openApiResponse = strippedModelName + "Payload">
+<#assign openApiRequest = strippedModelName + "Payload">
 <#if swagger>@Override<#else>@PostMapping</#if>
-    public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${strippedModelName}</#if>> ${uncapModelName}sPost(<#if !swagger>@RequestBody </#if>final <#if !swagger>${transferObjectClass}<#else>${strippedModelName}</#if> body) {
+    public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiResponse}</#if>> ${uncapModelName}sPost(<#if !swagger>@RequestBody </#if>final <#if !swagger>${transferObjectClass}<#else>${openApiRequest}</#if> body) {
 
         <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName></#if>
+        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Payload"></#if>
         <#if rel.isCollection>
         final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 List.of() :
@@ -36,10 +38,10 @@
             )
         );<#else>
         return ResponseEntity.ok(
-            ${mapperClass}.map${transferObjectClass}To${strippedModelName}(
+            ${mapperClass}.map${transferObjectClass}To${openApiResponse}(
                 ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                     this.${serviceField}.create(
-                        <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}To${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
+                        <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
                     )
                 )
             )
