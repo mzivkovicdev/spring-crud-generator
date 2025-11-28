@@ -1,3 +1,4 @@
+<#setting number_format="computer">
 services:
     ${artifactId}:
         build:
@@ -6,18 +7,18 @@ services:
         container_name: ${artifactId}-app
         restart: unless-stopped
         ports:
-            - "8080:8080"
+            - "${appPort}:${appPort}"
         environment:
             <#if dbType == "postgresql">
-            SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${artifactId}
+            SPRING_DATASOURCE_URL: jdbc:postgresql://db:${dbPort}/${artifactId}
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: app
             <#elseif dbType == "mysql">
-            SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            SPRING_DATASOURCE_URL: jdbc:mysql://db:${dbPort}/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: app
             <#elseif dbType == "mssql">
-            SPRING_DATASOURCE_URL: jdbc:sqlserver://db:1433;databaseName=${artifactId};encrypt=false
+            SPRING_DATASOURCE_URL: jdbc:sqlserver://db:${dbPort};databaseName=${artifactId};encrypt=false
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: App!Passw0rd
             </#if>
@@ -28,7 +29,7 @@ services:
     
     database:
         <#if dbType == "postgresql">
-        image: postgres:latest
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-postgre-db
         restart: unless-stopped
         environment:
@@ -36,9 +37,9 @@ services:
             POSTGRES_USER: app
             POSTGRES_PASSWORD: app
         ports:
-            - "5432:5432"
+            - "${dbPort}:${dbPort}"
         <#elseif dbType == "mysql">
-        image: mysql:latest
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mysql-db
         environment:
             MYSQL_DATABASE: ${artifactId}
@@ -47,9 +48,9 @@ services:
             MYSQL_ROOT_PASSWORD: root
         command: ["--default-authentication-plugin=mysql_native_password"]
         ports:
-            - "3306:3306"
+            - "${dbPort}:${dbPort}"
         <#elseif dbType == "mssql">
-        image: mcr.microsoft.com/mssql/server:latest
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mssql-db
         environment:
             ACCEPT_EULA: "Y"
@@ -59,7 +60,7 @@ services:
             APP_USER: app
             APP_PASSWORD: App!Passw0rd
         ports:
-            - "1433:1433"
+            - "${dbPort}:${dbPort}"
         command:
             - bash
             - lc

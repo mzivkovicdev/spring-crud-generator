@@ -7,7 +7,7 @@ import java.util.Objects;
 public class CrudConfiguration {
     
     private DatabaseType database;
-    private String javaVersion;
+    private Integer javaVersion;
     private Boolean optimisticLocking;
     private DockerConfiguration docker;
     private Boolean cache;
@@ -23,7 +23,7 @@ public class CrudConfiguration {
 
     }
 
-    public CrudConfiguration(final DatabaseType database, final String javaVersion, final Boolean optimisticLocking,
+    public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final Boolean optimisticLocking,
             final DockerConfiguration docker, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
             final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final TestConfiguration tests,
             final Map<String, Object> additionalProperties) {
@@ -50,11 +50,11 @@ public class CrudConfiguration {
         return this;
     }
 
-    public String getJavaVersion() {
+    public Integer getJavaVersion() {
         return this.javaVersion;
     }
 
-    public CrudConfiguration setJavaVersion(final String javaVersion) {
+    public CrudConfiguration setJavaVersion(final Integer javaVersion) {
         this.javaVersion = javaVersion;
         return this;
     }
@@ -208,7 +208,7 @@ public class CrudConfiguration {
             ", tests='" + getTests() + "'" +
             ", additionalProperties='" + getAdditionalProperties() + "'" +
             "}";
-    }    
+    }
 
     public enum DatabaseType {
         MYSQL,
@@ -302,14 +302,17 @@ public class CrudConfiguration {
 
         private Boolean dockerfile;
         private Boolean dockerCompose;
+        private ApplicationDockerConfiguration app;
+        private DbDockerConfiguration db;
 
-        public DockerConfiguration() {
+        public DockerConfiguration() {}
 
-        }
-
-        public DockerConfiguration(final Boolean dockerfile, final Boolean dockerCompose) {
+        public DockerConfiguration(final Boolean dockerfile, final Boolean dockerCompose,
+                    final ApplicationDockerConfiguration app, final DbDockerConfiguration db) {
             this.dockerfile = dockerfile;
             this.dockerCompose = dockerCompose;
+            this.app = app;
+            this.db = db;
         }
 
         public Boolean getDockerfile() {
@@ -330,6 +333,24 @@ public class CrudConfiguration {
             return this;
         }
 
+        public ApplicationDockerConfiguration getApp() {
+            return this.app;
+        }
+
+        public DockerConfiguration setApp(final ApplicationDockerConfiguration app) {
+            this.app = app;
+            return this;
+        }
+
+        public DbDockerConfiguration getDb() {
+            return this.db;
+        }
+
+        public DockerConfiguration setDb(final DbDockerConfiguration db) {
+            this.db = db;
+            return this;
+        }
+
         @Override
         public boolean equals(final Object o) {
             if (o == this)
@@ -339,12 +360,14 @@ public class CrudConfiguration {
             }
             final DockerConfiguration dockerConfiguration = (DockerConfiguration) o;
             return Objects.equals(dockerfile, dockerConfiguration.dockerfile) &&
-                    Objects.equals(dockerCompose, dockerConfiguration.dockerCompose);
+                    Objects.equals(dockerCompose, dockerConfiguration.dockerCompose) &&
+                    Objects.equals(app, dockerConfiguration.app) &&
+                    Objects.equals(db, dockerConfiguration.db);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(dockerfile, dockerCompose);
+            return Objects.hash(dockerfile, dockerCompose, app, db);
         }
 
         @Override
@@ -352,6 +375,147 @@ public class CrudConfiguration {
             return "{" +
                 " dockerfile='" + getDockerfile() + "'" +
                 ", dockerCompose='" + getDockerCompose() + "'" +
+                ", app='" + getApp() + "'" +
+                ", db='" + getDb() + "'" +
+                "}";
+        }
+    }
+
+    public static class ApplicationDockerConfiguration {
+
+        private String image;
+        private String tag;
+        private Integer port;
+
+        public ApplicationDockerConfiguration() {}
+
+        public ApplicationDockerConfiguration(final String image, final String tag, final Integer port) {
+            this.image = image;
+            this.tag = tag;
+            this.port = port;
+        }
+
+        public String getImage() {
+            return this.image;
+        }
+
+        public ApplicationDockerConfiguration setImage(final String image) {
+            this.image = image;
+            return this;
+        }
+
+        public String getTag() {
+            return this.tag;
+        }
+
+        public ApplicationDockerConfiguration setTag(final String tag) {
+            this.tag = tag;
+            return this;
+        }
+
+        public Integer getPort() {
+            return this.port;
+        }
+
+        public ApplicationDockerConfiguration setPort(final Integer port) {
+            this.port = port;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof ApplicationDockerConfiguration)) {
+                return false;
+            }
+            final ApplicationDockerConfiguration applicationDockerConfiguration = (ApplicationDockerConfiguration) o;
+            return Objects.equals(image, applicationDockerConfiguration.image) &&
+                    Objects.equals(tag, applicationDockerConfiguration.tag) &&
+                    Objects.equals(port, applicationDockerConfiguration.port);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(image, tag, port);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " image='" + getImage() + "'" +
+                ", tag='" + getTag() + "'" +
+                ", port='" + getPort() + "'" +
+                "}";
+        }
+
+    }
+
+    public static class DbDockerConfiguration {
+
+        private String image;
+        private String tag;
+        private Integer port;
+
+        public DbDockerConfiguration() {}
+
+        public DbDockerConfiguration(final String image, final String tag, final Integer port) {
+            this.image = image;
+            this.tag = tag;
+            this.port = port;
+        }
+
+        public String getImage() {
+            return this.image;
+        }
+
+        public DbDockerConfiguration setImage(final String image) {
+            this.image = image;
+            return this;
+        }
+
+        public String getTag() {
+            return this.tag;
+        }
+
+        public DbDockerConfiguration setTag(final String tag) {
+            this.tag = tag;
+            return this;
+        }
+
+        public Integer getPort() {
+            return this.port;
+        }
+
+        public DbDockerConfiguration setPort(final Integer port) {
+            this.port = port;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof DbDockerConfiguration)) {
+                return false;
+            }
+            final DbDockerConfiguration dbDockerConfiguration = (DbDockerConfiguration) o;
+            return Objects.equals(image, dbDockerConfiguration.image) &&
+                    Objects.equals(tag, dbDockerConfiguration.tag) &&
+                    Objects.equals(port, dbDockerConfiguration.port);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(image, tag, port);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " image='" + getImage() + "'" +
+                ", tag='" + getTag() + "'" +
+                ", port='" + getPort() + "'" +
                 "}";
         }
     }

@@ -1,5 +1,6 @@
 package com.markozivkovic.codegen.generators;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -11,8 +12,10 @@ import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
+import com.markozivkovic.codegen.utils.DockerUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.StringUtils;
 
 public class DockerGenerator implements CodeGenerator {
 
@@ -29,8 +32,7 @@ public class DockerGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
-        if (Objects.isNull(configuration) || Objects.isNull(configuration.getDocker()) ||
-                Objects.isNull(configuration.getDocker().getDockerfile()) || !configuration.getDocker().getDockerfile()) {
+        if (!DockerUtils.isDockerfileEnabled(configuration.getDocker())) {
             return;
         }
 
@@ -47,14 +49,49 @@ public class DockerGenerator implements CodeGenerator {
         
         if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE)) { return; }
 
-        if (Objects.isNull(this.configuration.getDocker().getDockerCompose()) || !this.configuration.getDocker().getDockerCompose()) { return; }
+        if (!Boolean.TRUE.equals(this.configuration.getDocker().getDockerCompose())) { return; }
         
         LOGGER.info("Generating Docker-compose");
 
-        final Map<String, Object> context = Map.of(
+        final int defaultDbPort = switch (this.configuration.getDatabase()) {
+            case POSTGRESQL -> 5432;
+            case MYSQL -> 3306;
+            case MSSQL -> 1433;
+        };
+
+        final String defaultDbImage = switch (this.configuration.getDatabase()) {
+            case POSTGRESQL -> "postgres";
+            case MYSQL -> "mysql";
+            case MSSQL -> "mcr.microsoft.com/mssql/server";
+        };
+
+        final Map<String, Object> context = new HashMap<>(Map.of(
             "artifactId", projectMetadata.getArtifactId(),
-            "dbType", this.configuration.getDatabase().name().toLowerCase()
-        );
+            "dbType", this.configuration.getDatabase().name().toLowerCase(),
+            "appPort", "8080",
+            "dbPort", defaultDbPort,
+            "dbImage", defaultDbImage
+        ));
+
+        if (Objects.nonNull(this.configuration.getDocker().getDb())) {
+            if (StringUtils.isNotBlank(this.configuration.getDocker().getDb().getImage())) {
+                context.put("dbImage", this.configuration.getDocker().getDb().getImage());
+            }
+
+            if (Objects.nonNull(this.configuration.getDocker().getDb().getPort())) {
+                context.put("dbPort", this.configuration.getDocker().getDb().getPort());
+            }
+
+            if (StringUtils.isNotBlank(this.configuration.getDocker().getDb().getTag())) {
+                context.put("dbTag", this.configuration.getDocker().getDb().getTag());
+            }
+        }
+
+        if (Objects.nonNull(this.configuration.getDocker().getApp())) {
+            if (Objects.nonNull(this.configuration.getDocker().getApp().getPort())) {
+                context.put("appPort", this.configuration.getDocker().getApp().getPort());
+            }
+        }
 
         final String dockerCompose = FreeMarkerTemplateProcessorUtils.processTemplate("docker/docker-compose-template.ftl", context);
 
@@ -74,10 +111,27 @@ public class DockerGenerator implements CodeGenerator {
         
         LOGGER.info("Generating Dockerfile");
 
-        final Map<String, Object> context = Map.of(
+        final Map<String, Object> context = new HashMap<>(Map.of(
             "artifactId", projectMetadata.getArtifactId(),
-            "version", projectMetadata.getVersion()
-        );
+            "version", projectMetadata.getVersion(),
+            "baseImage", "eclipse-temurin",
+            "javaVersion", Objects.isNull(this.configuration.getJavaVersion()) ? "17" : this.configuration.getJavaVersion(),
+            "port", "8080"
+        ));
+
+        if (Objects.nonNull(this.configuration.getDocker().getApp())) {
+            if (StringUtils.isNotBlank(this.configuration.getDocker().getApp().getImage())) {
+                context.put("baseImage", this.configuration.getDocker().getApp().getImage());
+            }
+
+            if (Objects.nonNull(this.configuration.getDocker().getApp().getPort())) {
+                context.put("port", this.configuration.getDocker().getApp().getPort());
+            }
+
+            if (StringUtils.isNotBlank(this.configuration.getDocker().getApp().getTag())) {
+                context.put("tag", this.configuration.getDocker().getApp().getTag());
+            }
+        }
         
         final String dockerFile = FreeMarkerTemplateProcessorUtils.processTemplate("docker/dockerfile-template.ftl", context);
 
