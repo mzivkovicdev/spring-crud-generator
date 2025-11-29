@@ -10,14 +10,13 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
-import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.DockerUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 
-public class DockerGenerator implements CodeGenerator {
+public class DockerGenerator implements ProjectArtifactGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DockerGenerator.class);
 
@@ -30,7 +29,7 @@ public class DockerGenerator implements CodeGenerator {
     }
     
     @Override
-    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+    public void generate(final String outputDir) {
         
         if (!DockerUtils.isDockerfileEnabled(configuration.getDocker())) {
             return;

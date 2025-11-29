@@ -27,7 +27,7 @@ import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
-public class OpenApiCodeGenerator implements CodeGenerator {
+public class OpenApiCodeGenerator implements ProjectArtifactGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenApiCodeGenerator.class);
     
@@ -45,7 +45,7 @@ public class OpenApiCodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+    public void generate(final String outputDir) {
     
         if (Objects.isNull(configuration) || !Boolean.TRUE.equals(this.configuration.getOpenApiCodegen())
                     || !Boolean.TRUE.equals(this.configuration.getSwagger())) {

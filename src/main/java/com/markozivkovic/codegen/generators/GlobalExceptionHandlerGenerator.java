@@ -21,7 +21,7 @@ import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
-public class GlobalExceptionHandlerGenerator implements CodeGenerator {
+public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator {
     
     private static final String HAS_RELATIONS = "hasRelations";
     private static final String PROJECT_IMPORTS = "projectImports";
@@ -45,7 +45,7 @@ public class GlobalExceptionHandlerGenerator implements CodeGenerator {
     }
     
     @Override
-    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+    public void generate(final String outputDir) {
         
         if (Objects.isNull(crudConfiguration) || Objects.isNull(crudConfiguration.getErrorResponse()) ||
                 crudConfiguration.getErrorResponse().equals(ErrorResponse.NONE)) {
