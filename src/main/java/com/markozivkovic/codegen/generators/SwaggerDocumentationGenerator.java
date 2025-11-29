@@ -23,7 +23,7 @@ import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 import com.markozivkovic.codegen.utils.SwaggerUtils;
 
-public class SwaggerDocumentationGenerator implements CodeGenerator {
+public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SwaggerDocumentationGenerator.class);
 
@@ -39,7 +39,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+    public void generate(final String outputDir) {
 
         if (Objects.isNull(configuration) || Objects.isNull(configuration.getSwagger()) || !configuration.getSwagger()) {
             return;

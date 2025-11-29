@@ -12,14 +12,13 @@ import com.markozivkovic.codegen.constants.AdditionalConfigurationConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
-import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.ContainerUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
-public class AdditionalPropertyGenerator implements CodeGenerator {
+public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AdditionalPropertyGenerator.class);
 
@@ -32,7 +31,7 @@ public class AdditionalPropertyGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+    public void generate(final String outputDir) {
         
         if (ContainerUtils.isEmpty(configuration.getAdditionalProperties())) {
             return;

@@ -98,6 +98,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
             final SpringCrudTestGenerator testGenerator = new SpringCrudTestGenerator(
                     spec.getConfiguration(), entitiesToGenerate, spec.getPackages()
             );
+            generator.generate(outputDir);
             entitiesToGenerate.forEach(entity -> generator.generate(entity, outputDir));
             entitiesToGenerate.forEach(entity -> testGenerator.generate(entity, outputDir));
             entitiesToGenerate.forEach(entity ->

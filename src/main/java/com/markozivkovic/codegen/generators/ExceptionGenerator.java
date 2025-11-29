@@ -11,13 +11,12 @@ import org.slf4j.LoggerFactory;
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
-import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
-public class ExceptionGenerator implements CodeGenerator {
+public class ExceptionGenerator implements ProjectArtifactGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionGenerator.class);
 
@@ -32,7 +31,7 @@ public class ExceptionGenerator implements CodeGenerator {
     }
     
     @Override
-    public void generate(final ModelDefinition modelDefinition, final String outputDir) {
+    public void generate(final String outputDir) {
 
         if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCEPTIONS)) { return; }
 
