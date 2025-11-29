@@ -2,7 +2,7 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 
-<#if swagger?? && swagger>${generatedModelImport}</#if><#if helperMapperImports??>${helperMapperImports}</#if>${modelImport}${transferObjectImport}
+${projectImports}
 @Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 

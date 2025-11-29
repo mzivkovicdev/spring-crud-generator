@@ -9,20 +9,25 @@ import org.instancio.Instancio;
 </#if>import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
-<#if swagger?? && swagger>${generatedModelImport}</#if>${modelImport}${transferObjectImport}<#if dataGenerator == "PODAM">
+${projectImports}
+<#if dataGenerator == "PODAM">
+
 import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
+import uk.co.jemos.podam.api.PodamFactoryImpl;
 
+</#if><#t>
 class ${className} {
-
     <#if dataGenerator == "PODAM">
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    </#if><#t>
     <#if isGraphQL>
+
     private final ${strippedModelName?cap_first}GraphQLMapper ${strippedModelName?uncap_first}Mapper = Mappers.getMapper(${strippedModelName?cap_first}GraphQLMapper.class);
     <#else>
+
     private final ${strippedModelName?cap_first}RestMapper ${strippedModelName?uncap_first}Mapper = Mappers.getMapper(${strippedModelName?cap_first}RestMapper.class);
-    </#if>
+    </#if><#t>
 
     @Test
     void map${modelName}To${transferObjectName}() {
