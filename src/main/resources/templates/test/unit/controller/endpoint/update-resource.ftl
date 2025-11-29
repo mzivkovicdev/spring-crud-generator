@@ -72,7 +72,7 @@ class ${className} {
 
         when(this.${serviceField}.updateById(${idField?uncap_first}, <#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>)).thenReturn(${modelName?uncap_first});
 
-        final ResultActions resultActions = this.mockMvc.perform(put("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first})
+        final ResultActions resultActions = this.mockMvc.perform(put("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
@@ -97,7 +97,7 @@ class ${className} {
         final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
         </#if>
 
-        this.mockMvc.perform(put("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first})
+        this.mockMvc.perform(put("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
@@ -108,7 +108,7 @@ class ${className} {
 
         final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
 
-        this.mockMvc.perform(put("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first})
+        this.mockMvc.perform(put("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
     }

@@ -48,7 +48,7 @@ class ${className} {
 
         final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
 
-        this.mockMvc.perform(delete("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first}))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isNoContent());
 
         verify(this.${serviceField}).deleteById(${idField?uncap_first});
@@ -59,7 +59,7 @@ class ${className} {
 
         final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
 
-        this.mockMvc.perform(delete("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first}))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isBadRequest());
     }
 }

@@ -104,7 +104,7 @@ class ${className} {
                 </#if>
         )).thenReturn(${modelName?uncap_first});
 
-        final ResultActions resultActions = this.mockMvc.perform(post("/api/v1/${uncapModelName}s")
+        final ResultActions resultActions = this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
@@ -128,7 +128,7 @@ class ${className} {
     @Test
     void ${uncapModelName}sPost_noRequestBody() throws Exception {
 
-        this.mockMvc.perform(post("/api/v1/${uncapModelName}s")
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
                     .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
     }

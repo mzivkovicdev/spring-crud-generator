@@ -5,24 +5,22 @@ import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.markozivkovic.codegen.constants.AdditionalConfigurationConstants;
 import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.imports.RestControllerImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
+import com.markozivkovic.codegen.utils.AdditionalPropertiesUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.StringUtils;
 
 public class RestControllerGenerator implements CodeGenerator {
 
@@ -85,22 +83,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateControllerClass(final ModelDefinition modelDefinition, final String outputDir, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeControllerClassContext(modelDefinition);
-        
-        final String basePath = Optional.ofNullable(this.configuration.getAdditionalProperties())
-                .map(properties -> properties.get(AdditionalConfigurationConstants.REST_BASEPATH))
-                .map(value -> {
-                    if (value instanceof String) {
-                        return (String) value;
-                    }
-                    throw new IllegalArgumentException(
-                        String.format(
-                            "Invalid type for 'rest.basePath'. Expected String, but got: %s",
-                            Objects.isNull(value) ? "null" : value.getClass().getSimpleName()
-                        )
-                    );
-                })
-                .filter(StringUtils::isNotBlank)
-                .orElse("/api");
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
         context.put("basePath", basePath);
         context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger, packageConfiguration));

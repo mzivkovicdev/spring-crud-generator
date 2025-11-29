@@ -65,7 +65,7 @@ class ${className} {
 
         when(this.${serviceField}.getById(${idField?uncap_first})).thenReturn(${modelName?uncap_first});
 
-        final ResultActions resultActions = this.mockMvc.perform(get("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first}))
+        final ResultActions resultActions = this.mockMvc.perform(get("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isOk());
 
         final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.objectMapper.readValue(
@@ -83,7 +83,7 @@ class ${className} {
 
         final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
 
-        this.mockMvc.perform(get("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first}))
+        this.mockMvc.perform(get("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isBadRequest());
     }
 
@@ -102,7 +102,7 @@ class ${className} {
 
         when(this.${serviceField}.getAll(pageNumber, pageSize)).thenReturn(page${modelName}s);
 
-        final ResultActions resultActions = this.mockMvc.perform(get("/api/v1/${uncapModelName}s")
+        final ResultActions resultActions = this.mockMvc.perform(get("${basePath}/${uncapModelName}s")
                                 .queryParam("pageNumber", String.format("%s", pageNumber))
                                 .queryParam("pageSize", String.format("%s", pageSize)))
                         .andExpect(status().isOk());
@@ -144,7 +144,7 @@ class ${className} {
 
         final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
 
-        this.mockMvc.perform(get("/api/v1/${uncapModelName}s")
+        this.mockMvc.perform(get("${basePath}/${uncapModelName}s")
                                 .queryParam("pageSize", String.format("%s", pageSize)))
                         .andExpect(status().isBadRequest());
     }
@@ -154,7 +154,7 @@ class ${className} {
 
         final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
 
-        this.mockMvc.perform(get("/api/v1/${uncapModelName}s")
+        this.mockMvc.perform(get("${basePath}/${uncapModelName}s")
                                 .queryParam("pageNumber", String.format("%s", pageNumber)))
                         .andExpect(status().isBadRequest());
     }
@@ -165,7 +165,7 @@ class ${className} {
         final String pageNumber = ${generatorFieldName}.${singleObjectMethodName}(String.class);
         final String pageSize = ${generatorFieldName}.${singleObjectMethodName}(String.class);
 
-        this.mockMvc.perform(get("/api/v1/${uncapModelName}s")
+        this.mockMvc.perform(get("${basePath}/${uncapModelName}s")
                                 .queryParam("pageSize", String.format("%s", pageSize))
                                 .queryParam("pageNumber", String.format("%s", pageNumber)))
                         .andExpect(status().isBadRequest());
