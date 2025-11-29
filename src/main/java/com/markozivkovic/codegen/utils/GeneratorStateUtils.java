@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.GeneratorState;
 import com.markozivkovic.codegen.models.GeneratorState.ModelState;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -38,7 +39,7 @@ public final class GeneratorStateUtils {
                 return OBJECT_MAPPER.readValue(Files.readAllBytes(statePath), GeneratorState.class);
             }
 
-            return new GeneratorState("1.0", new ArrayList<>());
+            return new GeneratorState("1.0", "", new ArrayList<>());
         } catch (final Exception e) {
             throw new RuntimeException(
                 String.format("Failed to load generator state from '%s': %s", statePath, e.getMessage()),
@@ -94,11 +95,13 @@ public final class GeneratorStateUtils {
      * Updates the fingerprint of the given model in the given generator state.
      * If the model does not exist in the generator state, it is added with the given fingerprint.
      *
-     * @param state       the generator state to update
-     * @param modelName   the name of the model to update
-     * @param fingerprint the new fingerprint of the model
+     * @param state         the generator state to update
+     * @param modelName     the name of the model to update
+     * @param fingerprint   the new fingerprint of the model
+     * @param configuration the new configuration of the generator
      */
-    public static void updateFingerprint(final GeneratorState state, final String modelName, final String fingerprint) {
+    public static void updateFingerprint(final GeneratorState state, final String modelName, final String fingerprint,
+                final String configuration) {
         
         if (state.getModels() == null || state.getModels().isEmpty()) {
             state.setModels(new ArrayList<>());
@@ -110,6 +113,7 @@ public final class GeneratorStateUtils {
                     m -> m.setFingerprint(fingerprint),
                     () -> state.getModels().add(new ModelState(modelName, fingerprint))
                 );
+        state.setConfiguration(configuration);
     }
 
     /**
@@ -138,6 +142,30 @@ public final class GeneratorStateUtils {
         } catch (final Exception e) {
             throw new RuntimeException(
                     String.format("Failed to compute fingerprint for model %s", model.getName()),
+                    e
+            );
+        }
+    }
+
+    /**
+     * Computes a fingerprint for a given crud configuration.
+     * The fingerprint is a SHA-256 hash of a canonical map containing the configuration.
+     * If an exception occurs while computing the fingerprint, a RuntimeException is thrown.
+     *
+     * @param configuration the crud configuration for which to compute the fingerprint
+     * @return the computed fingerprint
+     * @throws RuntimeException if an exception occurs while computing the fingerprint
+     */
+    public static String computeFingerprint(final CrudConfiguration configuration) {
+        
+        try {
+            final byte[] bytes = OBJECT_MAPPER.writer()
+                    .writeValueAsBytes(configuration);
+            
+            return HashUtils.sha256(bytes);
+        } catch (final Exception e) {
+            throw new RuntimeException(
+                    String.format("Failed to compute fingerprint for configuration"),
                     e
             );
         }

@@ -7,12 +7,15 @@ import java.util.Objects;
 public class GeneratorState {
     
     private String generatorVersion;
+    private String configuration;
     private List<ModelState> models = new ArrayList<>();
 
     public GeneratorState() {}
 
-    public GeneratorState(String generatorVersion, List<ModelState> models) {
+    public GeneratorState(final String generatorVersion, final String configuration,
+                final List<ModelState> models) {
         this.generatorVersion = generatorVersion;
+        this.configuration = configuration;
         this.models = models;
     }
 
@@ -22,6 +25,15 @@ public class GeneratorState {
 
     public GeneratorState setGeneratorVersion(final String generatorVersion) {
         this.generatorVersion = generatorVersion;
+        return this;
+    }
+
+    public String getConfiguration() {
+        return this.configuration;
+    }
+
+    public GeneratorState setConfiguration(final String configuration) {
+        this.configuration = configuration;
         return this;
     }
 
@@ -43,18 +55,20 @@ public class GeneratorState {
         }
         final GeneratorState generatorState = (GeneratorState) o;
         return Objects.equals(generatorVersion, generatorState.generatorVersion) &&
+                Objects.equals(configuration, generatorState.configuration) &&
                 Objects.equals(models, generatorState.models);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(generatorVersion, models);
+        return Objects.hash(generatorVersion, configuration, models);
     }
 
     @Override
     public String toString() {
         return "{" +
             " generatorVersion='" + getGeneratorVersion() + "'" +
+            ", configuration='" + getConfiguration() + "'" +
             ", models='" + getModels() + "'" +
             "}";
     }

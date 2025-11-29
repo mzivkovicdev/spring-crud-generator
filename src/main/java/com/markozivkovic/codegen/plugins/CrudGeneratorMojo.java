@@ -83,8 +83,9 @@ public class CrudGeneratorMojo extends AbstractMojo {
 
             final Map<String, String> fingerprints = activeEntities.stream()
                     .collect(Collectors.toMap(ModelDefinition::getName, entity -> GeneratorStateUtils.computeFingerprint(entity)));
+            final String configurationFingerprints = GeneratorStateUtils.computeFingerprint(spec.getConfiguration());
             final List<ModelDefinition> entitiesToGenerate = this.computeEntitiesToGenerate(
-                    activeEntities, forceRegeneration, generatorState, fingerprints
+                    activeEntities, forceRegeneration, generatorState, fingerprints, configurationFingerprints
             );
 
             if (entitiesToGenerate.isEmpty()) {
@@ -102,7 +103,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
             entitiesToGenerate.forEach(entity -> generator.generate(entity, outputDir));
             entitiesToGenerate.forEach(entity -> testGenerator.generate(entity, outputDir));
             entitiesToGenerate.forEach(entity ->
-                    GeneratorStateUtils.updateFingerprint(generatorState, entity.getName(), fingerprints.get(entity.getName()))
+                GeneratorStateUtils.updateFingerprint(generatorState, entity.getName(), fingerprints.get(entity.getName()), configurationFingerprints)
             );
             GeneratorStateUtils.save(projectMetadata.getProjectBaseDir(), generatorState);
 
@@ -117,22 +118,23 @@ public class CrudGeneratorMojo extends AbstractMojo {
      * If forceRegeneration is true, all active entities are included in the list.
      * Otherwise, only entities with a changed fingerprint are included in the list.
      *
-     * @param activeEntities    the list of active entities
-     * @param forceRegeneration whether to force regeneration for all active entities
-     * @param generatorState    the generator state
-     * @param fingerprints      the map of entity names to their respective fingerprints
+     * @param activeEntities            the list of active entities
+     * @param forceRegeneration         whether to force regeneration for all active entities
+     * @param generatorState            the generator state
+     * @param fingerprints              the map of entity names to their respective fingerprints
+     * @param configurationFingerprints the fingerprint of the configuration
      * @return the {@link List} of entities {@link ModelDefinition} to generate
      */
     private List<ModelDefinition> computeEntitiesToGenerate(final List<ModelDefinition> activeEntities, final boolean forceRegeneration,
-            final GeneratorState generatorState, final Map<String, String> fingerprints) {
+            final GeneratorState generatorState, final Map<String, String> fingerprints, final String configurationFingerprints) {
 
         final List<ModelDefinition> entitiesToGenerate;
 
-        if (forceRegeneration) {
+        if (forceRegeneration || !configurationFingerprints.equals(generatorState.getConfiguration())) {
             final List<String> entityNames = activeEntities.stream()
                     .map(ModelDefinition::getName)
                     .toList();
-            LOGGER.info("forceRegeneration=true -> forcing regeneration for all active entities: {}", String.join(", ", entityNames));
+            LOGGER.info("forceRegeneration=true or configuration has changed -> regeneration for all active entities: {}", String.join(", ", entityNames));
             entitiesToGenerate = new ArrayList<>(activeEntities);
         } else {
             entitiesToGenerate = activeEntities.stream()
