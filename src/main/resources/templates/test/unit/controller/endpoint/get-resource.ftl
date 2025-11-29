@@ -6,6 +6,7 @@
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign mapperClass = strippedModelName?cap_first + "RestMapper">
 <#assign mapperField = strippedModelName?uncap_first + "RestMapper">
+<#assign openApiModel = strippedModelName + "Payload">
 <#if swagger><#assign responseClass = strippedModelName + "sGet200Response"></#if>
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;<#if hasRelations>
@@ -67,9 +68,9 @@ class ${className} {
         final ResultActions resultActions = this.mockMvc.perform(get("/api/v1/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${strippedModelName?cap_first}</#if> result = this.objectMapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.objectMapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                <#if !swagger>${transferObjectClass?cap_first}<#else>${strippedModelName?cap_first}</#if>.class
+                <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
         );
 
         verify${strippedModelName}(result, ${modelName?uncap_first});
@@ -170,11 +171,11 @@ class ${className} {
                         .andExpect(status().isBadRequest());
     }
 
-    private void verify${strippedModelName}(final <#if swagger>${strippedModelName?cap_first}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
+    private void verify${strippedModelName}(final <#if swagger>${openApiModel}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
         
         assertThat(result).isNotNull();
         <#if swagger>
-        final ${strippedModelName?cap_first} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${strippedModelName}(
+        final ${openApiModel} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${openApiModel}(
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>

@@ -189,7 +189,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("modelName", jsonModel.getName());
         context.put("strippedModelName", strippedModelName);
         context.put("transferObjectName", transferObjectName);
-        context.put("swagger", false);
+        context.put("swagger", swagger);
         context.put("isGraphQL", isGraphQl);
         context.put("idField", jsonModel.getFields().stream().findAny().orElseThrow().getName());
         context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(strippedModelName));
@@ -200,8 +200,9 @@ public class MapperUnitTestGenerator implements CodeGenerator {
 
         if (swagger) {
             context.put(TemplateContextConstants.GENERATED_MODEL_IMPORT, String.format(
+                IMPORT,
                 PackageUtils.join(
-                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName()))), ModelNameUtils.stripSuffix(jsonModel.getName())
+                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName()))), ModelNameUtils.computeOpenApiModelName(jsonModel.getName())
                 )
             ));
         }

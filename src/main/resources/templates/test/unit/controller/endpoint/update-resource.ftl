@@ -6,6 +6,7 @@
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign mapperClass = strippedModelName?cap_first + "RestMapper">
 <#assign mapperField = strippedModelName?uncap_first + "RestMapper">
+<#assign openApiModel = strippedModelName + "Payload">
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
@@ -64,7 +65,7 @@ class ${className} {
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
         <#if swagger>
-        final ${strippedModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${strippedModelName}.class);
+        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
         <#else>
         final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
         </#if>
@@ -76,9 +77,9 @@ class ${className} {
                     .content(this.objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${strippedModelName?cap_first}</#if> result = this.objectMapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.objectMapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                <#if !swagger>${transferObjectClass?cap_first}<#else>${strippedModelName?cap_first}</#if>.class
+                <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
         );
 
         verify${strippedModelName}(result, ${modelName?uncap_first});
@@ -91,7 +92,7 @@ class ${className} {
 
         final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
         <#if swagger>
-        final ${strippedModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${strippedModelName}.class);
+        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
         <#else>
         final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
         </#if>
@@ -112,11 +113,11 @@ class ${className} {
                 .andExpect(status().isBadRequest());
     }
 
-    private void verify${strippedModelName}(final <#if swagger>${strippedModelName?cap_first}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
+    private void verify${strippedModelName}(final <#if swagger>${openApiModel}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
         
         assertThat(result).isNotNull();
         <#if swagger>
-        final ${strippedModelName?cap_first} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${strippedModelName}(
+        final ${openApiModel} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${openApiModel}(
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>

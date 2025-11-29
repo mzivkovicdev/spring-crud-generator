@@ -9,7 +9,7 @@ import org.instancio.Instancio;
 </#if>import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
-<#if swagger?? && swagger && !(generateAllHelperMethods?? && !generateAllHelperMethods)>${generatedModelImport}</#if>${modelImport}${transferObjectImport}<#if dataGenerator == "PODAM">
+<#if swagger?? && swagger>${generatedModelImport}</#if>${modelImport}${transferObjectImport}<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
@@ -131,7 +131,7 @@ class ${className} {
     @Test
     void map${swaggerModel}To${modelName}() {
 
-        final ${generatedModelImport} ${swaggerModel?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${generatedModelImport}.class);
+        final ${swaggerModel} ${swaggerModel?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${swaggerModel}.class);
 
         final ${modelName} result = this.${strippedModelName?uncap_first}Mapper.map${swaggerModel}To${modelName}(${swaggerModel?uncap_first});
 
@@ -142,9 +142,9 @@ class ${className} {
     void map${swaggerModel}To${modelName}_list() {
 
         <#if dataGenerator == "PODAM">
-        final List<${generatedModelImport}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${generatedModelImport}.class);
+        final List<${swaggerModel}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${swaggerModel}.class);
         <#else>
-        final List<${generatedModelImport}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(${generatedModelImport}.class)
+        final List<${swaggerModel}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleObjectsMethodName}(${swaggerModel}.class)
                 .size(10)
                 .create();
         </#if>
@@ -153,7 +153,7 @@ class ${className} {
 
         results.forEach(result -> {
 
-            final ${generatedModelImport} ${swaggerModel?uncap_first} = ${swaggerModel?uncap_first}s.stream()
+            final ${swaggerModel} ${swaggerModel?uncap_first} = ${swaggerModel?uncap_first}s.stream()
                     .filter(obj -> obj.get${idField?cap_first}().equals(result.get${idField?cap_first}()))
                     .findFirst()
                     .orElseThrow();
@@ -162,7 +162,7 @@ class ${className} {
         });
     }
 
-    private void verify${modelName}(final ${modelName} result, final ${generatedModelImport} ${swaggerModel?uncap_first}) {
+    private void verify${modelName}(final ${modelName} result, final ${swaggerModel} ${swaggerModel?uncap_first}) {
 
         assertThat(result).isNotNull();
         <#list fieldNames as field>
