@@ -6,6 +6,7 @@
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign mapperClass = strippedModelName?cap_first + "RestMapper">
 <#assign mapperField = strippedModelName?uncap_first + "RestMapper">
+<#assign openApiModel = strippedModelName + "Payload">
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
@@ -14,8 +15,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-<#if hasCollectionRelations>import java.util.List;</#if>
+<#if hasCollectionRelations>
+import java.util.List;
 
+</#if><#t>
 ${testImports}
 ${projectImports}<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
@@ -69,13 +72,13 @@ class ${className} {
 
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if swagger>
-        final ${strippedModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${strippedModelName}.class);
+        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
         <#else>
         final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
-        </#if>
+        </#if><#t>
 
         <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName></#if>
+        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Payload"></#if>
         <#if rel.isCollection>
         final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 List.of() :
@@ -97,18 +100,18 @@ class ${className} {
                 <#if !swagger>
                 <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.${arg.field}())<#else>body.${arg.field}()</#if></#if><#if arg_has_next>, </#if></#list>
                 <#else>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}To${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
+                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
                 </#if>
         )).thenReturn(${modelName?uncap_first});
 
-        final ResultActions resultActions = this.mockMvc.perform(post("/api/v1/${uncapModelName}s")
+        final ResultActions resultActions = this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${strippedModelName?cap_first}</#if> result = this.objectMapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.objectMapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                <#if !swagger>${transferObjectClass?cap_first}<#else>${strippedModelName?cap_first}</#if>.class
+                <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
         );
 
         verify${strippedModelName}(result, ${modelName?uncap_first});
@@ -117,7 +120,7 @@ class ${className} {
                 <#if !swagger>
                 <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.${arg.field}())<#else>body.${arg.field}()</#if></#if><#if arg_has_next>, </#if></#list>
                 <#else>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}To${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
+                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
                 </#if>
         );
     }
@@ -125,16 +128,16 @@ class ${className} {
     @Test
     void ${uncapModelName}sPost_noRequestBody() throws Exception {
 
-        this.mockMvc.perform(post("/api/v1/${uncapModelName}s")
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
                     .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
     }
 
-    private void verify${strippedModelName}(final <#if swagger>${strippedModelName?cap_first}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
+    private void verify${strippedModelName}(final <#if swagger>${openApiModel}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
         
         assertThat(result).isNotNull();
         <#if swagger>
-        final ${strippedModelName?cap_first} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${strippedModelName}(
+        final ${openApiModel} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${openApiModel}(
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>

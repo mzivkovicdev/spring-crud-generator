@@ -4,6 +4,7 @@
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 <#if swagger><#assign responseClass = strippedModelName + "sGet200Response"></#if>
+<#assign openApiModel = strippedModelName + "Payload">
 
     <#if swagger>@Override<#else>@GetMapping</#if>
     public ResponseEntity<<#if !swagger>PageTO<${transferObjectClass}><#else>${responseClass}</#if>> ${uncapModelName}sGet(<#if !swagger>@RequestParam </#if>final Integer pageNumber, <#if !swagger>@RequestParam </#if>final Integer pageSize) {
@@ -27,7 +28,7 @@
                 .size(pageObject.getSize())
                 .number(pageObject.getNumber())
                 .content(
-                    ${mapperClass}.map${transferObjectClass}To${strippedModelName}(
+                    ${mapperClass}.map${transferObjectClass}To${openApiModel}(
                         ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                             pageObject.getContent()
                         )

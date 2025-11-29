@@ -114,7 +114,7 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
         final String subDir = String.format("%s/%s", GeneratorConstants.DefaultPackageLayout.SWAGGER, "components/schemas");
 
         FileWriterUtils.writeToFile(
-            pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(strippedModelName)), swaggerObject
+            pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(strippedModelName))), swaggerObject
         );
     }
 
@@ -164,9 +164,10 @@ public class SwaggerDocumentationGenerator implements CodeGenerator {
                 .filter(StringUtils::isNotBlank)
                 .map(ModelNameUtils::stripSuffix)
                 .map(StringUtils::uncapitalize)
+                .map(name -> String.format("%sPayload", name))
                 .distinct()
                 .collect(Collectors.toList());
-        schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.stripSuffix(e.getName())));
+        schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(e.getName())));
 
         final List<String> relationInputSchemaNames = relationModels.stream()
                 .map(ModelDefinition::getName)

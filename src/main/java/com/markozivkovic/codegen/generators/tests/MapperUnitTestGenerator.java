@@ -1,6 +1,5 @@
 package com.markozivkovic.codegen.generators.tests;
 
-import static com.markozivkovic.codegen.constants.ImportConstants.IMPORT;
 import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.HashMap;
@@ -11,7 +10,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.TemplateContextConstants;
 import com.markozivkovic.codegen.generators.CodeGenerator;
+import com.markozivkovic.codegen.imports.MapperImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -22,7 +23,6 @@ import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
-import com.markozivkovic.codegen.utils.StringUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils;
 import com.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -100,20 +100,10 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         final String className = isGraphQl ? String.format("%sGraphQlMapperTest", strippedModelName) :
                 String.format("%sRestMapperTest", strippedModelName);
         final String transferObjectName = String.format("%sTO", strippedModelName);
-        final String modelImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName()));
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final String transferObjectImport;
-        
-        if (isGraphQl) {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
-        } else {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
-        }
 
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final Map<String, Object> context = new HashMap<>();
-        context.put("modelImport", modelImport);
-        context.put("transferObjectImport", transferObjectImport);
         context.put("modelName", modelDefinition.getName());
         context.put("className", className);
         context.put("strippedModelName", strippedModelName);
@@ -124,12 +114,9 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("enumFields", FieldUtils.extractNamesOfEnumFields(modelDefinition.getFields()));
         context.put("swagger", swagger);
         if (swagger) {
-            context.put("swaggerModel", ModelNameUtils.stripSuffix(modelDefinition.getName()));
-            context.put("generatedModelImport", String.format(
-                    IMPORT,
-                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(strippedModelName)), strippedModelName)
-            ));
+            context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(modelDefinition.getName()));
         }
+        context.put("projectImports", MapperImports.computeTestMapperImports(packagePath, modelDefinition, packageConfiguration, swagger, isGraphQl));
 
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
@@ -168,13 +155,6 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         final String className = isGraphQl ? String.format("%sGraphQlMapperTest", strippedModelName) :
                 String.format("%sRestMapperTest", strippedModelName);
         final String transferObjectName = String.format("%sTO", ModelNameUtils.stripSuffix(jsonModel.getName()));
-        final String modelImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperEntityPackage(packagePath, packageConfiguration), jsonModel.getName()));
-        final String transferObjectImport;
-        if (isGraphQl) {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperGraphqlTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
-        } else {
-            transferObjectImport = String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperRestTransferObjectPackage(packagePath, packageConfiguration), transferObjectName));
-        }
         final List<String> enumFields = FieldUtils.extractEnumFields(jsonModel.getFields()).stream()
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
@@ -182,28 +162,20 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
 
         final Map<String, Object> context = new HashMap<>();
-        context.put("modelImport", modelImport);
-        context.put("transferObjectImport", transferObjectImport);
         context.put("className", className);
         context.put("modelName", jsonModel.getName());
         context.put("strippedModelName", strippedModelName);
         context.put("transferObjectName", transferObjectName);
-        context.put("swagger", false);
+        context.put("swagger", swagger);
         context.put("isGraphQL", isGraphQl);
         context.put("idField", jsonModel.getFields().stream().findAny().orElseThrow().getName());
-        context.put("swaggerModel", strippedModelName);
+        context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(strippedModelName));
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
         context.put("enumFields", enumFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
-        if (swagger) {
-            context.put("generatedModelImport", String.format(
-                PackageUtils.join(
-                    PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(parentModel.getName()))), ModelNameUtils.stripSuffix(jsonModel.getName())
-                )
-            ));
-        }
+        context.put("projectImports", MapperImports.computeTestHelperMapperImports(packagePath, jsonModel, parentModel, packageConfiguration, swagger, isGraphQl));
 
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/mapper/mapper-test-template.ftl",

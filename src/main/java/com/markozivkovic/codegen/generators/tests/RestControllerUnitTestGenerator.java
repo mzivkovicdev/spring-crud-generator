@@ -20,6 +20,7 @@ import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
 import com.markozivkovic.codegen.templates.RestControllerTemplateContext;
+import com.markozivkovic.codegen.utils.AdditionalPropertiesUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -102,6 +103,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 final String controllerClassName = String.format("%sController", modelWithoutSuffix);
 
                 final Map<String, Object> context = new HashMap<>();
+                final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+
+                context.put("basePath", basePath);
                 context.put("controllerClassName", controllerClassName);
                 context.put("className", className);
                 context.put("modelName", modelDefinition.getName());
@@ -169,6 +173,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 final FieldDefinition relatedIdField = FieldUtils.extractIdField(relatedModelDefinition.getFields());
 
                 final Map<String, Object> context = new HashMap<>();
+                final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+
+                context.put("basePath", basePath);
                 context.put("controllerClassName", controllerClassName);
                 context.put("className", className);
                 context.put(
@@ -228,7 +235,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entities)
         );
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
+        context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
         context.put("strippedModelName", modelWithoutSuffix);
@@ -274,8 +283,10 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 .map(FieldUtils::extractJsonFieldName)
                 .collect(Collectors.toList());
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
         final Map<String, Object> context = new HashMap<>();
+        context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
         context.put("strippedModelName", modelWithoutSuffix);
@@ -320,8 +331,10 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String className = String.format("%sDeleteByIdMockMvcTest", modelWithoutSuffix);
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
         final Map<String, Object> context = new HashMap<>();
+        context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
         context.put("strippedModelName", modelWithoutSuffix);
@@ -363,8 +376,10 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String className = String.format("%sGetMockMvcTest", modelWithoutSuffix);
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
         final Map<String, Object> context = new HashMap<>();
+        context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
         context.put("swagger", swagger);

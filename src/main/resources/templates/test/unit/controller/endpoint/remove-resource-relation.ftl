@@ -57,7 +57,7 @@ class ${className} {
         final ${relIdType} ${relIdField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${relIdType}.class);
         </#if>
 
-        this.mockMvc.perform(delete("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
                 .andExpect(status().isNoContent());
 
         <#if isCollection>
@@ -75,7 +75,7 @@ class ${className} {
         final ${relIdType} ${relIdField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${relIdType}.class);
         </#if>
 
-        this.mockMvc.perform(delete("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
                 .andExpect(status().isBadRequest());
     }
 
@@ -86,7 +86,7 @@ class ${className} {
         final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
         final ${invalidRelIdType} ${relIdField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidRelIdType}.class);
 
-        this.mockMvc.perform(delete("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s/{relationId}", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s/{relationId}", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
                 .andExpect(status().isBadRequest());
     }
     </#if>

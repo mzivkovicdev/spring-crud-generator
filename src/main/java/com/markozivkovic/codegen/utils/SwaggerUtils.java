@@ -209,7 +209,7 @@ public class SwaggerUtils {
         
         final Map<String, Object> m = new LinkedHashMap<>();
         final String schemaName = ModelNameUtils.stripSuffix(targetSchemaName);
-        m.put("$ref", String.format("./%s.yaml", StringUtils.uncapitalize(schemaName)));
+        m.put("$ref", String.format("./%s.yaml", StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(schemaName))));
         return m;
     }
 

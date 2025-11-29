@@ -2,7 +2,7 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 
-<#if swagger?? && swagger && !(generateAllHelperMethods?? && !generateAllHelperMethods)>${generatedModelImport}</#if><#if helperMapperImports??>${helperMapperImports}</#if>${modelImport}${transferObjectImport}
+${projectImports}
 @Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 
@@ -21,9 +21,9 @@ public interface ${mapperName} {
     </#if><#t>
     <#if generateAllHelperMethods?? && generateAllHelperMethods>
 
-    ${modelName} map${swaggerModel}To${modelName}(final ${generatedModelImport} ${swaggerModel?uncap_first});
+    ${modelName} map${swaggerModel}To${modelName}(final ${swaggerModel} ${swaggerModel?uncap_first});
 
-    List<${modelName}> map${swaggerModel}To${modelName}(final List<${generatedModelImport}> ${swaggerModel?uncap_first});
+    List<${modelName}> map${swaggerModel}To${modelName}(final List<${swaggerModel}> ${swaggerModel?uncap_first});
     </#if><#t>
     
 }

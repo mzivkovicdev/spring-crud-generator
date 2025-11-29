@@ -28,6 +28,18 @@ public class ModelNameUtils {
     }
 
     /**
+     * Computes the name of the OpenAPI model, given a model name.
+     * This method strips the suffix from the model name (if it matches any of the known suffixes) and then appends "Payload" to the resulting string.
+     * 
+     * @param modelName the model name to compute the OpenAPI model name from
+     * @return the computed OpenAPI model name
+     */
+    public static String computeOpenApiModelName(final String modelName) {
+
+        return String.format("%sPayload", stripSuffix(modelName));
+    }
+
+    /**
      * Converts a camel-case string to a snake-case string.
      * @param s the string to convert
      * @return the converted string

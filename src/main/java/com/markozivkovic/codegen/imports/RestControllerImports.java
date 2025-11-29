@@ -108,7 +108,7 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), relationModel)
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(relationModel))
                 ));
             }
         });
@@ -146,7 +146,7 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(modelWithoutSuffix))
             ));
             imports.add(String.format(
                 IMPORT,
@@ -374,7 +374,7 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(modelWithoutSuffix))
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
@@ -415,7 +415,7 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), relationModel)
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(relationModel))
                 ));
             }
         });
@@ -450,7 +450,7 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(modelWithoutSuffix))
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
@@ -534,7 +534,7 @@ public class RestControllerImports {
         } else {
             imports.add(String.format(
                 IMPORT,
-                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), modelWithoutSuffix)
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(modelWithoutSuffix))
             ));
             ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%ssGet200Response", modelWithoutSuffix))));
         }

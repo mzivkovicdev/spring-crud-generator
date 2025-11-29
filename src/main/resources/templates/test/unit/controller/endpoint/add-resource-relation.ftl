@@ -6,6 +6,7 @@
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign mapperClass = strippedModelName?cap_first + "RestMapper">
 <#assign mapperField = strippedModelName?uncap_first + "RestMapper">
+<#assign openApiModel = strippedModelName + "Payload">
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -65,14 +66,14 @@ class ${className} {
 
         when(this.${businessServiceField}.add${relationFieldModel}(${idField?uncap_first}, body.<#if swagger>getId<#else>id</#if>())).thenReturn(${modelName?uncap_first});
         
-        final ResultActions resultActions = this.mockMvc.perform(post("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
+        final ResultActions resultActions = this.mockMvc.perform(post("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${strippedModelName?cap_first}</#if> result = this.objectMapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.objectMapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                <#if !swagger>${transferObjectClass?cap_first}<#else>${strippedModelName?cap_first}</#if>.class
+                <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
         );
 
         verify${strippedModelName}(result, ${modelName?uncap_first});
@@ -90,7 +91,7 @@ class ${className} {
         final ${strippedRelationClassName}InputTO body = ${generatorFieldName}.${singleObjectMethodName}(${strippedRelationClassName}InputTO.class);
         </#if>
         
-        this.mockMvc.perform(post("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
@@ -101,16 +102,16 @@ class ${className} {
 
         final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
         
-        this.mockMvc.perform(post("/api/v1/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
     }
 
-    private void verify${strippedModelName}(final <#if swagger>${strippedModelName?cap_first}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
+    private void verify${strippedModelName}(final <#if swagger>${openApiModel}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
         
         assertThat(result).isNotNull();
         <#if swagger>
-        final ${strippedModelName?cap_first} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${strippedModelName}(
+        final ${openApiModel} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${openApiModel}(
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>

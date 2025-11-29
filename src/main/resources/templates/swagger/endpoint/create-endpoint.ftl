@@ -1,9 +1,10 @@
 <#assign uncapModelName = strippedModelName?uncap_first>
-<#assign modelName = strippedModelName?cap_first>
+<#assign capModelName = strippedModelName?cap_first>
+<#assign modelName = strippedModelName?cap_first + "Payload">
 post:
       summary: Create new ${uncapModelName}
       tags:
-          - "${modelName}"
+          - "${capModelName}"
       description: Create new ${uncapModelName}
       operationId: ${uncapModelName}sPost
       requestBody:
