@@ -48,6 +48,7 @@ public class GeneratorConstants {
         private GeneratorContextKeys() {}
         public static final String GRAPHQL_CONFIGURATION = "graphql-configuration";
         public static final String ADDITIONAL_CONFIG = "additionalConfig";
+        public static final String CACHE_CONFIGURATION = "cacheConfiguration";
         public static final String OPTIMISTIC_LOCKING_RETRY = "optimisticLockingRetry";
         public static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
         public static final String DOCKER_FILE = "dockerfile";
