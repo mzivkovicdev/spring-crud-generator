@@ -59,7 +59,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         );
         
         sb.append(ServiceImports.computeJpaServiceBaseImport(
-                    Objects.nonNull(configuration) && Objects.nonNull(configuration.isCache()) && configuration.isCache())
+                    Objects.nonNull(configuration.getCache()) && Boolean.TRUE.equals(configuration.getCache().getEnabled()))
                 )
                 .append("\n")
                 .append(ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE, packageConfiguration))

@@ -10,7 +10,7 @@ public class CrudConfiguration {
     private Integer javaVersion;
     private Boolean optimisticLocking;
     private DockerConfiguration docker;
-    private Boolean cache;
+    private CacheConfiguration cache;
     private Boolean swagger;
     private Boolean openApiCodegen;
     private Boolean graphQl;
@@ -24,7 +24,7 @@ public class CrudConfiguration {
     }
 
     public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final Boolean optimisticLocking,
-            final DockerConfiguration docker, final Boolean cache, final Boolean swagger, final Boolean openApiCodegen,
+            final DockerConfiguration docker, final CacheConfiguration cache, final Boolean swagger, final Boolean openApiCodegen,
             final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final TestConfiguration tests,
             final Map<String, Object> additionalProperties) {
         this.database = database;
@@ -81,15 +81,11 @@ public class CrudConfiguration {
         return this;
     }
 
-    public Boolean isCache() {
+    public CacheConfiguration getCache() {
         return this.cache;
     }
 
-    public Boolean getCache() {
-        return this.cache;
-    }
-
-    public CrudConfiguration setCache(final Boolean cache) {
+    public CrudConfiguration setCache(final CacheConfiguration cache) {
         this.cache = cache;
         return this;
     }
@@ -199,7 +195,7 @@ public class CrudConfiguration {
             ", javaVersion='" + getJavaVersion() + "'" +
             ", optimisticLocking='" + isOptimisticLocking() + "'" +
             ", docker='" + getDocker() + "'" +
-            ", cache='" + isCache() + "'" +
+            ", cache='" + getCache() + "'" +
             ", swagger='" + isSwagger() + "'" +
             ", openApiCodegen='" + getOpenApiCodegen() + "'" +
             ", graphQl='" + getGraphQl() + "'" +
@@ -296,6 +292,93 @@ public class CrudConfiguration {
         public enum DataGeneratorEnum {
             PODAM, INSTANCIO
         }
+    }
+
+    public static class CacheConfiguration {
+
+        private Boolean enabled;
+        private CacheTypeEnum type;
+        private Long maxSize;
+        private Integer expiration;
+
+        public CacheConfiguration() {}
+
+        public CacheConfiguration(final Boolean enabled, final CacheTypeEnum cacheType,
+                    final Long maxSize, final Integer cacheExpiration) {
+            this.type = cacheType;
+            this.maxSize = maxSize;
+            this.expiration = cacheExpiration;
+        }
+
+        public Boolean getEnabled() {
+            return this.enabled;
+        }
+
+        public CacheConfiguration setEnabled(final Boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public CacheTypeEnum getType() {
+            return this.type;
+        }
+
+        public CacheConfiguration setType(final CacheTypeEnum type) {
+            this.type = type;
+            return this;
+        }
+
+        public Long getMaxSize() {
+            return this.maxSize;
+        }
+
+        public CacheConfiguration setMaxSize(final Long maxSize) {
+            this.maxSize = maxSize;
+            return this;
+        }
+
+        public Integer getExpiration() {
+            return this.expiration;
+        }
+
+        public CacheConfiguration setExpiration(final Integer expiration) {
+            this.expiration = expiration;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof CacheConfiguration)) {
+                return false;
+            }
+            final CacheConfiguration cacheConfiguration = (CacheConfiguration) o;
+            return Objects.equals(enabled, cacheConfiguration.enabled) &&
+                    Objects.equals(type, cacheConfiguration.type) &&
+                    Objects.equals(maxSize, cacheConfiguration.maxSize) &&
+                    Objects.equals(expiration, cacheConfiguration.expiration);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(enabled, type, maxSize, expiration);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " enabled='" + getEnabled() + "'" +
+                ", type='" + getType() + "'" +
+                ", maxSize='" + getMaxSize() + "'" +
+                ", expiration='" + getExpiration() + "'" +
+                "}";
+        }
+
+        public enum CacheTypeEnum {
+            REDIS, CAFFEINE, SIMPLE
+        }
+
     }
 
     public static class DockerConfiguration {
