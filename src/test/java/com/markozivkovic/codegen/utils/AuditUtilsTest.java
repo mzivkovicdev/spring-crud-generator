@@ -6,37 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import com.markozivkovic.codegen.constants.ImportConstants.Java;
 import com.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
 
 class AuditUtilsTest {
 
-    @Test
-    @DisplayName("resolveAuditType should return Instant for INSTANT")
-    void resolveAuditType_shouldReturnInstant_forInstantEnum() {
-
-        final String result = AuditUtils.resolveAuditType(AuditTypeEnum.INSTANT);
-
-        assertEquals("Instant", result);
-    }
-
-    @Test
-    @DisplayName("resolveAuditType should return LocalDate for LOCAL_DATE")
-    void resolveAuditType_shouldReturnLocalDate_forLocalDateEnum() {
-
-        final String result = AuditUtils.resolveAuditType(AuditTypeEnum.LOCAL_DATE);
-
-        assertEquals("LocalDate", result);
-    }
-
-    @Test
-    @DisplayName("resolveAuditType should return LocalDateTime for LOCAL_DATE_TIME")
-    void resolveAuditType_shouldReturnLocalDateTime_forLocalDateTimeEnum() {
-
-        final String result = AuditUtils.resolveAuditType(AuditTypeEnum.LOCAL_DATE_TIME);
-
-        assertEquals("LocalDateTime", result);
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+        "INSTANT, Instant",
+        "LOCAL_DATE, LocalDate",
+        "LOCAL_DATE_TIME, LocalDateTime"
+    })
+    @DisplayName("resolveAuditType should return expected type")
+    void resolveAuditType_shouldReturnExpectedType(final AuditTypeEnum auditTypeEnum, final String expected) {
+        final String result = AuditUtils.resolveAuditType(auditTypeEnum);
+        assertEquals(expected, result);
     }
 
     @Test
