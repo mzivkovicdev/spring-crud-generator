@@ -47,6 +47,36 @@ class FieldUtilsTest {
         return field;
     }
 
+    private FieldDefinition fieldWithNameAndRelation(final String name, final String type, final String cascade, final String fetch) {
+        
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType(type);
+        relation.setCascade(cascade);
+        relation.setFetch(fetch);
+
+        final FieldDefinition field = new FieldDefinition();
+        field.setName(name);
+        field.setRelation(relation);
+        
+        return field;
+    }
+
+    private FieldDefinition fieldWithNameTypeAndRelation(final String name, final String fieldType, final String relationType,
+                final String cascade, final String fetch) {
+        
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType(relationType);
+        relation.setCascade(cascade);
+        relation.setFetch(fetch);
+
+        final FieldDefinition field = new FieldDefinition();
+        field.setName(name);
+        field.setRelation(relation);
+        field.setType(fieldType);
+        
+        return field;
+    }
+
     private FieldDefinition fieldWithNameAndType(final String name, final String type) {
         
         final FieldDefinition field = new FieldDefinition()
@@ -1097,7 +1127,7 @@ class FieldUtilsTest {
         final FieldDefinition plainField = fieldWithNameAndType("name", "String");
         plainField.setRelation(null);
 
-        final FieldDefinition relatedField = fieldWithRelation("owner", "String", "ManyToOne");
+        final FieldDefinition relatedField = fieldWithRelation("OneToOne", "ALL", "EAGER");
         final FieldDefinition enumField = fieldWithNameAndType("status", "enum");
         enumField.setRelation(null);
 
@@ -1209,6 +1239,212 @@ class FieldUtilsTest {
                 "body.getStatus() != null ? StatusEnum.valueOf(body.getStatus().name()) : null",
                 result.get(0)
         );
+    }
+
+    @Test
+    @DisplayName("extractNonIdNonRelationFieldNamesForResolver returns input.fieldName() for plain fields without relations or JSON")
+    void extractNonIdNonRelationFieldNamesForResolver_shouldReturnSimpleInputAccess_forPlainFields() {
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition relatedField = fieldWithNameAndRelation("owner" ,"OneToOne", "ALL", "ManyToOne");
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, relatedField);
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("input.name()", result.get(0));
+    }
+
+    @Test
+    @DisplayName("extractNonIdNonRelationFieldNamesForResolver uses mapper for JSON fields")
+    void extractNonIdNonRelationFieldNamesForResolver_shouldUseMapper_forJsonField() {
+        
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        addressField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, addressField);
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("addressMapper.mapAddressTOToAddress(input.address())", result.get(0));
+    }
+
+    @Test
+    @DisplayName("extractNonIdNonRelationFieldNamesForResolver throws IllegalArgumentException when no ID field exists")
+    void extractNonIdNonRelationFieldNamesForResolver_shouldThrow_whenNoIdField() {
+        
+        final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
+        final FieldDefinition f2 = fieldWithNameTypeAndId("age", "Integer", false);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldNamesForResolver returns input.fieldName() for plain fields")
+    void extractNonIdFieldNamesForResolver_shouldReturnSimpleInputAccess_forPlainFields() {
+        
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField);
+
+        final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("input.name()", result.get(0));
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldNamesForResolver uses mapper for JSON fields")
+    void extractNonIdFieldNamesForResolver_shouldUseMapper_forJsonField() {
+        
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        addressField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, addressField);
+
+        final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("addressMapper.mapAddressTOToAddress(input.address())", result.get(0));
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldNamesForResolver uses input.fieldNameId() for ManyToOne relations")
+    void extractNonIdFieldNamesForResolver_shouldUseSingleId_forManyToOneRelation() {
+        
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "Eager"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, ownerField);
+
+        final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("input.ownerId()", result.get(0));
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldNamesForResolver uses input.fieldNameIds() for ToMany relations (OneToMany/ManyToMany)")
+    void extractNonIdFieldNamesForResolver_shouldUseIds_forToManyRelations() {
+        
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation("tags", "Tag", "OneToMany", "ALL", "Eager");
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation("groups", "Group", "ManyToMany", "ALL", "Eager");
+
+        final List<FieldDefinition> fields = List.of(idField, tagsField, groupsField);
+
+        final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("input.tagsIds()", result.get(0));
+        assertEquals("input.groupsIds()", result.get(1));
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldNamesForResolver throws IllegalArgumentException when no ID field exists")
+    void extractNonIdFieldNamesForResolver_shouldThrow_whenNoIdField() {
+        
+        final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
+        final FieldDefinition f2 = fieldWithNameTypeAndId("age", "Integer", false);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.extractNonIdFieldNamesForResolver(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldForJavadoc generates @param tags for all non-ID fields with descriptions")
+    void extractNonIdFieldForJavadoc_shouldReturnParamTags_forFieldsWithDescription() {
+        
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setDescription("Primary key");
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setDescription("The name of the entity");
+
+        final FieldDefinition noDescField = fieldWithNameTypeAndId("age", "Integer", false);
+        noDescField.setDescription("   ");
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, noDescField);
+
+        final List<String> result = FieldUtils.extractNonIdFieldForJavadoc(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("@param name The name of the entity", result.get(0));
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldForJavadoc throws IllegalArgumentException when no ID field exists")
+    void extractNonIdFieldForJavadoc_shouldThrow_whenNoIdField() {
+        
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setDescription("Name");
+
+        final List<FieldDefinition> fields = List.of(nameField);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.extractNonIdFieldForJavadoc(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("extractFieldForJavadocWithoutRelations generates @param tags for fields without relations and with descriptions")
+    void extractFieldForJavadocWithoutRelations_shouldReturnParamTags_forFieldsWithoutRelationsAndWithDescription() {
+        
+        final FieldDefinition nameField = fieldWithNameAndType("name", "String");
+        nameField.setDescription("The name of the entity");
+        nameField.setRelation(null);
+        
+        final FieldDefinition ageField = fieldWithNameAndType("age", "Integer");
+        ageField.setDescription("   ");
+        ageField.setRelation(null);
+
+        final FieldDefinition relatedField = fieldWithRelation("owner", "Owner", "ManyToOne");
+        relatedField.setDescription("The owner");
+
+        final List<FieldDefinition> fields = List.of(nameField, ageField, relatedField);
+
+        final List<String> result = FieldUtils.extractFieldForJavadocWithoutRelations(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("@param name The name of the entity", result.get(0));
     }
 
 }
