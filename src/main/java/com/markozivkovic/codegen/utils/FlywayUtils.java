@@ -586,6 +586,7 @@ public class FlywayUtils {
                 final String name = (String) extra.get("name");
                 if (!existing.contains(name)){
                     cols.add(extra);
+                    existing.add(name);
                 }
             }
         }
