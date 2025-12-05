@@ -5,7 +5,7 @@ import java.util.List;
 public class ModelNameUtils {
 
     private static final List<String> SQL_MODEL_SUFFIXES = List.of(
-        "Entity", "Model", "Table", "JpaEntity", "Domain", "DAO", "Data"
+        "JpaEntity", "Entity", "Model", "Table", "Domain", "DAO", "Data"
     );
 
     private ModelNameUtils() {
