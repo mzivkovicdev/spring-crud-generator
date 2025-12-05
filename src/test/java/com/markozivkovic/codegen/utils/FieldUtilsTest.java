@@ -2,6 +2,8 @@ package com.markozivkovic.codegen.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,6 +13,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.markozivkovic.codegen.models.ColumnDefinition;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.IdDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -1445,6 +1448,1326 @@ class FieldUtilsTest {
 
         assertEquals(1, result.size());
         assertEquals("@param name The name of the entity", result.get(0));
+    }
+
+    @Test
+    @DisplayName("computeJavadocForFields returns empty list when all descriptions are blank")
+    void computeJavadocForFields_shouldReturnEmpty_whenAllDescriptionsBlank() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setDescription("   ");
+
+        final FieldDefinition f2 = fieldWithNameAndType("age", "Integer");
+        f2.setDescription(null);
+
+        final List<String> result = FieldUtils.computeJavadocForFields(f1, f2);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("computeJavadocForFields returns @param tags only for fields with non-blank description")
+    void computeJavadocForFields_shouldReturnParamTags_forFieldsWithDescription() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setDescription("The name of the entity");
+
+        final FieldDefinition f2 = fieldWithNameAndType("age", "Integer");
+        f2.setDescription("   ");
+
+        final FieldDefinition f3 = fieldWithNameAndType("status", "String");
+        f3.setDescription("The status");
+
+        final List<String> result = FieldUtils.computeJavadocForFields(f1, f2, f3);
+
+        assertEquals(2, result.size());
+        assertEquals("@param name The name of the entity", result.get(0));
+        assertEquals("@param status The status", result.get(1));
+    }
+
+    @Test
+    @DisplayName("extractFieldNames returns all field names in original order")
+    void extractFieldNames_shouldReturnAllNames_inOrder() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("id", "Long");
+        final FieldDefinition f2 = fieldWithNameAndType("name", "String");
+        final FieldDefinition f3 = fieldWithNameAndType("age", "Integer");
+
+        final List<FieldDefinition> fields = List.of(f1, f2, f3);
+
+        final List<String> result = FieldUtils.extractFieldNames(fields);
+
+        assertEquals(3, result.size());
+        assertEquals("id", result.get(0));
+        assertEquals("name", result.get(1));
+        assertEquals("age", result.get(2));
+    }
+
+    @Test
+    @DisplayName("extractFieldNamesWithoutRelations excludes OneToMany and ManyToMany relation fields")
+    void extractFieldNamesWithoutRelations_shouldExcludeCollectionRelations() {
+
+        final FieldDefinition idField = fieldWithoutRelation();
+        idField.setName("id");
+
+        final FieldDefinition nameField = fieldWithoutRelation();
+        nameField.setName("name");
+
+        final FieldDefinition ownerField = fieldWithNameAndRelation("owner", "ManyToOne", "ALL", "EAGER");
+        final FieldDefinition tagsField = fieldWithNameAndRelation("tags", "OneToMany", "ALL", "EAGER");
+        final FieldDefinition groupsField = fieldWithNameAndRelation("groups", "ManyToMany", "ALL", "EAGER");
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ownerField, tagsField, groupsField);
+
+        final List<String> result = FieldUtils.extractFieldNamesWithoutRelations(fields);
+
+        assertEquals(3, result.size());
+        assertEquals("id", result.get(0));
+        assertEquals("name", result.get(1));
+        assertEquals("owner", result.get(2));
+    }
+
+    @Test
+    @DisplayName("extractFieldNamesWithoutRelations returns empty list when all fields are OneToMany or ManyToMany")
+    void extractFieldNamesWithoutRelations_shouldReturnEmpty_whenAllCollectionRelations() {
+
+        final FieldDefinition tagsField = fieldWithNameAndRelation("tags", "OneToMany", "ALL", "EAGER");
+        final FieldDefinition groupsField = fieldWithNameAndRelation("groups", "ManyToMany", "ALL", "EAGER");
+
+        final List<FieldDefinition> fields = List.of(tagsField, groupsField);
+
+        final List<String> result = FieldUtils.extractFieldNamesWithoutRelations(fields);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("extractCollectionRelationNames returns names of OneToMany and ManyToMany relation fields")
+    void extractCollectionRelationNames_shouldReturnCollectionRelationNames() {
+
+        final FieldDefinition idField = fieldWithoutRelation();
+        idField.setName("id");
+
+        final FieldDefinition tagsField = fieldWithNameAndRelation("tags", "OneToMany", "ALL", "EAGER");
+        final FieldDefinition groupsField = fieldWithNameAndRelation("groups", "ManyToMany", "ALL", "EAGER");
+        final FieldDefinition ownerField = fieldWithNameAndRelation("owner", "ManyToOne", "ALL", "EAGER");
+        final FieldDefinition nameField = fieldWithoutRelation();
+        nameField.setName("name");
+
+        final ModelDefinition model = model("Example", List.of(idField, tagsField, groupsField, ownerField, nameField));
+
+        final List<String> result = FieldUtils.extractCollectionRelationNames(model);
+
+        assertEquals(2, result.size());
+        assertEquals("tags", result.get(0));
+        assertEquals("groups", result.get(1));
+    }
+
+    @Test
+    @DisplayName("extractCollectionRelationNames returns empty list when model has no collection relations")
+    void extractCollectionRelationNames_shouldReturnEmpty_whenNoCollectionRelations() {
+
+        final FieldDefinition idField = fieldWithoutRelation();
+        idField.setName("id");
+
+        final FieldDefinition ownerField = fieldWithNameAndRelation("owner", "ManyToOne", "ALL", "EAGER");
+        final FieldDefinition nameField = fieldWithoutRelation();
+        nameField.setName("name");
+
+        final ModelDefinition model = model("Example", List.of(idField, ownerField, nameField));
+
+        final List<String> result = FieldUtils.extractCollectionRelationNames(model);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("hasCollectionRelation returns false when there are no relations")
+    void hasCollectionRelation_shouldReturnFalse_whenNoRelations() {
+
+        final ModelDefinition target = model("Tag", List.of());
+
+        final FieldDefinition f1 = fieldWithoutRelation();
+        f1.setName("id");
+        final FieldDefinition f2 = fieldWithoutRelation();
+        f2.setName("name");
+
+        final ModelDefinition other = model("Post", List.of(f1, f2));
+
+        final boolean result = FieldUtils.hasCollectionRelation(target, List.of(other));
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("hasCollectionRelation returns false when there are only non-collection relations")
+    void hasCollectionRelation_shouldReturnFalse_whenOnlyNonCollectionRelations() {
+
+        final ModelDefinition target = model("Tag", List.of());
+
+        final FieldDefinition relationField = fieldWithNameTypeAndRelation(
+                "tag", "Tag", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final ModelDefinition other = model("Post", List.of(relationField));
+
+        final boolean result = FieldUtils.hasCollectionRelation(target, List.of(other));
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("hasCollectionRelation returns true when there is a OneToMany relation to the target model")
+    void hasCollectionRelation_shouldReturnTrue_whenOneToManyRelationExists() {
+
+        final ModelDefinition target = model("Tag", List.of());
+
+        final FieldDefinition relationField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+
+        final ModelDefinition other = model("Post", List.of(relationField));
+
+        final boolean result = FieldUtils.hasCollectionRelation(target, List.of(other));
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("hasCollectionRelation returns true when there is a ManyToMany relation to the target model")
+    void hasCollectionRelation_shouldReturnTrue_whenManyToManyRelationExists() {
+
+        final ModelDefinition target = model("Tag", List.of());
+
+        final FieldDefinition relationField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final ModelDefinition other = model("Post", List.of(relationField));
+
+        final boolean result = FieldUtils.hasCollectionRelation(target, List.of(other));
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("hasRelation returns false when there are no relations")
+    void hasRelation_shouldReturnFalse_whenNoRelations() {
+
+        final ModelDefinition target = model("Category", List.of());
+
+        final FieldDefinition f1 = fieldWithoutRelation();
+        f1.setName("id");
+        final FieldDefinition f2 = fieldWithoutRelation();
+        f2.setName("name");
+
+        final ModelDefinition other = model("Product", List.of(f1, f2));
+
+        final boolean result = FieldUtils.hasRelation(target, List.of(other));
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("hasRelation returns false when relations are to a different model")
+    void hasRelation_shouldReturnFalse_whenRelationsPointToAnotherModel() {
+
+        final ModelDefinition target = model("Category", List.of());
+
+        final FieldDefinition relationField = fieldWithNameTypeAndRelation(
+                "supplier", "Supplier", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final ModelDefinition other = model("Product", List.of(relationField));
+
+        final boolean result = FieldUtils.hasRelation(target, List.of(other));
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("hasRelation returns true when any relation points to the target model")
+    void hasRelation_shouldReturnTrue_whenRelationToTargetExists() {
+
+        final ModelDefinition target = model("Category", List.of());
+
+        final FieldDefinition relationField = fieldWithNameTypeAndRelation(
+                "category", "Category", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final ModelDefinition other = model("Product", List.of(relationField));
+
+        final boolean result = FieldUtils.hasRelation(target, List.of(other));
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("generateInputArgsBusinessService returns field names for non-relation fields excluding ID")
+    void generateInputArgsBusinessService_shouldReturnNames_forPlainFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+        ageField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+
+        final List<String> result = FieldUtils.generateInputArgsBusinessService(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("name", result.get(0));
+        assertEquals("age", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsBusinessService uses uncapitalized type name for ManyToOne/OneToOne relations")
+    void generateInputArgsBusinessService_shouldUseSingularName_forToOneRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
+                "category", "Category", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "UserModel", "OneToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, categoryField, ownerField);
+
+        final List<String> result = FieldUtils.generateInputArgsBusinessService(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("category", result.get(0));     // uncapitalize("Category")
+        assertEquals("userModel", result.get(1));    // uncapitalize("UserModel")
+    }
+
+    @Test
+    @DisplayName("generateInputArgsBusinessService appends 's' for OneToMany and ManyToMany relations")
+    void generateInputArgsBusinessService_shouldUsePluralName_forToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, tagsField, groupsField);
+
+        final List<String> result = FieldUtils.generateInputArgsBusinessService(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("tags", result.get(0));     // "tag" + "s"
+        assertEquals("groups", result.get(1));   // "group" + "s"
+    }
+
+    @Test
+    @DisplayName("generateInputArgsBusinessService throws IllegalArgumentException when no ID field exists")
+    void generateInputArgsBusinessService_shouldThrow_whenNoIdField() {
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+
+        final List<FieldDefinition> fields = List.of(nameField, ageField);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.generateInputArgsBusinessService(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId returns 'final <type> <name>' for plain fields excluding ID")
+    void generateInputArgsExcludingId_shouldReturnFinalTypeAndName_forPlainFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+
+        final List<ModelDefinition> entities = List.of();
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(fields, entities);
+
+        assertEquals(2, result.size());
+        assertEquals("final String name", result.get(0));
+        assertEquals("final Integer age", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId generates single ID argument for ManyToOne/OneToOne relations")
+    void generateInputArgsExcludingId_shouldGenerateSingleId_forToOneRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
+                "category", "Category", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> mainFields = List.of(idField, categoryField);
+        final FieldDefinition categoryIdField = fieldWithNameTypeAndId("id", "UUID", true);
+        final ModelDefinition categoryModel = model("Category", List.of(categoryIdField));
+        final List<ModelDefinition> entities = List.of(categoryModel);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(mainFields, entities);
+
+        assertEquals(1, result.size());
+        assertEquals("final UUID categoryId", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId generates list of IDs for OneToMany/ManyToMany relations")
+    void generateInputArgsExcludingId_shouldGenerateListOfIds_forToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> mainFields = List.of(idField, tagsField, groupsField);
+
+        final FieldDefinition tagIdField = fieldWithNameTypeAndId("id", "Long", true);
+        final ModelDefinition tagModel = model("Tag", List.of(tagIdField));
+        final FieldDefinition groupIdField = fieldWithNameTypeAndId("id", "UUID", true);
+        final ModelDefinition groupModel = model("Group", List.of(groupIdField));
+
+        final List<ModelDefinition> entities = List.of(tagModel, groupModel);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(mainFields, entities);
+
+        assertEquals(2, result.size());
+        assertEquals("final List<Long> tagIds", result.get(0));
+        assertEquals("final List<UUID> groupIds", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId throws IllegalArgumentException when no ID field exists")
+    void generateInputArgsExcludingId_shouldThrow_whenNoIdField() {
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+
+        final List<FieldDefinition> fields = List.of(nameField);
+        final List<ModelDefinition> entities = List.of();
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.generateInputArgsExcludingId(fields, entities)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingIdForTest returns plain field names for non-relation fields excluding ID")
+    void generateInputArgsExcludingIdForTest_shouldReturnPlainNames_forNonRelationFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+        ageField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+        final List<ModelDefinition> entities = List.of();
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingIdForTest(fields, entities);
+
+        assertEquals(2, result.size());
+        assertEquals("name", result.get(0));
+        assertEquals("age", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingIdForTest generates '<modelName>Id' for ManyToOne/OneToOne relations")
+    void generateInputArgsExcludingIdForTest_shouldGenerateSingleId_forToOneRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
+                "category", "Category", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "User", "OneToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, categoryField, ownerField);
+
+        final ModelDefinition categoryModel = model("Category", List.of());
+        final ModelDefinition userModel = model("User", List.of());
+
+        final List<ModelDefinition> entities = List.of(categoryModel, userModel);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingIdForTest(fields, entities);
+
+        assertEquals(2, result.size());
+        assertEquals("categoryId", result.get(0));
+        assertEquals("userId", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingIdForTest generates '<modelName>Ids' for OneToMany and ManyToMany relations")
+    void generateInputArgsExcludingIdForTest_shouldGenerateIds_forToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, tagsField, groupsField);
+
+        final ModelDefinition tagModel = model("Tag", List.of());
+        final ModelDefinition groupModel = model("Group", List.of());
+
+        final List<ModelDefinition> entities = List.of(tagModel, groupModel);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingIdForTest(fields, entities);
+
+        assertEquals(2, result.size());
+        assertEquals("tagIds", result.get(0));
+        assertEquals("groupIds", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingIdForTest throws IllegalArgumentException when no ID field exists")
+    void generateInputArgsExcludingIdForTest_shouldThrow_whenNoIdField() {
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+
+        final List<FieldDefinition> fields = List.of(nameField, ageField);
+        final List<ModelDefinition> entities = List.of();
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.generateInputArgsExcludingIdForTest(fields, entities)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId(List) returns 'final <type> <name>' for plain fields excluding ID")
+    void generateInputArgsExcludingIdSingleParam_shouldReturnFinalTypeAndName_forPlainFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+        ageField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("final String name", result.get(0));
+        assertEquals("final Integer age", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId(List) uses 'final <type> <name>' for ManyToOne/OneToOne relations")
+    void generateInputArgsExcludingIdSingleParam_shouldUseFinalType_forToOneRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, ownerField);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("final OwnerModel owner", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId(List) uses 'final List<type> name' for OneToMany and ManyToMany relations")
+    void generateInputArgsExcludingIdSingleParam_shouldUseListType_forToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, tagsField, groupsField);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("final List<Tag> tags", result.get(0));
+        assertEquals("final List<Group> groups", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsExcludingId(List) throws IllegalArgumentException when no ID field exists")
+    void generateInputArgsExcludingIdSingleParam_shouldThrow_whenNoIdField() {
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+
+        final List<FieldDefinition> fields = List.of(nameField);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.generateInputArgsExcludingId(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutRelations returns 'final <type> <name>' only for fields without relations")
+    void generateInputArgsWithoutRelations_shouldReturnOnlyFieldsWithoutRelations() {
+
+        final FieldDefinition idField = fieldWithNameAndType("id", "Long");
+        final FieldDefinition nameField = fieldWithNameAndType("name", "String");
+
+        final FieldDefinition relatedField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, relatedField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutRelations(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("final Long id", result.get(0));
+        assertEquals("final String name", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutRelations returns empty list when all fields have relations")
+    void generateInputArgsWithoutRelations_shouldReturnEmpty_whenAllFieldsHaveRelations() {
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(ownerField, tagsField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutRelations(fields);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO returns '<type> <name>' for plain fields excluding ID")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldReturnTypeAndName_forPlainFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+        ageField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+        final List<ModelDefinition> entities = List.of();
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities);
+
+        assertEquals(2, result.size());
+        assertTrue(result.get(0).endsWith("String name"));
+        assertTrue(result.get(1).endsWith("Integer age"));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates '<type> <name>Id' for ManyToOne/OneToOne relations")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSingleId_forToOneRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
+                "category", "Category", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> mainFields = List.of(idField, categoryField);
+
+        final FieldDefinition categoryIdField = fieldWithNameTypeAndId("id", "UUID", true);
+        final ModelDefinition categoryModel = model("Category", List.of(categoryIdField));
+
+        final List<ModelDefinition> entities = List.of(categoryModel);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(mainFields, entities);
+
+        assertEquals(1, result.size());
+        assertEquals("UUID categoryId", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates 'List<type> nameIds' for OneToMany/ManyToMany relations")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateListOfIds_forToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> mainFields = List.of(idField, tagsField, groupsField);
+
+        final FieldDefinition tagIdField = fieldWithNameTypeAndId("id", "Long", true);
+        final ModelDefinition tagModel = model("Tag", List.of(tagIdField));
+
+        final FieldDefinition groupIdField = fieldWithNameTypeAndId("id", "UUID", true);
+        final ModelDefinition groupModel = model("Group", List.of(groupIdField));
+
+        final List<ModelDefinition> entities = List.of(tagModel, groupModel);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(mainFields, entities);
+
+        assertEquals(2, result.size());
+        assertEquals("List<Long> tagsIds", result.get(0));
+        assertEquals("List<UUID> groupsIds", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO uses '<resolvedType>TO name' for JSON fields")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldUseTOType_forJsonFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        addressField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, addressField);
+        final List<ModelDefinition> entities = List.of();
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities);
+
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).endsWith("AddressTO address"));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO throws IllegalArgumentException when no ID field exists")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldThrow_whenNoIdField() {
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(nameField);
+        final List<ModelDefinition> entities = List.of();
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO returns '<type> <name>' for non-relation fields excluding ID")
+    void generateInputArgsWithoutFinalUpdateInputTO_shouldReturnTypeAndName_forPlainFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ownerField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("String name", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO uses '<resolvedType>TO name' for JSON fields")
+    void generateInputArgsWithoutFinalUpdateInputTO_shouldUseTOType_forJsonFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        jsonField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, jsonField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("MetadataTO metadata", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO adds validation annotations when column constraints are present")
+    void generateInputArgsWithoutFinalUpdateInputTO_shouldIncludeValidationAnnotations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(false);
+        column.setLength(100);
+        nameField.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("@NotNull @Size(max = 100) String name", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO throws IllegalArgumentException when no ID field exists")
+    void generateInputArgsWithoutFinalUpdateInputTO_shouldThrow_whenNoIdField() {
+
+        final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
+        f1.setRelation(null);
+
+        final FieldDefinition f2 = fieldWithNameTypeAndId("age", "Integer", false);
+        f2.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinal generates '<type> <name>' for plain fields")
+    void generateInputArgsWithoutFinal_shouldGeneratePlainArgs_forNonRelationNonJsonFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+        ageField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinal(fields);
+
+        assertEquals(3, result.size());
+        assertEquals("Long id", result.get(0));
+        assertEquals("String name", result.get(1));
+        assertEquals("Integer age", result.get(2));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinal uses '<resolvedType>TO name' for JSON fields")
+    void generateInputArgsWithoutFinal_shouldUseTOType_forJsonFields() {
+
+        final FieldDefinition jsonField = fieldWithNameAndType("address", "JSON[Address]");
+        jsonField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(jsonField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinal(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("AddressTO address", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinal uses '<type>TO name' for ManyToOne/OneToOne relations")
+    void generateInputArgsWithoutFinal_shouldUseTOType_forToOneRelations() {
+
+        final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
+                "category", "Category", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(categoryField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinal(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("CategoryTO category", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinal uses 'List<typeTO> name' for OneToMany and ManyToMany relations")
+    void generateInputArgsWithoutFinal_shouldUseListType_forToManyRelations() {
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(tagsField, groupsField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinal(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("List<TagTO> tags", result.get(0));
+        assertEquals("List<GroupTO> groups", result.get(1));
+    }
+
+    @Test
+    @DisplayName("isIdFieldUUID returns true when field type is UUID")
+    void isIdFieldUUID_shouldReturnTrue_whenTypeIsUUID() {
+
+        final FieldDefinition field = fieldWithNameAndType("id", "UUID");
+
+        assertTrue(FieldUtils.isIdFieldUUID(field));
+    }
+
+    @Test
+    @DisplayName("isIdFieldUUID returns true when field type is uuid (case-insensitive)")
+    void isIdFieldUUID_shouldReturnTrue_whenTypeIsUUIDIgnoreCase() {
+
+        final FieldDefinition field = fieldWithNameAndType("id", "uuid");
+
+        assertTrue(FieldUtils.isIdFieldUUID(field));
+    }
+
+    @Test
+    @DisplayName("isIdFieldUUID returns false when field type is not UUID")
+    void isIdFieldUUID_shouldReturnFalse_whenTypeIsNotUUID() {
+
+        final FieldDefinition field = fieldWithNameAndType("id", "Long");
+
+        assertFalse(FieldUtils.isIdFieldUUID(field));
+    }
+
+    @Test
+    @DisplayName("isAnyIdFieldUUID returns false when model has no relations")
+    void isAnyIdFieldUUID_shouldReturnFalse_whenNoRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithoutRelation();
+        nameField.setName("name");
+
+        final ModelDefinition order = model("Order", List.of(idField, nameField));
+
+        final List<ModelDefinition> entities = List.of(
+                model("Customer", List.of()),
+                model("Product", List.of())
+        );
+
+        final boolean result = FieldUtils.isAnyIdFieldUUID(order, entities);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("isAnyIdFieldUUID returns false when related models have non-UUID ID fields")
+    void isAnyIdFieldUUID_shouldReturnFalse_whenRelatedIdsAreNotUUID() {
+
+        final FieldDefinition orderId = fieldWithNameTypeAndId("id", "Long", true);
+        orderId.setRelation(null);
+
+        final FieldDefinition customerRelation = fieldWithNameTypeAndRelation(
+                "customer", "Customer", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final ModelDefinition order = model("Order", List.of(orderId, customerRelation));
+
+        final FieldDefinition customerId = fieldWithNameTypeAndId("id", "Long", true);
+        final ModelDefinition customer = model("Customer", List.of(customerId));
+
+        final List<ModelDefinition> entities = List.of(customer);
+
+        final boolean result = FieldUtils.isAnyIdFieldUUID(order, entities);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("isAnyIdFieldUUID returns true when any related model has an ID field of type UUID")
+    void isAnyIdFieldUUID_shouldReturnTrue_whenAnyRelatedIdIsUUID() {
+
+        final FieldDefinition orderId = fieldWithNameTypeAndId("id", "Long", true);
+        orderId.setRelation(null);
+
+        final FieldDefinition customerRelation = fieldWithNameTypeAndRelation(
+                "customer", "Customer", "ManyToOne", "ALL", "EAGER"
+        );
+        final FieldDefinition productRelation = fieldWithNameTypeAndRelation(
+                "product", "Product", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final ModelDefinition order = model("Order", List.of(orderId, customerRelation, productRelation));
+
+        final FieldDefinition customerId = fieldWithNameTypeAndId("id", "Long", true);
+        final ModelDefinition customer = model("Customer", List.of(customerId));
+
+        final FieldDefinition productId = fieldWithNameTypeAndId("id", "UUID", true);
+        final ModelDefinition product = model("Product", List.of(productId));
+
+        final List<ModelDefinition> entities = List.of(customer, product);
+
+        final boolean result = FieldUtils.isAnyIdFieldUUID(order, entities);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldId returns false when list is empty")
+    void isAnyFieldId_shouldReturnFalse_whenListIsEmpty() {
+
+        final List<FieldDefinition> fields = List.of();
+
+        final boolean result = FieldUtils.isAnyFieldId(fields);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldId returns false when no field has an ID")
+    void isAnyFieldId_shouldReturnFalse_whenNoFieldHasId() {
+
+        final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
+        final FieldDefinition f2 = fieldWithNameTypeAndId("age", "Integer", false);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final boolean result = FieldUtils.isAnyFieldId(fields);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldId returns true when at least one field has an ID")
+    void isAnyFieldId_shouldReturnTrue_whenAnyFieldHasId() {
+
+        final FieldDefinition f1 = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition f2 = fieldWithNameTypeAndId("name", "String", false);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final boolean result = FieldUtils.isAnyFieldId(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isJsonField returns true for JSON[...] type")
+    void isJsonField_shouldReturnTrue_forJsonType() {
+
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+
+        final boolean result = FieldUtils.isJsonField(field);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isJsonField returns true for JSONB[...] type")
+    void isJsonField_shouldReturnTrue_forJsonbType() {
+
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB[Metadata]");
+
+        final boolean result = FieldUtils.isJsonField(field);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isJsonField returns false for non-JSON types")
+    void isJsonField_shouldReturnFalse_forNonJsonType() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        final FieldDefinition f2 = fieldWithNameAndType("value", "Integer");
+        final FieldDefinition f3 = fieldWithNameAndType("status", "Enum");
+
+        assertFalse(FieldUtils.isJsonField(f1));
+        assertFalse(FieldUtils.isJsonField(f2));
+        assertFalse(FieldUtils.isJsonField(f3));
+    }
+
+    @Test
+    @DisplayName("extractJsonFieldName returns inner type for JSON[...] type")
+    void extractJsonFieldName_shouldReturnInnerType_forJsonType() {
+
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+
+        final String result = FieldUtils.extractJsonFieldName(field);
+
+        assertEquals("Metadata", result);
+    }
+
+    @Test
+    @DisplayName("extractJsonFieldName returns inner type for JSONB[...] type")
+    void extractJsonFieldName_shouldReturnInnerType_forJsonbType() {
+
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB[MyCustom_Type]");
+
+        final String result = FieldUtils.extractJsonFieldName(field);
+
+        assertEquals("MyCustom_Type", result);
+    }
+
+    @Test
+    @DisplayName("computeResolvedType returns JSON inner type for JSON field")
+    void computeResolvedType_shouldReturnInnerType_forJsonField() {
+
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+
+        final String result = FieldUtils.computeResolvedType(field);
+
+        assertEquals("Metadata", result);
+    }
+
+    @Test
+    @DisplayName("computeResolvedType returns <CapitalizedName>Enum for Enum type with name")
+    void computeResolvedType_shouldReturnCapitalizedNameEnum_forEnumFieldWithName() {
+
+        final FieldDefinition field = fieldWithNameAndType("status", "Enum");
+
+        final String result = FieldUtils.computeResolvedType(field);
+
+        assertEquals("StatusEnum", result);
+    }
+
+    @Test
+    @DisplayName("computeResolvedType returns 'Enum' when type is Enum but name is null")
+    void computeResolvedType_shouldReturnEnum_whenEnumTypeAndNullName() {
+
+        final FieldDefinition field = new FieldDefinition();
+        field.setName(null);
+        field.setType("Enum");
+
+        final String result = FieldUtils.computeResolvedType(field);
+
+        assertEquals("Enum", result);
+    }
+
+    @Test
+    @DisplayName("computeResolvedType returns original type for non-JSON non-Enum fields")
+    void computeResolvedType_shouldReturnOriginalType_forOtherFields() {
+
+        final FieldDefinition field = fieldWithNameAndType("name", "String");
+
+        final String result = FieldUtils.computeResolvedType(field);
+
+        assertEquals("String", result);
+    }
+
+    @Test
+    @DisplayName("cloneFieldDefinition returns a deep copy of the field definition")
+    void cloneFieldDefinition_shouldReturnDeepCopy() {
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(false);
+        column.setLength(255);
+
+        final FieldDefinition original = new FieldDefinition();
+        original.setName("name");
+        original.setType("String");
+        original.setDescription("The name");
+        original.setColumn(column);
+
+        final FieldDefinition cloned = FieldUtils.cloneFieldDefinition(original);
+
+        assertNotSame(original, cloned);
+
+        assertEquals("name", cloned.getName());
+        assertEquals("String", cloned.getType());
+        assertEquals("The name", cloned.getDescription());
+
+        assertNotNull(cloned.getColumn());
+        assertNotSame(original.getColumn(), cloned.getColumn());
+        assertEquals(original.getColumn().getNullable(), cloned.getColumn().getNullable());
+        assertEquals(original.getColumn().getLength(), cloned.getColumn().getLength());
+
+        original.setName("changed");
+        original.getColumn().setLength(100);
+
+        assertEquals("name", cloned.getName());
+        assertEquals(255, cloned.getColumn().getLength());
+    }
+
+    @Test
+    @DisplayName("hasAnyColumnValidation returns false when no field has column validations")
+    void hasAnyColumnValidation_shouldReturnFalse_whenNoValidations() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setColumn(null);
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(true);
+        column.setLength(null);
+        final FieldDefinition f2 = fieldWithNameAndType("age", "Integer");
+        f2.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final boolean result = FieldUtils.hasAnyColumnValidation(fields);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("hasAnyColumnValidation returns true when any field has nullable=false")
+    void hasAnyColumnValidation_shouldReturnTrue_whenAnyFieldNonNullable() {
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(false);
+        column.setLength(null);
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(f1);
+
+        final boolean result = FieldUtils.hasAnyColumnValidation(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("hasAnyColumnValidation returns true when any field has length specified")
+    void hasAnyColumnValidation_shouldReturnTrue_whenAnyFieldHasLength() {
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(true);
+        column.setLength(100);
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(f1);
+
+        final boolean result = FieldUtils.hasAnyColumnValidation(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldNonNullable returns false when all fields are nullable or have no column")
+    void isAnyFieldNonNullable_shouldReturnFalse_whenAllNullableOrNoColumn() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setColumn(null);
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(true);
+        column.setLength(50);
+        final FieldDefinition f2 = fieldWithNameAndType("description", "String");
+        f2.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final boolean result = FieldUtils.isAnyFieldNonNullable(fields);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldNonNullable returns true when at least one field has nullable=false")
+    void isAnyFieldNonNullable_shouldReturnTrue_whenAnyFieldNonNullable() {
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(false);
+        column.setLength(null);
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(f1);
+
+        final boolean result = FieldUtils.isAnyFieldNonNullable(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("hasAnyFieldLengthValidation returns false when no field has length defined")
+    void hasAnyFieldLengthValidation_shouldReturnFalse_whenNoLengthDefined() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        f1.setColumn(null);
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(false);
+        column.setLength(null);
+        final FieldDefinition f2 = fieldWithNameAndType("description", "String");
+        f2.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final boolean result = FieldUtils.hasAnyFieldLengthValidation(fields);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("hasAnyFieldLengthValidation returns true when at least one field has length defined")
+    void hasAnyFieldLengthValidation_shouldReturnTrue_whenAnyFieldHasLength() {
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(true);
+        column.setLength(255);
+
+        final FieldDefinition f1 = fieldWithNameAndType("description", "String");
+        f1.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(f1);
+
+        final boolean result = FieldUtils.hasAnyFieldLengthValidation(fields);
+
+        assertTrue(result);
     }
 
 }
