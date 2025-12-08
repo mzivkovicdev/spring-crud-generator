@@ -1220,7 +1220,7 @@ class FieldUtilsTest {
 
         assertTrue(mapping.startsWith("addressMapper.map"));
         assertTrue(mapping.endsWith("(body.getAddress())"));
-        assertTrue(mapping.contains("To")); // negde u sredini
+        assertTrue(mapping.contains("To"));
     }
 
     @Test
