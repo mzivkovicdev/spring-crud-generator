@@ -17,6 +17,7 @@ public final class ImportConstants {
         public static final String COLLECTORS = "java.util.stream.Collectors";
         public static final String BIG_DECIMAL = "java.math.BigDecimal";
         public static final String BIG_INTEGER = "java.math.BigInteger";
+        public static final String INSTANT = "java.time.Instant";
         public static final String LOCAL_DATE = "java.time.LocalDate";
         public static final String LOCAL_DATE_TIME = "java.time.LocalDateTime";
     }
