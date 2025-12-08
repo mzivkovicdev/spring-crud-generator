@@ -1742,8 +1742,8 @@ class FieldUtilsTest {
         final List<String> result = FieldUtils.generateInputArgsBusinessService(fields);
 
         assertEquals(2, result.size());
-        assertEquals("category", result.get(0));     // uncapitalize("Category")
-        assertEquals("userModel", result.get(1));    // uncapitalize("UserModel")
+        assertEquals("category", result.get(0));
+        assertEquals("userModel", result.get(1));
     }
 
     @Test
@@ -1765,8 +1765,8 @@ class FieldUtilsTest {
         final List<String> result = FieldUtils.generateInputArgsBusinessService(fields);
 
         assertEquals(2, result.size());
-        assertEquals("tags", result.get(0));     // "tag" + "s"
-        assertEquals("groups", result.get(1));   // "group" + "s"
+        assertEquals("tags", result.get(0));
+        assertEquals("groups", result.get(1));
     }
 
     @Test
