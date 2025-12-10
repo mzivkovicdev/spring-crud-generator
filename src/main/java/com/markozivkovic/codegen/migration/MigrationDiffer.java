@@ -124,6 +124,13 @@ public class MigrationDiffer {
         }
     }
 
+    /**
+     * Computes the difference between two states of a database entity's foreign keys.
+     * 
+     * @param r the result object to add the differences to
+     * @param oldState the old state of the entity
+     * @param newCreateCtx the new state of the entity
+     */
     @SuppressWarnings("unchecked")
     private static void diffForeignKeys(final Result r, final EntityState oldState, final Map<String,Object> newCreateCtx) {
         
