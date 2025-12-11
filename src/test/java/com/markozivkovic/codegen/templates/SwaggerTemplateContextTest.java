@@ -204,7 +204,7 @@ class SwaggerTemplateContextTest {
         when(relationField.getRelation()).thenReturn(relation);
 
         final ModelDefinition userModel = newModel("UserEntity", List.of(userIdField, relationField));
-        final List<ModelDefinition> allModels = List.of(userModel); // nema AddressEntity
+        final List<ModelDefinition> allModels = List.of(userModel);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);

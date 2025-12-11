@@ -253,7 +253,6 @@ class GeneratorStateUtilsTest {
 
         final String fp1 = GeneratorStateUtils.computeFingerprint(model);
 
-        // change something relevant – e.g. description
         model.setDescription("Changed description");
         final String fp2 = GeneratorStateUtils.computeFingerprint(model);
 

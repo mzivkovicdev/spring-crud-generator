@@ -337,10 +337,6 @@ class GraphQlTemplateContextTest {
         }
     }
 
-    // ---------------------------------------------------
-    // computeQueryMappingGraphQL
-    // ---------------------------------------------------
-
     @Test
     void computeQueryMappingGraphQL_shouldBuildSimpleContext() {
         final FieldDefinition idField = mock(FieldDefinition.class);
