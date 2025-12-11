@@ -157,7 +157,7 @@ class DockerGeneratorTest {
             final Map<String, Object> dcCtx = composeCtxRef.get();
             assertNotNull(dcCtx);
             assertEquals("my-app", dcCtx.get("artifactId"));
-            assertEquals("postgresql", dcCtx.get("dbType")); // name().toLowerCase()
+            assertEquals("postgresql", dcCtx.get("dbType"));
             assertEquals("8080", dcCtx.get("appPort"));
             assertEquals(5432, dcCtx.get("dbPort"));
             assertEquals("postgres", dcCtx.get("dbImage"));
