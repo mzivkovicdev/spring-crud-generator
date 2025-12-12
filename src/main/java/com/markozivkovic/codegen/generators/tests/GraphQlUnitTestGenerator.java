@@ -149,7 +149,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
             ));
         });
         context.put("relations", relations);
-;
+
         sb.append(String.format(PACKAGE, PackageUtils.computeResolversPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/resolver/mutation-class-test-template.ftl",
