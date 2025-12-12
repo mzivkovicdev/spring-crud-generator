@@ -2,8 +2,10 @@ package com.markozivkovic.codegen.enums;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -25,7 +27,9 @@ public enum BasicType {
     BIG_DECIMAL(BigDecimal.class.getSimpleName()),
     BIG_INTEGER(BigInteger.class.getSimpleName()),
     LOCAL_DATE(LocalDate.class.getSimpleName()),
-    LOCAL_DATE_TIME(LocalDateTime.class.getSimpleName());
+    LOCAL_DATE_TIME(LocalDateTime.class.getSimpleName()),
+    OFFSET_DATE_TIME(OffsetDateTime.class.getSimpleName()),
+    INSTANT(Instant.class.getSimpleName());
 
     private final String key;
     private static final Set<String> KEYS_UPPER = Stream.of(values())
