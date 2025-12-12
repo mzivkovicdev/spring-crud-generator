@@ -13,6 +13,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -23,6 +26,8 @@ import com.markozivkovic.codegen.models.flyway.MigrationState;
 
 public class FlywayUtils {
     
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlywayUtils.class);
+
     private static final String CRUD_GENERATOR_DIR = ".crud-generator";
     private static final String MIGRATION_STATE_FILE = "migration-state.json";
     private static final int DEFAULT_VARCHAR = 255;
@@ -114,6 +119,27 @@ public class FlywayUtils {
             case POSTGRESQL -> "NUMERIC(19,2)";
             case MYSQL -> "DECIMAL(19,2)";
             case MSSQL -> "DECIMAL(19,2)";
+        };
+    }
+
+    /**
+     * Returns the default type for a BIGINTEGER column in the given
+     * {@link DatabaseType}.
+     * <p>
+     * The returned type is:
+     * <ul>
+     *     <li>For POSTGRESQL, NUMERIC</li>
+     *     <li>For MYSQL, DECIMAL(65,0)</li>
+     *     <li>For MSSQL, DECIMAL(38,0)</li>
+     * </ul>
+     * @param d the {@link DatabaseType}
+     * @return the default type for a BIGINTEGER column
+     */
+    private static String bigIntegerDefault(final DatabaseType d) {
+        return switch (d) {
+            case POSTGRESQL -> "NUMERIC";
+            case MYSQL -> "DECIMAL(65,0)";
+            case MSSQL -> "DECIMAL(38,0)";
         };
     }
 
@@ -239,12 +265,14 @@ public class FlywayUtils {
             case "Double": return databaseType == DatabaseType.MYSQL ? "DOUBLE" : "DOUBLE PRECISION";
             case "Float": return "REAL";
             case "BigDecimal": return decimalDefault(databaseType);
+            case "BigInteger": return bigIntegerDefault(databaseType);
             case "Byte": return "SMALLINT";
             case "Short": return "SMALLINT";
             case "Char": return "CHAR(1)";
             case "Character": return "CHAR(1)";
             default:
                 if (t.startsWith("JSON[")) return jsonType(databaseType);
+                LOGGER.warn("Unknown field type '{}', falling back to BIGINT", t);
                 return "BIGINT";
         }
     }

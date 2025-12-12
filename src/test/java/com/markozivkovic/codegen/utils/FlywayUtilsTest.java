@@ -291,6 +291,17 @@ class FlywayUtilsTest {
     }
 
     @Test
+    @DisplayName("columnSqlType maps BigInteger using bigIntegerDefault per database")
+    void columnSqlType_shouldMapBigIntegerPerDb() {
+        
+        final FieldDefinition field = fieldWithType("BigInteger");
+
+        assertEquals("NUMERIC", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
+        assertEquals("DECIMAL(65,0)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("DECIMAL(38,0)", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
+    }
+
+    @Test
     @DisplayName("columnSqlType maps Byte and Short to SMALLINT")
     void columnSqlType_shouldMapByteAndShortToSmallint() {
         
