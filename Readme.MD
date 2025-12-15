@@ -59,6 +59,34 @@ Create the configuration file at the location defined by inputSpecFile:
 ```
 src/main/resources/crud-spec.yaml
 ```
+```yaml
+configuration:
+  database: postgresql
+  swagger: true
+  openApiCodegen: true
+  errorResponse: simple
+  tests:
+    unit: true
+    dataGenerator: instancio
+entities:
+  - name: ProductModel
+    storageName: product_table
+    description: "Represents a product"
+    fields:
+      - name: id
+        type: Long
+        description: "The unique identifier for the product"
+        id:
+          strategy: TABLE
+      - name: name
+        description: "The name of the product"
+        type: String
+        column:
+          nullable: false
+          updateable: true
+          unique: true
+          length: 10000
+```
 
 This configuration file defines:
 - global generator configuration
