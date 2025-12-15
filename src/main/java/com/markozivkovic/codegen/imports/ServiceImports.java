@@ -123,9 +123,6 @@ public class ServiceImports {
         if (ServiceImportScope.SERVICE.equals(importScope)) {
             final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, packageConfiguration);
             imports.add(enumsImport);
-        } else {
-            final Set<String> enumsImport = EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration);
-            imports.addAll(enumsImport);
         }
         
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
@@ -160,8 +157,6 @@ public class ServiceImports {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        final boolean isAnyFieldEnum = FieldUtils.isAnyFieldEnum(modelDefinition.getFields());
-
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
@@ -173,8 +168,6 @@ public class ServiceImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
         ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
-        ImportCommon.addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
-        ImportCommon.addIf(isAnyFieldEnum, imports, String.format(IMPORT, ImportConstants.JUnit.Params.ENUM_SOURCE));
 
         return imports.stream()
                 .sorted()

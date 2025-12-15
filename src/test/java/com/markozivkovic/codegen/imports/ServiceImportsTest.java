@@ -349,8 +349,8 @@ class ServiceImportsTest {
     }
 
     @Test
-    @DisplayName("computeTestServiceImports: Instancio disabled, no enum fields → only base imports")
-    void computeTestServiceImports_noInstancio_noEnums() {
+    @DisplayName("computeTestServiceImports: Instancio disabled → only base imports")
+    void computeTestServiceImports_noInstancio() {
         
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
@@ -377,14 +377,12 @@ class ServiceImportsTest {
             assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
 
             assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
-            assertFalse(result.contains(ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
-            assertFalse(result.contains(ImportConstants.JUnit.Params.ENUM_SOURCE));
         }
     }
 
     @Test
-    @DisplayName("computeTestServiceImports: Instancio enabled, has enum fields → Instancio + ParameterizedTest + EnumSource imports")
-    void computeTestServiceImports_instancioAndEnums() {
+    @DisplayName("computeTestServiceImports: Instancio enabled")
+    void computeTestServiceImports_instancioEnabled() {
         
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(List.of(Mockito.mock(FieldDefinition.class)));
@@ -411,8 +409,6 @@ class ServiceImportsTest {
             assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
 
             assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO));
-            assertTrue(result.contains("import " + ImportConstants.JUnit.Params.PARAMETERIZED_TEST));
-            assertTrue(result.contains("import " + ImportConstants.JUnit.Params.ENUM_SOURCE));
         }
     }
 

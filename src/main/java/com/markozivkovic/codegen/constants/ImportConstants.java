@@ -81,11 +81,6 @@ public final class ImportConstants {
         public static final String AFTER_EACH = "org.junit.jupiter.api.AfterEach";
         public static final String BEFORE_EACH = "org.junit.jupiter.api.BeforeEach";
         public static final String EXTEND_WITH = "org.junit.jupiter.api.extension.ExtendWith";
-        public static final class Params {
-            private Params() {}
-            public static final String PARAMETERIZED_TEST = "org.junit.jupiter.params.ParameterizedTest";
-            public static final String ENUM_SOURCE = "org.junit.jupiter.params.provider.EnumSource";
-        }
     }
 
     public static final class SpringBean {
