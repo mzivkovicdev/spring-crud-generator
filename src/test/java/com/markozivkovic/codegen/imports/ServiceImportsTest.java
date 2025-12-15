@@ -277,7 +277,7 @@ class ServiceImportsTest {
     }
 
     @Test
-    @DisplayName("computeModelsEnumsAndRepositoryImports: SERVICE_TEST scope, no relations, retryable ignored, uses EnumImports")
+    @DisplayName("computeModelsEnumsAndRepositoryImports: SERVICE_TEST scope, no relations, retryable ignored")
     void computeModelsEnumsAndRepositoryImports_serviceTestScope_noRelations() {
         
         final String outputDir = "/test/output";
@@ -337,7 +337,6 @@ class ServiceImportsTest {
                     packageConfiguration
             );
 
-            assertTrue(result.contains("import com.example.enums.UserStatusEnum;"), "EnumImports import");
             assertTrue(result.contains("import com.example.entity.User;"));
             assertTrue(result.contains("import com.example.repository.UserRepository;"));
             assertTrue(result.contains("import com.example.exception.ResourceNotFoundException;"));

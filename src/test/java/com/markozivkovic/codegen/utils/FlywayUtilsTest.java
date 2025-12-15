@@ -690,7 +690,7 @@ class FlywayUtilsTest {
         final ModelDefinition model = model("Order", "order", List.of(idField, nameField, statusField));
         final Map<String, ModelDefinition> modelsByName = new LinkedHashMap<>();
 
-        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, modelsByName, List.of());
+        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, modelsByName, List.of(), false);
 
         assertEquals("order", ctx.get("tableName"));
 
@@ -730,6 +730,10 @@ class FlywayUtilsTest {
         assertEquals("TIMESTAMP WITH TIME ZONE", ctx.get("auditCreatedType"));
         assertEquals("TIMESTAMP WITH TIME ZONE", ctx.get("auditUpdatedType"));
         assertEquals("now()", ctx.get("auditNowExpr"));
+        assertFalse(
+            cols.stream().anyMatch(c -> "version".equals(c.get("name"))),
+            "Version column must NOT be present when optimistic locking is disabled"
+        );
     }
 
     @Test
@@ -755,13 +759,17 @@ class FlywayUtilsTest {
         final Map<String, Object> extraDuplicate = new LinkedHashMap<>(extra1);
         final List<Map<String, Object>> extras = List.of(extra1, extraDuplicate);
 
-        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, Map.of(), extras);
+        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, Map.of(), extras, false);
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> cols = (List<Map<String, Object>>) ctx.get("columns");
 
         assertEquals(2, cols.size());
         assertTrue(cols.stream().anyMatch(c -> "tenant_id".equals(c.get("name"))));
+        assertFalse(
+            cols.stream().anyMatch(c -> "version".equals(c.get("name"))),
+            "Version column must NOT be present when optimistic locking is disabled"
+        );
     }
 
     @Test
@@ -782,12 +790,48 @@ class FlywayUtilsTest {
         audit.setType(AuditTypeEnum.LOCAL_DATE_TIME);
         model.setAudit(audit);
 
-        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, Map.of(), List.of());
+        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, Map.of(), List.of(), false);
 
         assertEquals(true, ctx.get("auditEnabled"));
         assertEquals("TIMESTAMP", ctx.get("auditCreatedType"));
         assertEquals("TIMESTAMP", ctx.get("auditUpdatedType"));
         assertEquals("now()", ctx.get("auditNowExpr"));
+    }
+
+    @Test
+    @DisplayName("toCreateTableContext adds version column when optimistic locking is enabled")
+    void toCreateTableContext_shouldAddVersionColumn_whenOptimisticLockingEnabled() {
+
+        final FieldDefinition idField = new FieldDefinition();
+        idField.setName("id");
+        idField.setType("Long");
+        final IdDefinition idDef = new IdDefinition();
+        idDef.setStrategy(IdStrategyEnum.IDENTITY);
+        idField.setId(idDef);
+
+        final ModelDefinition model = model("Product", "product_table", List.of(idField));
+
+        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(
+                model,
+                DatabaseType.POSTGRESQL,
+                Map.of(),
+                List.of(),
+                true
+        );
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> columns = (List<Map<String, Object>>) ctx.get("columns");
+        assertNotNull(columns);
+
+        final Map<String, Object> versionCol = columns.stream()
+                .filter(c -> "version".equals(c.get("name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Expected 'version' column to be present in columns"));
+
+        assertEquals("BIGINT", versionCol.get("sqlType"));
+        assertEquals(false, versionCol.get("nullable"));
+        assertEquals("0", versionCol.get("defaultExpr"));
+        assertEquals(false, versionCol.get("isPk"));
     }
 
     @Test
