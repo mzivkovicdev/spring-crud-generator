@@ -2,6 +2,7 @@ package com.markozivkovic.codegen.generators;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
@@ -109,7 +110,7 @@ class MigrationScriptGeneratorTest {
     }
 
     @Test
-    void generate_shPOSTGRESQLouldGenerateCreateTableScriptForNewModel() {
+    void generate_generateCreateTableScriptForNewModel() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
@@ -119,6 +120,7 @@ class MigrationScriptGeneratorTest {
 
         when(cfg.isMigrationScripts()).thenReturn(true);
         when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(cfg.getOptimisticLocking()).thenReturn(false);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
 
         final MigrationScriptGenerator generator =
@@ -164,7 +166,8 @@ class MigrationScriptGeneratorTest {
                     eq(bookModel),
                     eq(DatabaseType.POSTGRESQL),
                     anyMap(),
-                    anyList()))
+                    anyList(),
+                    anyBoolean()))
                   .thenReturn(createCtx);
 
             flyway.when(() -> FlywayUtils.toForeignKeysContext(

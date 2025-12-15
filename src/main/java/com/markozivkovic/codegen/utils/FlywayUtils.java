@@ -541,13 +541,13 @@ public class FlywayUtils {
      * @param model the model definition to be converted into a Flyway migration context
      * @param db the database type for which to generate the migration context
      * @param modelsByName a map of model names to their definitions
+     * @param extraColumnsForThisTable a list of extra columns to be added to the migration context
+     * @param optimisticLockingEnabled true if optimistic locking is enabled, false otherwise
      * @return a Flyway migration context as a map
      */
-    public static Map<String, Object> toCreateTableContext(
-            final ModelDefinition model,
-            final DatabaseType db,
-            final Map<String, ModelDefinition> modelsByName,
-            final List<Map<String,Object>> extraColumnsForThisTable) {
+    public static Map<String, Object> toCreateTableContext(final ModelDefinition model, final DatabaseType db,
+            final Map<String, ModelDefinition> modelsByName, final List<Map<String,Object>> extraColumnsForThisTable,
+            final Boolean optimisticLockingEnabled) {
 
         final String tableName = model.getStorageName();
 
@@ -606,6 +606,10 @@ public class FlywayUtils {
             cols.add(column);
         }
 
+        if (Boolean.TRUE.equals(optimisticLockingEnabled)) {
+            cols.add(computeOptimisticLockingContext());
+        }
+
         if (extraColumnsForThisTable != null && !extraColumnsForThisTable.isEmpty()) {
             final Set<String> existing = cols.stream()
                     .map(c -> (String) c.get("name"))
@@ -628,7 +632,7 @@ public class FlywayUtils {
         ctx.put("tableName", tableName);
         ctx.put("columns", cols);
         if (!checks.isEmpty()) ctx.put("checks", checks);
-        if (pkCols != null)     ctx.put("pkColumns", pkCols);
+        if (pkCols != null) ctx.put("pkColumns", pkCols);
 
         ctx.put("auditEnabled", auditEnabled);
         ctx.put("auditCreatedType", auditType(db, resolvedAuditType));
@@ -636,6 +640,23 @@ public class FlywayUtils {
         ctx.put("auditNowExpr", auditNow(db));
 
         return ctx;
+    }
+
+    /**
+     * Computes the Flyway migration context map for the "version" field which is used for optimistic locking.
+     * 
+     * @return a map containing the name, sql type, nullable, unique and default expression for the "version" field
+     */
+    private static Map<String, Object> computeOptimisticLockingContext() {
+
+        return Map.of(
+                "name", "version",
+                "sqlType", "BIGINT",
+                "nullable", false,
+                "unique", false,
+                "isPk", false,
+                "defaultExpr", "0"
+        );
     }
 
     /**

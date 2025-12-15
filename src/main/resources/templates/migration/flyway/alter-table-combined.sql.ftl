@@ -5,24 +5,21 @@
 ALTER TABLE ${table}
   ADD COLUMN ${c.name} ${c.type}
   <#if c.nullable?? && !c.nullable> NOT NULL</#if>
-  <#if c.defaultExpr?? && c.defaultExpr?has_content> DEFAULT ${c.defaultExpr}</#if>
+  <#if c.defaultValue?? && c.defaultValue?has_content> DEFAULT ${c.defaultValue}</#if>
 ;
 <#if c.unique?? && c.unique>
 ALTER TABLE ${table}
   ADD CONSTRAINT uk_${table}_${c.name}
   UNIQUE (${c.name});
-</#if>
-
+</#if><#t>
 </#list>
-</#if>
-
+</#if><#t>
 <#if removedColumns?has_content>
 <#list removedColumns as c>
 ALTER TABLE ${table}
   DROP COLUMN ${c};
 </#list>
-</#if>
-
+</#if><#t>
 <#if modifiedColumns?has_content>
 <#list modifiedColumns as m>
 <#if m.typeChanged?? && m.typeChanged>
@@ -35,9 +32,8 @@ ALTER TABLE ${table}
   <#if m.newNullable?? && !m.newNullable> NOT NULL</#if>
   <#if m.newDefault?? && m.newDefault?has_content> DEFAULT ${m.newDefault}</#if>
 ;
-</#if>
-</#if>
-
+</#if><#t>
+</#if><#t>
 <#if isPostgres && m.nullableChanged?? && m.nullableChanged>
 ALTER TABLE ${table}
   ALTER COLUMN ${m.name}
@@ -51,8 +47,7 @@ ALTER TABLE ${table}
   <#else>
     DROP DEFAULT
   </#if>;
-</#if>
-
+</#if><#t>
 <#if m.uniqueChanged?? && m.uniqueChanged>
 ALTER TABLE ${table}
   DROP CONSTRAINT IF EXISTS uk_${table}_${m.name};
@@ -61,11 +56,9 @@ ALTER TABLE ${table}
   ADD CONSTRAINT uk_${table}_${m.name}
   UNIQUE (${m.name});
 </#if>
-</#if>
-
+</#if><#t>
 </#list>
-</#if>
-
+</#if><#t>
 <#if pkChanged?? && pkChanged && newPk?has_content>
 ALTER TABLE ${table}
   DROP CONSTRAINT IF EXISTS pk_${table};
@@ -75,15 +68,13 @@ ALTER TABLE ${table}
   PRIMARY KEY (
     <#list newPk as k>${k}<#if k_has_next>, </#if></#list>
   );
-</#if>
-
+</#if><#t>
 <#if removedFks?has_content>
 <#list removedFks as fk>
 ALTER TABLE ${table}
   DROP CONSTRAINT IF EXISTS fk_${table}_${fk.column};
 </#list>
-</#if>
-
+</#if><#t>
 <#if addedFks?has_content>
 <#list addedFks as fk>
 ALTER TABLE ${table}
@@ -91,4 +82,4 @@ ALTER TABLE ${table}
   FOREIGN KEY (${fk.column})
   REFERENCES ${fk.refTable} (${fk.refColumn});
 </#list>
-</#if>
+</#if><#t>

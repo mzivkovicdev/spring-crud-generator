@@ -260,7 +260,9 @@ public class MigrationScriptGenerator implements CodeGenerator {
         models.forEach(model -> {
                 
                 final List<Map<String,Object>> extraCols = extrasByChildTable.getOrDefault(model.getStorageName(), Collections.emptyList());
-                final Map<String, Object> context = FlywayUtils.toCreateTableContext(model, this.configuration.getDatabase(), modelsByName, extraCols);
+                final Map<String, Object> context = FlywayUtils.toCreateTableContext(
+                        model, this.configuration.getDatabase(), modelsByName, extraCols, this.configuration.getOptimisticLocking()
+                );
                 final String tableName = model.getStorageName();
                 final EntityState oldState = previousByTable.get(tableName);
 
