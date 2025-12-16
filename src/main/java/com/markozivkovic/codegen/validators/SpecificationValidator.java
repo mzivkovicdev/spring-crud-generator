@@ -202,7 +202,7 @@ public class SpecificationValidator {
         } catch (final IllegalStateException e) {
             throw new IllegalArgumentException(
                 String.format(
-                    "JSON field %s.%s has invalid inner type. Please specify a valid inner type.",
+                    "JSON field %s.%s has invalid inner type or invalid format. Please specify a valid inner type or valid format.",
                     model.getName(), field.getName()
                 )
             );

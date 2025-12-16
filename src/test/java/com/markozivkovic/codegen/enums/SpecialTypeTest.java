@@ -38,16 +38,16 @@ class SpecialTypeTest {
 
     @Test
     void isJsonType_shouldReturnTrueForValidJsonTypeIgnoringCase() {
-        assertTrue(SpecialType.isJsonType("JSON[User]"));
-        assertTrue(SpecialType.isJsonType("json[Something]"));
-        assertTrue(SpecialType.isJsonType("JsOn[Another]"));
+        assertTrue(SpecialType.isJsonType("JSON<User>"));
+        assertTrue(SpecialType.isJsonType("json<Something>"));
+        assertTrue(SpecialType.isJsonType("JsOn<Another>"));
     }
 
     @Test
     void isJsonType_shouldReturnFalseForMissingBrackets() {
         assertFalse(SpecialType.isJsonType("JSONUser"));
-        assertFalse(SpecialType.isJsonType("JSON[User"));
-        assertFalse(SpecialType.isJsonType("JSONUser]"));
+        assertFalse(SpecialType.isJsonType("JSON<User"));
+        assertFalse(SpecialType.isJsonType("JSONUser>"));
     }
 
     @Test

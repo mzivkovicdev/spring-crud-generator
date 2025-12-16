@@ -28,9 +28,9 @@ public class FieldUtils {
     private static final String MANY_TO_ONE = "ManyToOne";
     private static final String MANY_TO_MANY = "ManyToMany";
 
-    private static final Pattern pattern = Pattern.compile("^JSONB?\\[(.+)]$");
+    private static final Pattern pattern = Pattern.compile("^JSONB?<(.+)>$");
     private static final ObjectMapper mapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private FieldUtils() {
         

@@ -16,7 +16,7 @@
     <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")><#t>
     private List<${field.resolvedType}> ${field.name};
     <#else>
-    <#if field.type?matches("JSONB?\\[.+\\]")>
+    <#if field.type?matches("^JSONB?<.+>$")>
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     </#if><#t>

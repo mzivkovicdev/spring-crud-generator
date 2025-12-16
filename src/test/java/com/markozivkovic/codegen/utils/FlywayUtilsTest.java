@@ -327,7 +327,7 @@ class FlywayUtilsTest {
     @DisplayName("columnSqlType maps JSON[...] to database-specific JSON type")
     void columnSqlType_shouldMapJsonPerDb() {
         
-        final FieldDefinition field = fieldWithType("JSON[Address]");
+        final FieldDefinition field = fieldWithType("JSON<Address>");
 
         assertEquals("JSONB", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("JSON", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));

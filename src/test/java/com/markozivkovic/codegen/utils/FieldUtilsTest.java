@@ -625,7 +625,7 @@ class FieldUtilsTest {
     void isAnyFieldJson_shouldReturnTrue_whenJsonTypePresent() {
         final List<FieldDefinition> fields = List.of(
                 fieldWithType("String"),
-                fieldWithType("JSON[String]")
+                fieldWithType("JSON<String>")
         );
 
         final boolean result = FieldUtils.isAnyFieldJson(fields);
@@ -638,7 +638,7 @@ class FieldUtilsTest {
     void isAnyFieldJson_shouldReturnTrue_whenJsonbTypePresent() {
         
         final List<FieldDefinition> fields = List.of(
-                fieldWithType("JSONB[MyType]"),
+                fieldWithType("JSONB<MyType>"),
                 fieldWithType("Integer")
         );
 
@@ -729,9 +729,9 @@ class FieldUtilsTest {
     @DisplayName("extractJsonFields returns fields with JSON[...] type")
     void extractJsonFields_shouldReturnJsonFields() {
         
-        final FieldDefinition f1 = fieldWithNameAndType("metadata", "JSON[String]");
+        final FieldDefinition f1 = fieldWithNameAndType("metadata", "JSON<String>");
         final FieldDefinition f2 = fieldWithNameAndType("name", "String");
-        final FieldDefinition f3 = fieldWithNameAndType("details", "JSONB[MyType]");
+        final FieldDefinition f3 = fieldWithNameAndType("details", "JSONB<MyType>");
         final List<FieldDefinition> fields = List.of(f1, f2, f3);
 
         final List<FieldDefinition> result = FieldUtils.extractJsonFields(fields);
@@ -766,7 +766,7 @@ class FieldUtilsTest {
     void isModelUsedAsJsonField_shouldReturnTrue_whenReferencedAsJson() {
         
         final ModelDefinition addressModel = model("Address", List.of());
-        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSON<Address>");
         final ModelDefinition userModel = model("User", List.of(userAddressField));
         final List<ModelDefinition> entities = List.of(userModel);
 
@@ -780,7 +780,7 @@ class FieldUtilsTest {
     void isModelUsedAsJsonField_shouldReturnTrue_whenReferencedAsJsonb() {
         
         final ModelDefinition addressModel = model("Address", List.of());
-        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSONB[Address]");
+        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSONB<Address>");
         final ModelDefinition userModel = model("User", List.of(userAddressField));
 
         final List<ModelDefinition> entities = List.of(userModel);
@@ -1134,7 +1134,7 @@ class FieldUtilsTest {
         final FieldDefinition enumField = fieldWithNameAndType("status", "enum");
         enumField.setRelation(null);
 
-        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON<Metadata>");
         jsonField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(
@@ -1190,7 +1190,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -1208,7 +1208,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -1270,7 +1270,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -1323,7 +1323,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -2173,7 +2173,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -2232,7 +2232,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON<Metadata>");
         jsonField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, jsonField);
@@ -2313,7 +2313,7 @@ class FieldUtilsTest {
     @DisplayName("generateInputArgsWithoutFinal uses '<resolvedType>TO name' for JSON fields")
     void generateInputArgsWithoutFinal_shouldUseTOType_forJsonFields() {
 
-        final FieldDefinition jsonField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition jsonField = fieldWithNameAndType("address", "JSON<Address>");
         jsonField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(jsonField);
@@ -2505,7 +2505,7 @@ class FieldUtilsTest {
     @DisplayName("isJsonField returns true for JSON[...] type")
     void isJsonField_shouldReturnTrue_forJsonType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON<Metadata>");
 
         final boolean result = FieldUtils.isJsonField(field);
 
@@ -2516,7 +2516,7 @@ class FieldUtilsTest {
     @DisplayName("isJsonField returns true for JSONB[...] type")
     void isJsonField_shouldReturnTrue_forJsonbType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB<Metadata>");
 
         final boolean result = FieldUtils.isJsonField(field);
 
@@ -2540,7 +2540,7 @@ class FieldUtilsTest {
     @DisplayName("extractJsonFieldName returns inner type for JSON[...] type")
     void extractJsonFieldName_shouldReturnInnerType_forJsonType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON<Metadata>");
 
         final String result = FieldUtils.extractJsonFieldName(field);
 
@@ -2551,7 +2551,7 @@ class FieldUtilsTest {
     @DisplayName("extractJsonFieldName returns inner type for JSONB[...] type")
     void extractJsonFieldName_shouldReturnInnerType_forJsonbType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB[MyCustom_Type]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB<MyCustom_Type>");
 
         final String result = FieldUtils.extractJsonFieldName(field);
 
@@ -2562,7 +2562,7 @@ class FieldUtilsTest {
     @DisplayName("computeResolvedType returns JSON inner type for JSON field")
     void computeResolvedType_shouldReturnInnerType_forJsonField() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON<Metadata>");
 
         final String result = FieldUtils.computeResolvedType(field);
 

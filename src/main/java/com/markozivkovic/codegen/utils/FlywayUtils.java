@@ -271,7 +271,7 @@ public class FlywayUtils {
             case "Char": return "CHAR(1)";
             case "Character": return "CHAR(1)";
             default:
-                if (t.startsWith("JSON[")) return jsonType(databaseType);
+                if (t.startsWith("JSON<")) return jsonType(databaseType);
                 LOGGER.warn("Unknown field type '{}', falling back to BIGINT", t);
                 return "BIGINT";
         }
