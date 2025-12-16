@@ -47,7 +47,7 @@ public class PackageConfigurationValidator {
                 StringUtils.isNotBlank(packageConfiguration.getTransferobjects());
     
         if (anyGroupDefined) {
-            if (StringUtils.isBlank(packageConfiguration.getBusinessservices())) missing.add("bussinessservices");
+            if (StringUtils.isBlank(packageConfiguration.getBusinessservices())) missing.add("businessservices");
             if (StringUtils.isBlank(packageConfiguration.getControllers())) missing.add("controllers");
             if (StringUtils.isBlank(packageConfiguration.getEnums())) missing.add("enums");
             if (StringUtils.isBlank(packageConfiguration.getExceptions())) missing.add("exceptions");
