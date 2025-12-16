@@ -203,10 +203,10 @@ Advanced and feature-specific configuration options.
 |--------|------|---------|-------------|
 | `graphql.scalarConfig` | boolean | `false` | Enables custom GraphQL scalar configuration |
 | `optimisticLocking.retry.config` | boolean | `false` | Enables retry mechanism for optimistic locking |
-| `optimisticLocking.retry.maxAttempts` | number | `3` | Maximum retry attempts |
-| `optimisticLocking.backoff.delayMs` | number | `100` | Initial backoff delay (ms) |
-| `optimisticLocking.backoff.multiplier` | number | `2.0` | Backoff multiplier |
-| `optimisticLocking.backoff.maxDelayMs` | number | `1000` | Maximum backoff delay (ms) |
+| `optimisticLocking.retry.maxAttempts` | number | `null` | Maximum retry attempts |
+| `optimisticLocking.backoff.delayMs` | number | `null` | Initial backoff delay (ms) |
+| `optimisticLocking.backoff.multiplier` | number | `null` | Backoff multiplier |
+| `optimisticLocking.backoff.maxDelayMs` | number | `null` | Maximum backoff delay (ms) |
 
 ---
 
@@ -256,7 +256,10 @@ If the `packages` section is **not defined**, the generator uses the following d
 
 ### Custom Package Structure
 
-You can define a custom package structure by adding the packages section to your configuration file:
+You can define a custom package structure by adding the `packages` section to your configuration file.
+
+If the `packages` section is **not provided**, the generator uses the default package structure.
+
 ```yaml
 packages:
   annotations: annotation
@@ -273,27 +276,253 @@ packages:
   services: persistance.service
   transferobjects: transferobject
 ```
-Each key represents a logical group of generated code, while the value defines the actual package name that will be used.
-| Key                | Description                        |
-| ------------------ | ---------------------------------- |
-| `annotations`      | Custom and generated annotations   |
-| `businessservices` | Business-level service classes     |
-| `configurations`   | Spring configuration classes       |
-| `controllers`      | REST controllers                   |
-| `enums`            | Generated enum classes             |
-| `exceptions`       | Custom and generated exceptions    |
-| `generated`        | Internal/generated support classes |
-| `mappers`          | Entity ↔ DTO mappers               |
-| `models`           | Persistence models / entities      |
-| `resolvers`        | GraphQL resolvers                  |
-| `repositories`     | Spring Data repositories           |
-| `services`         | Service layer classes              |
-| `transferobjects`  | DTOs / transfer objects            |
 
-### Notes
-- Only packages explicitly defined in the packages section are overridden
-- Any missing package definition falls back to the default structure
-- This allows partial customization without redefining the entire structure
+Each key represents a logical group of generated code, while the value defines the actual package name that will be used.
+
+| Key                | Description                                                    |
+| ------------------ | -------------------------------------------------------------- |
+| `annotations`      | Custom and generated annotations                               |
+| `businessservices` | Business-level service classes                                 |
+| `configurations`   | Spring configuration classes                                   |
+| `controllers`      | REST controllers                                               |
+| `enums`            | Generated enum classes                                         |
+| `exceptions`       | Custom and generated exceptions (including exception handlers) |
+| `generated`        | Internal/generated support classes (OpenAPI codegen output)    |
+| `mappers`          | Entity ↔ DTO mappers                                           |
+| `models`           | Persistence models / entities                                  |
+| `resolvers`        | GraphQL resolvers                                              |
+| `repositories`     | Spring Data repositories                                       |
+| `services`         | Service layer classes                                          |
+| `transferobjects`  | DTOs / transfer objects                                        |
+
+#### Validation Rules & Notes
+
+If the `packages` section is `not defined`, the generator uses the default package structure.
+If the `packages` section is `defined` and `any core package is specified`, then all core packages must be defined.
+
+Core packages:
+- `businessservices`
+- `controllers`
+- `enums`
+- `exceptions`
+- `mappers`
+- `models`
+- `repositories`
+- `services`
+- `transferobjects`
+- If `graphQl: true` is enabled, the `resolvers` package is required.
+- If `openApiCodegen: true` is enabled, the `generated` package is required.
+- If required packages are missing, the generator fails fast with an error explaining which packages are missing.
+
+Partial customization of only core packages is `not supported` to avoid inconsistent package structures.
+
+## 🧱 Entity & Field Schema
+
+Entities are defined under the `entities` section. Each entity describes:
+- a generated Java model/entity class
+- its database storage representation (table name)
+- its fields, constraints, and relationships
+- optional metadata used for documentation (Javadoc, OpenAPI descriptions, etc.)
+
+---
+
+### Entity Schema
+
+```yaml
+entities:
+  - name: ProductModel
+    storageName: product_table
+    description: "Represents a product"
+    fields: []
+```
+| Property      | Type   | Required       | Description                                                                              |
+| ------------- | ------ | -------------- | ---------------------------------------------------------------------------------------- |
+| `name`        | string | ✅             | Java class name of the entity/model                                                      |
+| `storageName` | string | ✅             | Database table name (or storage name). If omitted, a default naming strategy may be used |
+| `description` | string | optional       | Used to generate Javadoc and enrich API docs (where applicable)                          |
+| `fields`      | list   | ✅             | List of fields for the entity                                                            |
+
+- Note: If description is provided, the generator can produce Javadoc for entities/fields.
+
+### Field Schema
+```yaml
+fields:
+  - name: id
+    type: Long
+    description: "Primary key"
+    id:
+      strategy: IDENTITY
+```
+| Property      | Type   | Required            | Description                                                                                          |
+| ------------- | ------ | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `name`        | string | ✅                  | Java field name                                                                                      |
+| `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, or another entity name) |
+| `description` | string | optional            | Used for Javadoc and API documentation                                                               |
+| `id`          | object | optional            | Marks the field as primary key and defines generation strategy                                       |
+| `column`      | object | optional            | Column constraints (unique, nullable, insertable, updateable, length etc.)                           |
+| `relation`    | object | optional            | Relationship definition (JPA-style)                                                                  |
+| `values`      | list   | required for `Enum` | Enum constant values (only when `type: Enum`)                                                        |
+
+- Supported basic types are: String, Character, Integer, Long, Boolean, Double, Float, Short, Byte, UUID, BigDecimal, BigInteger, LocalDate, LocalDateTime, OffsetDateTime, Instant
+
+### 🔑 Primary Key: id.strategy
+
+To mark a field as the entity identifier, add an id block:
+
+```yaml
+- name: id
+  type: Long
+  description: "The unique identifier for the entity"
+  id:
+    strategy: IDENTITY
+```
+Supported strategies (example):
+- TABLE
+- SEQUENCE (if supported by the selected database)
+- UUID
+- IDENTIT
+- AU
+
+| Property         | Type   | Required | Description                                                         |
+| ---------------- | ------ | -------- | ------------------------------------------------------------------- |
+| `strategy`       | enum   | ✅       | ID generation strategy                                              |
+| `sequenceName`   | string | optional | Name of the database sequence (used with sequence-based strategies) |
+| `allocationSize` | number | optional | Allocation size for sequence/table generators                       |
+| `initialValue`   | number | optional | Initial value for ID generation                                     |
+
+#### Sequence-Based ID Example
+```yaml
+- name: id
+  type: Long
+  id:
+    strategy: SEQUENCE
+    sequenceName: product_seq
+    allocationSize: 10
+    initialValue: 1
+```
+#### Table-Based ID Example
+```yaml
+- name: id
+  type: Long
+  id:
+    strategy: TABLE
+    allocationSize: 5
+    initialValue: 1000
+```
+#### Note
+- Not all databases support all ID strategies
+
+### 🧾 Column Constraints: column.*
+
+Use the column block to control column-level constraints:
+```yaml
+- name: name
+  type: String
+  column:
+    nullable: false
+    updateable: true
+    unique: true
+    length: 255
+```
+| Property       | Type    | Description                                |
+|---------------|---------|--------------------------------------------|
+| `nullable`    | boolean | Whether the column can be null             |
+| `unique`      | boolean | Whether the column must be unique          |
+| `length`      | number  | Column length (primarily for strings)      |
+| `insertable`  | boolean | Whether the column can be inserted         |
+| `updateable`  | boolean | Whether the column can be updated          |
+
+### 🔗 Relationships: relation.*
+Relationships are defined via the relation block. The type must be one of:
+- OneToOne
+- OneToMany
+- ManyToOne
+- ManyToMany
+
+#### One-to-One Example
+```yaml
+- name: product
+  type: ProductModel
+  relation:
+    type: OneToOne
+    joinColumn: product_id
+    fetch: EAGER
+    cascade: MERGE
+```
+
+#### One-to-Many Example
+```yaml
+- name: users
+  type: UserEntity
+  relation:
+    type: OneToMany
+    joinColumn: product_id
+    fetch: LAZY
+    cascade: MERGE
+```
+
+
+#### Many-to-Many Example
+```yaml
+- name: users
+  type: UserEntity
+  relation:
+    type: ManyToMany
+    fetch: LAZY
+    cascade: MERGE
+    joinTable:
+      name: order_user_table
+      joinColumn: order_id
+      inverseJoinColumn: user_id
+```
+| Property     | Type   | Description                                                                  |
+| ------------ | ------ | ---------------------------------------------------------------------------- |
+| `type`       | string | Relationship type (`OneToOne`, `OneToMany`, `ManyToOne`, `ManyToMany`)       |
+| `fetch`      | string | Fetch type (`EAGER`, `LAZY`)                                                 |
+| `cascade`    | string | Cascade type (e.g. `MERGE`, `ALL`, `PERSIST`, etc.)                          |
+| `joinColumn` | string | Join column name (for `OneToOne`, `OneToMany`, `ManyToOne` where applicable) |
+| `joinTable`  | object | Join table config (used in `ManyToMany`)                                     |
+
+### 🧩 Enums: type: Enum + values
+
+To define an enum field:
+```yaml
+- name: status
+  type: Enum
+  description: "The status of the product"
+  values:
+    - ACTIVE
+    - INACTIVE
+```
+- `values` is required when type is Enum.
+
+### 🧷 JSON Fields: JSON<Type>
+
+JSON fields are declared using the `JSON<Type>` syntax:
+```yaml
+- name: details
+  type: JSON<Details>
+```
+Where Details is another entity-like schema definition (often used as an embedded structure):
+```yaml
+- name: Details
+  description: "Represents a user details"
+  fields:
+    - name: firstName
+      type: String
+    - name: lastName
+      type: String
+```
+- JSON types are useful for storing structured data inside a single database column (database support and mapping strategy depend on the selected SQL database).
+
+### 🚫 Ignoring an Entity
+
+To skip generation for a specific entity:
+```yaml
+- name: SomeEntity
+  ignore: true
+  fields: []
+```
 
 ## ✨ Key Features
 
