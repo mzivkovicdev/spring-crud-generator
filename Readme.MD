@@ -522,7 +522,6 @@ Relationships are defined via the relation block. The type must be one of:
     cascade: MERGE
 ```
 
-
 #### Many-to-Many Example
 ```yaml
 - name: users
@@ -597,13 +596,125 @@ Tracks schema changes to safely generate Flyway migration scripts.
 
 ---
 
-## 🔁 Force Regeneration
+## 🗄️ Migrations Behavior (Flyway)
 
-Add this flag to `pom.xml`:
+The generator supports automatic database schema migrations for SQL databases using **Flyway**.
+
+Migrations are generated based on differences between:
+- the **current configuration file** (e.g `crud-spec.yaml` / `.json`)
+- the **previous generator state**, stored on disk
+
+This allows safe, incremental schema evolution without manual SQL scripting in most cases.
+
+---
+
+### How Migration Generation Works
+
+For SQL databases, the generator:
+1. Analyzes the current entity configuration
+2. Compares it with the previous generation state
+3. Generates Flyway migration scripts accordingly
+
+To track schema changes, the generator creates and maintains the following file:
+
+```text
+.crud-generator/migration-state.json
+```
+This file is used internally to detect what changed between generations.
+
+#### migration-state.json
+
+The migration-state.json file stores metadata about:
+- previously generated entities
+- their fields and types
+- table and column mappings
+
+It allows the generator to:
+- detect newly added entities
+- detect added fields
+- detect removed fields
+- generate correct Flyway migration scripts
+This file should be committed to version control to ensure consistent migrations across environments.
+
+#### Supported Migration Scenarios
+##### ➕ Adding a New Entity
+When a new entity is added to the configuration:
+- the generator detects that new table is added
+- a Flyway CREATE TABLE migration is created
+
+##### ➕ Adding a New Field
+When a new field is added to an existing entity:
+- the generator detects the change
+- a Flyway ALTER TABLE ADD COLUMN migration is created
+
+##### ➖ Removing a Field
+When a field is removed from an existing entity:
+- the generator detects the removal
+- a Flyway ALTER TABLE DROP COLUMN migration is created
+
+### ⚠️ Important Limitation: No Table Drop
+❌ Dropping database tables is NOT supported by the generator.
+- If an entity is removed from the configuration file - no DROP TABLE migration is generated
+- Table removal must be handled manually by the user
+This design choice is intentional to prevent accidental data loss.
+
+## 🔄 Generator State (`generator-state.json`)
+
+To avoid unnecessary regeneration of code, the generator uses a state-based mechanism.
+
+For this purpose, it generates and maintains the following file:
+
+```text
+.crud-generator/generator-state.json
+```
+This file tracks the state of the previously generated configuration and entities.
+
+### What Is Stored in generator-state.json
+
+The state file contains:
+- a configuration SHA (hash of the global configuration)
+- an entity SHA for each generated entity
+These hashes are used to detect whether something has changed between generator runs.
+
+### How Change Detection Works
+#### Entity-Level Changes
+
+- For each entity, the generator computes a fingerprint (SHA)
+- If an entity’s definition has not changed, the entity is not regenerated
+- If an entity’s definition has changed, the entity is included in generation
+This allows fast, incremental code generation.
+
+#### Configuration-Level Changes
+- The generator also computes a fingerprint (SHA) for the global configuration
+- If the configuration SHA changes, `all entities are regenerated, regardless of individual entity changes`
+This ensures consistency when global settings (e.g. caching, Swagger, GraphQL, tests, etc.) are modified.
+
+### 🔁 Interaction with forceRegeneration
+
+By default, regeneration is controlled by generator-state.json.
+
+If the following flag is enabled in `pom.xml`:
 
 ```xml
 <forceRegeneration>true</forceRegeneration>
 ```
+
+Then:
+- the generator ignores generator-state.json
+- all non-ignored entities are regenerated unconditionally
+This is useful when:
+- refactoring templates
+- debugging generator behavior
+- forcing a clean regeneration
+
+#### Ignored Entities
+Entities marked with:
+```yaml
+ignore: true
+```
+- are excluded from generation
+- are not tracked for regeneration
+- do not affect the generator state
 
 ---
 
