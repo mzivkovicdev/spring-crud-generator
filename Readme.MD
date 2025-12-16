@@ -11,6 +11,67 @@ This project aims to eliminate repetitive boilerplate code while keeping full co
 
 ---
 
+## ✨ Key Features
+
+### 🏗️ Code Generation
+- Entity models (JPA/Hibernate)
+- Repositories
+- Services
+- Business services
+- Mappers
+- REST Controllers
+- GraphQL Queries & Mutations
+- Custom annotations
+- Javadoc (optional, based on descriptions)
+
+### 🗄️ Database & Migrations
+- SQL database support (MySQL, PostgreSQL and Microsoft SQL)
+- Flyway migration script generation
+- Automatic detection of:
+  - new entities
+  - new fields
+  - removed fields
+- Safe schema evolution  
+  ⚠️ **Table deletion is NOT supported** (must be done manually)
+
+### 📦 API & Documentation
+- Swagger / OpenAPI specification generation
+- Integrated OpenAPI Generator
+- Automatic API resource generation
+
+### 🧪 Testing & Data Generation
+- Unit test generation
+- Test data generation using:
+  - **Instancio**
+  - **Podam**
+
+### 🐳 DevOps & Containers
+- Dockerfile generation
+- Docker Compose generation
+
+### ⚡ Caching
+- Supported cache providers:
+  - **Redis**
+  - **Caffeine**
+- Configurable expiration and size limits
+
+### 🔒 Optimistic Locking
+- Built-in optimistic locking support
+- Optional custom annotations
+- Retry & backoff configuration support
+
+### 📄 Configuration Formats
+- YAML
+- JSON
+
+---
+
+## ☕ Supported Java Versions
+
+- **Java 17 – Java 25**
+
+---
+
 ## 🚀 Quick Start
 
 Generate a fully functional Spring Boot CRUD application in minutes using a single YAML or JSON configuration file.
@@ -523,75 +584,6 @@ To skip generation for a specific entity:
   ignore: true
   fields: []
 ```
-
-## ✨ Key Features
-
-### 🏗️ Code Generation
-- Entity models (JPA/Hibernate)
-- Repositories
-- Services
-- Business services
-- Mappers
-- REST Controllers
-- GraphQL Queries & Mutations
-- Custom annotations
-- Javadoc (optional, based on descriptions)
-
-### 🗄️ Database & Migrations
-- SQL database support (MySQL, PostgreSQL and Microsoft SQL)
-- Flyway migration script generation
-- Automatic detection of:
-  - new entities
-  - new fields
-  - removed fields
-- Safe schema evolution  
-  ⚠️ **Table deletion is NOT supported** (must be done manually)
-
-### 📦 API & Documentation
-- Swagger / OpenAPI specification generation
-- Integrated OpenAPI Generator
-- Automatic API resource generation
-
-### 🧪 Testing & Data Generation
-- Unit test generation
-- Test data generation using:
-  - **Instancio**
-  - **Podam**
-
-### 🐳 DevOps & Containers
-- Dockerfile generation
-- Docker Compose generation
-
-### ⚡ Caching
-- Supported cache providers:
-  - **Redis**
-  - **Caffeine**
-- Configurable expiration and size limits
-
-### 🔒 Optimistic Locking
-- Built-in optimistic locking support
-- Optional custom annotations
-- Retry & backoff configuration support
-
-### 📄 Configuration Formats
-- YAML
-- JSON
-
----
-
-## ☕ Supported Java Versions
-
-- **Java 17 – Java 25**
-
----
-
-## 📁 Default & Custom Package Structure
-
-If the `packages` section is **not defined**, a default package structure is used.
-
-If you want full control, you can define your own package layout.
-
----
 
 ## 🔄 Incremental Generation & State Files
 
