@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.constants.RelationTypesConstants;
+import com.markozivkovic.codegen.enums.SpecialType;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -38,6 +39,21 @@ public class ModelImports {
 
         final List<FieldDefinition> fields = modelDefinition.getFields();
         final Set<String> imports = new LinkedHashSet<>();
+
+        if (FieldUtils.isAnyFieldSimpleCollection(fields)) {
+            final List<FieldDefinition> simpleCollectionFields = FieldUtils.extractSimpleCollectionFields(modelDefinition.getFields());
+            simpleCollectionFields.forEach(field -> {
+                if (SpecialType.isListType(field.getType())) {
+                    imports.add(ImportConstants.Java.LIST);
+                    imports.add(ImportConstants.Java.ARRAY_LIST);
+                }
+
+                if (SpecialType.isSetType(field.getType())) {
+                    imports.add(ImportConstants.Java.SET);
+                    imports.add(ImportConstants.Java.HASH_SET);
+                }
+            });
+        }
 
         ImportCommon.addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
         ImportCommon.addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
@@ -99,8 +115,9 @@ public class ModelImports {
         final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
                 .anyMatch(field -> Objects.nonNull(field.getColumn()));
         final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
+        final boolean isAnyFieldSimpleCollection = FieldUtils.isAnyFieldSimpleCollection(fields);
         
-        ImportCommon.addIf(!relations.isEmpty(), imports, ImportConstants.Jakarta.JOIN_COLUMN);
+        ImportCommon.addIf(!relations.isEmpty() || isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.JOIN_COLUMN);
         ImportCommon.addIf(relations.contains(RelationTypesConstants.MANY_TO_MANY), imports, ImportConstants.Jakarta.JOIN_TABLE);
         ImportCommon.addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, ImportConstants.Jakarta.MANY_TO_MANY);
         ImportCommon.addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, ImportConstants.Jakarta.MANY_TO_ONE);
@@ -111,6 +128,8 @@ public class ModelImports {
         ImportCommon.addIf(optimisticLocking, imports, ImportConstants.Jakarta.VERSION);
         ImportCommon.addIf(hasAnyFieldColumn || isAuditingEnabled, imports, ImportConstants.Jakarta.COLUMN);
         ImportCommon.addIf(isAuditingEnabled, imports, ImportConstants.Jakarta.ENTITY_LISTENERS);
+        ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.ELEMENT_COLLECTION);
+        ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.COLLECTION_TABLE);
 
         final String jakartaImports = imports.stream()
                   .map(imp -> String.format(IMPORT, imp))

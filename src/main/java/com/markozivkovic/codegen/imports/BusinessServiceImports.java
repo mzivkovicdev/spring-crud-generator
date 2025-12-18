@@ -45,6 +45,7 @@ public class BusinessServiceImports {
         ImportCommon.addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
+        ImportCommon.importListAndSetForSimpleCollection(modelDefinition, imports);
         
         if (modelDefinition.getAudit() != null) {
             ImportCommon.addIf(
@@ -94,6 +95,7 @@ public class BusinessServiceImports {
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
         ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
+        ImportCommon.importListAndSetForSimpleCollection(modelDefinition, imports);
         
         final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
                 FieldUtils.isAnyRelationManyToMany(fields);
