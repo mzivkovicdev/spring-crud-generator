@@ -457,10 +457,11 @@ To mark a field as the entity identifier, add an id block:
     strategy: IDENTITY
 ```
 Supported strategies:
+- TABLE
+- SEQUENCE
+- UUID
 - IDENTITY
 - AUTO
-- SEQUENCE
-- TABLE
 
 | Property         | Type   | Required | Description                                                         |
 | ---------------- | ------ | -------- | ------------------------------------------------------------------- |
