@@ -1,5 +1,6 @@
 package com.markozivkovic.codegen.generators;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -14,8 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
-import com.markozivkovic.codegen.migration.MigrationDiffer;
-import com.markozivkovic.codegen.migration.MigrationManifestBuilder;
+import com.markozivkovic.codegen.migrations.MigrationDiffer;
+import com.markozivkovic.codegen.migrations.MigrationManifestBuilder;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -25,10 +26,12 @@ import com.markozivkovic.codegen.models.flyway.EntityState;
 import com.markozivkovic.codegen.models.flyway.FkState;
 import com.markozivkovic.codegen.models.flyway.MigrationState;
 import com.markozivkovic.codegen.models.flyway.SchemaDiff.Result;
+import com.markozivkovic.codegen.utils.ContainerUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FlywayUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
+import com.markozivkovic.codegen.utils.ModelNameUtils;
 
 public class MigrationScriptGenerator implements CodeGenerator {
     
@@ -259,37 +262,36 @@ public class MigrationScriptGenerator implements CodeGenerator {
 
         models.forEach(model -> {
                 
-                final List<Map<String,Object>> extraCols = extrasByChildTable.getOrDefault(model.getStorageName(), Collections.emptyList());
-                final Map<String, Object> context = FlywayUtils.toCreateTableContext(
-                        model, this.configuration.getDatabase(), modelsByName, extraCols, this.configuration.getOptimisticLocking()
+            final List<Map<String,Object>> extraCols = extrasByChildTable.getOrDefault(model.getStorageName(), Collections.emptyList());
+            final Map<String, Object> context = FlywayUtils.toCreateTableContext(
+                    model, this.configuration.getDatabase(), modelsByName, extraCols, this.configuration.getOptimisticLocking()
+            );
+            final String tableName = model.getStorageName();
+            final EntityState oldState = previousByTable.get(tableName);
+            final List<Map<String, Object>> elementCollectionTables = FlywayUtils.collectElementCollectionTables(
+                    model, this.configuration.getDatabase()
+            );
+
+            if (Objects.isNull(oldState)) {
+                final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
+                    "migration/flyway/create-table.sql.ftl", context
                 );
-                final String tableName = model.getStorageName();
-                final EntityState oldState = previousByTable.get(tableName);
+                final String dbSciptName = String.format(
+                    "V%d__create_%s_table.sql", version, tableName
+                );
+                
+                FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
+                version++;
 
-                if (Objects.isNull(oldState)) {
-                    final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
-                        "migration/flyway/create-table.sql.ftl", context
-                    );
-                    final String dbSciptName = String.format(
-                        "V%d__create_%s_table.sql", version, tableName
-                    );
-                    
-                    FileWriterUtils.writeToFile(pathToDbScripts, dbSciptName, dbScript);
-                    version++;
-    
-                    manifest.applyCreateContext(model.getName(), tableName, context);
-                    manifest.addEntityFile(tableName, dbSciptName, dbScript);
-                } else {
-                    final Map<String,Object> fkCtx = FlywayUtils.toForeignKeysContext(model, modelsByName);
-                    if (Objects.nonNull(fkCtx) && !fkCtx.isEmpty()) {
-                        context.put("fksCtx", fkCtx);
-                    }
-                    final Result diff = MigrationDiffer.diff(oldState, context);
-                    if (diff.isEmpty()) {
-                        manifest.applyCreateContext(model.getName(), tableName, context);
-                        return;
-                    }
-
+                manifest.applyCreateContext(model.getName(), tableName, context);
+                manifest.addEntityFile(tableName, dbSciptName, dbScript);
+            } else {
+                final Map<String,Object> fkCtx = FlywayUtils.toForeignKeysContext(model, modelsByName);
+                if (Objects.nonNull(fkCtx) && !fkCtx.isEmpty()) {
+                    context.put("fksCtx", fkCtx);
+                }
+                final Result diff = MigrationDiffer.diff(oldState, context);
+                if (!diff.isEmpty()) {
                     final Map<String,Object> alterCtx = new LinkedHashMap<>();
                     alterCtx.put("table", tableName);
                     alterCtx.put("addedColumns", diff.getAddedColumns());
@@ -310,8 +312,79 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     manifest.applyCreateContext(model.getName(), tableName, context);
                     manifest.addEntityFile(tableName, dbSciptName, dbScript);
                 }
+            }
 
-            });
+            if (!ContainerUtils.isEmpty(elementCollectionTables)) {
+                final List<Map<String, Object>> newElementCollections = elementCollectionTables.stream()
+                        .filter(ct -> !previousByTable.containsKey(String.valueOf(ct.get("tableName"))))
+                        .toList();
+
+                if (!ContainerUtils.isEmpty(newElementCollections)) {
+                    generateElementCollectionTableScripts(pathToDbScripts, newElementCollections, ms, manifest, model);
+                }
+            }
+
+        });
+    }
+
+    /**
+     * Generates the create table scripts for all element collection tables.
+     *
+     * @param pathToDbScripts the path to which to write the generated scripts
+     * @param elementCollectionTables the list of element collection tables
+     * @param ms the migration state
+     * @param manifest the migration manifest
+     * @param model the model definition
+     */
+    private void generateElementCollectionTableScripts(final String pathToDbScripts, final List<Map<String, Object>> elementCollectionTables,
+            final MigrationState ms, final MigrationManifestBuilder manifest, final ModelDefinition model
+    ) {
+        
+        final Map<String, Object> ecCtx = new LinkedHashMap<>();
+        ecCtx.put("collectionTables", elementCollectionTables);
+
+        final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
+            "migration/flyway/element-collection-create.ftl", ecCtx
+        );
+
+        final String dbScriptName = String.format("V%d__create_%s_element_collections.sql", version, ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName())));
+        FileWriterUtils.writeToFile(pathToDbScripts, dbScriptName, dbScript);
+        version++;
+
+        for (final Map<String, Object> ct : elementCollectionTables) {
+            final String ecTable = String.valueOf(ct.get("tableName"));
+            final List<Map<String, Object>> cols = new ArrayList<>();
+            cols.add(Map.of(
+                    "name", String.valueOf(ct.get("joinColumn")),
+                    "sqlType", String.valueOf(ct.get("ownerPkSqlType")),
+                    "nullable", false,
+                    "unique", false,
+                    "isPk", false
+            ));
+            cols.add(Map.of(
+                    "name", String.valueOf(ct.get("valueColumn")),
+                    "sqlType", String.valueOf(ct.get("valueSqlType")),
+                    "nullable", false,
+                    "unique", false,
+                    "isPk", false
+            ));
+            final boolean isList = Boolean.TRUE.equals(ct.get("isList"));
+            if (isList) {
+                cols.add(Map.of(
+                        "name", String.valueOf(ct.get("orderColumn")),
+                        "sqlType", "INTEGER",
+                        "nullable", false,
+                        "unique", false,
+                        "isPk", false
+                ));
+            }
+
+            final Map<String, Object> ecCreateCtxForState = new LinkedHashMap<>();
+            ecCreateCtxForState.put("tableName", ecTable);
+            ecCreateCtxForState.put("columns", cols);
+            manifest.applyCreateContext(model.getName(), ecTable, ecCreateCtxForState);
+            manifest.addEntityFile(ecTable, dbScriptName, dbScript);
+        }
     }
 
 }
