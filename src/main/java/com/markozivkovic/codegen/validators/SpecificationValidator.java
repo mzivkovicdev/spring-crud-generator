@@ -266,9 +266,25 @@ public class SpecificationValidator {
         final boolean isBasicType = BasicType.isBasicType(type);
         final boolean isEnumType = SpecialType.isEnumType(type);
         final boolean isJsonType = SpecialType.isJsonType(type);
+        final boolean isCollectionType = SpecialType.isCollectionType(type);
+
+        if (isCollectionType) {
+            final String innerType = FieldUtils.extractSimpleCollectionType(field);
+            final boolean innerIsBasicType = BasicType.isBasicType(innerType);
+            
+            if (!innerIsBasicType) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Inner type %s of collection field %s in model %s is invalid. It must be a basic type [%s].",
+                        innerType, field.getName(), model.getName(), BasicType.getSupportedValues()
+                    )
+                );
+            }
+        }
+        
         final boolean modelReference = modelNames.contains(type);
 
-        if (!isBasicType && !isEnumType && !isJsonType && !modelReference) {
+        if (!isBasicType && !isEnumType && !isJsonType && !modelReference && !isCollectionType) {
             throw new IllegalArgumentException(
                 String.format(
                     "Field type %s for field %s in model %s is invalid. It must be a basic type [%s], special type [%s] or reference to another model.",
