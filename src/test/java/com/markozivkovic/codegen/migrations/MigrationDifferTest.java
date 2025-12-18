@@ -1,4 +1,4 @@
-package com.markozivkovic.codegen.migration;
+package com.markozivkovic.codegen.migrations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

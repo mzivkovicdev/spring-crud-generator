@@ -1,4 +1,4 @@
-package com.markozivkovic.codegen.migration;
+package com.markozivkovic.codegen.migrations;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
