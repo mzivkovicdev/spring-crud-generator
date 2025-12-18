@@ -4,7 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +22,7 @@ import org.mockito.Mockito;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectTarget;
 import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectType;
+import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
@@ -71,6 +76,48 @@ class TransferObjectImportsTest {
             assertTrue(result.contains("import " + ImportConstants.Java.UUID), "Expected UUID import");
             assertTrue(result.contains("import " + ImportConstants.Java.LIST), "Expected List import");
             assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport(model): should include imports added by ImportCommon.importListAndSetForSimpleCollection")
+    void getBaseImport_simple_shouldIncludeSimpleCollectionImports() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(List.of(new FieldDefinition()));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+                importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                        .thenAnswer(inv -> {
+                                final boolean cond = inv.getArgument(0);
+                                final Set<String> set = inv.getArgument(1);
+                                final String value = inv.getArgument(2);
+                                if (cond) set.add(value);
+                                return null;
+                        });
+
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                final Set<String> set = inv.getArgument(1);
+                                set.add(ImportConstants.Java.SET);
+                                return null;
+                        });
+
+                final String result = TransferObjectImports.getBaseImport(model);
+
+                assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"),
+                        "Expected SET import from ImportCommon.importListAndSetForSimpleCollection");
+                assertTrue(result.endsWith("\n"));
         }
     }
 
@@ -225,6 +272,54 @@ class TransferObjectImportsTest {
                     "List import should not be present for INPUT even if relations exist");
         }
     }
+
+    @Test
+    @DisplayName("getBaseImport(model, entities, type): should include imports added by ImportCommon.importListAndSetForSimpleCollection")
+    void getBaseImport_withEntities_shouldIncludeSimpleCollectionImports() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(List.of(new FieldDefinition()));
+
+        final List<ModelDefinition> entities = Collections.emptyList();
+        final TransferObjectType type = TransferObjectType.INPUT;
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+                importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                        .thenAnswer(inv -> {
+                                final boolean cond = inv.getArgument(0);
+                                final Set<String> set = inv.getArgument(1);
+                                final String value = inv.getArgument(2);
+                                if (cond) set.add(value);
+                                return null;
+                        });
+
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                final Set<String> set = inv.getArgument(1);
+                                set.add(ImportConstants.Java.SET);
+                                return null;
+                        });
+
+                final String result = TransferObjectImports.getBaseImport(model, entities, type);
+
+                assertTrue(
+                        result.contains("import " + ImportConstants.Java.SET + ";"),
+                        "Expected SET import from ImportCommon.importListAndSetForSimpleCollection"
+                );
+                assertTrue(result.endsWith("\n"));
+        }
+        }
 
     @Test
     @DisplayName("computeValidationImport: no non-null and no size validations → empty string")
