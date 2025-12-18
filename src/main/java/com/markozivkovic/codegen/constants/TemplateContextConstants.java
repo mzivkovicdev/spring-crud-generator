@@ -4,6 +4,7 @@ public final class TemplateContextConstants {
 
     private TemplateContextConstants() {}
 
+    public static final String STORAGE_NAME = "storageName";
     public static final String ID = "id";
     public static final String NAME = "name";
     public static final String FIELD = "field";
@@ -35,6 +36,7 @@ public final class TemplateContextConstants {
     public static final String RELATION_FIELD_MODEL = "relationFieldModel";
     public static final String RELATION_FIELD = "relationField";
     public static final String IS_COLLECTION = "isCollection";
+    public static final String IS_BASE_ENTITY = "isBaseEntity";
     public static final String JAVADOC_FIELDS = "javadocFields";
     public static final String METHOD_NAME = "methodName";
     public static final String RELATION_TYPE = "relationType";
