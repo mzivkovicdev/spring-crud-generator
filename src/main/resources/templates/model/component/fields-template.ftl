@@ -1,3 +1,4 @@
+<#include "_common.ftl">
 <#list fields as field>
     <#if field.id?has_content>
     @Id
@@ -20,7 +21,14 @@
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     </#if><#t>
-    private ${field.resolvedType} ${field.name};
+    <#if isBaseEntity && isCollection(field.resolvedType)>
+    @ElementCollection
+    @CollectionTable(
+        name = "${storageName}_${toSnakeCase(field.name)}",
+        joinColumns = @JoinColumn(name = "${strippedModelName?uncap_first}_id")
+    )
+    </#if><#t>
+    private ${field.resolvedType} ${field.name}<#if isCollection(field.resolvedType)> = new ${collectionImpl(field.resolvedType)}<>()</#if>;
     </#if>
 
 </#list>
