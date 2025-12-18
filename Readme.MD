@@ -1,8 +1,12 @@
 # 🚀 Spring CRUD Generator
 
 ![Java](https://img.shields.io/badge/Java-17--25-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![MicrosoftSQLServer](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=for-the-badge&logo=microsoft%20sql%20server&logoColor=white)
+![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 **Spring CRUD Generator** is an open-source code generation tool designed to accelerate backend development with Spring Boot.  
 It generates production-ready CRUD layers, database migrations, API documentation, Docker resources, tests, and more — directly from a single YAML or JSON configuration file.
@@ -417,7 +421,7 @@ fields:
 | Property      | Type   | Required            | Description                                                                                          |
 | ------------- | ------ | ------------------- | ---------------------------------------------------------------------------------------------------- |
 | `name`        | string | ✅                  | Java field name                                                                                      |
-| `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, or another entity name) |
+| `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, entity name for relations, or `List<BasicType>` / `Set<BasicType>`) |
 | `description` | string | optional            | Used for Javadoc and API documentation                                                               |
 | `id`          | object | optional            | Marks the field as primary key and defines generation strategy                                       |
 | `column`      | object | optional            | Column constraints (unique, nullable, insertable, updateable, length etc.)                           |
@@ -425,6 +429,21 @@ fields:
 | `values`      | list   | required for `Enum` | Enum constant values (only when `type: Enum`)                                                        |
 
 - Supported basic types are: String, Character, Integer, Long, Boolean, Double, Float, Short, Byte, UUID, BigDecimal, BigInteger, LocalDate, LocalDateTime, OffsetDateTime, Instant
+
+#### Simple collections (ElementCollection)
+
+Simple collections are supported only for basic types:
+- `List<BasicType>`
+- `Set<BasicType>`
+
+Example:
+```yaml
+- name: phoneNumbers
+  type: List<String>
+- name: tags
+  type: Set<Long>
+```
+For `List<BasicType>` / `Set<BasicType>`, the generator creates a separate collection table named `${storageName}_${snake_case(fieldName)}` and links it to the owner entity via `<entity>_id`.
 
 ### 🔑 Primary Key: id.strategy
 
@@ -437,12 +456,12 @@ To mark a field as the entity identifier, add an id block:
   id:
     strategy: IDENTITY
 ```
-Supported strategies (example):
+Supported strategies:
 - TABLE
-- SEQUENCE (if supported by the selected database)
+- SEQUENCE
 - UUID
-- IDENTIT
-- AU
+- IDENTITY
+- AUTO
 
 | Property         | Type   | Required | Description                                                         |
 | ---------------- | ------ | -------- | ------------------------------------------------------------------- |

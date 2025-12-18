@@ -1,9 +1,9 @@
 <#function isJson field>
-  <#return field.type?matches("JSONB?\\[.+\\]")>
+  <#return field.type?matches("^JSONB?<.+>$")>
 </#function>
 
 <#function jsonInnerType field isInput>
-  <#assign inner = field.type?replace("^JSONB?\\[(.+)]$", "$1", "r")>
+  <#assign inner = field.type?replace("^JSONB?<(.+)>$", "$1", "r")>
   <#if isInput?? && isInput>
     <#return inner + "Input">
   <#else>

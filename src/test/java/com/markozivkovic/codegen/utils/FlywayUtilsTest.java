@@ -18,6 +18,8 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import com.markozivkovic.codegen.models.AuditDefinition;
 import com.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
@@ -53,6 +55,26 @@ class FlywayUtilsTest {
         f.setName(name);
         f.setType(targetType);
         f.setRelation(rel);
+        return f;
+    }
+
+    private FieldDefinition field(final String name, final String type) {
+        final FieldDefinition f = new FieldDefinition();
+        f.setName(name);
+        f.setType(type);
+        return f;
+    }
+
+    private FieldDefinition idFieldIdentity(final String name) {
+        final FieldDefinition f = field(name, "Long");
+        final IdDefinition id = new IdDefinition();
+        id.setStrategy(IdStrategyEnum.IDENTITY);
+        f.setId(id);
+
+        final ColumnDefinition col = new ColumnDefinition();
+        col.setNullable(false);
+        f.setColumn(col);
+
         return f;
     }
 
@@ -327,7 +349,7 @@ class FlywayUtilsTest {
     @DisplayName("columnSqlType maps JSON[...] to database-specific JSON type")
     void columnSqlType_shouldMapJsonPerDb() {
         
-        final FieldDefinition field = fieldWithType("JSON[Address]");
+        final FieldDefinition field = fieldWithType("JSON<Address>");
 
         assertEquals("JSONB", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("JSON", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
@@ -832,6 +854,166 @@ class FlywayUtilsTest {
         assertEquals(false, versionCol.get("nullable"));
         assertEquals("0", versionCol.get("defaultExpr"));
         assertEquals(false, versionCol.get("isPk"));
+    }
+
+    @Test
+    @DisplayName("toCreateTableContext: skips simple collection fields (List<T>/Set<T>) from base table columns")
+    void toCreateTableContext_shouldSkipSimpleCollections() {
+
+        final FieldDefinition id = idFieldIdentity("id");
+        final FieldDefinition phoneNumbers = field("phoneNumbers", "List<String>");
+        final FieldDefinition tags = field("tags", "Set<String>");
+
+        final ModelDefinition user = model("UserEntity", "user_table", List.of(id, phoneNumbers, tags));
+
+        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(
+                user,
+                DatabaseType.POSTGRESQL,
+                Map.of(),
+                List.of(),
+                false
+        );
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> cols = (List<Map<String, Object>>) ctx.get("columns");
+
+        assertNotNull(cols);
+        assertTrue(cols.stream().anyMatch(c -> "id".equals(c.get("name"))), "Expected id column");
+
+        assertFalse(cols.stream().anyMatch(c -> "phone_numbers".equals(c.get("name"))),
+                "List field must be skipped (no base-table column)");
+        assertFalse(cols.stream().anyMatch(c -> "tags".equals(c.get("name"))),
+                "Set field must be skipped (no base-table column)");
+
+        assertEquals(1, cols.size(), "Only id should remain in base table columns");
+    }
+
+    @Test
+    @DisplayName("collectElementCollectionTables: returns empty list when model has no simple collection fields")
+    void collectElementCollectionTables_noCollections_returnsEmpty() {
+
+        final FieldDefinition id = idFieldIdentity("id");
+        final FieldDefinition username = field("username", "String");
+
+        final ModelDefinition m = model("UserEntity", "user_table", List.of(id, username));
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.extractIdField(m.getFields())).thenReturn(id);
+
+            final List<Map<String, Object>> out =
+                    FlywayUtils.collectElementCollectionTables(m, DatabaseType.POSTGRESQL);
+
+            assertNotNull(out);
+            assertTrue(out.isEmpty());
+        }
+    }
+
+    @Test
+    @DisplayName("collectElementCollectionTables: builds contexts for List<T> and Set<T> with correct naming and flags")
+    void collectElementCollectionTables_listAndSet_buildsContexts() {
+
+        final FieldDefinition id = idFieldIdentity("id");
+        final FieldDefinition phoneNumbers = field("phoneNumbers", "List<String>");
+        final FieldDefinition tags = field("tags", "Set<String>");
+
+        final ModelDefinition m = model("UserEntity", "user_table", List.of(id, phoneNumbers, tags));
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.extractIdField(m.getFields())).thenReturn(id);
+            fieldUtils.when(() -> FieldUtils.extractSimpleCollectionType(phoneNumbers)).thenReturn("String");
+            fieldUtils.when(() -> FieldUtils.extractSimpleCollectionType(tags)).thenReturn("String");
+
+            final List<Map<String, Object>> out =
+                    FlywayUtils.collectElementCollectionTables(m, DatabaseType.POSTGRESQL);
+
+            assertEquals(2, out.size());
+
+            final Map<String, Object> listCt = out.stream()
+                    .filter(ct -> "user_table_phone_numbers".equals(ct.get("tableName")))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("Expected List collection table context"));
+
+            assertEquals("user_table", listCt.get("ownerTable"));
+            assertEquals("user_id", listCt.get("joinColumn"));
+            assertEquals("id", listCt.get("ownerPkColumn"));
+            assertEquals("BIGINT", listCt.get("ownerPkSqlType"));
+            assertEquals("phone_numbers", listCt.get("valueColumn"));
+            assertEquals("VARCHAR(255)", listCt.get("valueSqlType"));
+            assertEquals(true, listCt.get("isList"));
+            assertEquals(false, listCt.get("needsUnique"));
+            assertEquals("order_index", listCt.get("orderColumn"));
+
+            final Map<String, Object> setCt = out.stream()
+                    .filter(ct -> "user_table_tags".equals(ct.get("tableName")))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("Expected Set collection table context"));
+
+            assertEquals("user_table", setCt.get("ownerTable"));
+            assertEquals("user_id", setCt.get("joinColumn"));
+            assertEquals("id", setCt.get("ownerPkColumn"));
+            assertEquals("BIGINT", setCt.get("ownerPkSqlType"));
+            assertEquals("tags", setCt.get("valueColumn"));
+            assertEquals("VARCHAR(255)", setCt.get("valueSqlType"));
+            assertEquals(false, setCt.get("isList"));
+            assertEquals(true, setCt.get("needsUnique"));
+            assertEquals("order_index", setCt.get("orderColumn"));
+        }
+    }
+
+    @Test
+    @DisplayName("collectElementCollectionTables: owner join column uses stripped suffix (e.g. UserEntity -> user_id)")
+    void collectElementCollectionTables_joinColumn_usesStrippedSuffix() {
+
+        final FieldDefinition id = idFieldIdentity("userId");
+        final FieldDefinition list = field("roles", "List<String>");
+        final ModelDefinition m = model("AccountEntity", "account_table", List.of(id, list));
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.extractIdField(m.getFields())).thenReturn(id);
+            fieldUtils.when(() -> FieldUtils.extractSimpleCollectionType(list)).thenReturn("String");
+
+            final List<Map<String, Object>> out =
+                    FlywayUtils.collectElementCollectionTables(m, DatabaseType.POSTGRESQL);
+
+            assertEquals(1, out.size());
+            final Map<String, Object> ct = out.get(0);
+
+            assertEquals("account_table_roles", ct.get("tableName"));
+            assertEquals("account_id", ct.get("joinColumn"), "joinColumn should be <uncapitalized stripped model name>_id");
+            assertEquals("user_id", ct.get("ownerPkColumn"), "owner pk column should be snake_case of pk field name");
+            assertEquals("BIGINT", ct.get("ownerPkSqlType"));
+            assertEquals("roles", ct.get("valueColumn"));
+        }
+    }
+
+    @Test
+    @DisplayName("collectElementCollectionTables: respects ColumnDefinition length for List<String> valueSqlType")
+    void collectElementCollectionTables_usesColumnLength_forStringInnerType() {
+
+        final FieldDefinition id = idFieldIdentity("id");
+
+        final ColumnDefinition col = new ColumnDefinition();
+        col.setLength(50);
+
+        final FieldDefinition list = field("aliases", "List<String>");
+        list.setColumn(col);
+
+        final ModelDefinition m = model("UserEntity", "user_table", List.of(id, list));
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.extractIdField(m.getFields())).thenReturn(id);
+            fieldUtils.when(() -> FieldUtils.extractSimpleCollectionType(list)).thenReturn("String");
+
+            final List<Map<String, Object>> out =
+                    FlywayUtils.collectElementCollectionTables(m, DatabaseType.POSTGRESQL);
+
+            assertEquals(1, out.size());
+            final Map<String, Object> ct = out.get(0);
+
+            assertEquals("user_table_aliases", ct.get("tableName"));
+            assertEquals("aliases", ct.get("valueColumn"));
+            assertEquals("VARCHAR(50)", ct.get("valueSqlType"), "String inner type should honor column.length");
+        }
     }
 
     @Test

@@ -29,7 +29,7 @@ class SwaggerUtilsTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> asMap(Object obj) {
+    private Map<String, Object> asMap(final Object obj) {
         return (Map<String, Object>) obj;
     }
 
@@ -373,6 +373,44 @@ class SwaggerUtilsTest {
         @SuppressWarnings("unchecked")
         final List<String> enumValues = (List<String>) property.get("enum");
         assertEquals(Arrays.asList("ACTIVE", "INACTIVE"), enumValues);
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: simple collection List<String> -> array with string items")
+    void toSwaggerProperty_simpleCollection_listOfString() {
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("phoneNumbers");
+        field.setType("List<String>");
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field);
+
+        assertEquals("phoneNumbers", property.get("name"));
+        assertEquals("array", property.get("type"));
+
+        final Map<String, Object> items = asMap(property.get("items"));
+        assertEquals("string", items.get("type"));
+        assertFalse(items.containsKey("$ref"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: simple collection Set<Enum> with values -> array items include enum list")
+    void toSwaggerProperty_simpleCollection_setOfEnum_addsEnumValuesOnItems() {
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("statuses");
+        field.setType("Set<Enum>");
+        field.setValues(List.of("ACTIVE", "INACTIVE"));
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field);
+
+        assertEquals("statuses", property.get("name"));
+        assertEquals("array", property.get("type"));
+
+        final Map<String, Object> items = asMap(property.get("items"));
+        assertEquals("string", items.get("type"));
+
+        @SuppressWarnings("unchecked")
+        final List<String> enumValues = (List<String>) items.get("enum");
+        assertEquals(List.of("ACTIVE", "INACTIVE"), enumValues);
     }
 
     @Test

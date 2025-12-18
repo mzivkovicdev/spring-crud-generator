@@ -367,4 +367,124 @@ class SpecificationValidatorTest {
         final CrudSpecification spec = buildValidSpecification();
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
     }
+
+    @Test
+    @DisplayName("Should allow simple collection field with basic inner type (List<String>)")
+    void validate_simpleCollection_listWithBasicInnerType_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition phoneNumbers = new FieldDefinition();
+        phoneNumbers.setName("phoneNumbers");
+        phoneNumbers.setType("List<String>");
+
+        model.setFields(List.of(id, phoneNumbers));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow simple collection field with basic inner type (Set<Long>)")
+    void validate_simpleCollection_setWithBasicInnerType_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition tags = new FieldDefinition();
+        tags.setName("tags");
+        tags.setType("Set<Long>");
+
+        model.setFields(List.of(id, tags));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should throw when simple collection inner type is NOT basic (List<Address>)")
+    void validate_simpleCollection_innerTypeNotBasic_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition invalidCollection = new FieldDefinition();
+        invalidCollection.setName("addresses");
+        invalidCollection.setType("List<Address>");
+
+        model.setFields(List.of(id, invalidCollection));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Inner type Address"), "Message should mention inner type");
+        assertTrue(ex.getMessage().contains("collection field addresses"), "Message should mention field name");
+        assertTrue(ex.getMessage().contains("must be a basic type"), "Message should mention basic types constraint");
+    }
+
+    @Test
+    @DisplayName("Should throw when simple collection inner type is another special type (Set<Enum>)")
+    void validate_simpleCollection_innerTypeSpecialType_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition invalidCollection = new FieldDefinition();
+        invalidCollection.setName("statuses");
+        invalidCollection.setType("Set<Enum>");
+
+        model.setFields(List.of(id, invalidCollection));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Inner type Enum"));
+        assertTrue(ex.getMessage().contains("collection field statuses"));
+    }
+
+    @Test
+    @DisplayName("Should throw when collection type has non-basic inner type even if model exists")
+    void validate_simpleCollection_innerTypeModelReferenceStillInvalid_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition address = new ModelDefinition();
+        address.setName("Address");
+        address.setStorageName("address");
+
+        final FieldDefinition addressId = new FieldDefinition();
+        addressId.setName("id");
+        addressId.setType("Long");
+        addressId.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
+        address.setFields(List.of(addressId));
+
+        final ModelDefinition user = spec.getEntities().get(0);
+        final FieldDefinition userId = user.getFields().get(0);
+
+        final FieldDefinition addresses = new FieldDefinition();
+        addresses.setName("addresses");
+        addresses.setType("List<Address>");
+
+        user.setFields(List.of(userId, addresses));
+        spec.setEntities(List.of(user, address));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Inner type Address"));
+        assertTrue(ex.getMessage().contains("must be a basic type"));
+    }
+
 }

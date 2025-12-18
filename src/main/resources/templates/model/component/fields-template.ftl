@@ -1,3 +1,4 @@
+<#include "_common.ftl">
 <#list fields as field>
     <#if field.id?has_content>
     @Id
@@ -16,11 +17,18 @@
     <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")><#t>
     private List<${field.resolvedType}> ${field.name};
     <#else>
-    <#if field.type?matches("JSONB?\\[.+\\]")>
+    <#if field.type?matches("^JSONB?<.+>$")>
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     </#if><#t>
-    private ${field.resolvedType} ${field.name};
+    <#if isBaseEntity && isCollection(field.resolvedType)>
+    @ElementCollection
+    @CollectionTable(
+        name = "${storageName}_${toSnakeCase(field.name)}",
+        joinColumns = @JoinColumn(name = "${strippedModelName?uncap_first}_id")
+    )
+    </#if><#t>
+    private ${field.resolvedType} ${field.name}<#if isCollection(field.resolvedType)> = new ${collectionImpl(field.resolvedType)}<>()</#if>;
     </#if>
 
 </#list>

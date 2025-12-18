@@ -3,7 +3,11 @@ package com.markozivkovic.codegen.imports;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +22,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKeys;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
+import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
@@ -35,7 +40,8 @@ class ServiceImportsTest {
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
@@ -44,6 +50,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                .thenAnswer(inv -> null);
 
             final String result = ServiceImports.getBaseImport(model, false);
 
@@ -74,6 +82,9 @@ class ServiceImportsTest {
             assertTrue(result.contains("import " + ImportConstants.Java.UUID), "Expected UUID import");
             assertTrue(result.contains("import " + ImportConstants.Java.LIST), "Expected List import");
             assertTrue(result.endsWith("\n"));
+
+            final String needle = "import " + ImportConstants.Java.LIST + ";";
+            assertEquals(result.indexOf(needle), result.lastIndexOf(needle), "List import should not be duplicated");
         }
     }
 
@@ -97,7 +108,77 @@ class ServiceImportsTest {
             final String result = ServiceImports.getBaseImport(model, true);
 
             assertTrue(result.contains("import " + ImportConstants.Java.LIST), "Expected List import");
+            assertFalse(result.contains("import " + ImportConstants.Java.SET + ";"), "Did not expect Set import");
             assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport: should import List+Set when model has simple element collections (via ImportCommon helper)")
+    void getBaseImport_shouldImportListAndSet_forSimpleCollections() {
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        Mockito.when(model.getFields()).thenReturn(List.of(new FieldDefinition()));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                @SuppressWarnings("unchecked")
+                                final Set<String> imports = (Set<String>) inv.getArgument(1);
+                                imports.add(ImportConstants.Java.LIST);
+                                imports.add(ImportConstants.Java.SET);
+                                return null;
+                        });
+
+                final String result = ServiceImports.getBaseImport(model, false);
+
+                assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"), "Expected List import");
+                assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import");
+                assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport: should not duplicate List if ImportCommon adds LIST and hasLists/importList also add LIST")
+    void getBaseImport_shouldNotDuplicateList_whenHelperAddsListAndHasListsTrue() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        Mockito.when(model.getFields()).thenReturn(List.of(new FieldDefinition()));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                @SuppressWarnings("unchecked")
+                                final Set<String> imports = (Set<String>) inv.getArgument(1);
+                                imports.add(ImportConstants.Java.LIST);
+                                return null;
+                        });
+
+                final String result = ServiceImports.getBaseImport(model, false);
+
+                final String needle = "import " + ImportConstants.Java.LIST + ";";
+                assertTrue(result.contains(needle), "Expected List import");
+                assertEquals(result.indexOf(needle), result.lastIndexOf(needle), "List import should not be duplicated");
         }
     }
 
@@ -460,6 +541,49 @@ class ServiceImportsTest {
             assertTrue(result.contains("import " + ImportConstants.Java.LIST));
             assertTrue(result.contains("import " + ImportConstants.Java.UUID));
             assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
+    @DisplayName("getTestBaseImport: should include Set when ImportCommon adds it for simple collections")
+    void getTestBaseImport_shouldIncludeSet_whenSimpleCollectionsExist() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        final List<FieldDefinition> fields = List.of(Mockito.mock(FieldDefinition.class));
+        Mockito.when(model.getFields()).thenReturn(fields);
+
+        final FieldDefinition idField = Mockito.mock(FieldDefinition.class);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+                fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+                fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField)).thenReturn(false);
+
+                importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                        .thenAnswer(inv -> {
+                                final boolean cond = inv.getArgument(0);
+
+                                final Set<String> set = inv.getArgument(1);
+                                final String value = inv.getArgument(2);
+                                if (cond) set.add(value);
+                                return null;
+                        });
+
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                final Set<String> set = inv.getArgument(1);
+                                set.add(ImportConstants.Java.SET);
+                                return null;
+                        });
+
+                final String result = ServiceImports.getTestBaseImport(model);
+
+                assertTrue(result.contains("import " + ImportConstants.Java.OPTIONAL + ";"));
+                assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+                assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"));
+                assertFalse(result.contains("import " + ImportConstants.Java.UUID + ";"));
+                assertTrue(result.endsWith("\n"));
         }
     }
 

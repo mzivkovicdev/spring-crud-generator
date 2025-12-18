@@ -142,6 +142,7 @@ public class SwaggerUtils {
         final RelationDefinition rel = fieldDefinition.getRelation();
         final String type = fieldDefinition.getType();
         final boolean isJsonField = FieldUtils.isJsonField(fieldDefinition);
+        final boolean isSimpleCollectionType = FieldUtils.isSimpleCollectionField(fieldDefinition);
 
         if (Objects.nonNull(rel)) {
 
@@ -159,10 +160,12 @@ public class SwaggerUtils {
                     break;
             }
         } else {
-            if (!isJsonField) {
-                schema = resolve(type, fieldDefinition.getValues());
-            } else {
+            if (isJsonField) {
                 schema = ref(FieldUtils.extractJsonFieldName(fieldDefinition));
+            } else if (isSimpleCollectionType) {
+                schema = arrayOfSimpleType(FieldUtils.extractSimpleCollectionType(fieldDefinition), fieldDefinition.getValues());
+            } else {
+                schema = resolve(type, fieldDefinition.getValues());
             }
         }
 
@@ -223,6 +226,22 @@ public class SwaggerUtils {
         final Map<String, Object> m = new LinkedHashMap<>();
         m.put("type", "array");
         m.put("items", ref(targetSchemaName));
+        return m;
+    }
+
+    /**
+     * Return a Swagger array type definition which contains items of the given yamlType.
+     * 
+     * If the yamlType is an enum, the enum values will be added to the items definition.
+     * 
+     * @param yamlType the yaml type of the items
+     * @param enumValues the values of the enum if the yamlType is an enum
+     * @return a Swagger array type definition
+     */
+    private static Map<String, Object> arrayOfSimpleType(final String yamlType, @Nullable final List<String> enumValues) {
+        final Map<String, Object> m = new LinkedHashMap<>();
+        m.put("type", "array");
+        m.put("items", resolve(yamlType, enumValues));
         return m;
     }
 

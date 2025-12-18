@@ -13,6 +13,9 @@ public final class ImportConstants {
         public static final String OPTIONAL = "java.util.Optional";
         public static final String UUID = "java.util.UUID";
         public static final String LIST = "java.util.List";
+        public static final String SET = "java.util.Set";
+        public static final String ARRAY_LIST = "java.util.ArrayList";
+        public static final String HASH_SET = "java.util.HashSet";
         public static final String MAP = "java.util.Map";
         public static final String COLLECTORS = "java.util.stream.Collectors";
         public static final String BIG_DECIMAL = "java.math.BigDecimal";
@@ -34,6 +37,8 @@ public final class ImportConstants {
         public static final String ENUMERATED = "jakarta.persistence.Enumerated";
         public static final String FETCH_TYPE = "jakarta.persistence.FetchType";
         public static final String CASCADE_TYPE = "jakarta.persistence.CascadeType";
+        public static final String COLLECTION_TABLE = "jakarta.persistence.CollectionTable";
+        public static final String ELEMENT_COLLECTION = "jakarta.persistence.ElementCollection";
         public static final String COLUMN = "jakarta.persistence.Column";
         public static final String JOIN_COLUMN = "jakarta.persistence.JoinColumn";
         public static final String JOIN_TABLE = "jakarta.persistence.JoinTable";

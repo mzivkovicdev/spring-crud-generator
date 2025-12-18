@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +17,7 @@ import org.mockito.Mockito;
 
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.constants.RelationTypesConstants;
+import com.markozivkovic.codegen.enums.SpecialType;
 import com.markozivkovic.codegen.models.AuditDefinition;
 import com.markozivkovic.codegen.models.ColumnDefinition;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -51,6 +54,84 @@ class ModelImportsTest {
     }
 
     @Test
+    @DisplayName("getBaseImport: no types, no simple collections, no Objects, no auditing -> empty string")
+    void getBaseImport_noTypes_noSimpleCollections_noObjects_noAuditing() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(Collections.emptyList());
+        model.setAudit(null);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+            final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+            final String result = ModelImports.getBaseImport(model, false, false);
+
+            assertEquals("", result);
+            auditUtils.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport: when model has simple collections, should import List/ArrayList and Set/HashSet (no duplicates)")
+    void getBaseImport_withSimpleCollections_importsListAndSetAndImpls_noDuplicates() {
+
+        final FieldDefinition listField = mock(FieldDefinition.class);
+        when(listField.getType()).thenReturn("List<String>");
+
+        final FieldDefinition setField = mock(FieldDefinition.class);
+        when(setField.getType()).thenReturn("Set<UUID>");
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(List.of(listField, setField));
+        model.setAudit(null);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+            final MockedStatic<SpecialType> specialType = Mockito.mockStatic(SpecialType.class);
+            final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractSimpleCollectionFields(anyList()))
+                    .thenReturn(List.of(listField, setField));
+
+            specialType.when(() -> SpecialType.isListType("List<String>")).thenReturn(true);
+            specialType.when(() -> SpecialType.isSetType("List<String>")).thenReturn(false);
+            specialType.when(() -> SpecialType.isListType("Set<UUID>")).thenReturn(false);
+            specialType.when(() -> SpecialType.isSetType("Set<UUID>")).thenReturn(true);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+            final String result = ModelImports.getBaseImport(model, false, false);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"), "Expected List import");
+            assertTrue(result.contains("import " + ImportConstants.Java.ARRAY_LIST + ";"), "Expected ArrayList import");
+            assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import");
+            assertTrue(result.contains("import " + ImportConstants.Java.HASH_SET + ";"), "Expected HashSet import");
+
+            final String listNeedle = "import " + ImportConstants.Java.LIST + ";";
+            assertEquals(result.indexOf(listNeedle), result.lastIndexOf(listNeedle), "List import should not be duplicated");
+
+            assertTrue(result.endsWith("\n"));
+
+            auditUtils.verifyNoInteractions();
+        }
+    }
+
+    @Test
     @DisplayName("getBaseImport: BigDecimal + UUID + List + Objects + auditing enabled → all relevant imports present")
     void getBaseImport_withTypes_objects_and_auditing() {
         
@@ -61,6 +142,7 @@ class ModelImportsTest {
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
 
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);

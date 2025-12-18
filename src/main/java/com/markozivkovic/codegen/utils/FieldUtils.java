@@ -28,9 +28,10 @@ public class FieldUtils {
     private static final String MANY_TO_ONE = "ManyToOne";
     private static final String MANY_TO_MANY = "ManyToMany";
 
-    private static final Pattern pattern = Pattern.compile("^JSONB?\\[(.+)]$");
+    private static final Pattern jsonPattern = Pattern.compile("^JSONB?<(.+)>$");
+    private static final Pattern collectionPattern = Pattern.compile("^(List|Set)<\\s*(.+?)\\s*>$");
     private static final ObjectMapper mapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private FieldUtils() {
         
@@ -215,6 +216,17 @@ public class FieldUtils {
     }
 
     /**
+     * Returns true if any field in the given list of fields is a simple collection field (i.e. a field of type "List&lt;name&gt;"), false otherwise.
+     * 
+     * @param fields The list of fields to check.
+     * @return True if any field is a simple collection field, false otherwise.
+     */
+    public static boolean isAnyFieldSimpleCollection(final List<FieldDefinition> fields) {
+        
+        return fields.stream().anyMatch(field -> isSimpleCollectionField(field));
+    }
+
+    /**
      * Extracts all fields from the given list of fields that are of type Enum.
      * 
      * @param fields The list of fields to extract Enum fields from.
@@ -251,6 +263,19 @@ public class FieldUtils {
 
         return fields.stream()                
                 .filter(field -> isJsonField(field))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts all fields from the given list of fields that are simple collection fields (i.e. fields of type "List&lt;name&gt;").
+     * 
+     * @param fields The list of fields to extract simple collection fields from.
+     * @return A list of fields that are simple collection fields.
+     */
+    public static List<FieldDefinition> extractSimpleCollectionFields(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> isSimpleCollectionField(field))
                 .collect(Collectors.toList());
     }
 
@@ -985,7 +1010,7 @@ public class FieldUtils {
      */
     public static boolean isJsonField(final FieldDefinition field) {
 
-        return pattern.matcher(field.getType()).matches();
+        return jsonPattern.matcher(field.getType()).matches();
     }
 
     /**
@@ -997,9 +1022,35 @@ public class FieldUtils {
      */
     public static String extractJsonFieldName(final FieldDefinition field) {
 
-        final Matcher matcher = pattern.matcher(field.getType());
+        final Matcher matcher = jsonPattern.matcher(field.getType());
         matcher.matches();
         return matcher.group(1);
+    }
+
+    /**
+     * Returns true if the given field is marked as a collection field, false otherwise.
+     * A collection field is a field whose type is of the form "List&lt;name&gt;", where &lt;name&gt; is the name of the collection field.
+     * 
+     * @param field The field to check.
+     * @return True if the field is marked as a collection field, false otherwise.
+     */
+    public static boolean isSimpleCollectionField(final FieldDefinition field) {
+
+        return collectionPattern.matcher(field.getType()).matches();
+    }
+
+    /**
+     * Extracts the type of a collection field from the given field definition if it is marked as a collection field.
+     * A collection field is a field whose type is of the form "List&lt;name&gt;", where &lt;name&gt; is the name of the collection field.
+     * 
+     * @param field The field definition to extract the collection field type from.
+     * @return The type of the collection field if the field is marked as a collection field, null otherwise.
+     */
+    public static String extractSimpleCollectionType(final FieldDefinition field) {
+        
+        final Matcher matcher = collectionPattern.matcher(field.getType());
+        matcher.matches();
+        return matcher.group(2);
     }
     
     /**

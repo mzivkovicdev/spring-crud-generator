@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -625,7 +626,7 @@ class FieldUtilsTest {
     void isAnyFieldJson_shouldReturnTrue_whenJsonTypePresent() {
         final List<FieldDefinition> fields = List.of(
                 fieldWithType("String"),
-                fieldWithType("JSON[String]")
+                fieldWithType("JSON<String>")
         );
 
         final boolean result = FieldUtils.isAnyFieldJson(fields);
@@ -638,13 +639,51 @@ class FieldUtilsTest {
     void isAnyFieldJson_shouldReturnTrue_whenJsonbTypePresent() {
         
         final List<FieldDefinition> fields = List.of(
-                fieldWithType("JSONB[MyType]"),
+                fieldWithType("JSONB<MyType>"),
                 fieldWithType("Integer")
         );
 
         final boolean result = FieldUtils.isAnyFieldJson(fields);
 
         assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldSimpleCollection: empty list -> false")
+    void isAnyFieldSimpleCollection_emptyList_false() {
+        assertFalse(FieldUtils.isAnyFieldSimpleCollection(Collections.emptyList()));
+    }
+
+    @Test
+    @DisplayName("isAnyFieldSimpleCollection: no simple collection fields -> false")
+    void isAnyFieldSimpleCollection_noSimpleCollections_false() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("name", "String"),
+                fieldWithNameAndType("age", "Integer")
+        );
+
+        assertFalse(FieldUtils.isAnyFieldSimpleCollection(fields));
+    }
+
+    @Test
+    @DisplayName("isAnyFieldSimpleCollection: contains List<T> field without relation -> true")
+    void isAnyFieldSimpleCollection_listField_true() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("name", "String"),
+                fieldWithNameAndType("phoneNumbers", "List<String>")
+        );
+
+        assertTrue(FieldUtils.isAnyFieldSimpleCollection(fields));
+    }
+
+    @Test
+    @DisplayName("isAnyFieldSimpleCollection: contains Set<T> field without relation -> true")
+    void isAnyFieldSimpleCollection_setField_true() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("roles", "Set<String>")
+        );
+
+        assertTrue(FieldUtils.isAnyFieldSimpleCollection(fields));
     }
 
     @Test
@@ -729,9 +768,9 @@ class FieldUtilsTest {
     @DisplayName("extractJsonFields returns fields with JSON[...] type")
     void extractJsonFields_shouldReturnJsonFields() {
         
-        final FieldDefinition f1 = fieldWithNameAndType("metadata", "JSON[String]");
+        final FieldDefinition f1 = fieldWithNameAndType("metadata", "JSON<String>");
         final FieldDefinition f2 = fieldWithNameAndType("name", "String");
-        final FieldDefinition f3 = fieldWithNameAndType("details", "JSONB[MyType]");
+        final FieldDefinition f3 = fieldWithNameAndType("details", "JSONB<MyType>");
         final List<FieldDefinition> fields = List.of(f1, f2, f3);
 
         final List<FieldDefinition> result = FieldUtils.extractJsonFields(fields);
@@ -739,6 +778,58 @@ class FieldUtilsTest {
         assertEquals(2, result.size());
         assertSame(f1, result.get(0));
         assertSame(f3, result.get(1));
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionFields: empty input -> empty output")
+    void extractSimpleCollectionFields_empty_returnsEmpty() {
+        final List<FieldDefinition> result = FieldUtils.extractSimpleCollectionFields(Collections.emptyList());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionFields: no simple collection fields -> empty output")
+    void extractSimpleCollectionFields_noSimpleCollections_returnsEmpty() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("name", "String"),
+                fieldWithNameAndType("age", "Integer")
+        );
+
+        final List<FieldDefinition> result = FieldUtils.extractSimpleCollectionFields(fields);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionFields: returns only List<T>/Set<T> simple collection fields, preserving order")
+    void extractSimpleCollectionFields_filtersAndPreservesOrder() {
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        final FieldDefinition f2 = fieldWithNameAndType("phoneNumbers", "List<String>");
+        final FieldDefinition f3 = fieldWithNameAndType("roles", "Set<String>");
+        final FieldDefinition f4 = fieldWithNameAndType("createdAt", "LocalDateTime");
+
+        final List<FieldDefinition> fields = List.of(f1, f2, f3, f4);
+
+        final List<FieldDefinition> result = FieldUtils.extractSimpleCollectionFields(fields);
+
+        assertEquals(2, result.size());
+        assertSame(f2, result.get(0), "Expected List field first");
+        assertSame(f3, result.get(1), "Expected Set field second");
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionFields: should return new list instance (not same as input)")
+    void extractSimpleCollectionFields_returnsNewListInstance() {
+        final List<FieldDefinition> input = List.of(
+                fieldWithNameAndType("phoneNumbers", "List<String>")
+        );
+
+        final List<FieldDefinition> result = FieldUtils.extractSimpleCollectionFields(input);
+
+        assertNotSame(input, result);
+        assertEquals(1, result.size());
     }
 
     @Test
@@ -766,7 +857,7 @@ class FieldUtilsTest {
     void isModelUsedAsJsonField_shouldReturnTrue_whenReferencedAsJson() {
         
         final ModelDefinition addressModel = model("Address", List.of());
-        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSON<Address>");
         final ModelDefinition userModel = model("User", List.of(userAddressField));
         final List<ModelDefinition> entities = List.of(userModel);
 
@@ -780,7 +871,7 @@ class FieldUtilsTest {
     void isModelUsedAsJsonField_shouldReturnTrue_whenReferencedAsJsonb() {
         
         final ModelDefinition addressModel = model("Address", List.of());
-        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSONB[Address]");
+        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSONB<Address>");
         final ModelDefinition userModel = model("User", List.of(userAddressField));
 
         final List<ModelDefinition> entities = List.of(userModel);
@@ -1134,7 +1225,7 @@ class FieldUtilsTest {
         final FieldDefinition enumField = fieldWithNameAndType("status", "enum");
         enumField.setRelation(null);
 
-        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON<Metadata>");
         jsonField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(
@@ -1190,7 +1281,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -1208,7 +1299,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -1270,7 +1361,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -1323,7 +1414,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -2173,7 +2264,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, addressField);
@@ -2232,7 +2323,7 @@ class FieldUtilsTest {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON<Metadata>");
         jsonField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(idField, jsonField);
@@ -2313,7 +2404,7 @@ class FieldUtilsTest {
     @DisplayName("generateInputArgsWithoutFinal uses '<resolvedType>TO name' for JSON fields")
     void generateInputArgsWithoutFinal_shouldUseTOType_forJsonFields() {
 
-        final FieldDefinition jsonField = fieldWithNameAndType("address", "JSON[Address]");
+        final FieldDefinition jsonField = fieldWithNameAndType("address", "JSON<Address>");
         jsonField.setRelation(null);
 
         final List<FieldDefinition> fields = List.of(jsonField);
@@ -2505,7 +2596,7 @@ class FieldUtilsTest {
     @DisplayName("isJsonField returns true for JSON[...] type")
     void isJsonField_shouldReturnTrue_forJsonType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON<Metadata>");
 
         final boolean result = FieldUtils.isJsonField(field);
 
@@ -2516,7 +2607,7 @@ class FieldUtilsTest {
     @DisplayName("isJsonField returns true for JSONB[...] type")
     void isJsonField_shouldReturnTrue_forJsonbType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB<Metadata>");
 
         final boolean result = FieldUtils.isJsonField(field);
 
@@ -2540,7 +2631,7 @@ class FieldUtilsTest {
     @DisplayName("extractJsonFieldName returns inner type for JSON[...] type")
     void extractJsonFieldName_shouldReturnInnerType_forJsonType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON<Metadata>");
 
         final String result = FieldUtils.extractJsonFieldName(field);
 
@@ -2551,7 +2642,7 @@ class FieldUtilsTest {
     @DisplayName("extractJsonFieldName returns inner type for JSONB[...] type")
     void extractJsonFieldName_shouldReturnInnerType_forJsonbType() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB[MyCustom_Type]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB<MyCustom_Type>");
 
         final String result = FieldUtils.extractJsonFieldName(field);
 
@@ -2559,10 +2650,94 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("isSimpleCollectionField: List<String> -> true")
+    void isSimpleCollectionField_list_true() {
+        assertTrue(FieldUtils.isSimpleCollectionField(fieldWithType("List<String>")));
+    }
+
+    @Test
+    @DisplayName("isSimpleCollectionField: Set<String> -> true")
+    void isSimpleCollectionField_set_true() {
+        assertTrue(FieldUtils.isSimpleCollectionField(fieldWithType("Set<String>")));
+    }
+
+    @Test
+    @DisplayName("isSimpleCollectionField: allows whitespace inside <>")
+    void isSimpleCollectionField_whitespace_true() {
+        assertTrue(FieldUtils.isSimpleCollectionField(fieldWithType("List< String >")));
+        assertTrue(FieldUtils.isSimpleCollectionField(fieldWithType("Set<   UUID   >")));
+        assertTrue(FieldUtils.isSimpleCollectionField(fieldWithType("List<   com.acme.User   >")));
+    }
+
+    @Test
+    @DisplayName("isSimpleCollectionField: non-collection types -> false")
+    void isSimpleCollectionField_nonCollection_false() {
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("String")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("Integer")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("Map<String,String>")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("Optional<String>")));
+    }
+
+    @Test
+    @DisplayName("isSimpleCollectionField: invalid/partial generic syntax -> false")
+    void isSimpleCollectionField_invalidSyntax_false() {
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("List")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("Set")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("List<>")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("List<String")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("ListString>")));
+    }
+
+    @Test
+    @DisplayName("isSimpleCollectionField: case-sensitive (list<String> -> false)")
+    void isSimpleCollectionField_caseSensitive_false() {
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("list<String>")));
+        assertFalse(FieldUtils.isSimpleCollectionField(fieldWithType("set<String>")));
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionType: List<String> -> String")
+    void extractSimpleCollectionType_list_innerType() {
+        assertEquals("String", FieldUtils.extractSimpleCollectionType(fieldWithType("List<String>")));
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionType: Set<UUID> -> UUID")
+    void extractSimpleCollectionType_set_innerType() {
+        assertEquals("UUID", FieldUtils.extractSimpleCollectionType(fieldWithType("Set<UUID>")));
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionType: trims whitespace around inner type")
+    void extractSimpleCollectionType_trimsWhitespace() {
+        assertEquals("String", FieldUtils.extractSimpleCollectionType(fieldWithType("List<  String  >")));
+        assertEquals("com.acme.User", FieldUtils.extractSimpleCollectionType(fieldWithType("Set< com.acme.User >")));
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionType: supports nested generics as inner type (keeps them as-is)")
+    void extractSimpleCollectionType_nestedGeneric_innerType() {
+        assertEquals("List<String>", FieldUtils.extractSimpleCollectionType(fieldWithType("List<List<String>>")));
+        assertEquals("Set<UUID>", FieldUtils.extractSimpleCollectionType(fieldWithType("Set<Set<UUID>>")));
+    }
+
+    @Test
+    @DisplayName("extractSimpleCollectionType: when type does not match pattern -> throws IllegalStateException")
+    void extractSimpleCollectionType_nonMatching_throws() {
+
+        assertThrows(IllegalStateException.class,
+                () -> FieldUtils.extractSimpleCollectionType(fieldWithType("String")));
+        assertThrows(IllegalStateException.class,
+                () -> FieldUtils.extractSimpleCollectionType(fieldWithType("List<>")));
+        assertThrows(IllegalStateException.class,
+                () -> FieldUtils.extractSimpleCollectionType(fieldWithType("Map<String,String>")));
+    }
+
+    @Test
     @DisplayName("computeResolvedType returns JSON inner type for JSON field")
     void computeResolvedType_shouldReturnInnerType_forJsonField() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON[Metadata]");
+        final FieldDefinition field = fieldWithNameAndType("metadata", "JSON<Metadata>");
 
         final String result = FieldUtils.computeResolvedType(field);
 

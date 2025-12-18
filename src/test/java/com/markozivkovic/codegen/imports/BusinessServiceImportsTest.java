@@ -4,9 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +20,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKeys;
 import com.markozivkovic.codegen.constants.ImportConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
+import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
@@ -139,6 +143,37 @@ class BusinessServiceImportsTest {
     }
 
     @Test
+    @DisplayName("getBaseImport: should import List/Set when model has simple element collections (List<String>, Set<UUID>)")
+    void getBaseImport_shouldImportListAndSet_forSimpleElementCollections() {
+        final ModelDefinition model = emptyModel();
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+                
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                @SuppressWarnings("unchecked")
+                                final Set<String> imports = (Set<String>) inv.getArgument(1);
+                                imports.add(ImportConstants.Java.LIST);
+                                imports.add(ImportConstants.Java.SET);
+                                return null;
+                        });
+                final String result = BusinessServiceImports.getBaseImport(model, false);
+                assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"), "Expected List import for element collections");
+                assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import for element collections");
+                assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
     @DisplayName("getTestBaseImport: should return empty string when no matching field types and no list relations")
     void getTestBaseImport_noTypesNoLists_returnsEmptyString() {
         final ModelDefinition model = emptyModel();
@@ -206,6 +241,100 @@ class BusinessServiceImportsTest {
     }
 
     @Test
+    @DisplayName("getTestBaseImport: should import List/Set when model has simple element collections (List<String>, Set<UUID>)")
+    void getTestBaseImport_shouldImportListAndSet_forSimpleElementCollections() {
+
+        final ModelDefinition model = emptyModel();
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                @SuppressWarnings("unchecked")
+                                final Set<String> imports = (Set<String>) inv.getArgument(1);
+                                imports.add(ImportConstants.Java.LIST);
+                                imports.add(ImportConstants.Java.SET);
+                                return null;
+                        });
+                final String result = BusinessServiceImports.getTestBaseImport(model);
+                assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"), "Expected List import for element collections");
+                assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import for element collections");
+                assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport: should not add List twice when element collections already added LIST and hasLists/importList also true")
+    void getBaseImport_shouldNotDuplicateListImport_whenAlreadyAddedByImportCommon() {
+        final ModelDefinition model = emptyModel();
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+                
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+                
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                @SuppressWarnings("unchecked")
+                                final Set<String> imports = (Set<String>) inv.getArgument(1);
+                                imports.add(ImportConstants.Java.LIST);
+                                return null;
+                        });
+
+                final String result = BusinessServiceImports.getBaseImport(model, false);
+                final String needle = "import " + ImportConstants.Java.LIST + ";";
+                final int first = result.indexOf(needle);
+                final int last = result.lastIndexOf(needle);
+
+                assertTrue(first >= 0, "Expected List import");
+                assertEquals(first, last, "List import should not be duplicated");
+        }
+    }
+
+    @Test
+    @DisplayName("getTestBaseImport: should not add List twice when element collections already added LIST and hasLists true")
+    void getTestBaseImport_shouldNotDuplicateListImport_whenAlreadyAddedByImportCommon() {
+        final ModelDefinition model = emptyModel();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+                
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                        .thenAnswer(inv -> {
+                                @SuppressWarnings("unchecked")
+                                final Set<String> imports = (Set<String>) inv.getArgument(1);
+                                imports.add(ImportConstants.Java.LIST);
+                                return null;
+                        });
+                final String result = BusinessServiceImports.getTestBaseImport(model);
+                final String needle = "import " + ImportConstants.Java.LIST + ";";
+                final int first = result.indexOf(needle);
+                final int last = result.lastIndexOf(needle);
+                assertTrue(first >= 0, "Expected List import");
+                assertEquals(first, last, "List import should not be duplicated");
+        }
+    }
+
+    @Test
     @DisplayName("computeModelsEnumsAndServiceImports: basic imports for model and service without relations and retryable annotation")
     void computeModelsEnumsAndServiceImports_basicWithoutRelations() {
 
@@ -222,11 +351,9 @@ class BusinessServiceImportsTest {
              final MockedStatic<ModelImports> modelImports = Mockito.mockStatic(ModelImports.class);
              final MockedStatic<GeneratorContext> genContext = Mockito.mockStatic(GeneratorContext.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.example");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.example");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.example", packageConfiguration))
-                    .thenReturn("com.example.model");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.example", packageConfiguration)).thenReturn("com.example.model");
             pkg.when(() -> PackageUtils.computeServicePackage("com.example", packageConfiguration))
                     .thenReturn("com.example.service");
 
