@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
+import com.markozivkovic.codegen.enums.SpecialType;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -557,7 +558,7 @@ public class FlywayUtils {
 
         for (final FieldDefinition field : model.getFields()) {
 
-            if (isCollectionRelation(field)) {
+            if (isCollectionRelation(field) || SpecialType.isCollectionType(field.getType())) {
                 continue;
             }
 
@@ -657,6 +658,58 @@ public class FlywayUtils {
                 "isPk", false,
                 "defaultExpr", "0"
         );
+    }
+
+    /**
+     * Collects all element collection tables for the given model definition and database type.
+     * 
+     * @param model the model definition for which to collect the element collection tables
+     * @param db the database type for which to collect the element collection tables
+     * 
+     * @return a list of maps containing the table name, owner table name, join column, owner PK column name, owner PK SQL type, value column name, value SQL type, whether the collection is a list, whether the collection needs a unique index, and the name of the order index column (if applicable)
+     */
+    public static List<Map<String, Object>> collectElementCollectionTables(final ModelDefinition model, final DatabaseType db) {
+
+        final List<Map<String, Object>> result = new ArrayList<>();
+
+        final String ownerTable = model.getStorageName();
+        final String strippedModelName = ModelNameUtils.stripSuffix(model.getName());
+        final String joinColumn = StringUtils.uncapitalize(strippedModelName) + "_id";
+        final FieldDefinition ownerPk = FieldUtils.extractIdField(model.getFields());
+        final String ownerPkColumn = ModelNameUtils.toSnakeCase(StringUtils.uncapitalize(ownerPk.getName()));
+        final String ownerPkSqlType = columnSqlType(ownerPk, db);
+
+        model.getFields().forEach(field -> {
+
+            if (!SpecialType.isCollectionType(field.getType())) {
+                return;
+            }
+
+            final boolean isList = SpecialType.isListType(field.getType());
+            final boolean isSet = SpecialType.isSetType(field.getType());
+            final String tableName = ownerTable + "_" + ModelNameUtils.toSnakeCase(StringUtils.uncapitalize(field.getName()));
+            final String valueColumn = ModelNameUtils.toSnakeCase(StringUtils.uncapitalize(field.getName()));
+            final String valueSqlType = columnSqlType(
+                    new FieldDefinition().setColumn(field.getColumn())
+                            .setName(field.getName())
+                            .setType(FieldUtils.extractSimpleCollectionType(field)),
+                    db
+            );
+            final Map<String, Object> ct = new LinkedHashMap<>();
+            ct.put("tableName", tableName);
+            ct.put("ownerTable", ownerTable);
+            ct.put("joinColumn", joinColumn);
+            ct.put("ownerPkColumn", ownerPkColumn);
+            ct.put("ownerPkSqlType", ownerPkSqlType);
+            ct.put("valueColumn", valueColumn);
+            ct.put("valueSqlType", valueSqlType);
+            ct.put("isList", isList);
+            ct.put("needsUnique", isSet);
+            ct.put("orderColumn", "order_index");
+            result.add(ct);
+        });
+        
+        return result;
     }
 
     /**
