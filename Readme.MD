@@ -421,7 +421,7 @@ fields:
 | Property      | Type   | Required            | Description                                                                                          |
 | ------------- | ------ | ------------------- | ---------------------------------------------------------------------------------------------------- |
 | `name`        | string | ✅                  | Java field name                                                                                      |
-| `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, or another entity name) |
+| `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, entity name for relations, or `List<BasicType>` / `Set<BasicType>`) |
 | `description` | string | optional            | Used for Javadoc and API documentation                                                               |
 | `id`          | object | optional            | Marks the field as primary key and defines generation strategy                                       |
 | `column`      | object | optional            | Column constraints (unique, nullable, insertable, updateable, length etc.)                           |
@@ -429,6 +429,21 @@ fields:
 | `values`      | list   | required for `Enum` | Enum constant values (only when `type: Enum`)                                                        |
 
 - Supported basic types are: String, Character, Integer, Long, Boolean, Double, Float, Short, Byte, UUID, BigDecimal, BigInteger, LocalDate, LocalDateTime, OffsetDateTime, Instant
+
+#### Simple collections (ElementCollection)
+
+Simple collections are supported only for basic types:
+- `List<BasicType>`
+- `Set<BasicType>`
+
+Example:
+```yaml
+- name: phoneNumbers
+  type: List<String>
+- name: tags
+  type: Set<Long>
+```
+For `List<BasicType>` / `Set<BasicType>`, the generator creates a separate collection table named `${storageName}_${snake_case(fieldName)}` and links it to the owner entity via `<entity>_id`.
 
 ### 🔑 Primary Key: id.strategy
 
@@ -441,12 +456,11 @@ To mark a field as the entity identifier, add an id block:
   id:
     strategy: IDENTITY
 ```
-Supported strategies (example):
+Supported strategies:
+- IDENTITY
+- AUTO
+- SEQUENCE
 - TABLE
-- SEQUENCE (if supported by the selected database)
-- UUID
-- IDENTIT
-- AU
 
 | Property         | Type   | Required | Description                                                         |
 | ---------------- | ------ | -------- | ------------------------------------------------------------------- |
