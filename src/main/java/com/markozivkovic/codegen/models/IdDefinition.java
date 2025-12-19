@@ -8,6 +8,8 @@ public class IdDefinition {
     private String sequenceName;
     private Integer allocationSize;
     private Integer initialValue;
+    private String pkColumnName;
+    private String valueColumnName;
 
     public IdDefinition() {
 
@@ -57,6 +59,24 @@ public class IdDefinition {
         return this;
     }
 
+    public String getPkColumnName() {
+        return pkColumnName;
+    }
+
+    public IdDefinition setPkColumnName(String pkColumnName) {
+        this.pkColumnName = pkColumnName;
+        return this;
+    }
+
+    public String getValueColumnName() {
+        return valueColumnName;
+    }
+
+    public IdDefinition setValueColumnName(String valueColumnName) {
+        this.valueColumnName = valueColumnName;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -68,13 +88,15 @@ public class IdDefinition {
         return Objects.equals(strategy, idGenerationDefinition.strategy) &&
                 Objects.equals(sequenceName, idGenerationDefinition.sequenceName) &&
                 Objects.equals(allocationSize, idGenerationDefinition.allocationSize) &&
-                Objects.equals(initialValue, idGenerationDefinition.initialValue);
+                Objects.equals(initialValue, idGenerationDefinition.initialValue) &&
+                Objects.equals(pkColumnName, idGenerationDefinition.pkColumnName) &&
+                Objects.equals(valueColumnName, idGenerationDefinition.valueColumnName);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                strategy, sequenceName, allocationSize, initialValue
+                strategy, sequenceName, allocationSize, initialValue, pkColumnName, valueColumnName
         );
     }
 
@@ -85,6 +107,8 @@ public class IdDefinition {
             ", sequenceName='" + getSequenceName() + "'" +
             ", allocationSize='" + getAllocationSize() + "'" +
             ", initialValue='" + getInitialValue() + "'" +
+            ", pkColumnName='" + getPkColumnName() + "'" +
+            ", valueColumnName='" + getValueColumnName() + "'" +
             "}";
     }    
 
