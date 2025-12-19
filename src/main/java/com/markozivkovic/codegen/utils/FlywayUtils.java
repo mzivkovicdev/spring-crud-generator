@@ -308,12 +308,8 @@ public class FlywayUtils {
                     case MSSQL -> "BIGINT IDENTITY(1,1)";
                 };
             case SEQUENCE:
-                final String sequence = StringUtils.isNotBlank(fieldDefinition.getId().getSequenceName()) ?
-                        fieldDefinition.getId().getSequenceName() : table + "_id_seq";
                 return switch (databaseType) {
-                    case POSTGRESQL -> String.format("BIGINT DEFAULT NEXTVAL('%s')", sequence);
-                    case MYSQL -> "BIGINT";
-                    case MSSQL -> String.format("BIGINT DEFAULT NEXT VALUE FOR %s", sequence);
+                    case POSTGRESQL, MSSQL, MYSQL -> "BIGINT";
                 };
             case TABLE:
             default:
@@ -339,13 +335,14 @@ public class FlywayUtils {
             return null;
         }
 
-        final String seq = (f.getId().getSequenceName()!=null && !f.getId().getSequenceName().isBlank())
+        final String seq = (StringUtils.isNotBlank(f.getId().getSequenceName()))
                 ? f.getId().getSequenceName()
                 : table + "_id_seq";
+
         return switch (d) {
-            case POSTGRESQL -> "DEFAULT nextval('" + seq + "')";
-            case MSSQL -> "DEFAULT NEXT VALUE FOR " + seq;
-            case MYSQL -> null;
+            case POSTGRESQL -> "nextval('" + seq + "')";
+            case MSSQL      -> "NEXT VALUE FOR " + seq;
+            case MYSQL      -> null;
         };
     }
 
@@ -641,6 +638,77 @@ public class FlywayUtils {
         ctx.put("auditNowExpr", auditNow(db));
 
         return ctx;
+    }
+
+    /**
+     * Converts a model definition into a context map that can be used
+     * to generate a flyway sequence generator SQL script.
+     *
+     * The context map contains the following keys:
+     * <ul>
+     *     <li>name - the name of the sequence generator</li>
+     *     <li>initialValue - the initial value of the sequence generator (defaults to 1)</li>
+     *     <li>allocatedSize - the allocation size of the sequence generator (defaults to 50)</li>
+     *     <li>sequence - a boolean indicating that the context is for a sequence generator (always true)</li>
+     * </ul>
+     *
+     * @param model the model definition to convert
+     * @return the context map
+     */
+    public static Map<String, Object> toSequenceGeneratorContext(final ModelDefinition model) {
+
+        final String seqName = generatorName(ModelNameUtils.stripSuffix(model.getName()));
+        final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
+
+        return Map.of(
+                "name", seqName,
+                "initialValue", idField.getId().getInitialValue() != null ? idField.getId().getInitialValue() : 1,
+                "allocationSize", idField.getId().getAllocationSize() != null ? idField.getId().getAllocationSize() : 50,
+                "sequence", true
+        );
+    }
+
+    /**
+     * Converts a model definition into a context map that can be used
+     * to generate a flyway table generator SQL script.
+     *
+     * The context map contains the following keys:
+     * <ul>
+     *     <li>name - the name of the table generator</li>
+     *     <li>pkColumnName - the primary key column name of the table generator (defaults to "gen_name")</li>
+     *     <li>valueColumnName - the value column name of the table generator (defaults to "gen_value")</li>
+     *     <li>table - a boolean indicating that the context is for a table generator (always true)</li>
+     *     <li>initialValue - the initial value of the table generator (defaults to 1)</li>
+     *     <li>pkColumnValue - the value of the primary key column of the table generator (defaults to the storage name of the model)</li>
+     * </ul>
+     *
+     * @param model the model definition to convert
+     * @return the context map
+     */
+    public static Map<String, Object> toTableGeneratorContext(final ModelDefinition model) {
+
+        final String genName = generatorName(ModelNameUtils.stripSuffix(model.getName()));
+        final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
+
+        return Map.of(
+                "name", genName,
+                "pkColumnName", idField.getId().getPkColumnName() != null ? idField.getId().getPkColumnName() : "gen_name",
+                "valueColumnName", idField.getId().getValueColumnName() != null ? idField.getId().getValueColumnName() : "gen_value",
+                "table", true,
+                "initialValue", idField.getId().getInitialValue() != null ? idField.getId().getInitialValue() : 1,
+                "pkColumnValue", model.getStorageName()
+        );
+    }
+
+    /**
+     * Returns a Flyway sequence generator name based on the given model name.
+     * The format of the sequence generator name is as follows: <strippedModelName>_gen.
+     * 
+     * @param strippedModelName the stripped model name
+     * @return the Flyway sequence generator name
+     */
+    private static String generatorName(final String strippedModelName) {
+        return String.format("%s_gen", strippedModelName);
     }
 
     /**
