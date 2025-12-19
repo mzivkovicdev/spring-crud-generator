@@ -2,7 +2,25 @@
 <#list fields as field>
     <#if field.id?has_content>
     @Id
-    @GeneratedValue(strategy = GenerationType.${field.id.strategy})
+    <#if field.id.strategy == "SEQUENCE">
+    @SequenceGenerator(
+        name = "${strippedModelName}_gen",
+        sequenceName = "${field.id.sequenceName! (storageName + "_id_seq")}",
+        allocationSize = ${field.id.allocationSize!50},
+        initialValue = ${field.id.initialValue!1}
+    )
+    <#elseif field.id.strategy == "TABLE">
+    @TableGenerator(
+        name = "${strippedModelName}_gen",
+        table = "${field.id.sequenceName! (storageName + "_id_gen")}",
+        pkColumnName = "${field.id.pkColumnName! "gen_name"}",
+        valueColumnName = "${field.id.valueColumnName! "gen_val"}",
+        pkColumnValue = "${storageName}",
+        allocationSize = ${field.id.allocationSize!50},
+        initialValue = ${field.id.initialValue!1}
+    )
+    </#if><#t>
+    @GeneratedValue(strategy = GenerationType.${field.id.strategy}<#if field.id.strategy == "SEQUENCE" || field.id.strategy == "TABLE">, generator = "${strippedModelName}_gen"</#if>)
     </#if><#t>
     <#if field.type?lower_case == "enum">
     @Enumerated(EnumType.STRING)
