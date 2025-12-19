@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -741,5 +742,177 @@ class MigrationManifestBuilderTest {
 
         assertEquals(fp1, fp2);
     }
+
+    @Test
+    void hasEntityFileWithSuffixAndContent_entityDoesNotExist() {
+        final MigrationState state = new MigrationState();
+        state.setEntities(new ArrayList<>());
+
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasEntityFileWithSuffixAndContent(
+                "user_table",
+                "__create_user_sequence.sql",
+                "CREATE SEQUENCE user_table_id_seq;"
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void hasEntityFileWithSuffixAndContent_filesNull() {
+        final EntityState entityState = new EntityState();
+        entityState.setTable("user_table");
+        entityState.setFiles(null);
+
+        final MigrationState state = new MigrationState();
+        state.setEntities(new ArrayList<>(List.of(entityState)));
+
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasEntityFileWithSuffixAndContent(
+                "user_table",
+                "__create_user_sequence.sql",
+                "CREATE SEQUENCE user_table_id_seq;"
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void hasEntityFileWithSuffixAndContent_filesEmpty() {
+        final EntityState entityState = new EntityState();
+        entityState.setTable("user_table");
+        entityState.setFiles(new ArrayList<>());
+
+        final MigrationState state = new MigrationState();
+        state.setEntities(new ArrayList<>(List.of(entityState)));
+
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasEntityFileWithSuffixAndContent(
+                "user_table",
+                "__create_user_sequence.sql",
+                "CREATE SEQUENCE user_table_id_seq;"
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("hasEntityFileWithSuffixAndContent: matching suffix and hash → true")
+    void hasEntityFileWithSuffixAndContent_matchingSuffixAndHash() {
+        final String tableName = "user_table";
+        final String fileSuffix = "__create_user_sequence.sql";
+        final String content = "CREATE SEQUENCE user_table_id_seq;";
+
+        final String hash = HashUtils.sha256(content);
+        final FileState fileState = new FileState("V1" + fileSuffix, hash);
+
+        final EntityState entityState = new EntityState();
+        entityState.setTable(tableName);
+        entityState.setFiles(new ArrayList<>(Collections.singletonList(fileState)));
+
+        final MigrationState state = new MigrationState();
+        state.setEntities(new ArrayList<>(List.of(entityState)));
+
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasEntityFileWithSuffixAndContent(
+                tableName,
+                fileSuffix,
+                content
+        );
+
+        assertTrue(result);
+    }
+
+    @Test
+    void hasEntityFileWithSuffixAndContent_suffixMatchesButHashDiffers() {
+        final String tableName = "user_table";
+        final String fileSuffix = "__create_user_sequence.sql";
+        final String existingContent = "CREATE SEQUENCE user_table_id_seq START WITH 1;";
+        final String newContent      = "CREATE SEQUENCE user_table_id_seq START WITH 100;";
+
+        final String existingHash = HashUtils.sha256(existingContent);
+        final FileState fileState = new FileState("V1" + fileSuffix, existingHash);
+
+        final EntityState entityState = new EntityState();
+        entityState.setTable(tableName);
+        entityState.setFiles(new ArrayList<>(Collections.singletonList(fileState)));
+
+        final MigrationState state = new MigrationState();
+        state.setEntities(new ArrayList<>(List.of(entityState)));
+
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasEntityFileWithSuffixAndContent(
+                tableName,
+                fileSuffix,
+                newContent
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void hasEntityFileWithSuffixAndContent_hashMatchesButSuffixDoesNot() {
+        final String tableName = "user_table";
+        final String requestedSuffix = "__create_user_sequence.sql";
+        final String content = "CREATE SEQUENCE user_table_id_seq;";
+
+        final String hash = HashUtils.sha256(content);
+        final FileState fileState = new FileState("V1__something_else.sql", hash);
+
+        final EntityState entityState = new EntityState();
+        entityState.setTable(tableName);
+        entityState.setFiles(new ArrayList<>(Collections.singletonList(fileState)));
+
+        final MigrationState state = new MigrationState();
+        state.setEntities(new ArrayList<>(List.of(entityState)));
+
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasEntityFileWithSuffixAndContent(
+                tableName,
+                requestedSuffix,
+                content
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void hasEntityFileWithSuffixAndContent_multipleFiles_oneMatches() {
+        final String tableName = "user_table";
+        final String fileSuffix = "__create_user_sequence.sql";
+        final String content = "CREATE SEQUENCE user_table_id_seq;";
+
+        final String matchingHash = HashUtils.sha256(content);
+        final FileState matching = new FileState("V3" + fileSuffix, matchingHash);
+
+        final FileState other1 = new FileState("V1__create_user_table.sql",
+                HashUtils.sha256("CREATE TABLE user_table (...);"));
+        final FileState other2 = new FileState("V2__create_user_sequence.sql",
+                HashUtils.sha256("CREATE SEQUENCE user_table_id_seq START WITH 10;"));
+
+        final EntityState entityState = new EntityState();
+        entityState.setTable(tableName);
+        entityState.setFiles(new ArrayList<>(List.of(other1, other2, matching)));
+
+        final MigrationState state = new MigrationState();
+        state.setEntities(new ArrayList<>(List.of(entityState)));
+
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasEntityFileWithSuffixAndContent(
+                tableName,
+                fileSuffix,
+                content
+        );
+
+        assertTrue(result);
+    }
+
 
 }
