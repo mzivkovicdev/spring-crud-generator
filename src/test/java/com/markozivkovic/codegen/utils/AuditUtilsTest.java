@@ -17,8 +17,8 @@ class AuditUtilsTest {
     @ParameterizedTest(name = "{0} -> {1}")
     @CsvSource({
         "INSTANT, Instant",
-        "LOCAL_DATE, LocalDate",
-        "LOCAL_DATE_TIME, LocalDateTime"
+        "LOCALDATE, LocalDate",
+        "LOCALDATETIME, LocalDateTime"
     })
     @DisplayName("resolveAuditType should return expected type")
     void resolveAuditType_shouldReturnExpectedType(final AuditTypeEnum auditTypeEnum, final String expected) {
