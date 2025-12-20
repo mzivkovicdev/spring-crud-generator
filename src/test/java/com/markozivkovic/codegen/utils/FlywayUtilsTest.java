@@ -804,7 +804,7 @@ class FlywayUtilsTest {
 
         final AuditDefinition audit = new AuditDefinition();
         audit.setEnabled(true);
-        audit.setType(AuditTypeEnum.LOCAL_DATE_TIME);
+        audit.setType(AuditTypeEnum.LOCALDATETIME);
         model.setAudit(audit);
 
         final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, Map.of(), List.of(), false);

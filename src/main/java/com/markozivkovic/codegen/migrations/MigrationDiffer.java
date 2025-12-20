@@ -50,6 +50,8 @@ public class MigrationDiffer {
 
         diffForeignKeys(r, oldState, newCreateCtx);
 
+        diffAudit(r, oldState, newCreateCtx);
+
         return r;
     }
 
@@ -181,6 +183,31 @@ public class MigrationDiffer {
                 fc.setRefColumn(f.getRefColumn());
                 r.getRemovedFks().add(fc);
             }
+        }
+    }
+
+    private static void diffAudit(final Result r, final EntityState oldState, final Map<String,Object> newCreateCtx) {
+
+        boolean oldEnabled = false;
+        String oldType = null;
+        if (oldState != null && oldState.getAudit() != null) {
+            oldEnabled = Boolean.TRUE.equals(oldState.getAudit().isEnabled());
+            oldType = oldState.getAudit().getType();
+        }
+
+        final boolean newEnabled = Boolean.TRUE.equals(newCreateCtx.get("auditEnabled"));
+        final String newType = (String) newCreateCtx.get("auditCreatedType");
+
+        if (!oldEnabled && newEnabled) {
+            r.setAuditAdded(true)
+                .setNewAuditType(newType);
+        } else if (oldEnabled && !newEnabled) {
+            r.setAuditRemoved(true)
+                .setOldAuditType(oldType);
+        } else if (oldEnabled && newEnabled && !Objects.equals(oldType, newType)) {
+            r.setAuditTypeChanged(true)
+                .setOldAuditType(oldType)
+                .setNewAuditType(newType);
         }
     }
 

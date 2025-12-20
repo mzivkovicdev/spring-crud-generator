@@ -24,9 +24,9 @@ public class AuditUtils {
         switch (auditTypeEnum) {
             case INSTANT:
                 return "Instant";
-            case LOCAL_DATE:
+            case LOCALDATE:
                 return "LocalDate";
-            case LOCAL_DATE_TIME:
+            case LOCALDATETIME:
                 return "LocalDateTime";
             default:
                 throw new IllegalArgumentException(

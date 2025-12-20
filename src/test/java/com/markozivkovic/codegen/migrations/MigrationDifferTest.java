@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import com.markozivkovic.codegen.models.flyway.AuditState;
 import com.markozivkovic.codegen.models.flyway.ColumnState;
 import com.markozivkovic.codegen.models.flyway.EntityState;
 import com.markozivkovic.codegen.models.flyway.FkState;
@@ -256,5 +257,105 @@ class MigrationDifferTest {
         assertTrue(result.getAddedFks().isEmpty());
         assertTrue(result.getRemovedFks().isEmpty());
     }
+
+    @Test
+    void diff_shouldDetectAuditAdded_whenNoPreviousState() {
+
+        final EntityState oldState = null;
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("auditEnabled", true);
+        newCreateCtx.put("auditCreatedType", "TIMESTAMP");
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertTrue(result.isAuditAdded(), "Expected auditAdded=true when audit is newly enabled");
+        assertFalse(result.isAuditRemoved(), "auditRemoved should be false");
+        assertFalse(result.isAuditTypeChanged(), "auditTypeChanged should be false");
+        assertNull(result.getOldAuditType(), "oldAuditType should be null when there was no previous state");
+        assertEquals("TIMESTAMP", result.getNewAuditType(), "newAuditType should match auditCreatedType from context");
+
+        assertTrue(result.getAddedColumns().isEmpty());
+        assertTrue(result.getRemovedColumns().isEmpty());
+        assertTrue(result.getModifiedColumns().isEmpty());
+        assertTrue(result.getAddedFks().isEmpty());
+        assertTrue(result.getRemovedFks().isEmpty());
+    }
+
+    @Test
+    void diff_shouldDetectAuditAdded_whenPreviouslyDisabled() {
+
+        final AuditState oldAudit = new AuditState();
+        oldAudit.setEnabled(false);
+        oldAudit.setType(null);
+
+        final EntityState oldState = new EntityState();
+        oldState.setAudit(oldAudit);
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("auditEnabled", true);
+        newCreateCtx.put("auditCreatedType", "TIMESTAMP");
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertTrue(result.isAuditAdded(), "Expected auditAdded=true when audit goes from disabled to enabled");
+        assertFalse(result.isAuditRemoved());
+        assertFalse(result.isAuditTypeChanged());
+        assertNull(result.getOldAuditType());
+        assertEquals("TIMESTAMP", result.getNewAuditType());
+    }
+
+    @Test
+    void diff_shouldDetectAuditRemoved_whenPreviouslyEnabled() {
+
+        final AuditState oldAudit = new AuditState();
+        oldAudit.setEnabled(true);
+        oldAudit.setType("TIMESTAMP");
+
+        final EntityState oldState = new EntityState();
+        oldState.setAudit(oldAudit);
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertTrue(result.isAuditRemoved(), "Expected auditRemoved=true when audit goes from enabled to disabled");
+        assertFalse(result.isAuditAdded());
+        assertFalse(result.isAuditTypeChanged());
+        assertEquals("TIMESTAMP", result.getOldAuditType());
+        assertNull(result.getNewAuditType());
+    }
     
+    @Test
+        void diff_shouldDetectAuditTypeChanged() {
+
+        final AuditState oldAudit = new AuditState();
+        oldAudit.setEnabled(true);
+        oldAudit.setType("TIMESTAMP");
+
+        final EntityState oldState = new EntityState();
+        oldState.setAudit(oldAudit);
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("auditEnabled", true);
+        newCreateCtx.put("auditCreatedType", "DATE");
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertFalse(result.isAuditAdded());
+        assertFalse(result.isAuditRemoved());
+        assertTrue(result.isAuditTypeChanged(), "Expected auditTypeChanged=true when type changes but audit remains enabled");
+        assertEquals("TIMESTAMP", result.getOldAuditType());
+        assertEquals("DATE", result.getNewAuditType());
+    }
+
 }
