@@ -14,7 +14,7 @@
         name = "${strippedModelName}_gen",
         table = "${field.id.sequenceName! (storageName + "_id_gen")}",
         pkColumnName = "${field.id.pkColumnName! "gen_name"}",
-        valueColumnName = "${field.id.valueColumnName! "gen_val"}",
+        valueColumnName = "${field.id.valueColumnName! "gen_value"}",
         pkColumnValue = "${storageName}",
         allocationSize = ${field.id.allocationSize!50},
         initialValue = ${field.id.initialValue!1}
