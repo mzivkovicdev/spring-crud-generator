@@ -64,8 +64,8 @@ public class AuditDefinition {
 
     public enum AuditTypeEnum {
         INSTANT,
-        LOCAL_DATE,
-        LOCAL_DATE_TIME
+        LOCALDATE,
+        LOCALDATETIME
     }
 
 }

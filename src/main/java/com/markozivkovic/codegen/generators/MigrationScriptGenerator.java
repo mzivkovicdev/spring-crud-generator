@@ -305,6 +305,13 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     alterCtx.put("addedFks", diff.getAddedFks());
                     alterCtx.put("removedFks", diff.getRemovedFks());
                     alterCtx.put("db", this.configuration.getDatabase());
+                    alterCtx.put("auditAdded", diff.isAuditAdded());
+                    alterCtx.put("auditRemoved", diff.isAuditRemoved());
+                    alterCtx.put("auditTypeChanged", diff.isAuditTypeChanged());
+                    alterCtx.put("auditCreatedType", context.get("auditCreatedType"));
+                    alterCtx.put("auditUpdatedType", context.get("auditUpdatedType"));
+                    alterCtx.put("auditNowExpr", context.get("auditNowExpr"));
+                    
                     final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
                         "migration/flyway/alter-table-combined.sql.ftl", alterCtx
                     );

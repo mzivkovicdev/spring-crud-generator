@@ -427,12 +427,19 @@ public class SchemaDiff {
         private List<String> newPk = new ArrayList<>();
         private List<FkChange> addedFks = new ArrayList<>();
         private List<FkChange> removedFks = new ArrayList<>();
+        private boolean auditAdded;
+        private boolean auditRemoved;
+        private boolean auditTypeChanged;
+        private String oldAuditType;
+        private String newAuditType;
 
         public Result() {}
 
         public Result(final List<AddedColumn> addedColumns, final List<String> removedColumns,
                 final List<ColumnChange> modifiedColumns, final boolean pkChanged, 
-                final List<String> newPk, final List<FkChange> addedFks, final List<FkChange> removedFks) {
+                final List<String> newPk, final List<FkChange> addedFks, final List<FkChange> removedFks,
+                final boolean auditAdded, final boolean auditRemoved, final boolean auditTypeChanged,
+                final String oldAuditType, final String newAuditType) {
             this.addedColumns = addedColumns;
             this.removedColumns = removedColumns;
             this.modifiedColumns = modifiedColumns;
@@ -440,6 +447,11 @@ public class SchemaDiff {
             this.newPk = newPk;
             this.addedFks = addedFks;
             this.removedFks = removedFks;
+            this.auditAdded = auditAdded;
+            this.auditRemoved = auditRemoved;
+            this.auditTypeChanged = auditTypeChanged;
+            this.oldAuditType = oldAuditType;
+            this.newAuditType = newAuditType;
         }
 
         public List<AddedColumn> getAddedColumns() {
@@ -509,6 +521,51 @@ public class SchemaDiff {
             return this;
         }
 
+        public boolean isAuditAdded() {
+            return this.auditAdded;
+        }
+
+        public Result setAuditAdded(final boolean auditAdded) {
+            this.auditAdded = auditAdded;
+            return this;
+        }
+
+        public boolean isAuditRemoved() {
+            return this.auditRemoved;
+        }
+
+        public Result setAuditRemoved(final boolean auditRemoved) {
+            this.auditRemoved = auditRemoved;
+            return this;
+        }
+
+        public boolean isAuditTypeChanged() {
+            return this.auditTypeChanged;
+        }
+
+        public Result setAuditTypeChanged(final boolean auditTypeChanged) {
+            this.auditTypeChanged = auditTypeChanged;
+            return this;
+        }
+
+        public String getOldAuditType() {
+            return this.oldAuditType;
+        }
+
+        public Result setOldAuditType(final String oldAuditType) {
+            this.oldAuditType = oldAuditType;
+            return this;
+        }
+
+        public String getNewAuditType() {
+            return this.newAuditType;
+        }
+
+        public Result setNewAuditType(final String newAuditType) {
+            this.newAuditType = newAuditType;
+            return this;
+        }
+
         @Override
         public boolean equals(final Object o) {
             if (o == this)
@@ -523,12 +580,18 @@ public class SchemaDiff {
                     pkChanged == result.pkChanged &&
                     Objects.equals(newPk, result.newPk) &&
                     Objects.equals(addedFks, result.addedFks) &&
-                    Objects.equals(removedFks, result.removedFks);
+                    Objects.equals(removedFks, result.removedFks) &&
+                    auditAdded == result.auditAdded &&
+                    auditRemoved == result.auditRemoved &&
+                    auditTypeChanged == result.auditTypeChanged &&
+                    Objects.equals(oldAuditType, result.oldAuditType) &&
+                    Objects.equals(newAuditType, result.newAuditType);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(addedColumns, removedColumns, modifiedColumns, pkChanged, newPk, addedFks, removedFks);
+            return Objects.hash(addedColumns, removedColumns, modifiedColumns, pkChanged, newPk, addedFks, removedFks,
+                    auditAdded, auditRemoved, auditTypeChanged, oldAuditType, newAuditType);
         }
 
         @Override
@@ -541,12 +604,18 @@ public class SchemaDiff {
                 ", newPk='" + getNewPk() + "'" +
                 ", addedFks='" + getAddedFks() + "'" +
                 ", removedFks='" + getRemovedFks() + "'" +
+                ", auditAdded='" + isAuditAdded() + "'" +
+                ", auditRemoved='" + isAuditRemoved() + "'" +
+                ", auditTypeChanged='" + isAuditTypeChanged() + "'" +
+                ", oldAuditType='" + getOldAuditType() + "'" +
+                ", newAuditType='" + getNewAuditType() + "'" +
                 "}";
         }
 
         public boolean isEmpty() {
             return addedColumns.isEmpty() && removedColumns.isEmpty() && modifiedColumns.isEmpty() &&
-                   !pkChanged && addedFks.isEmpty() && removedFks.isEmpty();
+                   !pkChanged && addedFks.isEmpty() && removedFks.isEmpty() && !auditAdded && !auditRemoved && !auditTypeChanged
+                    && Objects.isNull(oldAuditType) && Objects.isNull(newAuditType);
         }
     }
     

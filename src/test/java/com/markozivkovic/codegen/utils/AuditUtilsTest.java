@@ -17,8 +17,8 @@ class AuditUtilsTest {
     @ParameterizedTest(name = "{0} -> {1}")
     @CsvSource({
         "INSTANT, Instant",
-        "LOCAL_DATE, LocalDate",
-        "LOCAL_DATE_TIME, LocalDateTime"
+        "LOCALDATE, LocalDate",
+        "LOCALDATETIME, LocalDateTime"
     })
     @DisplayName("resolveAuditType should return expected type")
     void resolveAuditType_shouldReturnExpectedType(final AuditTypeEnum auditTypeEnum, final String expected) {
@@ -39,7 +39,7 @@ class AuditUtilsTest {
     @DisplayName("resolveAuditingImport should return full java.time import for LOCAL_DATE")
     void resolveAuditingImport_shouldReturnFullImport_forLocalDateEnum() {
 
-        final String result = AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCAL_DATE);
+        final String result = AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCALDATE);
 
         assertEquals(Java.LOCAL_DATE, result);
     }
@@ -48,7 +48,7 @@ class AuditUtilsTest {
     @DisplayName("resolveAuditingImport should return full java.time import for LOCAL_DATE_TIME")
     void resolveAuditingImport_shouldReturnFullImport_forLocalDateTimeEnum() {
 
-        final String result = AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCAL_DATE_TIME);
+        final String result = AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCALDATETIME);
 
         assertEquals(Java.LOCAL_DATE_TIME, result);
     }

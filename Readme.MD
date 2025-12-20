@@ -398,16 +398,39 @@ entities:
   - name: ProductModel
     storageName: product_table
     description: "Represents a product"
+    audit:
+      enabled: true
+      type: Instant
     fields: []
 ```
-| Property      | Type   | Required       | Description                                                                              |
-| ------------- | ------ | -------------- | ---------------------------------------------------------------------------------------- |
-| `name`        | string | ✅             | Java class name of the entity/model                                                      |
-| `storageName` | string | ✅             | Database table name (or storage name). If omitted, a default naming strategy may be used |
-| `description` | string | optional       | Used to generate Javadoc and enrich API docs (where applicable)                          |
-| `fields`      | list   | ✅             | List of fields for the entity                                                            |
+| Property      | Type   | Required | Description                                                     |
+| ------------- | ------ | -------- | ----------------------------------------------------------------|
+| `name`        | string | ✅       | Java class name of the entity/model                             |
+| `storageName` | string | ✅       | Database table name (storage name).                             |
+| `description` | string | optional | Used to generate Javadoc and enrich API docs (where applicable) |
+| `audit`       | object | optional | Audit configuration for `created_at` / `updated_at` columns     |
+| `fields`      | list   | ✅       | List of fields for the entity                                   |
 
 - Note: If description is provided, the generator can produce Javadoc for entities/fields.
+
+### Audit configuration
+
+The audit block controls automatic creation of audit columns on the entity’s table (typically `created_at` and `updated_at`).
+
+```yaml
+audit:
+  enabled: true
+  type: INSTANT
+```
+| Property  | Type    | Required | Description                                                                           |
+| --------- | ------- | -------- | --------------------------------------------------------------------------------------|
+| `enabled` | boolean | optional | Enables audit columns (`created_at`, `updated_at`) for this entity (default: `false`) |
+| `type`    | enum    | optional | Underlying temporal type used for audit columns                                       |
+
+Possible type values:
+- Instant
+- LocalDate
+- LocalDateTime
 
 ### Field Schema
 ```yaml
