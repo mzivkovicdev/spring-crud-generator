@@ -20,6 +20,7 @@ import com.markozivkovic.codegen.migrations.MigrationManifestBuilder;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.models.flyway.EntityState;
@@ -86,6 +87,8 @@ public class MigrationScriptGenerator implements CodeGenerator {
 
         final Map<String, ModelDefinition> modelsByName = models.stream()
                 .collect(Collectors.toMap(ModelDefinition::getName, m -> m, (a,b)-> a, LinkedHashMap::new));
+
+        this.generateSequenceAndTableGenerators(pathToDbScripts, models, manifest);
 
         this.generateCreateTableScripts(pathToDbScripts, models, modelsByName, manifest);
 
@@ -385,6 +388,71 @@ public class MigrationScriptGenerator implements CodeGenerator {
             manifest.applyCreateContext(model.getName(), ecTable, ecCreateCtxForState);
             manifest.addEntityFile(ecTable, dbScriptName, dbScript);
         }
+    }
+
+    /**
+     * Generates create sequence and table generator scripts for all models that use either sequence or table generator as their id strategy.
+     * 
+     * @param pathToDbScripts the path to which to write the generated scripts
+     * @param models the list of models that are not JSON models
+     * @param manifest the migration manifest
+     */
+    private void generateSequenceAndTableGenerators(final String pathToDbScripts, final List<ModelDefinition> models,
+                final MigrationManifestBuilder manifest) {
+
+        final List<ModelDefinition> modelsWithSequences = models.stream()
+                .filter(model -> {
+                    final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
+                    return IdStrategyEnum.SEQUENCE.equals(idField.getId().getStrategy());
+                }).collect(Collectors.toList());
+
+        final List<ModelDefinition> modelsWithTableGenerators = models.stream()
+                .filter(model -> {
+                    final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
+                    return IdStrategyEnum.TABLE.equals(idField.getId().getStrategy());
+                }).collect(Collectors.toList());
+
+        modelsWithSequences.forEach(model -> {
+            
+            final String fileSuffix = String.format(
+                    "create_%s_sequence.sql", ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName()))
+            );
+            final Map<String, Object> context = FlywayUtils.toSequenceGeneratorContext(model);
+            final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "migration/flyway/create-sequence-table-generator.sql.ftl", context
+            );
+
+            if (manifest.hasEntityFileWithSuffixAndContent(model.getStorageName(), fileSuffix, sql)) {
+                return;
+            }
+
+            final String dbScriptName = String.format("V%d__%s", version, fileSuffix);
+            FileWriterUtils.writeToFile(pathToDbScripts, dbScriptName, sql);
+            final String tableName = model.getStorageName();
+            manifest.addEntityFile(tableName, dbScriptName, sql);
+            version++;
+        });
+
+        modelsWithTableGenerators.forEach(model -> {
+
+            final String fileSuffix = String.format(
+                    "create_%s_table_generator.sql", ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName()))
+            );
+            final Map<String, Object> context = FlywayUtils.toTableGeneratorContext(model);
+            final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "migration/flyway/create-sequence-table-generator.sql.ftl", context
+            );
+
+            if (manifest.hasEntityFileWithSuffixAndContent(model.getStorageName(), fileSuffix, sql)) {
+                return;
+            }
+
+            final String dbScriptName = String.format("V%d__%s", version, fileSuffix);
+            FileWriterUtils.writeToFile(pathToDbScripts, dbScriptName, sql);
+            final String tableName = model.getStorageName();
+            manifest.addEntityFile(tableName, dbScriptName, sql);
+            version++;
+        });
     }
 
 }

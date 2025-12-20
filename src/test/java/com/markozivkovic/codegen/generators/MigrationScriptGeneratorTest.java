@@ -36,6 +36,8 @@ import com.markozivkovic.codegen.migrations.MigrationManifestBuilder;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.IdDefinition;
+import com.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.models.flyway.EntityState;
@@ -127,6 +129,9 @@ class MigrationScriptGeneratorTest {
         final ModelDefinition bookModel = newModel("BookEntity", "book", List.of(idField));
         final List<ModelDefinition> allEntities = List.of(bookModel);
 
+        final IdDefinition idDef = mock(IdDefinition.class);
+        when(idField.getId()).thenReturn(idDef);
+        when(idDef.getStrategy()).thenReturn(IdStrategyEnum.AUTO);
         when(cfg.isMigrationScripts()).thenReturn(true);
         when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
         when(cfg.getOptimisticLocking()).thenReturn(false);
@@ -157,12 +162,12 @@ class MigrationScriptGeneratorTest {
             when(initialState.getEntities()).thenReturn(null);
 
             flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
-
             flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
 
             fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
-
+            fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
+            
             final Map<String, Object> createCtx = new HashMap<>();
             createCtx.put("table", "book");
 
@@ -251,6 +256,10 @@ class MigrationScriptGeneratorTest {
         final ModelDefinition bookModel = newModel("BookEntity", "book", List.of(idField));
         final List<ModelDefinition> allEntities = List.of(bookModel);
 
+        final IdDefinition idDef = mock(IdDefinition.class);
+        when(idField.getId()).thenReturn(idDef);
+        when(idDef.getStrategy()).thenReturn(IdStrategyEnum.AUTO);
+
         when(cfg.isMigrationScripts()).thenReturn(true);
         when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
         when(cfg.getOptimisticLocking()).thenReturn(false);
@@ -302,6 +311,7 @@ class MigrationScriptGeneratorTest {
 
                 fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
                 fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
+                fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
 
                 final Map<String, Object> createCtx = new HashMap<>();
                 createCtx.put("tableName", "book");
@@ -365,6 +375,10 @@ class MigrationScriptGeneratorTest {
         final ModelDefinition bookModel = newModel("BookEntity", "book", List.of(idField));
         final List<ModelDefinition> allEntities = List.of(bookModel);
 
+        final IdDefinition idDef = mock(IdDefinition.class);
+        when(idField.getId()).thenReturn(idDef);
+        when(idDef.getStrategy()).thenReturn(IdStrategyEnum.AUTO);
+
         when(cfg.isMigrationScripts()).thenReturn(true);
         when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
         when(cfg.getOptimisticLocking()).thenReturn(false);
@@ -419,6 +433,7 @@ class MigrationScriptGeneratorTest {
 
                 fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
                 fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
+                fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
 
                 final Map<String, Object> createCtx = new HashMap<>();
                 createCtx.put("tableName", "book");
@@ -461,6 +476,217 @@ class MigrationScriptGeneratorTest {
                         contains("_element_collections.sql"),
                         anyString()
                 ), never());
+        }
+    }
+
+    @Test
+    void generate_shouldGenerateSequenceScript_whenModelHasSequenceId_andNotInManifest() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final IdDefinition idDef = mock(IdDefinition.class);
+        when(idField.getId()).thenReturn(idDef);
+        when(idDef.getStrategy()).thenReturn(IdStrategyEnum.SEQUENCE);
+
+        final ModelDefinition bookModel = newModel("BookEntity", "book", List.of(idField));
+        final List<ModelDefinition> allEntities = List.of(bookModel);
+
+        when(cfg.isMigrationScripts()).thenReturn(true);
+        when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(cfg.getOptimisticLocking()).thenReturn(false);
+        when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
+
+        final MigrationScriptGenerator generator =
+                new MigrationScriptGenerator(cfg, projectMetadata, allEntities);
+
+        final String expectedScriptsPath =
+                "/tmp/project/" + GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION;
+
+        try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
+                final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+                final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+                final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+                final MockedConstruction<MigrationManifestBuilder> manifestConstr =
+                        mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
+                        final MigrationState ms = mock(MigrationState.class);
+                        when(ms.getEntities()).thenReturn(null);
+                        when(mock.build()).thenReturn(ms);
+                        when(mock.hasEntityFileWithSuffixAndContent(anyString(), anyString(), anyString())).thenReturn(false);
+                        })) {
+
+                ctx.when(() -> GeneratorContext.isGenerated(
+                                GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT))
+                        .thenReturn(false);
+
+                final MigrationState initialState = mock(MigrationState.class);
+                when(initialState.getLastScriptVersion()).thenReturn(0);
+                when(initialState.getEntities()).thenReturn(null);
+
+                flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
+                flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
+                fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
+                fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
+
+                final Map<String, Object> seqCtx = new HashMap<>();
+                seqCtx.put("name", "book_gen");
+                seqCtx.put("initialValue", 1);
+                seqCtx.put("allocationSize", 50);
+                seqCtx.put("sequence", true);
+
+                flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+
+                final Map<String, Object> createCtx = new HashMap<>();
+                createCtx.put("tableName", "book");
+                createCtx.put("columns", Collections.emptyList());
+
+                flyway.when(() -> FlywayUtils.toCreateTableContext(eq(bookModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
+                        .thenReturn(createCtx);
+
+                flyway.when(() -> FlywayUtils.toForeignKeysContext(eq(bookModel), anyMap()))
+                        .thenReturn(null);
+
+                flyway.when(() -> FlywayUtils.collectElementCollectionTables(eq(bookModel), eq(DatabaseType.POSTGRESQL)))
+                        .thenReturn(Collections.emptyList());
+
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                                eq("migration/flyway/create-sequence-table-generator.sql.ftl"),
+                                eq(seqCtx)))
+                        .thenReturn("CREATE SEQUENCE book_gen START WITH 1 INCREMENT BY 50;");
+
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                                eq("migration/flyway/create-table.sql.ftl"),
+                                eq(createCtx)))
+                        .thenReturn("CREATE TABLE book (...);");
+
+                flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class)))
+                        .thenAnswer(inv -> null);
+
+                modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
+                modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
+
+                generator.generate(bookModel, "out");
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath),
+                        eq("V1__create_book_sequence.sql"),
+                        eq("CREATE SEQUENCE book_gen START WITH 1 INCREMENT BY 50;")
+                ));
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath),
+                        eq("V2__create_book_table.sql"),
+                        eq("CREATE TABLE book (...);")
+                ));
+        }
+    }
+
+    @Test
+    void generate_shouldNotGenerateSequenceScript_whenAlreadyInManifestWithSameContent() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final IdDefinition idDef = mock(IdDefinition.class);
+        when(idField.getId()).thenReturn(idDef);
+        when(idDef.getStrategy()).thenReturn(IdStrategyEnum.SEQUENCE);
+
+        final ModelDefinition bookModel = newModel("BookEntity", "book", List.of(idField));
+        final List<ModelDefinition> allEntities = List.of(bookModel);
+
+        when(cfg.isMigrationScripts()).thenReturn(true);
+        when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(cfg.getOptimisticLocking()).thenReturn(false);
+        when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
+
+        final MigrationScriptGenerator generator = new MigrationScriptGenerator(cfg, projectMetadata, allEntities);
+
+        final String expectedScriptsPath =
+                "/tmp/project/" + GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION;
+
+        try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
+                final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+                final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+                final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+                final MockedConstruction<MigrationManifestBuilder> manifestConstr =
+                        mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
+                        final MigrationState ms = mock(MigrationState.class);
+                        when(ms.getEntities()).thenReturn(null);
+                        when(mock.build()).thenReturn(ms);
+                        when(mock.hasEntityFileWithSuffixAndContent(anyString(), anyString(), anyString())).thenReturn(true);
+                        })) {
+
+                ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT))
+                        .thenReturn(false);
+
+                final MigrationState initialState = mock(MigrationState.class);
+                when(initialState.getLastScriptVersion()).thenReturn(0);
+                when(initialState.getEntities()).thenReturn(null);
+
+                flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
+
+                flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap()))
+                        .thenReturn(Collections.emptyMap());
+
+                fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
+                fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
+
+                final Map<String, Object> seqCtx = new HashMap<>();
+                seqCtx.put("name", "book_gen");
+                seqCtx.put("initialValue", 1);
+                seqCtx.put("allocationSize", 50);
+                seqCtx.put("sequence", true);
+
+                flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+
+                final Map<String, Object> createCtx = new HashMap<>();
+                createCtx.put("tableName", "book");
+                createCtx.put("columns", Collections.emptyList());
+
+                flyway.when(() -> FlywayUtils.toCreateTableContext(eq(bookModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
+                        .thenReturn(createCtx);
+
+                flyway.when(() -> FlywayUtils.toForeignKeysContext(eq(bookModel), anyMap()))
+                        .thenReturn(null);
+
+                flyway.when(() -> FlywayUtils.collectElementCollectionTables(eq(bookModel), eq(DatabaseType.POSTGRESQL)))
+                        .thenReturn(Collections.emptyList());
+
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                                eq("migration/flyway/create-sequence-table-generator.sql.ftl"),
+                                eq(seqCtx)))
+                        .thenReturn("CREATE SEQUENCE book_gen START WITH 1 INCREMENT BY 50;");
+
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                                eq("migration/flyway/create-table.sql.ftl"),
+                                eq(createCtx)))
+                        .thenReturn("CREATE TABLE book (...);");
+
+                flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class))).thenAnswer(inv -> null);
+
+                modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
+                modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
+
+                generator.generate(bookModel, "out");
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath),
+                        org.mockito.ArgumentMatchers.contains("create_book_sequence.sql"),
+                        anyString()
+                ), never());
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath),
+                        eq("V1__create_book_table.sql"),
+                        eq("CREATE TABLE book (...);")
+                ));
         }
     }
 
