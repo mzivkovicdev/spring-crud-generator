@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -317,7 +318,7 @@ public class MigrationManifestBuilder {
      * @param ctx the create context to generate the fingerprint from
      * @return the generated fingerprint
      */
-    public static String fingerprintFromCreateCtx(Map<String,Object> ctx) {
+    public static String fingerprintFromCreateCtx(final Map<String,Object> ctx) {
         try {
             final Map<String,Object> canonical = new LinkedHashMap<>();
             canonical.put("table", ctx.get("tableName"));
@@ -346,6 +347,28 @@ public class MigrationManifestBuilder {
         } catch (Exception e) {
             throw new RuntimeException("fingerprint build failed", e);
         }
+    }
+
+    /**
+     * Returns true if the given entity state has a file with the given suffix.
+     *
+     * @param tableName the name of the table to check
+     * @param fileNameSuffix the suffix to check for
+     * @param content the content of the file
+     * @return true if the entity state has a file with the given suffix, false otherwise
+     */
+    public boolean hasEntityFileWithSuffixAndContent(final String tableName, final String fileNameSuffix, final String content) {
+
+        final EntityState entityState = byTable.get(tableName);
+        
+        if (Objects.isNull(entityState) || Objects.isNull(entityState.getFiles())) {
+            return false;
+        }
+
+        final String hashValue = HashUtils.sha256(content);
+        
+        return entityState.getFiles().stream()
+                .anyMatch(f -> f.getFile().endsWith(fileNameSuffix) && f.getHash().equals(hashValue));
     }
 
 }

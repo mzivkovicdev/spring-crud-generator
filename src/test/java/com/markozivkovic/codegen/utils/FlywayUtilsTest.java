@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -410,12 +412,9 @@ class FlywayUtilsTest {
         
         final FieldDefinition seqField = fieldWithIdAndStrategy("id", "Long", IdStrategyEnum.SEQUENCE, "custom_seq");
 
-        assertEquals("BIGINT DEFAULT NEXTVAL('custom_seq')",
-                FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, seqField, "my_table"));
-        assertEquals("BIGINT",
-                FlywayUtils.identityDecorateIfNeeded(DatabaseType.MYSQL, seqField, "my_table"));
-        assertEquals("BIGINT DEFAULT NEXT VALUE FOR custom_seq",
-                FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, seqField, "my_table"));
+        assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, seqField, "my_table"));
+        assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.MYSQL, seqField, "my_table"));
+        assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, seqField, "my_table"));
     }
 
     @Test
@@ -425,13 +424,9 @@ class FlywayUtilsTest {
         final FieldDefinition seqFieldNull = fieldWithIdAndStrategy("id", "Long", IdStrategyEnum.SEQUENCE, null);
         final FieldDefinition seqFieldBlank = fieldWithIdAndStrategy("id", "Long", IdStrategyEnum.SEQUENCE, "   ");
 
-        assertEquals("BIGINT DEFAULT NEXTVAL('orders_id_seq')",
-                FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, seqFieldNull, "orders"));
-        assertEquals("BIGINT DEFAULT NEXTVAL('orders_id_seq')",
-                FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, seqFieldBlank, "orders"));
-
-        assertEquals("BIGINT DEFAULT NEXT VALUE FOR orders_id_seq",
-                FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, seqFieldNull, "orders"));
+        assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, seqFieldNull, "orders"));
+        assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, seqFieldBlank, "orders"));
+        assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, seqFieldNull, "orders"));
     }
 
     @Test
@@ -886,6 +881,193 @@ class FlywayUtilsTest {
                 "Set field must be skipped (no base-table column)");
 
         assertEquals(1, cols.size(), "Only id should remain in base table columns");
+    }
+
+    @Test
+    @DisplayName("toSequenceGeneratorContext: null initialValue/allocationSize → koristi default vrednosti 1 i 50")
+    void toSequenceGeneratorContext_defaults() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        final IdDefinition idDef = new IdDefinition();
+
+        idDef.setInitialValue(null);
+        idDef.setAllocationSize(null);
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        when(model.getFields()).thenReturn(fields);
+        when(model.getName()).thenReturn("UserEntity");
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             MockedStatic<ModelNameUtils> nameUtils = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+
+            final Map<String, Object> ctx = FlywayUtils.toSequenceGeneratorContext(model);
+
+            assertEquals("User_gen", ctx.get("name"));
+            assertEquals(1, ctx.get("initialValue"));
+            assertEquals(50, ctx.get("allocationSize"));
+            assertEquals(Boolean.TRUE, ctx.get("sequence"));
+        }
+    }
+
+    @Test
+    @DisplayName("toSequenceGeneratorContext: custom initialValue/allocationSize → koristi zadate vrednosti")
+    void toSequenceGeneratorContext_customValues() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        final IdDefinition idDef = new IdDefinition();
+        idDef.setInitialValue(10);
+        idDef.setAllocationSize(128);
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        when(model.getFields()).thenReturn(fields);
+        when(model.getName()).thenReturn("Account");
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             MockedStatic<ModelNameUtils> nameUtils = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("Account")).thenReturn("Account");
+
+            final Map<String, Object> ctx = FlywayUtils.toSequenceGeneratorContext(model);
+
+            assertEquals("Account_gen", ctx.get("name"));
+            assertEquals(10, ctx.get("initialValue"));
+            assertEquals(128, ctx.get("allocationSize"));
+            assertEquals(Boolean.TRUE, ctx.get("sequence"));
+        }
+    }
+
+    @Test
+    @DisplayName("toSequenceGeneratorContext: generator name koristi stripped model name (<stripped>_gen)")
+    void toSequenceGeneratorContext_usesStrippedModelNameForGeneratorName() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        final IdDefinition idDef = new IdDefinition();
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        when(model.getFields()).thenReturn(fields);
+        when(model.getName()).thenReturn("OrderDTO");
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             MockedStatic<ModelNameUtils> nameUtils = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("OrderDTO")).thenReturn("Order");
+
+            final Map<String, Object> ctx = FlywayUtils.toSequenceGeneratorContext(model);
+
+            assertEquals("Order_gen", ctx.get("name"));
+        }
+    }
+
+    @Test
+    @DisplayName("toTableGeneratorContext: null pk/value/initial → koristi default vrednosti")
+    void toTableGeneratorContext_defaults() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        final IdDefinition idDef = new IdDefinition();
+
+        idDef.setPkColumnName(null);
+        idDef.setValueColumnName(null);
+        idDef.setInitialValue(null);
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        when(model.getFields()).thenReturn(fields);
+        when(model.getName()).thenReturn("UserEntity");
+        when(model.getStorageName()).thenReturn("user_table");
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             MockedStatic<ModelNameUtils> nameUtils = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+
+            final Map<String, Object> ctx = FlywayUtils.toTableGeneratorContext(model);
+
+            assertEquals("User_gen", ctx.get("name"));
+            assertEquals("gen_name", ctx.get("pkColumnName"));
+            assertEquals("gen_value", ctx.get("valueColumnName"));
+            assertEquals(Boolean.TRUE, ctx.get("table"));
+            assertEquals(1, ctx.get("initialValue"));
+            assertEquals("user_table", ctx.get("pkColumnValue"));
+        }
+    }
+
+    @Test
+    @DisplayName("toTableGeneratorContext: custom pk/value/initial → koristi zadate vrednosti")
+    void toTableGeneratorContext_customValues() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        final IdDefinition idDef = new IdDefinition();
+        idDef.setPkColumnName("id_key");
+        idDef.setValueColumnName("id_val");
+        idDef.setInitialValue(42);
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        when(model.getFields()).thenReturn(fields);
+        when(model.getName()).thenReturn("Account");
+        when(model.getStorageName()).thenReturn("account_table");
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             MockedStatic<ModelNameUtils> nameUtils = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("Account")).thenReturn("Account");
+
+            final Map<String, Object> ctx = FlywayUtils.toTableGeneratorContext(model);
+
+            assertEquals("Account_gen", ctx.get("name"));
+            assertEquals("id_key", ctx.get("pkColumnName"));
+            assertEquals("id_val", ctx.get("valueColumnName"));
+            assertEquals(Boolean.TRUE, ctx.get("table"));
+            assertEquals(42, ctx.get("initialValue"));
+            assertEquals("account_table", ctx.get("pkColumnValue"));
+        }
+    }
+
+    @Test
+    @DisplayName("toTableGeneratorContext: stripSuffix utiče na ime generatora (<stripped>_gen)")
+    void toTableGeneratorContext_usesStrippedModelNameForGeneratorName() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        final IdDefinition idDef = new IdDefinition();
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        when(model.getFields()).thenReturn(fields);
+        when(model.getName()).thenReturn("UserDTO");
+        when(model.getStorageName()).thenReturn("user");
+
+        try (MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             MockedStatic<ModelNameUtils> nameUtils = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDTO")).thenReturn("User");
+
+            final Map<String, Object> ctx = FlywayUtils.toTableGeneratorContext(model);
+
+            assertEquals("User_gen", ctx.get("name"));
+        }
     }
 
     @Test

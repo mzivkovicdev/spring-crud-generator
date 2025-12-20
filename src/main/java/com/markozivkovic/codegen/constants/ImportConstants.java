@@ -31,6 +31,8 @@ public final class ImportConstants {
         public static final String ENTITY_LISTENERS = "jakarta.persistence.EntityListeners";
         public static final String TABLE = "jakarta.persistence.Table";
         public static final String ID = "jakarta.persistence.Id";
+        public static final String TABLE_GENERATOR = "jakarta.persistence.TableGenerator";
+        public static final String SEQUENCE_GENERATOR = "jakarta.persistence.SequenceGenerator";
         public static final String GENERATED_VALUE = "jakarta.persistence.GeneratedValue";
         public static final String GENERATION_TYPE = "jakarta.persistence.GenerationType";
         public static final String ENUM_TYPE = "jakarta.persistence.EnumType";

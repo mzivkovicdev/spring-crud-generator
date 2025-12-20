@@ -463,12 +463,14 @@ Supported strategies:
 - IDENTITY
 - AUTO
 
-| Property         | Type   | Required | Description                                                         |
-| ---------------- | ------ | -------- | ------------------------------------------------------------------- |
-| `strategy`       | enum   | ✅       | ID generation strategy                                              |
-| `sequenceName`   | string | optional | Name of the database sequence (used with sequence-based strategies) |
-| `allocationSize` | number | optional | Allocation size for sequence/table generators                       |
-| `initialValue`   | number | optional | Initial value for ID generation                                     |
+| Property          | Type   | Required | Applies to          | Description                                                                   |
+| ----------------- | ------ | -------- | ------------------- | ----------------------------------------------------------------------------- |
+| `strategy`        | enum   | ✅       | all                 | ID generation strategy                                                        |
+| `sequenceName`    | string | optional | `SEQUENCE`, `TABLE` | For `SEQUENCE`: DB sequence name. For `TABLE`: generator table name.          |
+| `allocationSize`  | number | optional | `SEQUENCE`, `TABLE` | Allocation size for sequence/table generators (defaults to `50`).             |
+| `initialValue`    | number | optional | `SEQUENCE`, `TABLE` | Initial value for ID generation (defaults to `1`).                            |
+| `pkColumnName`    | string | optional | `TABLE`             | Name of the “segment key” column in generator table (defaults to `gen_name`). |
+| `valueColumnName` | string | optional | `TABLE`             | Name of the “counter” column in generator table (defaults to `gen_value`).      |
 
 #### Sequence-Based ID Example
 ```yaml
@@ -476,9 +478,9 @@ Supported strategies:
   type: Long
   id:
     strategy: SEQUENCE
-    sequenceName: product_seq
-    allocationSize: 10
-    initialValue: 1
+    sequenceName: product_id_seq   # optional, default: <table>_id_seq
+    allocationSize: 10             # optional, default: 50
+    initialValue: 1                # optional, default: 1
 ```
 #### Table-Based ID Example
 ```yaml
@@ -486,9 +488,14 @@ Supported strategies:
   type: Long
   id:
     strategy: TABLE
-    allocationSize: 5
-    initialValue: 1000
+    sequenceName: product_id_gen   # optional, default: <table>_id_gen
+    pkColumnName: my_gen_name      # optional, default: gen_name
+    valueColumnName: my_gen_val    # optional, default: gen_value
+    allocationSize: 5              # optional, default: 50
+    initialValue: 1000             # optional, default: 1
 ```
+- For `TABLE` strategy, the `pkColumnValue` is automatically set to the entity's `storageName` (e.g. `user_table`), so you normally don't need to configure it manually.
+
 #### Note
 - Not all databases support all ID strategies
 

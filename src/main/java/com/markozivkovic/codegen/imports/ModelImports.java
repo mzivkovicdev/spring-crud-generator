@@ -14,6 +14,7 @@ import com.markozivkovic.codegen.constants.RelationTypesConstants;
 import com.markozivkovic.codegen.enums.SpecialType;
 import com.markozivkovic.codegen.imports.common.ImportCommon;
 import com.markozivkovic.codegen.models.FieldDefinition;
+import com.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.AuditUtils;
@@ -101,6 +102,10 @@ public class ModelImports {
         final Set<String> imports = new LinkedHashSet<>();
         final List<FieldDefinition> fields = modelDefinition.getFields();
         final List<String> relations = FieldUtils.extractRelationTypes(fields);
+        final FieldDefinition idField = FieldUtils.extractIdField(fields);
+
+        ImportCommon.addIf(IdStrategyEnum.TABLE.equals(idField.getId().getStrategy()), imports, ImportConstants.Jakarta.TABLE_GENERATOR);
+        ImportCommon.addIf(IdStrategyEnum.SEQUENCE.equals(idField.getId().getStrategy()), imports, ImportConstants.Jakarta.SEQUENCE_GENERATOR);
 
         imports.addAll(Set.of(
             ImportConstants.Jakarta.ENTITY, ImportConstants.Jakarta.GENERATED_VALUE, ImportConstants.Jakarta.GENERATION_TYPE,
