@@ -6,7 +6,7 @@
 ![MicrosoftSQLServer](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=for-the-badge&logo=microsoft%20sql%20server&logoColor=white)
 ![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 **Spring CRUD Generator** is an open-source code generation tool designed to accelerate backend development with Spring Boot.  
 It generates production-ready CRUD layers, database migrations, API documentation, Docker resources, tests, and more — directly from a single YAML or JSON configuration file.
@@ -769,4 +769,4 @@ ignore: true
 
 ## 📄 License
 
-MIT License
+This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE) file for details.
