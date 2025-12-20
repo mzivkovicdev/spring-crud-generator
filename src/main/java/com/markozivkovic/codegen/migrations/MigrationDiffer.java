@@ -186,6 +186,14 @@ public class MigrationDiffer {
         }
     }
 
+    /**
+     * Compares the audit state of the old state of the entity with the audit state from the new state.
+     * If the audit states are different, adds the differences to the result object.
+     *
+     * @param r the result object to add the differences to
+     * @param oldState the old state of the entity
+     * @param newCreateCtx the new state of the entity
+     */
     private static void diffAudit(final Result r, final EntityState oldState, final Map<String,Object> newCreateCtx) {
 
         boolean oldEnabled = false;

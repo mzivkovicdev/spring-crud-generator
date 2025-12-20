@@ -735,7 +735,7 @@ class MigrationScriptGeneratorTest {
                         .thenReturn(false);
 
                 final MigrationState initialState = mock(MigrationState.class);
-                when(initialState.getLastScriptVersion()).thenReturn(0); // krećemo od V1
+                when(initialState.getLastScriptVersion()).thenReturn(0);
                 when(initialState.getEntities()).thenReturn(null);
 
                 flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project"))

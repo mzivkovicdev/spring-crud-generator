@@ -83,7 +83,6 @@ ALTER TABLE ${table}
   REFERENCES ${fk.refTable} (${fk.refColumn});
 </#list>
 </#if><#t>
-<#-- AUDIT CHANGES -->
 <#if auditAdded?? && auditAdded>
 ALTER TABLE ${table} ADD COLUMN created_at ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr};
 ALTER TABLE ${table} ADD COLUMN updated_at ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr};
