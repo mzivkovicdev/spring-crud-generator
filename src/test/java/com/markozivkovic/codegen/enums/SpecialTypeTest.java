@@ -93,7 +93,7 @@ class SpecialTypeTest {
     @DisplayName("isCollectionType: respects 'endsWith(>)' strictly")
     void isCollectionType_shouldBeStrictAboutClosingBracket() {
         assertFalse(SpecialType.isCollectionType("List<String>   "));
-        assertFalse(SpecialType.isCollectionType("Set<Integer>\n"));
+        assertFalse(SpecialType.isCollectionType("Set<Integer>%n"));
         assertTrue(SpecialType.isCollectionType("List<String>"));
     }
 

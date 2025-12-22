@@ -85,7 +85,7 @@ class BusinessServiceImportsTest {
             assertTrue(result.contains("import " + ImportConstants.Java.UUID), "Expected UUID import");
             assertTrue(result.contains("import " + ImportConstants.Java.LIST), "Expected List import");
 
-            assertTrue(result.endsWith("\n"));
+            assertTrue(result.endsWith(System.lineSeparator()), "Expected ending newline");
         }
     }
 

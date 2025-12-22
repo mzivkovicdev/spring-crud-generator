@@ -80,7 +80,7 @@ public class ServiceImports {
         sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
 
         return sb.toString();
@@ -218,7 +218,7 @@ public class ServiceImports {
         sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
 
         return sb.toString();

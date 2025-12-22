@@ -25,6 +25,8 @@
     <exec-maven-plugin.version>3.5.1</exec-maven-plugin.version>
     <junit-jupiter-api.version>6.0.1</junit-jupiter-api.version>
     <mockito-core.version>5.20.0</mockito-core.version>
+    <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+    <spotbugs-maven-plugin.version>4.9.8.2</spotbugs-maven-plugin.version>
   </properties>
 
   <dependencies>
@@ -128,6 +130,28 @@
                     <useModulePath>false</useModulePath>
                 </configuration>
           </plugin>
+          <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <configLocation>google_checks.xml</configLocation>
+                    <encoding>UTF-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>High</threshold>
+                    <failOnError>true</failOnError>
+                </configuration>
+            </plugin>
       </plugins>
   </build>
 </project>

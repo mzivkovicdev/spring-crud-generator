@@ -88,9 +88,9 @@ public class BusinessServiceGenerator implements CodeGenerator {
             sb.append(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
         }
         
-        sb.append("\n")
+        sb.append(System.lineSeparator())
                 .append(BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE, packageConfiguration))
-                .append("\n")
+                .append(System.lineSeparator())
                 .append(generateBusinessServiceClass(modelDefinition));
 
         FileWriterUtils.writeToFile(outputDir, PackageUtils.computeBusinessServiceSubPackage(packageConfiguration), className, sb.toString());

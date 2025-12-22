@@ -97,8 +97,8 @@ public class OpenApiCodeGenerator implements ProjectArtifactGenerator {
                 
                 if (Objects.isNull(pr) || Objects.isNull(pr.getOpenAPI())) {
                     final var msgs = (pr != null && pr.getMessages() != null) ?
-                            String.join("\n", pr.getMessages()) : "(no parser messages)";
-                    throw new IllegalStateException("OpenAPI parse failed for: " + specUri + "\n" + msgs);
+                            String.join("%n", pr.getMessages()) : "(no parser messages)";
+                    throw new IllegalStateException("OpenAPI parse failed for: " + specUri + "%n" + msgs);
                 }
                 
                 final String outputPath;

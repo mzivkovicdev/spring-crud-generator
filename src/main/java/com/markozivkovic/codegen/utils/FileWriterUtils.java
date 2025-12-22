@@ -19,6 +19,7 @@ package com.markozivkovic.codegen.utils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,13 @@ public class FileWriterUtils {
         final File directory = new File(outputDir + File.separator + normilizedSubDir);
         
         if (!directory.exists()) {
-            directory.mkdirs();
+            final boolean created = directory.mkdirs();
+
+            if (!created) {
+                throw new RuntimeException(
+                    String.format("Failed to create directory: %s", directory.getAbsolutePath())
+                );
+            }
         }
 
         final File file;
@@ -61,7 +68,7 @@ public class FileWriterUtils {
             file = new File(directory, fileName);
         }
 
-        try (final FileWriter writer = new FileWriter(file)) {
+        try (final FileWriter writer = new FileWriter(file, Charset.defaultCharset())) {
             writer.write(content);
             LOGGER.info("Generated : {}", fileName);
         } catch (final IOException e) {
@@ -85,12 +92,18 @@ public class FileWriterUtils {
 
         final File directory = new File(outputPath);
         if (!directory.exists()) {
-            directory.mkdirs();
+            final boolean created = directory.mkdirs();
+
+            if (!created) {
+                throw new RuntimeException(
+                    String.format("Failed to create directory: %s", outputPath)
+                );
+            }
         }
 
         final File file = new File(outputPath, fileName);
 
-        try (final FileWriter writer = new FileWriter(file)) {
+        try (final FileWriter writer = new FileWriter(file, Charset.defaultCharset())) {
             writer.write(content);
             LOGGER.info("Generated class: {}", fileName);
         } catch (final IOException e) {
