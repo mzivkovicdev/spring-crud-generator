@@ -770,3 +770,12 @@ ignore: true
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE) file for details.
+
+---
+
+## 🤝 Contact
+
+For questions, ideas, or commercial usage of this project, feel free to reach out:
+
+- Email: **mzivkovic.dev@gmail.com**
+- LinkedIn: [Marko Zivkovic](https://www.linkedin.com/in/marko-zivkovic-84547017a/)
