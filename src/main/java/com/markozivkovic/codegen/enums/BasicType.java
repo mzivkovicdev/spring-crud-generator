@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -49,7 +50,7 @@ public enum BasicType {
 
     private final String key;
     private static final Set<String> KEYS_UPPER = Stream.of(values())
-            .map(v -> v.key.toUpperCase())
+            .map(v -> v.key.toUpperCase(Locale.ROOT))
             .collect(Collectors.toUnmodifiableSet());
 
     BasicType(final String key) {
@@ -67,7 +68,7 @@ public enum BasicType {
      * @return true if the type is a basic type, false otherwise
      */
     public static boolean isBasicType(final String type) {
-        return Objects.nonNull(type) && KEYS_UPPER.contains(type.toUpperCase());
+        return Objects.nonNull(type) && KEYS_UPPER.contains(type.toUpperCase(Locale.ROOT));
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.markozivkovic.codegen.enums;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,7 +59,7 @@ public enum SpecialType {
     public static boolean isJsonType(final String type) {
 
         return Objects.nonNull(type) &&
-                type.toUpperCase().startsWith(JSON.getKey() + "<") &&
+                type.toUpperCase(Locale.ROOT).startsWith(JSON.getKey() + "<") &&
                 type.endsWith(">");
     }
 
@@ -72,8 +73,8 @@ public enum SpecialType {
     public static boolean isCollectionType(final String type) {
 
         return Objects.nonNull(type) &&
-                (type.toUpperCase().startsWith(SpecialType.LIST.getKey().toUpperCase() + "<") ||
-                type.toUpperCase().startsWith(SpecialType.SET.getKey().toUpperCase() + "<")) &&
+                (type.toUpperCase(Locale.ROOT).startsWith(SpecialType.LIST.getKey().toUpperCase(Locale.ROOT) + "<") ||
+                type.toUpperCase(Locale.ROOT).startsWith(SpecialType.SET.getKey().toUpperCase(Locale.ROOT) + "<")) &&
                 type.endsWith(">");
     }
 
@@ -87,7 +88,7 @@ public enum SpecialType {
     public static boolean isListType(final String type) {
         
         return Objects.nonNull(type) &&
-                type.toUpperCase().startsWith(SpecialType.LIST.getKey().toUpperCase() + "<") &&
+                type.toUpperCase(Locale.ROOT).startsWith(SpecialType.LIST.getKey().toUpperCase(Locale.ROOT) + "<") &&
                 type.endsWith(">");
     }
 
@@ -101,7 +102,7 @@ public enum SpecialType {
     public static boolean isSetType(final String type) {
 
         return Objects.nonNull(type) &&
-                type.toUpperCase().startsWith(SpecialType.SET.getKey().toUpperCase() + "<") &&
+                type.toUpperCase(Locale.ROOT).startsWith(SpecialType.SET.getKey().toUpperCase(Locale.ROOT) + "<") &&
                 type.endsWith(">");
     }
 

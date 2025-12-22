@@ -206,7 +206,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
             sb.append(enumAndHelperEntityImports)
-                .append("\n");
+                .append(System.lineSeparator());
         }
 
         final String transferObjectTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("transferobject/transfer-object-template.ftl", toContext);
@@ -243,7 +243,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         
         if (StringUtils.isNotBlank(enumAndHelperEntityImports)) {
             sb.append(enumAndHelperEntityImports)
-                .append("\n");
+                .append("%n");
         }
 
         final Map<String, Object> toContext = TransferObjectTemplateContext.computeTransferObjectContext(modelDefinition);
@@ -285,7 +285,7 @@ public class TransferObjectGenerator implements CodeGenerator {
     
             if (FieldUtils.isIdFieldUUID(idField)) {
                 sb.append(String.format(IMPORT, ImportConstants.Java.UUID))
-                        .append("\n");
+                        .append("%n");
             }
     
             final Map<String, Object> toContext = TransferObjectTemplateContext.computeInputTransferObjectContext(relationModelDefinition);

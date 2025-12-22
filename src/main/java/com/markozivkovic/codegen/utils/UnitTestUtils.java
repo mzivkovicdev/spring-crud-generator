@@ -16,6 +16,8 @@
 
 package com.markozivkovic.codegen.utils;
 
+import java.util.Locale;
+
 import com.markozivkovic.codegen.enums.SupportedIdTypeEnum;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -100,12 +102,12 @@ public class UnitTestUtils {
         
         return switch (dataGenerator) {
             case INSTANCIO -> new TestDataGeneratorConfig(
-                    DataGeneratorEnum.INSTANCIO.name().toUpperCase(),
+                    DataGeneratorEnum.INSTANCIO.name().toUpperCase(Locale.ROOT),
                     "Instancio",
                     "create",
                     "ofList");
             case PODAM -> new TestDataGeneratorConfig(
-                    DataGeneratorEnum.PODAM.name().toUpperCase(),
+                    DataGeneratorEnum.PODAM.name().toUpperCase(Locale.ROOT),
                     "PODAM_FACTORY",
                     "manufacturePojo",
                     "manufacturePojo");

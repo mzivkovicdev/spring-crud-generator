@@ -73,7 +73,7 @@ public class TransferObjectImports {
         sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
 
         return sb.toString();
@@ -136,7 +136,7 @@ public class TransferObjectImports {
         sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
 
         return sb.toString();
@@ -164,7 +164,7 @@ public class TransferObjectImports {
 
         if (StringUtils.isNotBlank(sortedImports)) {
             sb.append(sortedImports);
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
         
         return sb.toString();

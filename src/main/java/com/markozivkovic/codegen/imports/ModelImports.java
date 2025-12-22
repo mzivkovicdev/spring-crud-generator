@@ -100,7 +100,7 @@ public class ModelImports {
         sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
 
         return sb.toString();
@@ -172,7 +172,7 @@ public class ModelImports {
                     .sorted()
                     .collect(Collectors.joining());
 
-            return String.format("%s\n%s", jakartaImports, orgImportsFormatted);
+            return String.format("%s%n%s", jakartaImports, orgImportsFormatted);
         }
 
         final String hibernateImports = Stream.concat(
@@ -183,7 +183,7 @@ public class ModelImports {
                 .sorted()
                 .collect(Collectors.joining());
 
-        return String.format("%s\n%s", jakartaImports, hibernateImports);
+        return String.format("%s%n%s", jakartaImports, hibernateImports);
     }
 
     /**

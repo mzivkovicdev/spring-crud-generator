@@ -113,7 +113,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         
         if (StringUtils.isNotBlank(enumImports)) {
             sb.append(enumImports)
-                .append("\n");
+                .append(System.lineSeparator());
         }
 
         final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(model);
@@ -169,23 +169,23 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(ModelImports.getBaseImport(model, true, true));
                 
         sb.append(ModelImports.computeJakartaImports(model, optimisticLocking))
-                .append("\n");
+                .append(System.lineSeparator());
 
         final String enumAndHelperEntitiesImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir, packageConfiguration);
         
         if (StringUtils.isNotBlank(enumAndHelperEntitiesImports)) {
             sb.append(enumAndHelperEntitiesImports)
-                .append("\n");
+                .append(System.lineSeparator());
         }
 
         sb.append(ENTITY_ANNOTATION)
-                .append("\n")
+                .append(System.lineSeparator())
                 .append(String.format(TABLE_ANNOTATION, tableName))
-                .append("\n");
+                .append(System.lineSeparator());
 
         if (Objects.nonNull(model.getAudit()) && model.getAudit().isEnabled()) {
             sb.append(String.format(ENTITY_LISTENERS_ANNOTATION, AUDITING_ENTITY_LISTENER_CLASS))
-                    .append("\n");
+                    .append(System.lineSeparator());
         }
 
         final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(model);

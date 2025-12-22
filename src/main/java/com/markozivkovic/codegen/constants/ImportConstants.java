@@ -20,8 +20,8 @@ public final class ImportConstants {
 
     private ImportConstants() {}
 
-    public static final String IMPORT = "import %s;\n";
-    public static final String PACKAGE = "package %s;\n\n";
+    public static final String IMPORT = "import %s;%n";
+    public static final String PACKAGE = "package %s;%n%n";
 
     public static final class Java {
         private Java() {}

@@ -85,7 +85,7 @@ public class BusinessServiceImports {
         sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
 
         return sb.toString();
@@ -126,7 +126,7 @@ public class BusinessServiceImports {
         sb.append(sortedImports);
 
         if (StringUtils.isNotBlank(sb.toString())) {
-            sb.append("\n");
+            sb.append(System.lineSeparator());
         }
 
         return sb.toString();

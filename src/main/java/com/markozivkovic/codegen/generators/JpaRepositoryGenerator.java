@@ -74,7 +74,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
 
         if (FieldUtils.isIdFieldUUID(idField)) {
             sb.append(String.format(IMPORT, ImportConstants.Java.UUID))
-                    .append("\n");
+                    .append(System.lineSeparator());
         }
 
         final Map<String, Object> context = JpaRepositoryTemplateContext.computeJpaInterfaceContext(modelDefinition);
@@ -83,9 +83,9 @@ public class JpaRepositoryGenerator implements CodeGenerator {
         );
 
         sb.append(String.format(IMPORT, ImportConstants.SpringData.JPA_REPOSITORY))
-                .append("\n")
+                .append(System.lineSeparator())
                 .append(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())))
-                .append("\n")
+                .append(System.lineSeparator())
                 .append(jpaInterface);
 
         FileWriterUtils.writeToFile(outputDir, PackageUtils.computeRepositorySubPackage(packageConfiguration), className, sb.toString());

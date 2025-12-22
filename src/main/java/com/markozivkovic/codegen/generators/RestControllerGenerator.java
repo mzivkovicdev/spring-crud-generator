@@ -72,7 +72,7 @@ public class RestControllerGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(RestControllerImports.computeControllerBaseImports(modelDefinition, entites))
-            .append("\n")
+            .append(System.lineSeparator())
             .append(generateControllerClass(modelDefinition, outputDir, swagger));
 
         FileWriterUtils.writeToFile(outputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
