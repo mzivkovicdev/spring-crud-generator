@@ -863,6 +863,77 @@ class RestControllerImportsTest {
     }
 
     @Test
+    @DisplayName("No swagger, no relations, no JSON, no GlobalExceptionHandler → basic imports only")
+    void computeUpdateEndpointTestProjectImports_noSwagger_noRelations_noJson_noGlobalExceptionHandler() {
+        
+        final String outputDir = "/out";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+        model.setFields(Collections.emptyList());
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
+                    .thenReturn("com.app");
+
+            names.when(() -> ModelNameUtils.stripSuffix("User"))
+                    .thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
+                    .thenReturn(false);
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
+                    .thenReturn("com.app.entity.User");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
+                    .thenReturn("com.app.service.UserService");
+
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
+                    .thenReturn("com.app.rest.to.UserTO");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
+                    .thenReturn("com.app.rest.mapper.UserRestMapper");
+
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.exception");
+
+            final String result = RestControllerImports.computeUpdateEndpointTestProjectImports(
+                    model,
+                    outputDir,
+                    false, 
+                    packageConfiguration,
+                    false
+            );
+
+            assertTrue(result.contains("import com.app.entity.User;"));
+            assertTrue(result.contains("import com.app.service.UserService;"));
+            assertTrue(result.contains("import com.app.rest.to.UserTO;"));
+            assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
+            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
+            assertFalse(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
+            assertFalse(result.contains("BusinessService"));
+            assertFalse(result.contains("HelperRestMapper"));
+            assertFalse(result.contains("generated"));
+            assertFalse(result.contains("StatusEnum"));
+        }
+    }
+
+    @Test
     @DisplayName("No swagger, no relations, no JSON → basic imports only")
     void computeUpdateEndpointTestProjectImports_noSwagger_noRelations_noJson() {
         
@@ -918,7 +989,8 @@ class RestControllerImportsTest {
                     model,
                     outputDir,
                     false, 
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.app.entity.User;"));
@@ -1011,7 +1083,8 @@ class RestControllerImportsTest {
                     model,
                     outputDir,
                     false,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.api.business.AccountBusinessService;"));
@@ -1107,7 +1180,8 @@ class RestControllerImportsTest {
                     model,
                     outputDir,
                     true,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.shop.enums.StatusEnum;"));
@@ -1121,6 +1195,78 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.generated.model.parent.ParentDTO;"));
             assertFalse(result.contains(".rest.to.ParentTO;"),
                     "Plain REST TO should not be imported in swagger mode");
+        }
+    }
+
+    @Test
+    @DisplayName("No swagger, no relations, no JSON, no GlobalExceptionHandler → basic imports only")
+    void computeCreateEndpointTestProjectImports_noSwagger_noRelations_noJson_noGlobalExceptionHandler() {
+        
+        final String outputDir = "/out";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+        model.setFields(Collections.emptyList());
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
+                    .thenReturn("com.app");
+
+            names.when(() -> ModelNameUtils.stripSuffix("User"))
+                    .thenReturn("User");
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
+                    .thenReturn(false);
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
+                    .thenReturn("com.app.entity.User");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
+                    .thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
+                    .thenReturn("com.app.rest.to.UserTO");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
+                    .thenReturn("com.app.rest.mapper.UserRestMapper");
+
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.exception");
+
+            final String result = RestControllerImports.computeCreateEndpointTestProjectImports(
+                    model,
+                    outputDir,
+                    false,
+                    packageConfiguration,
+                    false
+            );
+
+            assertTrue(result.contains("import com.app.entity.User;"));
+            assertTrue(result.contains("import com.app.service.UserService;"));
+            assertTrue(result.contains("import com.app.rest.to.UserTO;"));
+            assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
+            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
+            assertFalse(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
+            assertFalse(result.contains("BusinessService"));
+            assertFalse(result.contains("generated"));
+            assertFalse(result.contains("StatusEnum"));
         }
     }
 
@@ -1182,7 +1328,8 @@ class RestControllerImportsTest {
                     model,
                     outputDir,
                     false,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.app.entity.User;"));
@@ -1283,7 +1430,8 @@ class RestControllerImportsTest {
                     model,
                     outputDir,
                     false,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.shop.rest.to.OrderItemTO;"));
@@ -1391,7 +1539,8 @@ class RestControllerImportsTest {
                     model,
                     outputDir,
                     true,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.api.enums.StatusEnum;"));
@@ -1459,14 +1608,92 @@ class RestControllerImportsTest {
                     .thenReturn("com.app.to.PageTO");
 
             final String viaShort = RestControllerImports.computeControllerTestProjectImports(
-                    model, outputDir, false, RestControllerImports.RestEndpointOperation.GET, packageConfiguration
+                    model, outputDir, false, RestControllerImports.RestEndpointOperation.GET, packageConfiguration, true
             );
 
             final String viaFull = RestControllerImports.computeControllerTestProjectImports(
-                    model, outputDir, false, RestControllerImports.RestEndpointOperation.GET, null, packageConfiguration
+                    model, outputDir, false, RestControllerImports.RestEndpointOperation.GET, null, packageConfiguration, true
             );
 
             assertEquals(viaFull, viaShort, "Short overload should delegate to full overload with null fieldToBeAdded");
+        }
+    }
+
+    @Test
+    @DisplayName("Non-swagger GET without relations and without global exception handler → entity, service, TO, mapper, ObjectMapper")
+    void computeControllerTestProjectImports_nonSwaggerGet_noRelations_noGlobalExceptionHandler() {
+        
+        final String outputDir = "/out";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
+                    .thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User"))
+                    .thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
+                    .thenReturn(List.of());
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
+                    .thenReturn("com.app.entity.User");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
+                    .thenReturn("com.app.service.UserService");
+
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
+                    .thenReturn("com.app.rest.to.UserTO");
+
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.to");
+            pkg.when(() -> PackageUtils.join("com.app.to", GeneratorConstants.PAGE_TO))
+                    .thenReturn("com.app.to.PageTO");
+
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.business");
+            pkg.when(() -> PackageUtils.join("com.app.business", "UserBusinessService"))
+                    .thenReturn("com.app.business.UserBusinessService");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
+                    .thenReturn("com.app.rest.mapper.UserRestMapper");
+
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration))
+                    .thenReturn("com.app.exception");
+            pkg.when(() -> PackageUtils.join("com.app.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
+                    .thenReturn("com.app.exception.GlobalRestExceptionHandler");
+
+            final String result = RestControllerImports.computeControllerTestProjectImports(
+                    model,
+                    outputDir,
+                    false,
+                    RestControllerImports.RestEndpointOperation.GET,
+                    null,
+                    packageConfiguration,
+                    false
+            );
+
+            assertTrue(result.contains("import com.app.entity.User;"));
+            assertTrue(result.contains("import com.app.service.UserService;"));
+            assertTrue(result.contains("import com.app.rest.to.UserTO;"));
+            assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
+            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
+            assertTrue(result.contains("import com.app.to.PageTO;"));
+            assertTrue(result.contains("import " + ImportConstants.Jackson.TYPE_REFERENCE + ";"));
+            assertFalse(result.contains("generated"));
+            assertFalse(result.contains("business"));
         }
     }
 
@@ -1534,7 +1761,8 @@ class RestControllerImportsTest {
                     false,
                     RestControllerImports.RestEndpointOperation.GET,
                     null,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.app.entity.User;"));
@@ -1609,7 +1837,8 @@ class RestControllerImportsTest {
                     true,
                     RestControllerImports.RestEndpointOperation.GET,
                     null,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.shop.entity.Order;"));
@@ -1684,7 +1913,8 @@ class RestControllerImportsTest {
                     false,
                     RestControllerImports.RestEndpointOperation.ADD_RELATION,
                     fieldToAdd,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.shop.rest.to.OrderItemInputTO;"));
@@ -1758,7 +1988,8 @@ class RestControllerImportsTest {
                     true,
                     RestControllerImports.RestEndpointOperation.ADD_RELATION,
                     fieldToAdd,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.shop.generated.model.order.OrderItemInput;"));
@@ -1810,7 +2041,8 @@ class RestControllerImportsTest {
                     false,
                     RestControllerImports.RestEndpointOperation.DELETE,
                     null,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.app.service.UserService;"));
