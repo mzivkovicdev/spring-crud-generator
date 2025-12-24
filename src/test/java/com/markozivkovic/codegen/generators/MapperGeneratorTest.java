@@ -20,6 +20,7 @@ import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.OpenApiDefinition;
 import com.markozivkovic.codegen.templates.MapperTemplateContexts;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -73,7 +74,9 @@ class MapperGeneratorTest {
     @Test
     void generate_shouldGenerateRestAndGraphQlMappersAndHelperMappers() {
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
         when(cfg.getGraphQl()).thenReturn(true);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
@@ -166,7 +169,9 @@ class MapperGeneratorTest {
     @Test
     void generate_shouldThrowWhenJsonModelNotFound() {
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getSwagger()).thenReturn(false);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
         when(cfg.getGraphQl()).thenReturn(false);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);

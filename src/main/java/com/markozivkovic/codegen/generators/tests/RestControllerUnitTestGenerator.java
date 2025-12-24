@@ -79,8 +79,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String testOutputDir = outputDir.replace("main", "test");
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final Boolean swagger = Objects.nonNull(this.configuration) && Objects.nonNull(this.configuration.getSwagger())
-                && this.configuration.isSwagger();
+        final Boolean swagger = Objects.nonNull(this.configuration.getOpenApi())
+                && Boolean.TRUE.equals(this.configuration.getOpenApi().getApiSpec())
+                && Boolean.TRUE.equals(this.configuration.getOpenApi().getGenerateResources());
         final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(this.configuration.getErrorResponse()) ||
                         Objects.isNull(this.configuration.getErrorResponse()));
 

@@ -80,9 +80,9 @@ public class PackageConfigurationValidator {
             }
         }
 
-        if (Boolean.TRUE.equals(configuration.getOpenApiCodegen())) {
+        if (Objects.nonNull(configuration.getOpenApi()) && Boolean.TRUE.equals(configuration.getOpenApi().getGenerateResources())) {
             if (StringUtils.isBlank(packageConfiguration.getGenerated())) {
-                missing.add("generated (required when openApiCodegen is enabled)");
+                missing.add("generated (required when openApi.generateResources is enabled)");
             }
         }
 

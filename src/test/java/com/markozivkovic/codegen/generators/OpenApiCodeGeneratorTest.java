@@ -51,8 +51,7 @@ class OpenApiCodeGeneratorTest {
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
 
-        final OpenApiCodeGenerator generator =
-                new OpenApiCodeGenerator(cfg, projectMetadata, entities, null);
+        final OpenApiCodeGenerator generator = new OpenApiCodeGenerator(cfg, projectMetadata, entities, null);
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
@@ -73,8 +72,9 @@ class OpenApiCodeGeneratorTest {
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
 
-        when(cfg.getOpenApiCodegen()).thenReturn(false);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(false);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(false);
 
         final OpenApiCodeGenerator generator =
                 new OpenApiCodeGenerator(cfg, projectMetadata, entities, null);
@@ -98,8 +98,9 @@ class OpenApiCodeGeneratorTest {
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
 
-        when(cfg.getOpenApiCodegen()).thenReturn(true);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
 
         final OpenApiCodeGenerator generator =
                 new OpenApiCodeGenerator(cfg, projectMetadata, entities, null);
@@ -131,8 +132,9 @@ class OpenApiCodeGeneratorTest {
         final ModelDefinition noIdEntity = newModel("OtherEntity", List.of());
         final List<ModelDefinition> entities = List.of(userEntity, noIdEntity);
 
-        when(cfg.getOpenApiCodegen()).thenReturn(true);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
         when(pkgCfg.getGenerated()).thenReturn("generated-src");
 
@@ -210,8 +212,9 @@ class OpenApiCodeGeneratorTest {
         final ModelDefinition userEntity = newModel("UserEntity", List.of(idField));
         final List<ModelDefinition> entities = List.of(userEntity);
 
-        when(cfg.getOpenApiCodegen()).thenReturn(true);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
 
         final OpenApiCodeGenerator generator =

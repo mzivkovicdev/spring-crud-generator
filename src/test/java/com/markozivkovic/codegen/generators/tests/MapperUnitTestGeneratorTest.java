@@ -101,7 +101,9 @@ class MapperUnitTestGeneratorTest {
         final CrudConfiguration.TestConfiguration tests = mock(CrudConfiguration.TestConfiguration.class);
         when(cfg.getTests()).thenReturn(tests);
         when(tests.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
         when(cfg.getGraphQl()).thenReturn(false);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
@@ -148,7 +150,9 @@ class MapperUnitTestGeneratorTest {
         final CrudConfiguration.TestConfiguration tests = mock(CrudConfiguration.TestConfiguration.class);
         when(cfg.getTests()).thenReturn(tests);
         when(tests.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
         when(cfg.getGraphQl()).thenReturn(false);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
@@ -252,7 +256,9 @@ class MapperUnitTestGeneratorTest {
         final CrudConfiguration.TestConfiguration tests = mock(CrudConfiguration.TestConfiguration.class);
         when(cfg.getTests()).thenReturn(tests);
         when(tests.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
         when(cfg.getGraphQl()).thenReturn(true);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);

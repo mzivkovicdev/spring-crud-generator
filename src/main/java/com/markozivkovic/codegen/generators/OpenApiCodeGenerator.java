@@ -63,8 +63,9 @@ public class OpenApiCodeGenerator implements ProjectArtifactGenerator {
     @Override
     public void generate(final String outputDir) {
     
-        if (Objects.isNull(configuration) || !Boolean.TRUE.equals(this.configuration.getOpenApiCodegen())
-                    || !Boolean.TRUE.equals(this.configuration.getSwagger())) {
+        if (Objects.isNull(this.configuration) || Objects.isNull(this.configuration.getOpenApi())
+                    || !Boolean.TRUE.equals(this.configuration.getOpenApi().getGenerateResources())
+                    || !Boolean.TRUE.equals(this.configuration.getOpenApi().getApiSpec())) {
             return;
         }
 

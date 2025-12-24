@@ -83,8 +83,9 @@ class RestControllerGeneratorTest {
     void generate_shouldGenerateRestControllerWithSwaggerAndAllEndpoints() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getSwagger()).thenReturn(Boolean.TRUE);
-        when(cfg.isSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final FieldDefinition idField = mock(FieldDefinition.class);
@@ -223,8 +224,7 @@ class RestControllerGeneratorTest {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
 
-        when(cfg.getSwagger()).thenReturn(null);
-        when(cfg.isSwagger()).thenReturn(false);
+        when(cfg.getOpenApi()).thenReturn(null);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final FieldDefinition idField = mock(FieldDefinition.class);
