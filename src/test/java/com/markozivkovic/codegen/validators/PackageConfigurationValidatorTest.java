@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.OpenApiDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
 
 class PackageConfigurationValidatorTest {
@@ -17,7 +18,6 @@ class PackageConfigurationValidatorTest {
     void validate_nullPackageConfiguration_doesNothing() {
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(true);
-        configuration.setOpenApiCodegen(true);
 
         assertDoesNotThrow(() ->
                 PackageConfigurationValidator.validate(null, configuration)
@@ -32,7 +32,7 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(false);
-        configuration.setOpenApiCodegen(false);
+        configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         assertDoesNotThrow(() ->
                 PackageConfigurationValidator.validate(pkg, configuration)
@@ -48,7 +48,7 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(false);
-        configuration.setOpenApiCodegen(false);
+        configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> PackageConfigurationValidator.validate(pkg, configuration));
@@ -82,7 +82,7 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(false);
-        configuration.setOpenApiCodegen(false);
+        configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         assertDoesNotThrow(() ->
                 PackageConfigurationValidator.validate(pkg, configuration)
@@ -97,7 +97,7 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(true);
-        configuration.setOpenApiCodegen(false);
+        configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> PackageConfigurationValidator.validate(pkg, configuration));
@@ -113,12 +113,12 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(false);
-        configuration.setOpenApiCodegen(true);
+        configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> PackageConfigurationValidator.validate(pkg, configuration));
 
-        assertTrue(ex.getMessage().contains("generated (required when openApiCodegen is enabled)"));
+        assertTrue(ex.getMessage().contains("generated (required when openApi.generateResources is enabled)"));
     }
 
     @Test
@@ -130,7 +130,7 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(true);
-        configuration.setOpenApiCodegen(true);
+        configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> PackageConfigurationValidator.validate(pkg, configuration));
@@ -145,7 +145,7 @@ class PackageConfigurationValidatorTest {
         assertTrue(msg.contains("services"));
         assertTrue(msg.contains("transferobjects"));
         assertTrue(msg.contains("resolvers (required when graphQl is enabled)"));
-        assertTrue(msg.contains("generated (required when openApiCodegen is enabled)"));
+        assertTrue(msg.contains("generated (required when openApi.generateResources is enabled)"));
     }
 
     @Test
@@ -167,7 +167,7 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(true);
-        configuration.setOpenApiCodegen(true);
+        configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         assertDoesNotThrow(() ->
                 PackageConfigurationValidator.validate(pkg, configuration)
@@ -184,7 +184,7 @@ class PackageConfigurationValidatorTest {
 
         final CrudConfiguration configuration = new CrudConfiguration();
         configuration.setGraphQl(true);
-        configuration.setOpenApiCodegen(true);
+        configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         assertDoesNotThrow(() ->
                 PackageConfigurationValidator.validate(pkg, configuration)

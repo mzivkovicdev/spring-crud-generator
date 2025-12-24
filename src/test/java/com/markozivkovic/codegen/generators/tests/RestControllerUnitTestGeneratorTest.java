@@ -44,8 +44,9 @@ class RestControllerUnitTestGeneratorTest {
         final TestConfiguration testsCfg = mock(TestConfiguration.class);
         when(cfg.getTests()).thenReturn(testsCfg);
         when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
-        when(cfg.getSwagger()).thenReturn(swaggerEnabled);
-        when(cfg.isSwagger()).thenReturn(swaggerEnabled);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(swaggerEnabled);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(swaggerEnabled);
 
         return cfg;
     }

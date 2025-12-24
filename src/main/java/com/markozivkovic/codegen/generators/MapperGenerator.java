@@ -59,7 +59,8 @@ public class MapperGenerator implements CodeGenerator {
         LOGGER.info("Generating mapper for model: {}", modelDefinition.getName());
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final boolean swagger = configuration != null && configuration.getSwagger() != null && configuration.getSwagger();
+        final boolean swagger = configuration.getOpenApi() != null && Boolean.TRUE.equals(this.configuration.getOpenApi().getApiSpec()) &&
+                        Boolean.TRUE.equals(this.configuration.getOpenApi().getGenerateResources());
 
         modelDefinition.getFields().stream()
                 .filter(FieldUtils::isJsonField)

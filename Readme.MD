@@ -127,8 +127,9 @@ src/main/resources/crud-spec.yaml
 ```yaml
 configuration:
   database: postgresql
-  swagger: true
-  openApiCodegen: true
+  openApi:
+    apiSpec: true
+    generateResources: true
   errorResponse: simple
   tests:
     unit: true
@@ -196,16 +197,27 @@ All options are defined under the root `configuration` key.
 
 ### `configuration`
 
-| Property | Type | Default | Description |
-|--------|------|---------|-------------|
-| `database` | string | `postgresql` | Target SQL database (e.g. `postgresql`, `mysql`, `mssql`) |
-| `javaVersion` | number | `17` | Java version used for generated code and Dockerfile |
-| `optimisticLocking` | boolean | `false` | Enables optimistic locking support |
-| `swagger` | boolean | `false` | Enables Swagger/OpenAPI specification generation |
-| `openApiCodegen` | boolean | `false` | Runs OpenAPI Generator and generates API resources |
-| `graphQl` | boolean | `false` | Enables GraphQL query and mutation generation |
-| `errorResponse` | string | `simple` | Error response strategy (`simple`, `detailed`, `minimal`, `none`) |
-| `migrationScripts` | boolean | `false` | Enables Flyway migration script generation |
+### `configuration`
+
+| Property            | Type    | Default     | Description                                                                 |
+|---------------------|---------|-------------|-----------------------------------------------------------------------------|
+| `database`          | string  | `postgresql`| Target SQL database (e.g. `postgresql`, `mysql`, `mssql`)                   |
+| `javaVersion`       | number  | `17`        | Java version used for generated code and Dockerfile                         |
+| `optimisticLocking` | boolean | `false`     | Enables optimistic locking support                                          |
+| `graphQl`           | boolean | `false`     | Enables GraphQL query and mutation generation                               |
+| `errorResponse`     | string  | `simple`    | Error response strategy (`simple`, `detailed`, `minimal`, `none`)           |
+| `migrationScripts`  | boolean | `false`     | Enables Flyway migration script generation                                  |
+
+---
+
+### `configuration.openApi`
+
+Controls per-entity OpenAPI / Swagger generation.
+
+| Property             | Type    | Default | Description                                                                                           |
+|----------------------|---------|---------|-------------------------------------------------------------------------------------------------------|
+| `apiSpec`            | boolean | `false` | Generates a separate OpenAPI/Swagger specification file **for each entity** (e.g. `product-api.yaml`).|
+| `generateResources`  | boolean | `false` | Generates REST resources/controllers based on the per-entity OpenAPI specs.                           |
 
 ---
 
@@ -376,7 +388,7 @@ Core packages:
 - `services`
 - `transferobjects`
 - If `graphQl: true` is enabled, the `resolvers` package is required.
-- If `openApiCodegen: true` is enabled, the `generated` package is required.
+- If `openApi.generateResources: true` is enabled, the `generated` package is required.
 - If required packages are missing, the generator fails fast with an error explaining which packages are missing.
 
 Partial customization of only core packages is `not supported` to avoid inconsistent package structures.
@@ -736,7 +748,7 @@ This allows fast, incremental code generation.
 #### Configuration-Level Changes
 - The generator also computes a fingerprint (SHA) for the global configuration
 - If the configuration SHA changes, `all entities are regenerated, regardless of individual entity changes`
-This ensures consistency when global settings (e.g. caching, Swagger, GraphQL, tests, etc.) are modified.
+This ensures consistency when global settings (e.g. caching, Swagger/OpenApi, GraphQL, tests, etc.) are modified.
 
 ### 🔁 Interaction with forceRegeneration
 

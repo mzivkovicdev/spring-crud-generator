@@ -27,8 +27,7 @@ public class CrudConfiguration {
     private Boolean optimisticLocking;
     private DockerConfiguration docker;
     private CacheConfiguration cache;
-    private Boolean swagger;
-    private Boolean openApiCodegen;
+    private OpenApiDefinition openApi;
     private Boolean graphQl;
     private ErrorResponse errorResponse;
     private Boolean migrationScripts;
@@ -40,7 +39,7 @@ public class CrudConfiguration {
     }
 
     public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final Boolean optimisticLocking,
-            final DockerConfiguration docker, final CacheConfiguration cache, final Boolean swagger, final Boolean openApiCodegen,
+            final DockerConfiguration docker, final CacheConfiguration cache, final OpenApiDefinition openApi,
             final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final TestConfiguration tests,
             final Map<String, Object> additionalProperties) {
         this.database = database;
@@ -48,8 +47,7 @@ public class CrudConfiguration {
         this.optimisticLocking = optimisticLocking;
         this.docker = docker;
         this.cache = cache;
-        this.swagger = swagger;
-        this.openApiCodegen = openApiCodegen;
+        this.openApi = openApi;
         this.graphQl = graphQl;
         this.errorResponse = errorResponse;
         this.migrationScripts = migrationScripts;
@@ -106,25 +104,12 @@ public class CrudConfiguration {
         return this;
     }
 
-    public Boolean isSwagger() {
-        return this.swagger;
+    public OpenApiDefinition getOpenApi() {
+        return this.openApi;
     }
 
-    public Boolean getSwagger() {
-        return this.swagger;
-    }
-
-    public CrudConfiguration setSwagger(final Boolean swagger) {
-        this.swagger = swagger;
-        return this;
-    }
-
-    public Boolean getOpenApiCodegen() {
-        return this.openApiCodegen;
-    }
-
-    public CrudConfiguration setOpenApiCodegen(final Boolean swaggerCodegen) {
-        this.openApiCodegen = swaggerCodegen;
+    public CrudConfiguration setOpenApi(final OpenApiDefinition openApi) {
+        this.openApi = openApi;
         return this;
     }
 
@@ -186,8 +171,7 @@ public class CrudConfiguration {
                 Objects.equals(optimisticLocking, crudConfiguration.optimisticLocking) &&
                 Objects.equals(docker, crudConfiguration.docker) &&
                 Objects.equals(cache, crudConfiguration.cache) &&
-                Objects.equals(swagger, crudConfiguration.swagger) &&
-                Objects.equals(openApiCodegen, crudConfiguration.openApiCodegen) &&
+                Objects.equals(openApi, crudConfiguration.openApi) &&
                 Objects.equals(graphQl, crudConfiguration.graphQl) &&
                 Objects.equals(errorResponse, crudConfiguration.errorResponse) &&
                 Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
@@ -198,9 +182,8 @@ public class CrudConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(
-            database, javaVersion, optimisticLocking, docker, cache, swagger,
-            openApiCodegen, graphQl, errorResponse, migrationScripts, tests,
-            additionalProperties
+            database, javaVersion, optimisticLocking, docker, cache, openApi,
+            graphQl, errorResponse, migrationScripts, tests, additionalProperties
         );
     }
 
@@ -212,8 +195,7 @@ public class CrudConfiguration {
             ", optimisticLocking='" + isOptimisticLocking() + "'" +
             ", docker='" + getDocker() + "'" +
             ", cache='" + getCache() + "'" +
-            ", swagger='" + isSwagger() + "'" +
-            ", openApiCodegen='" + getOpenApiCodegen() + "'" +
+            ", openApi='" + getOpenApi() + "'" +
             ", graphQl='" + getGraphQl() + "'" +
             ", errorResponse='" + getErrorResponse() + "'" +
             ", migrationScripts='" + isMigrationScripts() + "'" +
@@ -615,6 +597,63 @@ public class CrudConfiguration {
                 " image='" + getImage() + "'" +
                 ", tag='" + getTag() + "'" +
                 ", port='" + getPort() + "'" +
+                "}";
+        }
+    }
+
+    public static class OpenApiDefinition {
+
+        private Boolean apiSpec;
+        private Boolean generateResources;
+
+        public OpenApiDefinition() {}
+
+        public OpenApiDefinition(final Boolean apiSpec, final Boolean generateResources) {
+            this.apiSpec = apiSpec;
+            this.generateResources = generateResources;
+        }
+
+        public Boolean getApiSpec() {
+            return this.apiSpec;
+        }
+
+        public OpenApiDefinition setApiSpec(final Boolean apiSpec) {
+            this.apiSpec = apiSpec;
+            return this;
+        }
+
+        public Boolean getGenerateResources() {
+
+            return this.generateResources;
+        }
+
+        public OpenApiDefinition setGenerateResources(final Boolean generateResources) {
+            this.generateResources = generateResources;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof OpenApiDefinition)) {
+                return false;
+            }
+            final OpenApiDefinition openApiDefinition = (OpenApiDefinition) o;
+            return Objects.equals(apiSpec, openApiDefinition.apiSpec) &&
+                    Objects.equals(generateResources, openApiDefinition.generateResources);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(apiSpec, generateResources);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " apiSpec='" + getApiSpec() + "'" +
+                ", generateResources='" + getGenerateResources() + "'" +
                 "}";
         }
     }

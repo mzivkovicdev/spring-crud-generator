@@ -49,8 +49,7 @@ class SwaggerDocumentationGeneratorTest {
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
 
-        final SwaggerDocumentationGenerator generator =
-                new SwaggerDocumentationGenerator(null, projectMetadata, entities);
+        final SwaggerDocumentationGenerator generator = new SwaggerDocumentationGenerator(null, projectMetadata, entities);
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
@@ -76,7 +75,7 @@ class SwaggerDocumentationGeneratorTest {
     void generate_shouldSkipWhenSwaggerFlagIsNullOrFalse() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getSwagger()).thenReturn(null);
+        when(cfg.getOpenApi()).thenReturn(null);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
@@ -108,7 +107,9 @@ class SwaggerDocumentationGeneratorTest {
     void generate_shouldSkipWhenAlreadyGenerated() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
@@ -137,7 +138,9 @@ class SwaggerDocumentationGeneratorTest {
     void generate_shouldGenerateSwaggerDocsForEntitiesWithIdAndRelations() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
@@ -288,7 +291,9 @@ class SwaggerDocumentationGeneratorTest {
     void generate_shouldThrowWhenRelationModelNotFound() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getSwagger()).thenReturn(true);
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");

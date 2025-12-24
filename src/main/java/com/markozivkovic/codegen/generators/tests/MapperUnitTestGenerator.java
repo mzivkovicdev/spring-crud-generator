@@ -21,6 +21,7 @@ import static com.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -72,7 +73,9 @@ public class MapperUnitTestGenerator implements CodeGenerator {
 
         final String testOutputDir = outputDir.replace("main", "test");
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final boolean swagger = configuration != null && configuration.getSwagger() != null && configuration.getSwagger();
+        final Boolean swagger = Objects.nonNull(this.configuration.getOpenApi())
+                && Boolean.TRUE.equals(this.configuration.getOpenApi().getApiSpec())
+                && Boolean.TRUE.equals(this.configuration.getOpenApi().getGenerateResources());
 
         modelDefinition.getFields().stream()
                 .filter(FieldUtils::isJsonField)
