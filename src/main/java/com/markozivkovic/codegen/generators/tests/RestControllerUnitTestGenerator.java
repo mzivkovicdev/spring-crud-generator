@@ -31,6 +31,7 @@ import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.imports.RestControllerImports;
 import com.markozivkovic.codegen.imports.RestControllerImports.RestEndpointOperation;
 import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
@@ -80,28 +81,31 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final Boolean swagger = Objects.nonNull(this.configuration) && Objects.nonNull(this.configuration.getSwagger())
                 && this.configuration.isSwagger();
+        final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(this.configuration.getErrorResponse()) ||
+                        Objects.isNull(this.configuration.getErrorResponse()));
 
-        this.generateGetEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
-        this.generateDeleteByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix);
-        this.generateUpdateByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
-        this.generateCreateEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
-        this.generateAddRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
-        this.generateRemoveRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger);
+        this.generateGetEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
+        this.generateDeleteByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, isGlobalExceptionHandlerEnabled);
+        this.generateUpdateByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
+        this.generateCreateEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
+        this.generateAddRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
+        this.generateRemoveRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
     }
 
     /**
      * Generates a unit test for the add relation endpoint of the REST controller
      * for the given model definition.
      *
-     * @param modelDefinition    the model definition containing the class name and field definitions
-     * @param outputDir          the directory where the generated code will be written
-     * @param testOutputDir      the directory where the generated unit test will be written
-     * @param packagePath        the package path of the directory where the generated code will be written
-     * @param modelWithoutSuffix the model name without the suffix
-     * @param swagger            indicates if the swagger and open API generator is enabled
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param swagger                         indicates if the swagger and open API generator is enabled
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      */
     private void generateAddRelationEdnpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
-                final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+                final String packagePath, final String modelWithoutSuffix, final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled) {
 
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
         if (relationFields.isEmpty()) {
@@ -137,11 +141,12 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("relationFieldModel", StringUtils.capitalize(relationField.getName()));
                 context.put("baseImports", RestControllerImports.computeAddRelationEndpointBaseImports(modelDefinition));
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                        modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION, relationField, packageConfiguration
+                        modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION, relationField, packageConfiguration, isGlobalExceptionHandlerEnabled
                 ));
                 context.put("testImports", RestControllerImports.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.put("swagger", swagger);
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+                context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
                 sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -157,15 +162,16 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
      * Generates a unit test class for the remove relation endpoint of the REST controller
      * for the given model definition.
      *
-     * @param modelDefinition    the model definition containing the class name and field definitions
-     * @param outputDir          the directory where the generated code will be written
-     * @param testOutputDir      the directory where the generated unit test will be written
-     * @param packagePath        the package path of the directory where the generated code will be written
-     * @param modelWithoutSuffix the model name without the suffix
-     * @param swagger            indicates if the swagger and open API generator is enabled
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param swagger                         indicates if the swagger and open API generator is enabled
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      */
     private void generateRemoveRelationEdnpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
-                final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+                final String packagePath, final String modelWithoutSuffix, final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled) {
 
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
         if (relationFields.isEmpty()) {
@@ -211,10 +217,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("invalidRelIdType", UnitTestUtils.computeInvalidIdType(relatedIdField));
                 context.put("baseImports", RestControllerImports.computeRemoveRelationEndpointBaseImports(modelDefinition, entities));
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                        modelDefinition, outputDir, false, RestEndpointOperation.REMOVE_RELATION, packageConfiguration
+                        modelDefinition, outputDir, false, RestEndpointOperation.REMOVE_RELATION, packageConfiguration, isGlobalExceptionHandlerEnabled
                 ));
                 context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+                context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
                 sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -230,15 +237,16 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
      * Generates a unit test for the create endpoint of the REST controller
      * for the given model definition.
      *
-     * @param modelDefinition    the model definition containing the class name and field definitions
-     * @param outputDir          the directory where the generated code will be written
-     * @param testOutputDir      the directory where the generated unit test will be written
-     * @param packagePath        the package path of the directory where the generated code will be written
-     * @param modelWithoutSuffix the model name without the suffix
-     * @param swagger            indicates if the swagger and open API generator is enabled
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param swagger                         indicates if the swagger and open API generator is enabled
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      */
     private void generateCreateEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
-            final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+            final String packagePath, final String modelWithoutSuffix, final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled) {
         
         final StringBuilder sb = new StringBuilder();
         final String className = String.format("%sCreateMockMvcTest", modelWithoutSuffix);
@@ -263,10 +271,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("swagger", swagger);
         context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", RestControllerImports.computeCreateEndpointTestProjectImports( 
-                modelDefinition, outputDir, swagger, packageConfiguration
+                modelDefinition, outputDir, swagger, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
         context.put("jsonFields", jsonFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -281,15 +290,16 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
      * Generates a unit test for the update by ID endpoint of the REST controller
      * for the given model definition.
      *
-     * @param modelDefinition    the model definition containing the class name and field definitions
-     * @param outputDir          the directory where the generated code will be written
-     * @param testOutputDir      the directory where the generated unit test will be written
-     * @param packagePath        the package path of the directory where the generated code will be written
-     * @param modelWithoutSuffix the model name without the suffix
-     * @param swagger            indicates if the swagger and open API generator is enabled
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param swagger                         indicates if the swagger and open API generator is enabled
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      */
     private void generateUpdateByIdEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
-            final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+            final String packagePath, final String modelWithoutSuffix, final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled) {
         
         final StringBuilder sb = new StringBuilder();
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
@@ -315,10 +325,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
         context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", RestControllerImports.computeUpdateEndpointTestProjectImports( 
-                modelDefinition, outputDir, swagger, packageConfiguration
+                modelDefinition, outputDir, swagger, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
         context.put("jsonFields", jsonFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -333,14 +344,15 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
      * Generates a unit test for the delete by ID endpoint of the REST controller
      * for the given model definition.
      *
-     * @param modelDefinition the model definition containing the class name and field definitions
-     * @param outputDir the directory where the generated code will be written
-     * @param testOutputDir the directory where the generated unit test will be written
-     * @param packagePath the package path of the directory where the generated code will be written
-     * @param modelWithoutSuffix the model name without the suffix
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      */
     private void generateDeleteByIdEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
-            final String packagePath, final String modelWithoutSuffix) {
+            final String packagePath, final String modelWithoutSuffix, final Boolean isGlobalExceptionHandlerEnabled) {
 
         final StringBuilder sb = new StringBuilder();
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
@@ -359,10 +371,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                modelDefinition, outputDir, false, RestEndpointOperation.DELETE, packageConfiguration
+                modelDefinition, outputDir, false, RestEndpointOperation.DELETE, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
         context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -377,15 +390,16 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
      * Generates a unit test class for the get endpoint of the REST controller
      * for the given model definition.
      *
-     * @param modelDefinition    the model definition containing the class name and field definitions
-     * @param outputDir          the directory where the generated code will be written
-     * @param testOutputDir      the directory where the generated unit test will be written
-     * @param packagePath        the package path of the directory where the generated code will be written
-     * @param modelWithoutSuffix the model name without the suffix
-     * @param swagger            indicates if the swagger and open API generator is enabled
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param swagger                         indicates if the swagger and open API generator is enabled
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      */
     private void generateGetEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
-            final String packagePath, final String modelWithoutSuffix, final Boolean swagger) {
+            final String packagePath, final String modelWithoutSuffix, final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled) {
         
         final StringBuilder sb = new StringBuilder();
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
@@ -407,8 +421,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("testImports", RestControllerImports.computeGetEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
         context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
-                modelDefinition, outputDir, swagger, RestEndpointOperation.GET, packageConfiguration
+                modelDefinition, outputDir, swagger, RestEndpointOperation.GET, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));

@@ -351,14 +351,15 @@ public class RestControllerImports {
      * Computes the necessary imports for the generated update endpoint test, including the enums if any exist, the model itself,
      * the related service, and any related models.
      *
-     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
-     * @param outputDir            the directory where the generated code will be written
-     * @param swagger              whether to include Swagger annotations
-     * @param packageConfiguration the package configuration
+     * @param modelDefinition                 the model definition containing the class name, table name, and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param swagger                         whether to include Swagger annotations
+     * @param packageConfiguration            the package configuration
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      * @return A string containing the necessary import statements for the generated update endpoint test.
      */
     public static String computeUpdateEndpointTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
-                final boolean swagger, final PackageConfiguration packageConfiguration) {
+                final boolean swagger, final PackageConfiguration packageConfiguration, final Boolean isGlobalExceptionHandlerEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -395,7 +396,10 @@ public class RestControllerImports {
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
-        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)));
+
+        if (isGlobalExceptionHandlerEnabled != null && isGlobalExceptionHandlerEnabled) {
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)));
+        }
 
         return imports.stream()
                 .sorted()
@@ -406,14 +410,15 @@ public class RestControllerImports {
      * Computes the necessary imports for the generated update endpoint test, including the enums if any exist, the model itself,
      * the related service, and any related models.
      *
-     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
-     * @param outputDir            the directory where the generated code will be written
-     * @param swagger              whether to include Swagger annotations
-     * @param packageConfiguration the package configuration
+     * @param modelDefinition                 the model definition containing the class name, table name, and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param swagger                         whether to include Swagger annotations
+     * @param packageConfiguration            the package configuration
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      * @return A string containing the necessary import statements for the generated update endpoint test.
      */
     public static String computeCreateEndpointTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
-                final boolean swagger, final PackageConfiguration packageConfiguration) {
+                final boolean swagger, final PackageConfiguration packageConfiguration, final Boolean isGlobalExceptionHandlerEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -471,10 +476,13 @@ public class RestControllerImports {
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
-        imports.add(String.format(
-            IMPORT, 
-            PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)
-        ));
+
+        if (isGlobalExceptionHandlerEnabled != null && isGlobalExceptionHandlerEnabled) {
+            imports.add(String.format(
+                IMPORT, 
+                PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)
+            ));
+        }
 
         return imports.stream()
                 .sorted()
@@ -485,18 +493,20 @@ public class RestControllerImports {
      * Computes the necessary imports for the generated controller test, including the enums if any exist, the model itself,
      * the related service, and any related models.
      *
-     * @param modelDefinition       the model definition containing the class name, table name, and field definitions
-     * @param outputDir             the directory where the generated code will be written
-     * @param swagger               whether to include Swagger annotations
-     * @param restEndpointOperation the rest endpoint operation for which the imports are computed
-     * @param packageConfiguration  the package configuration
+     * @param modelDefinition                 the model definition containing the class name, table name, and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param swagger                         whether to include Swagger annotations
+     * @param restEndpointOperation           the rest endpoint operation for which the imports are computed
+     * @param packageConfiguration            the package configuration
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      * @return A string containing the necessary import statements for the generated controller test.
      */
     public static String computeControllerTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
-                final boolean swagger, final RestEndpointOperation restEndpointOperation, final PackageConfiguration packageConfiguration) {
+                final boolean swagger, final RestEndpointOperation restEndpointOperation, final PackageConfiguration packageConfiguration,
+                final Boolean isGlobalExceptionHandlerEnabled) {
 
         return computeControllerTestProjectImports(
-                modelDefinition, outputDir, swagger, restEndpointOperation, null, packageConfiguration
+                modelDefinition, outputDir, swagger, restEndpointOperation, null, packageConfiguration, isGlobalExceptionHandlerEnabled
         );
     }
 
@@ -509,11 +519,12 @@ public class RestControllerImports {
      * @param restEndpointOperation the rest endpoint operation for which the imports are computed
      * @param fieldToBeAdded        the field to be added
      * @param packageConfiguration  the package configuration
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
      * @return the imports string for a controller test
      */
     public static String computeControllerTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
                 final boolean swagger, final RestEndpointOperation restEndpointOperation, final FieldDefinition fieldToBeAdded,
-                final PackageConfiguration packageConfiguration) {
+                final PackageConfiguration packageConfiguration, final Boolean isGlobalExceptionHandlerEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -558,10 +569,12 @@ public class RestControllerImports {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
             imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         }
-        imports.add(String.format(
-            IMPORT, 
-            PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)
-        ));
+        if (isGlobalExceptionHandlerEnabled != null && isGlobalExceptionHandlerEnabled) {
+            imports.add(String.format(
+                IMPORT, 
+                PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)
+            ));
+        }
 
         return imports.stream()
                 .sorted()
