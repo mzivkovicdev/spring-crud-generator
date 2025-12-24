@@ -3,15 +3,13 @@ package com.markozivkovic.codegen.validators;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.markozivkovic.codegen.models.CrudConfiguration;
-import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.OpenApiDefinition;
+import com.markozivkovic.codegen.models.PackageConfiguration;
 
 class PackageConfigurationValidatorTest {
 
