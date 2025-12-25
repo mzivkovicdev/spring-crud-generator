@@ -3,14 +3,19 @@ package com.markozivkovic.codegen.validators;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mockStatic;
 
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.DockerConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration;
 import com.markozivkovic.codegen.models.CrudSpecification;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.IdDefinition;
@@ -485,6 +490,33 @@ class SpecificationValidatorTest {
 
         assertTrue(ex.getMessage().contains("Inner type Address"));
         assertTrue(ex.getMessage().contains("must be a basic type"));
+    }
+
+    @Test
+    @DisplayName("Should delegate configuration validation to Docker, Cache and Test validators")
+    void validate_shouldDelegateToNestedConfigurationValidators() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final CrudConfiguration config = spec.getConfiguration();
+
+        final DockerConfiguration dockerCfg = new DockerConfiguration();
+        final CacheConfiguration cacheCfg = new CacheConfiguration();
+        final TestConfiguration testCfg = new TestConfiguration();
+
+        config.setDocker(dockerCfg);
+        config.setCache(cacheCfg);
+        config.setTests(testCfg);
+
+        try (final MockedStatic<DockerConfigurationValidator> dockerMock = mockStatic(DockerConfigurationValidator.class);
+             final MockedStatic<CacheConfigurationValidator> cacheMock = mockStatic(CacheConfigurationValidator.class);
+             final MockedStatic<TestConfigurationValidator> testMock = mockStatic(TestConfigurationValidator.class)) {
+
+            assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+
+            dockerMock.verify(() -> DockerConfigurationValidator.validate(dockerCfg));
+            cacheMock.verify(() -> CacheConfigurationValidator.validate(cacheCfg));
+            testMock.verify(() -> TestConfigurationValidator.validate(testCfg));
+        }
     }
 
 }

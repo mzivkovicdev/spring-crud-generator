@@ -66,6 +66,7 @@ public class SpecificationValidator {
 
         DockerConfigurationValidator.validate(specification.getConfiguration().getDocker());
         CacheConfigurationValidator.validate(specification.getConfiguration().getCache());
+        TestConfigurationValidator.validate(specification.getConfiguration().getTests());
 
         specification.getEntities().forEach(model -> validateModel(model, specification.getEntities()));
     }
