@@ -14,6 +14,7 @@ import org.mockito.MockedStatic;
 
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.CrudConfiguration.DockerConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration;
 import com.markozivkovic.codegen.models.CrudSpecification;
@@ -31,6 +32,7 @@ class SpecificationValidatorTest {
         config.setJavaVersion(17);
         config.setDocker(null);
         config.setCache(null);
+        config.setDatabase(DatabaseType.MYSQL);
         spec.setConfiguration(config);
 
         ModelDefinition user = new ModelDefinition();
@@ -70,6 +72,21 @@ class SpecificationValidatorTest {
                 () -> SpecificationValidator.validate(spec));
         
                 assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
+    }
+
+    @Test
+    @DisplayName("Should throw when database is null")
+    void validate_databaseNull_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        spec.getConfiguration().setDatabase(null);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Database must not be null or empty"));
     }
 
     @Test
