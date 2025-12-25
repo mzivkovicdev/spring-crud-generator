@@ -221,7 +221,7 @@ public class CrudConfiguration {
 
         private Boolean unit;
         private Boolean integration;
-        private DataGeneratorEnum dataGenerator;
+        private DataGeneratorEnum dataGenerator = DataGeneratorEnum.INSTANCIO;
 
         public TestConfiguration() {
 

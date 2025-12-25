@@ -201,11 +201,11 @@ All options are defined under the root `configuration` key.
 
 | Property            | Type    | Default     | Description                                                                 |
 |---------------------|---------|-------------|-----------------------------------------------------------------------------|
-| `database`          | string  | `postgresql`| Target SQL database (e.g. `postgresql`, `mysql`, `mssql`)                   |
+| `database`          | string  | `-`         | **Required.** Target SQL database (e.g. `postgresql`, `mysql`, `mssql`)     |
 | `javaVersion`       | number  | `17`        | Java version used for generated code and Dockerfile                         |
 | `optimisticLocking` | boolean | `false`     | Enables optimistic locking support                                          |
 | `graphQl`           | boolean | `false`     | Enables GraphQL query and mutation generation                               |
-| `errorResponse`     | string  | `simple`    | Error response strategy (`simple`, `detailed`, `minimal`, `none`)           |
+| `errorResponse`     | string  | `-`         | Error response strategy (`simple`, `detailed`, `minimal`, `none`)           |
 | `migrationScripts`  | boolean | `false`     | Enables Flyway migration script generation                                  |
 
 ---
@@ -240,11 +240,25 @@ Controls Docker and Docker Compose generation.
 
 #### `configuration.docker.db`
 
-| Property | Type | Default | Description |
-|--------|------|---------|-------------|
-| `image` | string | `postgres` | Database Docker image |
-| `port` | number | `5432` | Database port |
-| `tag` | string | `latest` | Docker image tag |
+| Property | Type   | Default                    | Description          |
+|----------|--------|----------------------------|----------------------|
+| `image`  | string | depends on `database`      | Database Docker image |
+| `port`   | number | depends on `database`      | Database port        |
+| `tag`    | string | `latest`                   | Docker image tag     |
+
+**Defaults by database type**
+
+When you don’t override `image`/`port`, the generator uses:
+
+- **PostgreSQL**
+  - `image`: `postgres`
+  - `port`: `5432`
+- **MySQL**
+  - `image`: `mysql`
+  - `port`: `3306`
+- **MSSQL**
+  - `image`: `mcr.microsoft.com/mssql/server`
+  - `port`: `1433`
 
 ---
 
@@ -255,9 +269,9 @@ Enables and configures caching.
 | Property | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `false` | Enables caching |
-| `type` | string | `CAFFEINE` | Cache provider (`CAFFEINE`, `REDIS`) |
-| `expiration` | number | `5` | Cache expiration time (minutes) |
-| `maxSize` | number | `10000` | Maximum cache size |
+| `type` | string | `null` | Cache provider (`CAFFEINE`, `REDIS`) |
+| `expiration` | number | `null` | Cache expiration time (minutes) |
+| `maxSize` | number | `null` | Maximum cache size |
 
 ---
 
@@ -269,6 +283,18 @@ Controls test generation.
 |--------|------|---------|-------------|
 | `unit` | boolean | `false` | Enables unit test generation |
 | `dataGenerator` | string | `instancio` | Test data generator (`instancio`, `podam`) |
+
+**Validation rules**
+
+The generator validates the test configuration:
+
+- If `unit: true` → `dataGenerator` **must be set**.
+- `dataGenerator` should be one of the supported values: `instancio`, `podam`
+  (case-insensitive, mapped to the internal `DataGeneratorEnum`).
+- If `unit: false` (or omitted), `dataGenerator` is optional and ignored by the generator.
+- If `unit: true` and `dataGenerator` is missing, generation fails with a clear error:
+
+  `Invalid test configuration: unit is enabled, but dataGenerator is not set. Please set dataGenerator to one of the following values: INSTANCIO, PODAM`
 
 ---
 

@@ -31,6 +31,7 @@ import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudSpecification;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
+import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.utils.ContainerUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
@@ -63,11 +64,28 @@ public class SpecificationValidator {
         }
 
         validateJavaVersion(specification.getConfiguration());
+        validateDatabase(specification.getConfiguration().getDatabase());
 
         DockerConfigurationValidator.validate(specification.getConfiguration().getDocker());
         CacheConfigurationValidator.validate(specification.getConfiguration().getCache());
+        TestConfigurationValidator.validate(specification.getConfiguration().getTests());
 
         specification.getEntities().forEach(model -> validateModel(model, specification.getEntities()));
+    }
+
+    /**
+     * Validates the database type set in the CRUD configuration.
+     * 
+     * If the database type is null, it throws an {@link IllegalArgumentException}.
+     * 
+     * @param database the database type to validate
+     * @throws IllegalArgumentException if the database type is null
+     */
+    private static void validateDatabase(final DatabaseType database) {
+        
+        if (Objects.isNull(database)) {
+            throw new IllegalArgumentException("Database must not be null or empty");
+        }
     }
 
     /**
