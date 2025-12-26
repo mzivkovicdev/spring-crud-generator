@@ -44,6 +44,7 @@ import com.markozivkovic.codegen.models.GeneratorState;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.GeneratorStateUtils;
+import com.markozivkovic.codegen.utils.SpringBootVersionUtils;
 import com.markozivkovic.codegen.validators.PackageConfigurationValidator;
 import com.markozivkovic.codegen.validators.SpecificationValidator;
 
@@ -70,6 +71,9 @@ public class CrudGeneratorMojo extends AbstractMojo {
     @Parameter(property = "forceRegeneration", defaultValue = "false")
     private boolean forceRegeneration;
 
+    @Parameter(defaultValue = "${project.parent.version}", readonly = true)
+    private String parentVersion;
+
     public void execute() throws MojoExecutionException {
 
         if (Objects.isNull(inputSpecFile)) {
@@ -88,6 +92,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
             final CrudSpecification spec = mapper.readValue(new File(inputSpecFile), CrudSpecification.class);
             SpecificationValidator.validate(spec);
             PackageConfigurationValidator.validate(spec.getPackages(), spec.getConfiguration());
+            SpringBootVersionUtils.resolveAndSetSpringBootMajor(spec, parentVersion);
             
             final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir.getAbsolutePath());
             final GeneratorState generatorState = GeneratorStateUtils.loadOrEmpty(projectMetadata.getProjectBaseDir());
