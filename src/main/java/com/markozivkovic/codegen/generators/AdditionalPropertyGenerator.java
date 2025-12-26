@@ -29,6 +29,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.PackageConfiguration;
+import com.markozivkovic.codegen.utils.AdditionalPropertiesUtils;
 import com.markozivkovic.codegen.utils.ContainerUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
 import com.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -71,21 +72,24 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
      */
     private void generateRetryableAnnotationConfiguration(final String outputDir) {
 
-        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION)) { return; }
-        
-        final Integer maxAttempts = (Integer) this.configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS);
-        final Integer delayMs = (Integer) this.configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS);
-        final Integer maxDelayMs = (Integer) this.configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS);
-        final Double multiplier = (Double) this.configuration.getAdditionalProperties()
-                .get(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER);
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION)) return;
 
-        if (maxAttempts == null || delayMs == null || maxDelayMs == null || multiplier == null
-                    || !Boolean.TRUE.equals(this.configuration.getOptimisticLocking())) {
-            return;
-        }
+        if (!Boolean.TRUE.equals(this.configuration.getOptimisticLocking())) return;
+
+        if (!AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(this.configuration.getAdditionalProperties())) return;
+        
+        final Integer maxAttempts = AdditionalPropertiesUtils.getInt(
+                this.configuration.getAdditionalProperties(), AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS
+        );
+        final Integer delayMs = AdditionalPropertiesUtils.getInt(
+                this.configuration.getAdditionalProperties(), AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS
+        );
+        final Integer maxDelayMs = AdditionalPropertiesUtils.getInt(
+                this.configuration.getAdditionalProperties(), AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS
+        );
+        final Double multiplier = AdditionalPropertiesUtils.getDouble(
+                this.configuration.getAdditionalProperties(), AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER
+        );
 
         LOGGER.info("Generating Retryable Annotation configuration");
 
