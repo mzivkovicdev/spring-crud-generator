@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -22,11 +21,6 @@ import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
 class ResolverImportsTest {
-
-   @AfterEach
-   void cleanupStaticMocks() {
-       Mockito.framework().clearInlineMocks();
-   }
 
     @Test
     @DisplayName("computeResolverBaseImports: id field is UUID → UUID import present")

@@ -42,11 +42,13 @@ class RestControllerUnitTestGeneratorTest {
         
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        final String springBootVersion = "3.0.0";
         when(cfg.getTests()).thenReturn(testsCfg);
         when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
         when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
         when(cfg.getOpenApi().getApiSpec()).thenReturn(swaggerEnabled);
         when(cfg.getOpenApi().getGenerateResources()).thenReturn(swaggerEnabled);
+        when(cfg.getSpringBootVersion()).thenReturn(springBootVersion);
 
         return cfg;
     }
@@ -151,9 +153,9 @@ class RestControllerUnitTestGeneratorTest {
 
             dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
 
-            imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false)).thenReturn("// GET IMPORTS");
-            imports.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false)).thenReturn("// UPDATE IMPORTS");
-            imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false)).thenReturn("// DELETE IMPORTS");
+            imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false, cfg.getSpringBootVersion())).thenReturn("// GET IMPORTS");
+            imports.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, cfg.getSpringBootVersion())).thenReturn("// UPDATE IMPORTS");
+            imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false, cfg.getSpringBootVersion())).thenReturn("// DELETE IMPORTS");
             imports.when(() -> RestControllerImports.computeControllerTestProjectImports(any(), anyString(), anyBoolean(), any(), any(), anyBoolean()))
                     .thenReturn("// CONTROLLER TEST IMPORTS");
             imports.when(() -> RestControllerImports.computeCreateEndpointTestProjectImports(any(), anyString(), anyBoolean(), any(), anyBoolean()))
@@ -246,9 +248,12 @@ class RestControllerUnitTestGeneratorTest {
 
             dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
 
-            imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false)).thenReturn("// GET IMPORTS");
-            imports.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false)).thenReturn("// UPDATE IMPORTS");
-            imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false)).thenReturn("// DELETE IMPORTS");
+            imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false, cfg.getSpringBootVersion()))
+                        .thenReturn("// GET IMPORTS");
+            imports.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, cfg.getSpringBootVersion()))
+                        .thenReturn("// UPDATE IMPORTS");
+            imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false, cfg.getSpringBootVersion()))
+                        .thenReturn("// DELETE IMPORTS");
             imports.when(() -> RestControllerImports.computeAddRelationEndpointBaseImports(model)).thenReturn("// ADD IMPORTS");
             imports.when(() -> RestControllerImports.computeRemoveRelationEndpointBaseImports(model, List.of(related))).thenReturn("// REMOVE IMPORTS");
             imports.when(() -> RestControllerImports.computeControllerTestProjectImports(any(), anyString(), anyBoolean(), any(), any(), anyBoolean()))
@@ -257,8 +262,10 @@ class RestControllerUnitTestGeneratorTest {
                     .thenReturn("// CREATE IMPORTS");
             imports.when(() -> RestControllerImports.computeUpdateEndpointTestProjectImports(any(), anyString(), anyBoolean(), any(), anyBoolean()))
                     .thenReturn("// UPDATE IMPORTS");
-            imports.when(() -> RestControllerImports.computeAddRelationEndpointTestImports(false)).thenReturn("// ADD IMPORTS");
-            imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false)).thenReturn("// DELETE IMPORTS");
+            imports.when(() -> RestControllerImports.computeAddRelationEndpointTestImports(false, cfg.getSpringBootVersion()))
+                        .thenReturn("// ADD IMPORTS");
+            imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false, cfg.getSpringBootVersion()))
+                        .thenReturn("// DELETE IMPORTS");
 
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap()))
                     .thenReturn("//generated");
