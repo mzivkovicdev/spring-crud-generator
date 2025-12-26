@@ -107,6 +107,7 @@ public class ResolverImports {
      * computes the necessary imports for a query resolver test.
      * 
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param springBootVersion the Spring Boot version
      * @return a string containing the necessary import statements for a query resolver test
      */
     public static String computeQueryResolverTestImports(final boolean isInstancioEnabled, final String springBootVersion) {

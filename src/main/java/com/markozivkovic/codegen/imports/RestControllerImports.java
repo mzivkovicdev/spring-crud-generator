@@ -198,6 +198,7 @@ public class RestControllerImports {
      * Compute the imports for a controller test.
      *
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param springBootVersion the Spring Boot version
      * @return the imports string for a controller test
      */
     public static String computeAddRelationEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
@@ -284,6 +285,7 @@ public class RestControllerImports {
      * Compute the imports for a controller test.
      *
      * @param isInstancioEnabled whether instancio is enabled
+     * @param springBootVersion the Spring Boot version
      * @return the imports string for a controller test
      */
     public static String computeGetEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
