@@ -302,14 +302,16 @@ The generator validates the test configuration:
 
 Advanced and feature-specific configuration options.
 
-| Property | Type | Default | Description |
-|--------|------|---------|-------------|
-| `graphql.scalarConfig` | boolean | `false` | Enables custom GraphQL scalar configuration |
-| `optimisticLocking.retry.config` | boolean | `false` | Enables retry mechanism for optimistic locking |
-| `optimisticLocking.retry.maxAttempts` | number | `null` | Maximum retry attempts |
-| `optimisticLocking.backoff.delayMs` | number | `null` | Initial backoff delay (ms) |
-| `optimisticLocking.backoff.multiplier` | number | `null` | Backoff multiplier |
-| `optimisticLocking.backoff.maxDelayMs` | number | `null` | Maximum backoff delay (ms) |
+| Property                               | Type    | Default  | Description                                                                                           |
+|----------------------------------------|---------|----------|-------------------------------------------------------------------------------------------------------|
+| `graphql.scalarConfig`                 | boolean | `false`  | Enables custom GraphQL scalar configuration                                                           |
+| `optimisticLocking.retry.config`       | boolean | `false`  | Enables generation of a dedicated `@Retryable` configuration for optimistic locking                   |
+| `optimisticLocking.retry.maxAttempts`  | number  | `3`      | Maximum retry attempts (falls back to this value if not overridden)                                   |
+| `optimisticLocking.backoff.delayMs`    | number  | `1000`   | Initial backoff delay in milliseconds (falls back to this value if not overridden)                    |
+| `optimisticLocking.backoff.multiplier` | number  | `0.0`    | Backoff multiplier. `0.0` means no exponential backoff (constant delay) unless explicitly overridden  |
+| `optimisticLocking.backoff.maxDelayMs` | number  | `0`      | Maximum backoff delay in milliseconds. `0` means “no explicit max”, only `delay * multiplier` applies |
+
+> ℹ️ The retry configuration is generated only if **optimisticLocking** is enabled. Custom retry annotation is genereted if at least one of the `optimisticLocking.retry.*` / `optimisticLocking.backoff.*` properties is provided. Any missing values fall back to the defaults listed above.
 
 ---
 
