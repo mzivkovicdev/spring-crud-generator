@@ -34,6 +34,7 @@ import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.SpringBootVersionUtils;
 import com.markozivkovic.codegen.utils.StringUtils;
 
 public class RestControllerImports {
@@ -199,7 +200,7 @@ public class RestControllerImports {
      * @param isInstancioEnabled whether Instancio is enabled
      * @return the imports string for a controller test
      */
-    public static String computeAddRelationEndpointTestImports(final boolean isInstancioEnabled) {
+    public static String computeAddRelationEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -208,10 +209,9 @@ public class RestControllerImports {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        
+        addOAuth2WebMvcTestImports(imports, springBootVersion);
+
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
@@ -227,9 +227,10 @@ public class RestControllerImports {
      * Compute the necessary imports for a controller delete endpoint test.
      *
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param springBootVersion  the Spring Boot version
      * @return A string containing the necessary import statements for a controller delete endpoint test.
      */
-    public static String computeDeleteEndpointTestImports(final boolean isInstancioEnabled) {
+    public static String computeDeleteEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -237,10 +238,9 @@ public class RestControllerImports {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+
+        addOAuth2WebMvcTestImports(imports, springBootVersion);
+
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
@@ -254,9 +254,10 @@ public class RestControllerImports {
      * Compute the necessary imports for a controller update endpoint test.
      *
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param springBootVersion  the Spring Boot version
      * @return a string containing the necessary import statements for a controller update endpoint test
      */
-    public static String computeUpdateEndpointTestImports(final boolean isInstancioEnabled) {
+    public static String computeUpdateEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -265,10 +266,9 @@ public class RestControllerImports {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+        
+        addOAuth2WebMvcTestImports(imports, springBootVersion);
+
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
@@ -286,7 +286,7 @@ public class RestControllerImports {
      * @param isInstancioEnabled whether instancio is enabled
      * @return the imports string for a controller test
      */
-    public static String computeGetEndpointTestImports(final boolean isInstancioEnabled) {
+    public static String computeGetEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -295,10 +295,9 @@ public class RestControllerImports {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.WEB_MVC_TEST));
+
+        addOAuth2WebMvcTestImports(imports, springBootVersion);
+
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
@@ -395,7 +394,6 @@ public class RestControllerImports {
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
 
         if (isGlobalExceptionHandlerEnabled != null && isGlobalExceptionHandlerEnabled) {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)));
@@ -475,7 +473,6 @@ public class RestControllerImports {
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
 
         if (isGlobalExceptionHandlerEnabled != null && isGlobalExceptionHandlerEnabled) {
             imports.add(String.format(
@@ -557,7 +554,6 @@ public class RestControllerImports {
                 imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
             }
             ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, PackageUtils.join(PackageUtils.computeTransferObjectPackage(packagePath, packageConfiguration), GeneratorConstants.PAGE_TO)));
-            ImportCommon.addIf(RestEndpointOperation.GET.equals(restEndpointOperation), imports, String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
         } else {
             imports.add(String.format(
                 IMPORT,
@@ -567,7 +563,6 @@ public class RestControllerImports {
         }
         if (!RestEndpointOperation.DELETE.equals(restEndpointOperation) && !RestEndpointOperation.REMOVE_RELATION.equals(restEndpointOperation)) {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
-            imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
         }
         if (isGlobalExceptionHandlerEnabled != null && isGlobalExceptionHandlerEnabled) {
             imports.add(String.format(
@@ -579,6 +574,31 @@ public class RestControllerImports {
         return imports.stream()
                 .sorted()
                 .collect(Collectors.joining());
+    }
+
+    /**
+     * Adds necessary imports for OAuth2 WebMvc tests based on the Spring Boot version.
+     *
+     * @param imports the list of imports to add to
+     * @param springBootVersion the Spring Boot version
+     */
+    private static void addOAuth2WebMvcTestImports(final Set<String> imports, final String springBootVersion) {
+        
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST));
+            return;
+        }
+
+        if (SpringBootVersionUtils.isSpringBoot4(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_MOCK_MVC));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot4.WEB_MVC_TEST));
+            return;
+        }
     }
 
     public enum RestEndpointOperation {

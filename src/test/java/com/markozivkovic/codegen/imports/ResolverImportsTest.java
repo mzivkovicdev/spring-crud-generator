@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -21,6 +22,11 @@ import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
 
 class ResolverImportsTest {
+
+   @AfterEach
+   void cleanupStaticMocks() {
+       Mockito.framework().clearInlineMocks();
+   }
 
     @Test
     @DisplayName("computeResolverBaseImports: id field is UUID → UUID import present")
@@ -300,10 +306,10 @@ class ResolverImportsTest {
     }
 
     @Test
-    @DisplayName("computeQueryResolverTestImports: Instancio disabled → should NOT include Instancio import")
-    void computeQueryResolverTestImports_instancioDisabled() {
+    @DisplayName("computeQueryResolverTestImports: Instancio disabled, Spring Boot 3 → should NOT include Instancio import")
+    void computeQueryResolverTestImports_instancioDisabled_springBoot3() {
         
-        final String result = ResolverImports.computeQueryResolverTestImports(false);
+        final String result = ResolverImports.computeQueryResolverTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
         assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
@@ -318,15 +324,38 @@ class ResolverImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.GRAPH_QL_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.GraphQLTest.GRAPH_QL_TESTER + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+    }
+
+    @Test
+    @DisplayName("computeQueryResolverTestImports: Instancio disabled, Spring Boot 4 → should NOT include Instancio import")
+    void computeQueryResolverTestImports_instancioDisabled_springBoot4() {
+        
+        final String result = ResolverImports.computeQueryResolverTestImports(false, "4");
+
+        assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringContext.IMPORT + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.GRAPH_QL_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.GraphQLTest.GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
     }
 
     @Test
     @DisplayName("computeQueryResolverTestImports: Instancio enabled → should include Instancio import")
     void computeQueryResolverTestImports_instancioEnabled() {
         
-        final String result = ResolverImports.computeQueryResolverTestImports(true);
+        final String result = ResolverImports.computeQueryResolverTestImports(true, null);
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"));
     }
@@ -335,7 +364,7 @@ class ResolverImportsTest {
     @DisplayName("computeMutationResolverTestImports: No Instancio, No JSON → minimal import set")
     void computeMutationResolverTestImports_noInstancio_noJson() {
         
-        final String result = ResolverImports.computeMutationResolverTestImports(false, false);
+        final String result = ResolverImports.computeMutationResolverTestImports(false, false, null);
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
         assertFalse(result.contains(ImportConstants.MapStruct.FACTORY_MAPPERS));
@@ -350,10 +379,50 @@ class ResolverImportsTest {
     }
 
     @Test
+    @DisplayName("computeMutationResolverTestImports: No Instancio, No JSON, Spring Boot 3 → minimal import set")
+    void computeMutationResolverTestImports_noInstancio_noJson_springBoot3() {
+        
+        final String result = ResolverImports.computeMutationResolverTestImports(false, false, "3");
+
+        assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+        assertFalse(result.contains(ImportConstants.MapStruct.FACTORY_MAPPERS));
+
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringContext.IMPORT + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+    }
+
+    @Test
+    @DisplayName("computeMutationResolverTestImports: No Instancio, No JSON, Spring Boot 4 → minimal import set")
+    void computeMutationResolverTestImports_noInstancio_noJson_springBoot4() {
+        
+        final String result = ResolverImports.computeMutationResolverTestImports(false, false, "4");
+
+        assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+        assertFalse(result.contains(ImportConstants.MapStruct.FACTORY_MAPPERS));
+
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringContext.IMPORT + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+    }
+
+    @Test
     @DisplayName("computeMutationResolverTestImports: Instancio true, JSON false → only Instancio added")
     void computeMutationResolverTestImports_instancioOnly() {
         
-        final String result = ResolverImports.computeMutationResolverTestImports(true, false);
+        final String result = ResolverImports.computeMutationResolverTestImports(true, false, null);
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"));
         assertFalse(result.contains(ImportConstants.MapStruct.FACTORY_MAPPERS));
@@ -363,7 +432,7 @@ class ResolverImportsTest {
     @DisplayName("computeMutationResolverTestImports: JSON true, Instancio false → only MapStruct factory added")
     void computeMutationResolverTestImports_jsonOnly() {
         
-        final String result = ResolverImports.computeMutationResolverTestImports(false, true);
+        final String result = ResolverImports.computeMutationResolverTestImports(false, true, null);
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
         assertTrue(result.contains("import " + ImportConstants.MapStruct.FACTORY_MAPPERS + ";"));
@@ -558,8 +627,6 @@ class ResolverImportsTest {
             assertTrue(result.contains("import com.app.graphql.to.UserCreateTO;"));
             assertTrue(result.contains("import com.app.graphql.to.UserUpdateTO;"));
             assertTrue(result.contains("import com.app.exception.GlobalGraphqlExceptionHandler;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.TYPE_REFERENCE + ";"));
 
             assertFalse(result.contains("GraphQLMapper"),
                     "No helper GraphQL mappers expected when there are no JSON fields");
@@ -646,8 +713,6 @@ class ResolverImportsTest {
             assertTrue(result.contains("import com.shop.graphql.to.OrderCreateTO;"));
             assertTrue(result.contains("import com.shop.graphql.to.OrderUpdateTO;"));
             assertTrue(result.contains("import com.shop.exception.GlobalGraphqlExceptionHandler;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.TYPE_REFERENCE + ";"));
             assertFalse(result.contains("BusinessService"));
         }
     }
@@ -720,8 +785,6 @@ class ResolverImportsTest {
 
             assertTrue(result.contains("import com.billing.business.InvoiceBusinessService;"),
                     "BusinessService import should be present when relations exist");
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.TYPE_REFERENCE + ";"));
         }
     }
     

@@ -36,7 +36,7 @@ class RestControllerImportsTest {
 
         final List<ModelDefinition> entities = Collections.emptyList();
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
             fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
                     .thenReturn(Collections.emptyList());
             fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
@@ -65,7 +65,7 @@ class RestControllerImportsTest {
 
         final FieldDefinition idField = new FieldDefinition();
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
             fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
                     .thenReturn(Collections.emptyList());
             fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
@@ -179,7 +179,7 @@ class RestControllerImportsTest {
 
         final FieldDefinition idField = new FieldDefinition();
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
             fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
                     .thenReturn(Collections.emptyList());
             fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
@@ -215,7 +215,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -293,7 +293,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.shop");
@@ -382,7 +382,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.api");
@@ -470,7 +470,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.shop");
@@ -557,7 +557,7 @@ class RestControllerImportsTest {
         final FieldDefinition idField = new FieldDefinition();
         model.setFields(List.of(idField));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
                     .thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
@@ -591,10 +591,10 @@ class RestControllerImportsTest {
     }
 
     @Test
-    @DisplayName("computeAddRelationEndpointTestImports: Instancio disabled → no Instancio import, but all base imports present")
-    void computeAddRelationEndpointTestImports_instancioDisabled() {
+    @DisplayName("computeAddRelationEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, but all base imports present")
+    void computeAddRelationEndpointTestImports_instancioDisabled_springBoot3() {
         
-        final String result = RestControllerImports.computeAddRelationEndpointTestImports(false);
+        final String result = RestControllerImports.computeAddRelationEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
 
@@ -602,62 +602,107 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.MapStruct.FACTORY_MAPPERS + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringHttp.MEDIA_TYPE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.RESULT_ACTIONS + ";"));
     }
+
+    @Test
+    @DisplayName("computeAddRelationEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, but all base imports present")
+    void computeAddRelationEndpointTestImports_instancioDisabled_springBoot4() {
+        
+        final String result = RestControllerImports.computeAddRelationEndpointTestImports(false, "4");
+
+        assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.MapStruct.FACTORY_MAPPERS + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringHttp.MEDIA_TYPE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.RESULT_ACTIONS + ";"));
+    }
+
 
     @Test
     @DisplayName("computeAddRelationEndpointTestImports: Instancio enabled → Instancio import added")
     void computeAddRelationEndpointTestImports_instancioEnabled() {
         
-        final String result = RestControllerImports.computeAddRelationEndpointTestImports(true);
+        final String result = RestControllerImports.computeAddRelationEndpointTestImports(true, null);
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
     }
 
     @Test
-    @DisplayName("computeDeleteEndpointTestImports: Instancio disabled → no Instancio import, base imports present")
-    void computeDeleteEndpointTestImports_instancioDisabled() {
+    @DisplayName("computeDeleteEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, base imports present")
+    void computeDeleteEndpointTestImports_instancioDisabled_springBoot3() {
         
-        final String result = RestControllerImports.computeDeleteEndpointTestImports(false);
+        final String result = RestControllerImports.computeDeleteEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
 
         assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
         assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
     }
 
     @Test
+    @DisplayName("computeDeleteEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, base imports present")
+    void computeDeleteEndpointTestImports_instancioDisabled_springBoot4() {
+        
+        final String result = RestControllerImports.computeDeleteEndpointTestImports(false, "4");
+
+        assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
+    }
+
+
+    @Test
     @DisplayName("computeDeleteEndpointTestImports: Instancio enabled → Instancio import added")
     void computeDeleteEndpointTestImports_instancioEnabled() {
         
-        final String result = RestControllerImports.computeDeleteEndpointTestImports(true);
+        final String result = RestControllerImports.computeDeleteEndpointTestImports(true, null);
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
     }
 
     @Test
-    @DisplayName("computeUpdateEndpointTestImports: Instancio disabled → no Instancio import, base imports present")
-    void computeUpdateEndpointTestImports_instancioDisabled() {
+    @DisplayName("computeUpdateEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, base imports present")
+    void computeUpdateEndpointTestImports_instancioDisabled_springBoot3() {
         
-        final String result = RestControllerImports.computeUpdateEndpointTestImports(false);
+        final String result = RestControllerImports.computeUpdateEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
 
@@ -665,10 +710,10 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.MapStruct.FACTORY_MAPPERS + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringHttp.MEDIA_TYPE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
@@ -677,30 +722,77 @@ class RestControllerImportsTest {
     }
 
     @Test
+    @DisplayName("computeUpdateEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, base imports present")
+    void computeUpdateEndpointTestImports_instancioDisabled_springBoot4() {
+        
+        final String result = RestControllerImports.computeUpdateEndpointTestImports(false, "4");
+
+        assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.MapStruct.FACTORY_MAPPERS + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringHttp.MEDIA_TYPE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.RESULT_ACTIONS + ";"));
+    }
+
+
+    @Test
     @DisplayName("computeUpdateEndpointTestImports: Instancio enabled → Instancio import added")
     void computeUpdateEndpointTestImports_instancioEnabled() {
         
-        final String result = RestControllerImports.computeUpdateEndpointTestImports(true);
+        final String result = RestControllerImports.computeUpdateEndpointTestImports(true, null);
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
     }
 
     @Test
-    @DisplayName("computeGetEndpointTestImports: Instancio disabled → no Instancio import, base imports present")
-    void computeGetEndpointTestImports_instancioDisabled() {
+    @DisplayName("computeGetEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, base imports present")
+    void computeGetEndpointTestImports_instancioDisabled_springBoot3() {
         
-        final String result = RestControllerImports.computeGetEndpointTestImports(false);
+        final String result = RestControllerImports.computeGetEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
         assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
         assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.MapStruct.FACTORY_MAPPERS + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_MOCK_MVC + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.RESULT_ACTIONS + ";"));
+    }
+
+    @Test
+    @DisplayName("computeGetEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, base imports present")
+    void computeGetEndpointTestImports_instancioDisabled_springBoot4() {
+        
+        final String result = RestControllerImports.computeGetEndpointTestImports(false, "4");
+
+        assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH + ";"));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.MapStruct.FACTORY_MAPPERS + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBean.AUTOWIRED + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_MOCK_MVC + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.WEB_MVC_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL + ";"));
@@ -713,7 +805,7 @@ class RestControllerImportsTest {
     @DisplayName("computeGetEndpointTestImports: Instancio enabled → Instancio import added")
     void computeGetEndpointTestImports_instancioEnabled() {
         
-        final String result = RestControllerImports.computeGetEndpointTestImports(true);
+        final String result = RestControllerImports.computeGetEndpointTestImports(true, null);
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
@@ -729,7 +821,7 @@ class RestControllerImportsTest {
 
         Mockito.when(model.getFields()).thenReturn(fields);
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
             
             fieldUtils.when(() -> FieldUtils.extractIdField(fields))
                     .thenReturn(idField);
@@ -767,7 +859,7 @@ class RestControllerImportsTest {
 
         final List<ModelDefinition> entities = List.of(relatedEntity);
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
 
             fieldUtils.when(() -> FieldUtils.extractIdField(fields))
                     .thenReturn(idField);
@@ -810,7 +902,7 @@ class RestControllerImportsTest {
 
         final List<ModelDefinition> entities = List.of(relatedEntity);
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
 
             fieldUtils.when(() -> FieldUtils.extractIdField(fields))
                     .thenReturn(idField);
@@ -844,7 +936,7 @@ class RestControllerImportsTest {
         Mockito.when(relationField.getRelation()).thenReturn(new RelationDefinition());
         Mockito.when(relationField.getType()).thenReturn("MissingEntity");
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
             fieldUtils.when(() -> FieldUtils.extractIdField(fields))
                     .thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
@@ -876,7 +968,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -924,7 +1016,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertFalse(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains("BusinessService"));
             assertFalse(result.contains("HelperRestMapper"));
@@ -947,7 +1038,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -997,7 +1088,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains("BusinessService"));
             assertFalse(result.contains("HelperRestMapper"));
@@ -1027,7 +1117,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.api");
@@ -1093,7 +1183,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.api.service.AccountService;"));
             assertTrue(result.contains("import com.api.rest.to.AccountTO;"));
             assertTrue(result.contains("import com.api.rest.mapper.AccountRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.api.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains("generated"));
         }
@@ -1120,7 +1209,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.shop");
@@ -1190,7 +1279,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.entity.Parent;"));
             assertTrue(result.contains("import com.shop.service.ParentService;"));
             assertTrue(result.contains("import com.shop.rest.mapper.ParentRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.shop.exception.GlobalRestExceptionHandler;"));
             assertTrue(result.contains("import com.shop.generated.model.parent.ParentDTO;"));
             assertFalse(result.contains(".rest.to.ParentTO;"),
@@ -1212,7 +1300,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -1262,7 +1350,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertFalse(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains("BusinessService"));
             assertFalse(result.contains("generated"));
@@ -1284,7 +1371,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -1336,7 +1423,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
 
             assertFalse(result.contains("BusinessService"));
@@ -1365,7 +1451,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.shop");
@@ -1441,7 +1527,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.service.OrderService;"));
             assertTrue(result.contains("import com.shop.rest.to.OrderTO;"));
             assertTrue(result.contains("import com.shop.rest.mapper.OrderRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.shop.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains("generated"));
         }
@@ -1468,7 +1553,7 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.api");
@@ -1551,7 +1636,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.api.entity.Parent;"));
             assertTrue(result.contains("import com.api.service.ParentService;"));
             assertTrue(result.contains("import com.api.rest.mapper.ParentRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.api.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains(".rest.to.ParentTO;"));
         }
@@ -1568,7 +1652,7 @@ class RestControllerImportsTest {
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -1631,7 +1715,7 @@ class RestControllerImportsTest {
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -1689,9 +1773,7 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.app.to.PageTO;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.TYPE_REFERENCE + ";"));
             assertFalse(result.contains("generated"));
             assertFalse(result.contains("business"));
         }
@@ -1711,7 +1793,7 @@ class RestControllerImportsTest {
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -1769,10 +1851,8 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
             assertTrue(result.contains("import com.app.to.PageTO;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.TYPE_REFERENCE + ";"));
             assertTrue(result.contains("import com.app.business.UserBusinessService;"));
             assertFalse(result.contains("generated"));
         }
@@ -1792,7 +1872,7 @@ class RestControllerImportsTest {
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.shop");
@@ -1844,14 +1924,12 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.entity.Order;"));
             assertTrue(result.contains("import com.shop.service.OrderService;"));
             assertTrue(result.contains("import com.shop.rest.mapper.OrderRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.shop.exception.GlobalRestExceptionHandler;"));
             assertTrue(result.contains("import com.shop.generated.model.order.OrderDTO;"));
             assertTrue(result.contains("import com.shop.generated.model.order.OrdersGet200Response;"));
             assertTrue(result.contains("import com.shop.business.OrderBusinessService;"));
             assertFalse(result.contains(".rest.to.OrderTO;"));
             assertFalse(result.contains("PageTO"));
-            assertFalse(result.contains(ImportConstants.Jackson.TYPE_REFERENCE));
         }
     }
 
@@ -1871,7 +1949,7 @@ class RestControllerImportsTest {
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.shop");
@@ -1922,10 +2000,8 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.service.OrderService;"));
             assertTrue(result.contains("import com.shop.rest.to.OrderTO;"));
             assertTrue(result.contains("import com.shop.rest.mapper.OrderRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.shop.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains("PageTO"));
-            assertFalse(result.contains(ImportConstants.Jackson.TYPE_REFERENCE));
         }
     }
 
@@ -1945,7 +2021,7 @@ class RestControllerImportsTest {
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.shop");
@@ -1997,7 +2073,6 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.entity.Order;"));
             assertTrue(result.contains("import com.shop.service.OrderService;"));
             assertTrue(result.contains("import com.shop.rest.mapper.OrderRestMapper;"));
-            assertTrue(result.contains("import " + ImportConstants.Jackson.OBJECT_MAPPER + ";"));
             assertTrue(result.contains("import com.shop.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains(".rest.to.OrderTO;"));
         }
@@ -2016,7 +2091,7 @@ class RestControllerImportsTest {
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);) {
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.app");
@@ -2050,8 +2125,6 @@ class RestControllerImportsTest {
             assertFalse(result.contains("entity.User"));
             assertFalse(result.contains("UserTO"));
             assertFalse(result.contains("RestMapper"));
-            assertFalse(result.contains(ImportConstants.Jackson.OBJECT_MAPPER));
-            assertFalse(result.contains(ImportConstants.Jackson.TYPE_REFERENCE));
             assertFalse(result.contains("PageTO"));
         }
     }
