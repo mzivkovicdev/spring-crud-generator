@@ -24,6 +24,7 @@ public class CrudConfiguration {
     
     private DatabaseType database;
     private Integer javaVersion;
+    private String springBootVersion;
     private Boolean optimisticLocking;
     private DockerConfiguration docker;
     private CacheConfiguration cache;
@@ -38,12 +39,13 @@ public class CrudConfiguration {
 
     }
 
-    public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final Boolean optimisticLocking,
-            final DockerConfiguration docker, final CacheConfiguration cache, final OpenApiDefinition openApi,
-            final Boolean graphQl, final ErrorResponse errorResponse, Boolean migrationScripts, final TestConfiguration tests,
-            final Map<String, Object> additionalProperties) {
+    public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final String springBootVersion,
+            final Boolean optimisticLocking, final DockerConfiguration docker, final CacheConfiguration cache,
+            final OpenApiDefinition openApi, final Boolean graphQl, final ErrorResponse errorResponse,
+            final Boolean migrationScripts, final TestConfiguration tests, final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
+        this.springBootVersion = springBootVersion;
         this.optimisticLocking = optimisticLocking;
         this.docker = docker;
         this.cache = cache;
@@ -70,6 +72,15 @@ public class CrudConfiguration {
 
     public CrudConfiguration setJavaVersion(final Integer javaVersion) {
         this.javaVersion = javaVersion;
+        return this;
+    }
+
+    public String getSpringBootVersion() {
+        return this.springBootVersion;
+    }
+
+    public CrudConfiguration setSpringBootVersion(final String springBootVersion) {
+        this.springBootVersion = springBootVersion;
         return this;
     }
 
@@ -168,6 +179,7 @@ public class CrudConfiguration {
         final CrudConfiguration crudConfiguration = (CrudConfiguration) o;
         return Objects.equals(database, crudConfiguration.database) &&
                 Objects.equals(javaVersion, crudConfiguration.javaVersion) &&
+                Objects.equals(springBootVersion, crudConfiguration.springBootVersion) &&
                 Objects.equals(optimisticLocking, crudConfiguration.optimisticLocking) &&
                 Objects.equals(docker, crudConfiguration.docker) &&
                 Objects.equals(cache, crudConfiguration.cache) &&
@@ -182,7 +194,7 @@ public class CrudConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(
-            database, javaVersion, optimisticLocking, docker, cache, openApi,
+            database, javaVersion, springBootVersion, optimisticLocking, docker, cache, openApi,
             graphQl, errorResponse, migrationScripts, tests, additionalProperties
         );
     }
@@ -192,6 +204,7 @@ public class CrudConfiguration {
         return "{" +
             " database='" + getDatabase() + "'" +
             ", javaVersion='" + getJavaVersion() + "'" +
+            ", springBootVersion='" + getSpringBootVersion() + "'" +
             ", optimisticLocking='" + isOptimisticLocking() + "'" +
             ", docker='" + getDocker() + "'" +
             ", cache='" + getCache() + "'" +
