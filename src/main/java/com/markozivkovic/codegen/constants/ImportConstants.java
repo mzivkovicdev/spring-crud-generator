@@ -80,12 +80,6 @@ public final class ImportConstants {
         public static final String LOGGER_FACTORY = "org.slf4j.LoggerFactory";
     }
 
-    public static final class Jackson {
-        private Jackson() {}
-        public static final String OBJECT_MAPPER = "com.fasterxml.jackson.databind.ObjectMapper";
-        public static final String TYPE_REFERENCE = "com.fasterxml.jackson.core.type.TypeReference";
-    }
-
     public static final class MapStruct {
         private MapStruct() {}
         public static final String MAPPER = "org.mapstruct.Mapper";
@@ -156,8 +150,16 @@ public final class ImportConstants {
 
     public static final class SpringBootTest {
         private SpringBootTest() {}
-        public static final String WEB_MVC_TEST = "org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest";
-        public static final String AUTO_CONFIGURE_MOCK_MVC = "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc";
+        public static final class SpringBoot3 {
+            public static final String WEB_MVC_TEST = "org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest";
+            public static final String AUTO_CONFIGURE_MOCK_MVC = "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc";
+        }
+
+        public static final class SpringBoot4 {
+            public static final String WEB_MVC_TEST = "org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest";
+            public static final String AUTO_CONFIGURE_MOCK_MVC = "org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc";
+        }
+
         public static final String GRAPH_QL_TEST = "org.springframework.boot.test.autoconfigure.graphql.GraphQlTest";
         public static final String AUTO_CONFIGURE_GRAPH_QL_TESTER = "org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureGraphQlTester";
     }
@@ -174,10 +176,19 @@ public final class ImportConstants {
 
     public static final class SpringBootAutoConfigure {
         private SpringBootAutoConfigure() {}
-        public static final String OAUTH2_CLIENT_AUTO_CONFIGURATION =
-                "org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration";
-        public static final String OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION =
-                "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration";
+        public static final class SpringBoot3 {
+            public static final String OAUTH2_CLIENT_AUTO_CONFIGURATION =
+                    "org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration";
+            public static final String OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION =
+                    "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration";
+        }
+
+        public static final class SpringBoot4 {
+            public static final String OAUTH2_CLIENT_AUTO_CONFIGURATION =
+                    "org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration";
+            public static final String OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION =
+                    "org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration";
+        }
     }
 
     public static final class GraphQLTest {
