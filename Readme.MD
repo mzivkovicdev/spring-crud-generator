@@ -197,16 +197,15 @@ All options are defined under the root `configuration` key.
 
 ### `configuration`
 
-### `configuration`
-
-| Property            | Type    | Default     | Description                                                                 |
-|---------------------|---------|-------------|-----------------------------------------------------------------------------|
-| `database`          | string  | `-`         | **Required.** Target SQL database (e.g. `postgresql`, `mysql`, `mssql`)     |
-| `javaVersion`       | number  | `17`        | Java version used for generated code and Dockerfile                         |
-| `optimisticLocking` | boolean | `false`     | Enables optimistic locking support                                          |
-| `graphQl`           | boolean | `false`     | Enables GraphQL query and mutation generation                               |
-| `errorResponse`     | string  | `-`         | Error response strategy (`simple`, `detailed`, `minimal`, `none`)           |
-| `migrationScripts`  | boolean | `false`     | Enables Flyway migration script generation                                  |
+| Property            | Type    | Default | Description                                                                                                                                                                                                                                                                                                                                  |
+| ------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `database`          | string  | `-`     | **Required.** Target SQL database (e.g. `postgresql`, `mysql`, `mssql`)                                                                                                                                                                                                                                                                      |
+| `javaVersion`       | number  | `17`    | Java version used for generated code and Dockerfile                                                                                                                                                                                                                                                                                          |
+| `springBootVersion` | string  | `4`     | Spring Boot **major** version (`3` or `4`). If not provided, the generator tries to detect it from the project `pom.xml` (parent version). If detection fails, it defaults to `4`. If an unsupported value is provided (e.g. `1`, `2`, `5`), it will be ignored and the generator will fall back to the detected value or the default (`4`). |
+| `optimisticLocking` | boolean | `false` | Enables optimistic locking support                                                                                                                                                                                                                                                                                                           |
+| `graphQl`           | boolean | `false` | Enables GraphQL query and mutation generation                                                                                                                                                                                                                                                                                                |
+| `errorResponse`     | string  | `-`     | Error response strategy (`simple`, `detailed`, `minimal`, `none`)                                                                                                                                                                                                                                                                            |
+| `migrationScripts`  | boolean | `false` | Enables Flyway migration script generation                                                                                                                                                                                                                                                                                                   |
 
 ---
 

@@ -17,7 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 ${baseImports}
 ${testImports}
-${projectImports}<#if dataGenerator == "PODAM">
+${projectImports}
+import tools.jackson.databind.json.JsonMapper;<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
@@ -42,7 +43,7 @@ class ${className} {
     private ${businessServiceClass?cap_first} ${businessServiceField};
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper mapper;
 
     @Autowired
     private MockMvc mockMvc;
@@ -68,10 +69,10 @@ class ${className} {
         
         final ResultActions resultActions = this.mockMvc.perform(post("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .content(this.objectMapper.writeValueAsString(body)))
+                    .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.objectMapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.mapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
                 <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
         );
@@ -93,7 +94,7 @@ class ${className} {
         
         this.mockMvc.perform(post("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .content(this.objectMapper.writeValueAsString(body)))
+                    .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
 

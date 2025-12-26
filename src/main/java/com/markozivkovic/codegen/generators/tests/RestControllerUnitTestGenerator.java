@@ -144,7 +144,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                         modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION, relationField, packageConfiguration, isGlobalExceptionHandlerEnabled
                 ));
-                context.put("testImports", RestControllerImports.computeAddRelationEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+                context.put("testImports", RestControllerImports.computeAddRelationEndpointTestImports(
+                        UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+                ));
                 context.put("swagger", swagger);
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
                 context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
@@ -220,7 +222,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                         modelDefinition, outputDir, false, RestEndpointOperation.REMOVE_RELATION, packageConfiguration, isGlobalExceptionHandlerEnabled
                 ));
-                context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+                context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(
+                        UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+                ));
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
                 context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
@@ -270,7 +274,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("hasCollectionRelations", FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields()) 
                 || FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()));
         context.put("swagger", swagger);
-        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()));
         context.put("projectImports", RestControllerImports.computeCreateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
@@ -324,7 +328,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
         context.put("swagger", swagger);
         context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
-        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+        ));
         context.put("projectImports", RestControllerImports.computeUpdateEndpointTestProjectImports( 
                 modelDefinition, outputDir, swagger, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
@@ -374,7 +380,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                 modelDefinition, outputDir, false, RestEndpointOperation.DELETE, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
-        context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeDeleteEndpointTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+        ));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
@@ -420,7 +428,9 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("testImports", RestControllerImports.computeGetEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", RestControllerImports.computeGetEndpointTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+        ));
         context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                 modelDefinition, outputDir, swagger, RestEndpointOperation.GET, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));

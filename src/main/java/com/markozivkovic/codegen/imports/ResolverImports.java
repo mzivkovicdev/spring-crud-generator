@@ -31,6 +31,7 @@ import com.markozivkovic.codegen.models.PackageConfiguration;
 import com.markozivkovic.codegen.utils.FieldUtils;
 import com.markozivkovic.codegen.utils.ModelNameUtils;
 import com.markozivkovic.codegen.utils.PackageUtils;
+import com.markozivkovic.codegen.utils.SpringBootVersionUtils;
 
 public class ResolverImports {
     
@@ -106,9 +107,10 @@ public class ResolverImports {
      * computes the necessary imports for a query resolver test.
      * 
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param springBootVersion the Spring Boot version
      * @return a string containing the necessary import statements for a query resolver test
      */
-    public static String computeQueryResolverTestImports(final boolean isInstancioEnabled) {
+    public static String computeQueryResolverTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
         
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -125,8 +127,7 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        addOAuth2TestImports(imports, springBootVersion);
         
         return imports.stream()
                 .sorted()
@@ -138,9 +139,11 @@ public class ResolverImports {
      * 
      * @param isInstancioEnabled whether Instancio is enabled
      * @param hasJsonFields whether the model has json fields
+     * @param springBootVersion spring boot version
      * @return a string containing the necessary import statements for a mutation resolver test
      */
-    public static String computeMutationResolverTestImports(final boolean isInstancioEnabled, final boolean hasJsonFields) {
+    public static String computeMutationResolverTestImports(final boolean isInstancioEnabled, final boolean hasJsonFields,
+                final String springBootVersion) {
         
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -155,8 +158,7 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
         imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_CLIENT_AUTO_CONFIGURATION));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+        addOAuth2TestImports(imports, springBootVersion);
         
         return imports.stream()
                 .sorted()
@@ -232,12 +234,30 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sCreateTO", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sUpdateTO", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
-        imports.add(String.format(IMPORT, ImportConstants.Jackson.OBJECT_MAPPER));
-        imports.add(String.format(IMPORT, ImportConstants.Jackson.TYPE_REFERENCE));
 
         return imports.stream()
                 .sorted()
                 .collect(Collectors.joining());
     }
 
+    /**
+     * Adds necessary imports for OAuth2 WebMvc tests based on the Spring Boot version.
+     *
+     * @param imports the list of imports to add to
+     * @param springBootVersion the Spring Boot version
+     */
+    private static void addOAuth2TestImports(final Set<String> imports, final String springBootVersion) {
+        
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+            return;
+        }
+
+        if (SpringBootVersionUtils.isSpringBoot4(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+            return;
+        }
+    }
 }

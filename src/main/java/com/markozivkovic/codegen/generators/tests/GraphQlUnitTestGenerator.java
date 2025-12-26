@@ -146,7 +146,7 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("updateArgs", FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put("jsonFields", jsonFields);
         context.put("testImports", ResolverImports.computeMutationResolverTestImports(
-                UnitTestUtils.isInstancioEnabled(configuration), !jsonFields.isEmpty()
+                UnitTestUtils.isInstancioEnabled(configuration), !jsonFields.isEmpty(), configuration.getSpringBootVersion()
         ));
         context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
@@ -203,7 +203,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("idType", idField.getType());
         context.put("idField", idField.getName());
         context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("testImports", ResolverImports.computeQueryResolverTestImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", ResolverImports.computeQueryResolverTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+        ));
         context.put("projectImports", ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition, packageConfiguration));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
