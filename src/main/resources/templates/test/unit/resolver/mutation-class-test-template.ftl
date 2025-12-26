@@ -18,8 +18,10 @@ import java.util.Map;
 
 ${testImports}
 ${projectImports}
+import tools.jackson.databind.json.JsonMapper;
 <#if dataGenerator == "PODAM">import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
+import uk.co.jemos.podam.api.PodamFactoryImpl;
+</#if><#t>
 
 @GraphQlTest(
     controllers = ${resolverClassName}.class,
@@ -52,7 +54,7 @@ class ${strippedModelName}ResolverMutationTest {
     </#if>
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper mapper;
 
     @Autowired
     private GraphQlTester graphQlTester;
@@ -67,7 +69,7 @@ class ${strippedModelName}ResolverMutationTest {
 
         final ${modelName} saved = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${createInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${createInputTO}.class);
-        final Map<String, Object> inputVars = this.objectMapper.convertValue(
+        final Map<String, Object> inputVars = this.mapper.convertValue(
                 input, new TypeReference<Map<String,Object>>() {}
         );
 
@@ -121,7 +123,7 @@ class ${strippedModelName}ResolverMutationTest {
         final ${modelName} updated = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = updated.get${idField?cap_first}();
         final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
-        final Map<String, Object> inputVars = this.objectMapper.convertValue(
+        final Map<String, Object> inputVars = this.mapper.convertValue(
                 input, new TypeReference<Map<String,Object>>() {}
         );
 

@@ -19,7 +19,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 ${testImports}
-${projectImports}<#if dataGenerator == "PODAM">
+${projectImports}
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
@@ -46,7 +48,7 @@ class ${className} {
     </#if>
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper mapper;
 
     @Autowired
     private MockMvc mockMvc;
@@ -68,7 +70,7 @@ class ${className} {
         final ResultActions resultActions = this.mockMvc.perform(get("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.objectMapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.mapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
                 <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
         );
@@ -108,12 +110,12 @@ class ${className} {
                         .andExpect(status().isOk());
 
         <#if !swagger>
-        final PageTO<${transferObjectClass}> results = this.objectMapper.readValue(
+        final PageTO<${transferObjectClass}> results = this.mapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
                 new TypeReference<PageTO<${transferObjectClass?cap_first}>>() {}
         );
         <#else>
-        final ${responseClass} results = this.objectMapper.readValue(
+        final ${responseClass} results = this.mapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
                 ${responseClass}.class
         );
