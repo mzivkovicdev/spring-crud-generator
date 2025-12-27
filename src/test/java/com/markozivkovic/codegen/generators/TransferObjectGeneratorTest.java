@@ -1,12 +1,16 @@
 package com.markozivkovic.codegen.generators;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
@@ -14,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,10 +27,12 @@ import org.mockito.MockedStatic;
 import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectTarget;
 import com.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectType;
 import com.markozivkovic.codegen.imports.TransferObjectImports;
+import com.markozivkovic.codegen.models.AuditDefinition;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
+import com.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
 import com.markozivkovic.codegen.templates.TransferObjectTemplateContext;
 import com.markozivkovic.codegen.utils.AuditUtils;
 import com.markozivkovic.codegen.utils.FieldUtils;
@@ -284,6 +291,76 @@ class TransferObjectGeneratorTest {
             assertThrows(IllegalArgumentException.class, () -> generator.generate(mainModel, outputDir));
 
             writer.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void generate_shouldAddAuditingImport_forBaseTransferObject_whenAuditEnabled_andNotCreateOrUpdate() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.getGraphQl()).thenReturn(false);
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final ModelDefinition mainModel = newModel("UserEntity", List.of());
+        final List<ModelDefinition> entities = List.of(mainModel);
+
+        final AuditDefinition audit = mock(AuditDefinition.class);
+        when(audit.isEnabled()).thenReturn(true);
+        when(audit.getType()).thenReturn(AuditTypeEnum.LOCALDATETIME);
+        when(mainModel.getAudit()).thenReturn(audit);
+
+        final TransferObjectGenerator generator = new TransferObjectGenerator(cfg, entities, pkgCfg);
+        final String outputDir = "out";
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class);
+            final MockedStatic<TransferObjectTemplateContext> toCtx = mockStatic(TransferObjectTemplateContext.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+            final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(mainModel.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(Collections.emptyList());
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.example.app", pkgCfg))
+                    .thenReturn("com.example.app.to.rest");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectSubPackage(pkgCfg)).thenReturn("to/rest");
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.to");
+            pkg.when(() -> PackageUtils.computeTransferObjectSubPackage(pkgCfg)).thenReturn("to");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields()))
+                    .thenReturn(false);
+
+            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectType.BASE)).thenReturn("BASE_IMPORTS\n");
+            toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(eq(mainModel), eq(outputDir), anyBoolean(), any(), eq(pkgCfg)))
+                    .thenReturn("");
+            toImports.when(() -> TransferObjectImports.computeValidationImport(mainModel)).thenReturn("");
+
+            toCtx.when(() -> TransferObjectTemplateContext.computeTransferObjectContext(mainModel)).thenReturn(new HashMap<>());
+
+            auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCALDATETIME))
+                    .thenReturn("org.springframework.data.annotation.CreatedDate");
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/transfer-object-template.ftl"), anyMap()))
+                    .thenReturn("/* TO TEMPLATE */");
+
+            final AtomicReference<String> written = new AtomicReference<>();
+            writer.when(() -> FileWriterUtils.writeToFile(eq(outputDir), anyString(), anyString(), anyString()))
+                    .thenAnswer(inv -> {
+                        written.set(inv.getArgument(3, String.class));
+                        return null;
+                    });
+
+            generator.generate(mainModel, outputDir);
+
+            auditUtils.verify(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCALDATETIME), times(1));
+
+            assertNotNull(written.get(), "Expected something to be written");
         }
     }
 }

@@ -1,7 +1,8 @@
-<#-- GlobalGraphQlExceptionHandler.ftl -->
 <#setting number_format="computer">
-<#if isDetailed>import java.util.Map;</#if>
+<#if isDetailed>
+import java.util.Map;
 
+</#if><#t>
 import jakarta.validation.ConstraintViolationException;
 
 import org.slf4j.Logger;
@@ -25,7 +26,9 @@ public class GlobalGraphQlExceptionHandler {
     private static final String GENERAL_EXCEPTION_MESSAGE = "Server is unavailable.";
     private static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
     private static final String INVALID_FORMAT_MESSAGE = "Invalid format.";
+    <#if hasRelations>
     private static final String INVALID_RESOURCE_STATE_MESSAGE = "Invalid resource state";
+    </#if><#t>
 
     private GraphQLError buildError(final DataFetchingEnvironment env, final ErrorType type,
             final String message, final Throwable ex) {
@@ -39,8 +42,8 @@ public class GlobalGraphQlExceptionHandler {
                 "exception", ex.getClass().getSimpleName(),
                 "path", env.getExecutionStepInfo().getPath().toString()
         ));
-        </#if>
 
+        </#if><#t>
         return builder.build();
     }
 
@@ -94,8 +97,8 @@ public class GlobalGraphQlExceptionHandler {
             ex
         );
     }
-    </#if>
 
+    </#if><#t>
     @GraphQlExceptionHandler(Exception.class)
     public GraphQLError handleGeneric(final Exception ex, final DataFetchingEnvironment env) {
         LOGGER.error("Unexpected error during GraphQL data fetching", ex);

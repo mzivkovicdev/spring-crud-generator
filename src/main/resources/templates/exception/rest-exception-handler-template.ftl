@@ -26,7 +26,9 @@ public class GlobalRestExceptionHandler {
     private static final String REQUEST_NOT_READABLE_MESSAGE = "Not readable HTTP message";
     private static final String GENERAL_EXCEPTION_MESSAGE = "Server is unavailable.";
     private static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
+    <#if hasRelations>
     private static final String INVALID_RESOURCE_STATE_MESSAGE = "Invalid resource state";
+    </#if><#t>
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<HttpResponse> methodNotSupportedError(final HttpRequestMethodNotSupportedException e) {

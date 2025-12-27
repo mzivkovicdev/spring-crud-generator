@@ -191,7 +191,8 @@ public class TransferObjectGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, packagePath));
 
         final String imports = TransferObjectImports.getBaseImport(modelDefinition, entities, type);
-        if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()) {
+        if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()
+                    && (!TransferObjectType.CREATE.equals(type) && !TransferObjectType.UPDATE.equals(type))) {
             sb.append(String.format(IMPORT, AuditUtils.resolveAuditingImport(modelDefinition.getAudit().getType())));
         }
         sb.append(imports);
