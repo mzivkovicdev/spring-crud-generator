@@ -13,7 +13,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <swagger-parser.version>1.0.75</swagger-parser.version>
     <openapi-generator.version>7.14.0</openapi-generator.version>
     <jackson-dataformat-yaml.version>2.19.2</jackson-dataformat-yaml.version>
     <slf4j-api.version>2.0.17</slf4j-api.version>
@@ -35,12 +34,6 @@
         <groupId>com.fasterxml.jackson.dataformat</groupId>
         <artifactId>jackson-dataformat-yaml</artifactId>
         <version>${jackson-dataformat-yaml.version}</version>
-    </dependency>
-
-    <dependency>
-        <groupId>io.swagger</groupId>
-        <artifactId>swagger-parser</artifactId>
-        <version>${swagger-parser.version}</version>
     </dependency>
 
     <dependency>

@@ -1,8 +1,10 @@
 package com.markozivkovic.codegen.generators.tests;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -12,7 +14,9 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -20,6 +24,7 @@ import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKe
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import com.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 import com.markozivkovic.codegen.models.FieldDefinition;
@@ -44,6 +49,7 @@ class GraphQlUnitTestGeneratorTest {
     }
 
     @Test
+    @DisplayName("generate: unit tests disabled OR graphQl null/false -> no file writes")
     void generate_shouldReturn_whenUnitTestsDisabledOrGraphQlOff() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
@@ -55,16 +61,23 @@ class GraphQlUnitTestGeneratorTest {
         try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
-            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
-                    .thenReturn(false);
-
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(false);
             gen.generate(model, "src/main/java");
+            writer.verifyNoInteractions();
 
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            when(cfg.getGraphQl()).thenReturn(null);
+            gen.generate(model, "src/main/java");
+            writer.verifyNoInteractions();
+
+            when(cfg.getGraphQl()).thenReturn(false);
+            gen.generate(model, "src/main/java");
             writer.verifyNoInteractions();
         }
     }
 
     @Test
+    @DisplayName("generate: model has no ID field -> skips generation")
     void generate_shouldSkip_whenModelHasNoIdField() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
@@ -78,11 +91,8 @@ class GraphQlUnitTestGeneratorTest {
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
-            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
-                    .thenReturn(true);
-
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields()))
-                    .thenReturn(false);
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(false);
 
             gen.generate(model, "src/main/java");
 
@@ -91,10 +101,16 @@ class GraphQlUnitTestGeneratorTest {
     }
 
     @Test
-    void generate_shouldGenerateConfigQueryAndMutationTests() {
+    @DisplayName("generate: first time (config not generated) -> writes config + query + mutation; global handler enabled")
+    void generate_shouldGenerateConfigQueryAndMutationTests_globalHandlerEnabled() {
+
+        final String outputDir = "src/main/java";
+        final String testOutputDir = "src/test/java";
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         when(cfg.getGraphQl()).thenReturn(true);
+        when(cfg.getSpringBootVersion()).thenReturn("4");
+        when(cfg.getErrorResponse()).thenReturn(ErrorResponse.SIMPLE);
 
         final TestConfiguration testsCfg = mock(TestConfiguration.class);
         when(cfg.getTests()).thenReturn(testsCfg);
@@ -115,91 +131,98 @@ class GraphQlUnitTestGeneratorTest {
         final FieldDefinition roleId = mock(FieldDefinition.class);
         when(roleId.getName()).thenReturn("id");
         when(roleId.getType()).thenReturn("UUID");
-
         final ModelDefinition role = model("RoleEntity", List.of(roleId));
 
         final GraphQlUnitTestGenerator gen = new GraphQlUnitTestGenerator(cfg, List.of(user, role), pkgCfg);
+
         final List<String> writtenFiles = new ArrayList<>();
+        final List<String> writtenDirs = new ArrayList<>();
 
         try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-             final MockedStatic<ResolverImports> imports = mockStatic(ResolverImports.class);
+             final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
              final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
              final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class)) {
 
-            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
-                    .thenReturn(true);
-            unitUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg))
-                    .thenReturn(true);
-            unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any()))
-                    .thenReturn(mock(TestDataGeneratorConfig.class));
-            unitUtils.when(() -> UnitTestUtils.computeInvalidIdType(any()))
-                    .thenReturn("String");
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(true);
+            unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            unitUtils.when(() -> UnitTestUtils.computeInvalidIdType(any())).thenReturn("String");
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(user.getFields()))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields()))
-                    .thenReturn(id);
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(user.getFields()))
-                    .thenReturn(List.of(relation));
-            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(user))
-                    .thenReturn(List.of("roles"));
-            fieldUtils.when(() -> FieldUtils.extractJsonFields(user.getFields()))
-                    .thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractIdField(role.getFields()))
-                    .thenReturn(roleId);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(user.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(id);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(user.getFields())).thenReturn(List.of(relation));
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(user)).thenReturn(List.of("roles"));
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(user.getFields())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractIdField(role.getFields())).thenReturn(roleId);
 
-            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(any()))
-                    .thenReturn(List.of("name"));
-            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(any()))
-                    .thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(any())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(any())).thenReturn(List.of("name"));
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(any()))
-                    .thenReturn("com.test");
-            pkg.when(() -> PackageUtils.computeResolversPackage(any(), any()))
-                    .thenReturn("com.test.resolver");
-            pkg.when(() -> PackageUtils.computeResolversSubPackage(any()))
-                    .thenReturn("resolver");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.test");
+            pkg.when(() -> PackageUtils.computeResolversPackage("com.test", pkgCfg)).thenReturn("com.test.resolver");
+            pkg.when(() -> PackageUtils.computeResolversSubPackage(pkgCfg)).thenReturn("resolver");
 
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                    .thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
 
-            ctx.when(() -> GeneratorContext.isGenerated(any()))
-                    .thenReturn(false);
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RESOLVER_TEST_CONFIG)).thenReturn(false);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("// TEMPLATE");
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap()))
-                    .thenReturn("// TEMPLATE");
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
 
-            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
-                    .thenReturn(Map.of());
+            resolverImports.when(() -> ResolverImports.computeMutationResolverTestImports(anyBoolean(), anyBoolean(), anyString()))
+                        .thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeQueryResolverTestImports(anyBoolean(), anyString())).thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForMutationUnitTests(anyString(), any(), any(), anyBoolean()))
+                        .thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForQueryUnitTests(anyString(), any(), any(), anyBoolean()))
+                        .thenReturn("");
 
-            writer.when(() -> FileWriterUtils.writeToFile(any(), any(), any(), any()))
-                  .thenAnswer(inv -> {
-                      writtenFiles.add(inv.getArgument(2));
-                      return null;
-                  });
+            writer.when(() -> FileWriterUtils.writeToFile(any(), any(), any(), any())).thenAnswer(inv -> {
+                writtenDirs.add(inv.getArgument(0));
+                writtenFiles.add(inv.getArgument(2));
+                return null;
+            });
 
-            gen.generate(user, "src/main/java");
+            gen.generate(user, outputDir);
 
             assertTrue(writtenFiles.contains("ResolverTestConfiguration.java"));
             assertTrue(writtenFiles.contains("UserResolverQueryTest"));
             assertTrue(writtenFiles.contains("UserResolverMutationTest"));
+            assertTrue(writtenDirs.stream().allMatch(testOutputDir::equals));
 
-            ctx.verify(() -> GeneratorContext.markGenerated(
-                    GeneratorContextKeys.RESOLVER_TEST_CONFIG
-            ));
+            ctx.verify(() -> GeneratorContext.markGenerated(GeneratorContextKeys.RESOLVER_TEST_CONFIG));
+
+            resolverImports.verify(() ->
+                    ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, user, pkgCfg, true)
+            );
+            resolverImports.verify(() ->
+                    ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, user, pkgCfg, true)
+            );
+
+            resolverImports.verify(() ->
+                    ResolverImports.computeMutationResolverTestImports(true, false, "4")
+            );
+            resolverImports.verify(() ->
+                    ResolverImports.computeQueryResolverTestImports(true, "4")
+            );
         }
     }
 
     @Test
-    void generate_shouldGenerateQueryAndMutationTests() {
+    @DisplayName("generate: config already generated -> only query + mutation; global handler disabled when errorResponse NONE")
+    void generate_shouldGenerateQueryAndMutationTests_whenConfigAlreadyGenerated_globalHandlerDisabled() {
+        
+        final String outputDir = "src/main/java";
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         when(cfg.getGraphQl()).thenReturn(true);
+        when(cfg.getSpringBootVersion()).thenReturn("3");
+        when(cfg.getErrorResponse()).thenReturn(ErrorResponse.NONE);
 
         final TestConfiguration testsCfg = mock(TestConfiguration.class);
         when(cfg.getTests()).thenReturn(testsCfg);
@@ -220,7 +243,6 @@ class GraphQlUnitTestGeneratorTest {
         final FieldDefinition roleId = mock(FieldDefinition.class);
         when(roleId.getName()).thenReturn("id");
         when(roleId.getType()).thenReturn("UUID");
-
         final ModelDefinition role = model("RoleEntity", List.of(roleId));
 
         final GraphQlUnitTestGenerator gen = new GraphQlUnitTestGenerator(cfg, List.of(user, role), pkgCfg);
@@ -230,57 +252,43 @@ class GraphQlUnitTestGeneratorTest {
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-             final MockedStatic<ResolverImports> imports = mockStatic(ResolverImports.class);
+             final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
              final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
              final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class)) {
 
-            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
-                    .thenReturn(true);
-            unitUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg))
-                    .thenReturn(true);
-            unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any()))
-                    .thenReturn(mock(TestDataGeneratorConfig.class));
-            unitUtils.when(() -> UnitTestUtils.computeInvalidIdType(any()))
-                    .thenReturn("String");
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(true);
+            unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            unitUtils.when(() -> UnitTestUtils.computeInvalidIdType(any())).thenReturn("String");
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(user.getFields()))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields()))
-                    .thenReturn(id);
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(user.getFields()))
-                    .thenReturn(List.of(relation));
-            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(user))
-                    .thenReturn(List.of("roles"));
-            fieldUtils.when(() -> FieldUtils.extractJsonFields(user.getFields()))
-                    .thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractIdField(role.getFields()))
-                    .thenReturn(roleId);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(user.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(id);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(user.getFields())).thenReturn(List.of(relation));
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(user)).thenReturn(List.of("roles"));
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(user.getFields())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractIdField(role.getFields())).thenReturn(roleId);
 
-            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(any()))
-                    .thenReturn(List.of("name"));
-            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(any()))
-                    .thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(any())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(any())).thenReturn(List.of("name"));
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(any()))
-                    .thenReturn("com.test");
-            pkg.when(() -> PackageUtils.computeResolversPackage(any(), any()))
-                    .thenReturn("com.test.resolver");
-            pkg.when(() -> PackageUtils.computeResolversSubPackage(any()))
-                    .thenReturn("resolver");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.test");
+            pkg.when(() -> PackageUtils.computeResolversPackage("com.test", pkgCfg)).thenReturn("com.test.resolver");
+            pkg.when(() -> PackageUtils.computeResolversSubPackage(pkgCfg)).thenReturn("resolver");
 
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                    .thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
 
-            ctx.when(() -> GeneratorContext.isGenerated(any()))
-                    .thenReturn(true);
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RESOLVER_TEST_CONFIG)).thenReturn(true);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("// TEMPLATE");
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap()))
-                    .thenReturn("// TEMPLATE");
-
-            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
-                    .thenReturn(Map.of());
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+            resolverImports.when(() -> ResolverImports.computeMutationResolverTestImports(anyBoolean(), anyBoolean(), anyString())).thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeQueryResolverTestImports(anyBoolean(), anyString())).thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForMutationUnitTests(anyString(), any(), any(), anyBoolean()))
+                        .thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForQueryUnitTests(anyString(), any(), any(), anyBoolean()))
+                        .thenReturn("");
 
             writer.when(() -> FileWriterUtils.writeToFile(any(), any(), any(), any()))
                   .thenAnswer(inv -> {
@@ -288,12 +296,98 @@ class GraphQlUnitTestGeneratorTest {
                       return null;
                   });
 
-            gen.generate(user, "src/main/java");
+            gen.generate(user, outputDir);
 
             assertFalse(writtenFiles.contains("ResolverTestConfiguration.java"));
             assertTrue(writtenFiles.contains("UserResolverQueryTest"));
             assertTrue(writtenFiles.contains("UserResolverMutationTest"));
+
+            resolverImports.verify(() ->
+                    ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, user, pkgCfg, false)
+            );
+            resolverImports.verify(() ->
+                    ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, user, pkgCfg, false)
+            );
+
+            resolverImports.verify(() ->
+                    ResolverImports.computeMutationResolverTestImports(true, false, "3")
+            );
+            resolverImports.verify(() ->
+                    ResolverImports.computeQueryResolverTestImports(true, "3")
+            );
         }
     }
 
+    @Test
+    @DisplayName("generate: relation field points to missing entity -> throws NoSuchElementException")
+    void generate_shouldThrow_whenRelatedEntityMissing() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.getGraphQl()).thenReturn(true);
+        when(cfg.getSpringBootVersion()).thenReturn("4");
+        when(cfg.getErrorResponse()).thenReturn(ErrorResponse.SIMPLE);
+
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(cfg.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final FieldDefinition id = mock(FieldDefinition.class);
+        when(id.getName()).thenReturn("id");
+        when(id.getType()).thenReturn("Long");
+
+        final FieldDefinition relation = mock(FieldDefinition.class);
+        when(relation.getName()).thenReturn("roles");
+        when(relation.getType()).thenReturn("RoleEntity");
+
+        final ModelDefinition user = model("UserEntity", List.of(id, relation));
+
+        final GraphQlUnitTestGenerator gen = new GraphQlUnitTestGenerator(cfg, List.of(user), pkgCfg);
+
+        try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class)) {
+
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(true);
+            unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            unitUtils.when(() -> UnitTestUtils.computeInvalidIdType(any())).thenReturn("String");
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(user.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(id);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(user.getFields())).thenReturn(List.of(relation));
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(user)).thenReturn(List.of("roles"));
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(user.getFields())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(any())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(any())).thenReturn(List.of("name"));
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(anyString())).thenReturn("com.test");
+            pkg.when(() -> PackageUtils.computeResolversPackage(anyString(), any())).thenReturn("com.test.resolver");
+            pkg.when(() -> PackageUtils.computeResolversSubPackage(any())).thenReturn("resolver");
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+
+            ctx.when(() -> GeneratorContext.isGenerated(anyString())).thenReturn(true);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("// TEMPLATE");
+
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+
+            resolverImports.when(() -> ResolverImports.computeMutationResolverTestImports(anyBoolean(), anyBoolean(), anyString()))
+                        .thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeQueryResolverTestImports(anyBoolean(), anyString())).thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForMutationUnitTests(anyString(), any(), any(), anyBoolean()))
+                        .thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForQueryUnitTests(anyString(), any(), any(), anyBoolean()))
+                        .thenReturn("");
+
+            assertThrows(NoSuchElementException.class, () -> gen.generate(user, "src/main/java"));
+        }
+    }
 }

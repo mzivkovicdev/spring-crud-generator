@@ -153,15 +153,16 @@ public final class ImportConstants {
         public static final class SpringBoot3 {
             public static final String WEB_MVC_TEST = "org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest";
             public static final String AUTO_CONFIGURE_MOCK_MVC = "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc";
+            public static final String GRAPH_QL_TEST = "org.springframework.boot.test.autoconfigure.graphql.GraphQlTest";
+            public static final String AUTO_CONFIGURE_GRAPH_QL_TESTER = "org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureGraphQlTester";
         }
 
         public static final class SpringBoot4 {
             public static final String WEB_MVC_TEST = "org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest";
             public static final String AUTO_CONFIGURE_MOCK_MVC = "org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc";
+            public static final String GRAPH_QL_TEST = "org.springframework.boot.graphql.test.autoconfigure.GraphQlTest";
+            public static final String AUTO_CONFIGURE_GRAPH_QL_TESTER = "org.springframework.boot.graphql.test.autoconfigure.tester.AutoConfigureGraphQlTester";
         }
-
-        public static final String GRAPH_QL_TEST = "org.springframework.boot.test.autoconfigure.graphql.GraphQlTest";
-        public static final String AUTO_CONFIGURE_GRAPH_QL_TESTER = "org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureGraphQlTester";
     }
 
     public static final class SpringTest {

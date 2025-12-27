@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.generators.CodeGenerator;
 import com.markozivkovic.codegen.imports.ResolverImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import com.markozivkovic.codegen.models.FieldDefinition;
 import com.markozivkovic.codegen.models.ModelDefinition;
 import com.markozivkovic.codegen.models.PackageConfiguration;
@@ -131,6 +133,8 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
         final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(this.configuration.getErrorResponse()) ||
+                        Objects.isNull(this.configuration.getErrorResponse()));
 
         final Map<String, Object> context = new HashMap<>();
         final List<Map<String, Object>> relations = new ArrayList<>();
@@ -148,8 +152,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("testImports", ResolverImports.computeMutationResolverTestImports(
                 UnitTestUtils.isInstancioEnabled(configuration), !jsonFields.isEmpty(), configuration.getSpringBootVersion()
         ));
-        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration));
+        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration, isGlobalExceptionHandlerEnabled));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
         
         relationFields.forEach(field -> {
             final ModelDefinition relationModel = this.entities.stream()
@@ -193,6 +198,8 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         final String className = String.format("%sResolverQueryTest", modelWithoutSuffix);
         final String resolverClassName = String.format("%sResolver", modelWithoutSuffix);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(this.configuration.getErrorResponse()) ||
+                        Objects.isNull(this.configuration.getErrorResponse()));
 
         final Map<String, Object> context = new HashMap<>();
         context.put("strippedModelName", modelWithoutSuffix);
@@ -206,8 +213,9 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
         context.put("testImports", ResolverImports.computeQueryResolverTestImports(
                 UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
         ));
-        context.put("projectImports", ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition, packageConfiguration));
+        context.put("projectImports", ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, modelDefinition, packageConfiguration, isGlobalExceptionHandlerEnabled));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
 
         sb.append(String.format(PACKAGE, PackageUtils.computeResolversPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
