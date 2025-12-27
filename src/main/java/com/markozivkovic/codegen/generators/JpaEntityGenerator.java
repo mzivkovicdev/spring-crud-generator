@@ -29,6 +29,8 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKeys;
+import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.imports.ModelImports;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.ModelDefinition;
@@ -89,6 +91,8 @@ public class JpaEntityGenerator implements CodeGenerator {
                 });
        
         this.generateJpaEntity(modelDefinition, outputDir);
+
+        this.generateJpaAuditingConfiguration(modelDefinition, outputDir);
         
         LOGGER.info("Generator JPA entity finished for model: {}", modelDefinition.getName());
     }
@@ -213,6 +217,35 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));
 
         FileWriterUtils.writeToFile(outputDir, PackageUtils.computeEntitySubPackage(packageConfiguration), className, sb.toString());
+    }
+
+    /**
+     * Generates a JPA auditing configuration class if the model has auditing enabled.
+     *
+     * @param model     The model definition containing the class name, table name, and field definitions.
+     * @param outputDir The directory where the generated configuration code will be written.
+     */
+    private void generateJpaAuditingConfiguration(final ModelDefinition model, final String outputDir) {
+
+        if (GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)) return;
+
+        if (Objects.nonNull(model.getAudit()) && model.getAudit().isEnabled()) {
+
+            final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+            final StringBuilder sb = new StringBuilder();
+        
+            sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+                    .append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "configuration/jpa-auditing-configuration.ftl", Map.of()
+                    ));
+            
+            FileWriterUtils.writeToFile(
+                outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration),
+                "EnableAuditingConfiguration.java", sb.toString()
+            );
+
+            GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG);
+        }
     }
 
 }

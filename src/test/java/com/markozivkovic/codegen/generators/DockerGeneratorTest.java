@@ -11,6 +11,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -21,9 +24,11 @@ import com.markozivkovic.codegen.constants.GeneratorConstants;
 import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.ApplicationDockerConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.CrudConfiguration.DbDockerConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.DockerConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.DockerUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
@@ -78,14 +83,21 @@ class DockerGeneratorTest {
 
     @Test
     void generate_shouldGenerateDockerfileAndComposeWithDefaultsForPostgres() {
-        
+
         final Env env = prepareEnv();
 
         when(env.config.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
         when(env.config.getJavaVersion()).thenReturn(null);
+
         when(env.dockerCfg.getDockerCompose()).thenReturn(true);
         when(env.dockerCfg.getDb()).thenReturn(null);
         when(env.dockerCfg.getApp()).thenReturn(null);
+        when(env.config.getCache()).thenReturn(null);
+
+        final List<Map<String, Object>> dockerfileContexts = new ArrayList<>();
+        final List<Map<String, Object>> composeContexts = new ArrayList<>();
+        final List<String> writtenDockerfiles = new ArrayList<>();
+        final List<String> writtenComposes = new ArrayList<>();
 
         try (final MockedStatic<DockerUtils> dockerUtils = mockStatic(DockerUtils.class);
              final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
@@ -100,71 +112,51 @@ class DockerGeneratorTest {
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE))
                     .thenReturn(false);
 
-            final AtomicReference<Map<String, Object>> dockerfileCtxRef = new AtomicReference<>();
-            final AtomicReference<Map<String, Object>> composeCtxRef = new AtomicReference<>();
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/dockerfile-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        dockerfileContexts.add(new HashMap<>(ctx));
+                        return "DOCKERFILE_CONTENT";
+                    });
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("docker/dockerfile-template.ftl"),
-                    anyMap()
-            )).thenAnswer(invocation -> {
-                @SuppressWarnings("unchecked")
-                final Map<String, Object> ctx = invocation.getArgument(1, Map.class);
-                dockerfileCtxRef.set(ctx);
-                return "DOCKERFILE_CONTENT";
-            });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/docker-compose-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        composeContexts.add(new HashMap<>(ctx));
+                        return "DOCKER_COMPOSE_CONTENT";
+                    });
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("docker/docker-compose-template.ftl"),
-                    anyMap()
-            )).thenAnswer(invocation -> {
-                @SuppressWarnings("unchecked")
-                final Map<String, Object> ctx = invocation.getArgument(1, Map.class);
-                composeCtxRef.set(ctx);
-                return "DOCKER_COMPOSE_CONTENT";
-            });
+            writer.when(() -> FileWriterUtils.writeToFile(eq("/tmp/project"), eq("Dockerfile"), anyString()))
+                    .thenAnswer(inv -> { writtenDockerfiles.add(inv.getArgument(2, String.class)); return null; });
 
-            final AtomicReference<String> writtenDockerfile = new AtomicReference<>();
-            final AtomicReference<String> writtenCompose = new AtomicReference<>();
-
-            writer.when(() -> FileWriterUtils.writeToFile(
-                    eq("/tmp/project"),
-                    eq("Dockerfile"),
-                    anyString()
-            )).thenAnswer(invocation -> {
-                writtenDockerfile.set(invocation.getArgument(2, String.class));
-                return null;
-            });
-
-            writer.when(() -> FileWriterUtils.writeToFile(
-                    eq("/tmp/project"),
-                    eq("docker-compose.yml"),
-                    anyString()
-            )).thenAnswer(invocation -> {
-                writtenCompose.set(invocation.getArgument(2, String.class));
-                return null;
-            });
+            writer.when(() -> FileWriterUtils.writeToFile(eq("/tmp/project"), eq("docker-compose.yml"), anyString()))
+                    .thenAnswer(inv -> { writtenComposes.add(inv.getArgument(2, String.class)); return null; });
 
             env.generator.generate("out");
 
-            final Map<String, Object> dfCtx = dockerfileCtxRef.get();
-            assertNotNull(dfCtx);
+            assertEquals(1, dockerfileContexts.size());
+            final Map<String, Object> dfCtx = dockerfileContexts.get(0);
             assertEquals("my-app", dfCtx.get("artifactId"));
             assertEquals("1.0.0", dfCtx.get("version"));
             assertEquals("eclipse-temurin", dfCtx.get("baseImage"));
             assertEquals("17", dfCtx.get("javaVersion"));
             assertEquals("8080", dfCtx.get("port"));
+            assertFalse(dfCtx.containsKey("tag"));
 
-            final Map<String, Object> dcCtx = composeCtxRef.get();
-            assertNotNull(dcCtx);
+            assertEquals(1, composeContexts.size());
+            final Map<String, Object> dcCtx = composeContexts.get(0);
             assertEquals("my-app", dcCtx.get("artifactId"));
             assertEquals("postgresql", dcCtx.get("dbType"));
             assertEquals("8080", dcCtx.get("appPort"));
             assertEquals(5432, dcCtx.get("dbPort"));
             assertEquals("postgres", dcCtx.get("dbImage"));
             assertFalse(dcCtx.containsKey("dbTag"));
+            assertFalse(dcCtx.containsKey("cacheType"));
 
-            assertEquals("DOCKERFILE_CONTENT", writtenDockerfile.get());
-            assertEquals("DOCKER_COMPOSE_CONTENT", writtenCompose.get());
+            assertEquals(List.of("DOCKERFILE_CONTENT"), writtenDockerfiles);
+            assertEquals(List.of("DOCKER_COMPOSE_CONTENT"), writtenComposes);
 
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE));
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE));
@@ -173,7 +165,7 @@ class DockerGeneratorTest {
 
     @Test
     void generate_shouldRespectCustomDbAndAppSettings() {
-        
+
         final Env env = prepareEnv();
 
         when(env.config.getDatabase()).thenReturn(DatabaseType.MYSQL);
@@ -192,47 +184,39 @@ class DockerGeneratorTest {
         when(env.dockerCfg.getDockerCompose()).thenReturn(true);
         when(env.dockerCfg.getDb()).thenReturn(dbCfg);
         when(env.dockerCfg.getApp()).thenReturn(appCfg);
+        when(env.config.getCache()).thenReturn(null);
+
+        final List<Map<String, Object>> dockerfileContexts = new ArrayList<>();
+        final List<Map<String, Object>> composeContexts = new ArrayList<>();
 
         try (final MockedStatic<DockerUtils> dockerUtils = mockStatic(DockerUtils.class);
              final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class)) {
 
-            dockerUtils.when(() -> DockerUtils.isDockerfileEnabled(env.dockerCfg))
-                    .thenReturn(true);
+            dockerUtils.when(() -> DockerUtils.isDockerfileEnabled(env.dockerCfg)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE)).thenReturn(false);
 
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE))
-                    .thenReturn(false);
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE))
-                    .thenReturn(false);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/dockerfile-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        dockerfileContexts.add(new HashMap<>(ctx));
+                        return "DOCKERFILE";
+                    });
 
-            AtomicReference<Map<String, Object>> dockerfileCtxRef = new AtomicReference<>();
-            AtomicReference<Map<String, Object>> composeCtxRef = new AtomicReference<>();
-
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("docker/dockerfile-template.ftl"),
-                    anyMap()
-            )).thenAnswer(invocation -> {
-                @SuppressWarnings("unchecked")
-                final Map<String, Object> ctx = invocation.getArgument(1, Map.class);
-                dockerfileCtxRef.set(ctx);
-                return "DOCKERFILE";
-            });
-
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("docker/docker-compose-template.ftl"),
-                    anyMap()
-            )).thenAnswer(invocation -> {
-                @SuppressWarnings("unchecked")
-                final Map<String, Object> ctx = invocation.getArgument(1, Map.class);
-                composeCtxRef.set(ctx);
-                return "COMPOSE";
-            });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/docker-compose-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        composeContexts.add(new HashMap<>(ctx));
+                        return "COMPOSE";
+                    });
 
             env.generator.generate("out");
 
-            final Map<String, Object> dfCtx = dockerfileCtxRef.get();
-            assertNotNull(dfCtx);
+            assertEquals(1, dockerfileContexts.size());
+            final Map<String, Object> dfCtx = dockerfileContexts.get(0);
             assertEquals("my-app", dfCtx.get("artifactId"));
             assertEquals("1.0.0", dfCtx.get("version"));
             assertEquals("custom/jre", dfCtx.get("baseImage"));
@@ -240,63 +224,114 @@ class DockerGeneratorTest {
             assertEquals(9090, dfCtx.get("port"));
             assertEquals("v1", dfCtx.get("tag"));
 
-            final Map<String, Object> dcCtx = composeCtxRef.get();
-            assertNotNull(dcCtx);
+            assertEquals(1, composeContexts.size());
+            final Map<String, Object> dcCtx = composeContexts.get(0);
             assertEquals("my-app", dcCtx.get("artifactId"));
             assertEquals("mysql", dcCtx.get("dbType"));
             assertEquals(9090, dcCtx.get("appPort"));
             assertEquals(3333, dcCtx.get("dbPort"));
             assertEquals("custom/mysql", dcCtx.get("dbImage"));
             assertEquals("8.1", dcCtx.get("dbTag"));
+            assertFalse(dcCtx.containsKey("cacheType"));
         }
     }
 
     @Test
-    void generate_shouldSkipDockerfileWhenAlreadyGenerated() {
-        
+    void generate_shouldIncludeCacheTypeInComposeContext_whenCacheEnabled() {
+
         final Env env = prepareEnv();
 
         when(env.config.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
         when(env.config.getJavaVersion()).thenReturn(null);
+
         when(env.dockerCfg.getDockerCompose()).thenReturn(true);
         when(env.dockerCfg.getDb()).thenReturn(null);
         when(env.dockerCfg.getApp()).thenReturn(null);
+
+        final CacheConfiguration cacheCfg = mock(CacheConfiguration.class);
+        when(cacheCfg.getEnabled()).thenReturn(true);
+        when(cacheCfg.getType()).thenReturn(CacheTypeEnum.REDIS);
+        when(env.config.getCache()).thenReturn(cacheCfg);
+
+        final List<Map<String, Object>> composeContexts = new ArrayList<>();
+
+        try (final MockedStatic<DockerUtils> dockerUtils = mockStatic(DockerUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class)) {
+
+            dockerUtils.when(() -> DockerUtils.isDockerfileEnabled(env.dockerCfg)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE)).thenReturn(false);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/docker-compose-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        composeContexts.add(new HashMap<>(ctx));
+                        return "COMPOSE";
+                    });
+
+            env.generator.generate("out");
+
+            assertEquals(1, composeContexts.size());
+            assertEquals("redis", composeContexts.get(0).get("cacheType"));
+        }
+    }
+
+    @Test
+    void generate_shouldSkipDockerCompose_whenDockerComposeDisabled() {
+
+        final Env env = prepareEnv();
+
+        when(env.config.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(env.dockerCfg.getDockerCompose()).thenReturn(false);
 
         try (final MockedStatic<DockerUtils> dockerUtils = mockStatic(DockerUtils.class);
              final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
-            dockerUtils.when(() -> DockerUtils.isDockerfileEnabled(env.dockerCfg))
-                    .thenReturn(true);
-
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE))
-                    .thenReturn(true);
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE))
-                    .thenReturn(false);
-
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("docker/docker-compose-template.ftl"),
-                    anyMap()
-            )).thenReturn("COMPOSE");
+            dockerUtils.when(() -> DockerUtils.isDockerfileEnabled(env.dockerCfg)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE)).thenReturn(false);
 
             env.generator.generate("out");
 
-            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("docker/dockerfile-template.ftl"),
-                    anyMap()
-            ), never());
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/docker-compose-template.ftl"), anyMap()), never());
+            writer.verifyNoInteractions();
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE), never());
+        }
+    }
 
-            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("docker/docker-compose-template.ftl"),
-                    anyMap()
-            ));
+    @Test
+    void generate_shouldSkipDockerfileWhenAlreadyGenerated_butGenerateCompose() {
 
-            writer.verify(() -> FileWriterUtils.writeToFile(
-                    eq("/tmp/project"),
-                    eq("docker-compose.yml"),
-                    eq("COMPOSE")
-            ));
+        final Env env = prepareEnv();
+
+        when(env.config.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(env.config.getJavaVersion()).thenReturn(null);
+
+        when(env.dockerCfg.getDockerCompose()).thenReturn(true);
+        when(env.dockerCfg.getDb()).thenReturn(null);
+        when(env.dockerCfg.getApp()).thenReturn(null);
+        when(env.config.getCache()).thenReturn(null);
+
+        try (final MockedStatic<DockerUtils> dockerUtils = mockStatic(DockerUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            dockerUtils.when(() -> DockerUtils.isDockerfileEnabled(env.dockerCfg)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE)).thenReturn(false);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/docker-compose-template.ftl"), anyMap())).thenReturn("COMPOSE");
+
+            env.generator.generate("out");
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/dockerfile-template.ftl"), anyMap()), never());
+
+            writer.verify(() -> FileWriterUtils.writeToFile(eq("/tmp/project"), eq("docker-compose.yml"), eq("COMPOSE")));
             writer.verifyNoMoreInteractions();
         }
     }
