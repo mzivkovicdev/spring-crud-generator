@@ -124,10 +124,8 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        addOAuth2TestImports(imports, springBootVersion);
+        addGraphQlTestAndOAuth2Imports(imports, springBootVersion);
         
         return imports.stream()
                 .sorted()
@@ -155,10 +153,8 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringContext.IMPORT));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER));
-        imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.GRAPH_QL_TEST));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
-        addOAuth2TestImports(imports, springBootVersion);
+        addGraphQlTestAndOAuth2Imports(imports, springBootVersion);
         
         return imports.stream()
                 .sorted()
@@ -168,13 +164,14 @@ public class ResolverImports {
     /**
      * Computes the necessary imports for a query unit test, including the necessary enums, models, services, and transfer objects.
      *
-     * @param outputDir            the directory where the generated code will be written
-     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
-     * @param packageConfiguration the package configuration for the project
+     * @param outputDir                       the directory where the generated code will be written
+     * @param modelDefinition                 the model definition containing the class name, table name, and field definitions
+     * @param packageConfiguration            the package configuration for the project
+     * @param isGlobalExceptionHandlerEnabled whether the global exception handler is enabled
      * @return a string containing the necessary import statements for a query unit test
      */
     public static String computeProjectImportsForQueryUnitTests(final String outputDir, final ModelDefinition modelDefinition,
-                final PackageConfiguration packageConfiguration) {
+                final PackageConfiguration packageConfiguration, final boolean isGlobalExceptionHandlerEnabled) {
      
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -189,7 +186,10 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeTransferObjectPackage(packagePath, packageConfiguration), GeneratorConstants.PAGE_TO)));
-        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
+
+        if (isGlobalExceptionHandlerEnabled) {
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
+        }
 
         return imports.stream()
                 .sorted()
@@ -199,13 +199,14 @@ public class ResolverImports {
     /**
      * computes the necessary imports for a mutation unit test, including the necessary imports for the fields, relations, and service.
      *
-     * @param outputDir            the directory where the generated code will be written
-     * @param modelDefinition      the model definition containing the class name, table name, and field definitions
-     * @param packageConfiguration the package configuration for the project
+     * @param outputDir                       the directory where the generated code will be written
+     * @param modelDefinition                 the model definition containing the class name, table name, and field definitions
+     * @param packageConfiguration            the package configuration for the project
+     * @param isGlobalExceptionHandlerEnabled whether the global exception handler is enabled
      * @return a string containing the necessary import statements for a mutation unit test
      */
     public static String computeProjectImportsForMutationUnitTests(final String outputDir, final ModelDefinition modelDefinition,
-                final PackageConfiguration packageConfiguration) {
+                final PackageConfiguration packageConfiguration, final boolean isGlobalExceptionHandlerEnabled) {
      
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -233,7 +234,10 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sCreateTO", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sUpdateTO", modelWithoutSuffix))));
-        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
+        
+        if (isGlobalExceptionHandlerEnabled) {
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER)));
+        }
 
         return imports.stream()
                 .sorted()
@@ -241,22 +245,26 @@ public class ResolverImports {
     }
 
     /**
-     * Adds necessary imports for OAuth2 WebMvc tests based on the Spring Boot version.
+     * Adds the necessary imports for the GraphQL test, for oauth2 and auto-configure graphql test.
      *
      * @param imports the list of imports to add to
      * @param springBootVersion the Spring Boot version
      */
-    private static void addOAuth2TestImports(final Set<String> imports, final String springBootVersion) {
+    private static void addGraphQlTestAndOAuth2Imports(final Set<String> imports, final String springBootVersion) {
         
         if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
             imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION));
             imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot3.GRAPH_QL_TEST));
             return;
         }
 
         if (SpringBootVersionUtils.isSpringBoot4(springBootVersion)) {
             imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION));
             imports.add(String.format(IMPORT, ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_GRAPH_QL_TESTER));
+            imports.add(String.format(IMPORT, ImportConstants.SpringBootTest.SpringBoot4.GRAPH_QL_TEST));
             return;
         }
     }

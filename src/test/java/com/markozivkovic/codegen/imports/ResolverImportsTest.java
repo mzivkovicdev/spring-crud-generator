@@ -315,9 +315,9 @@ class ResolverImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.GRAPH_QL_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.GraphQLTest.GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.GRAPH_QL_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
     }
@@ -338,9 +338,9 @@ class ResolverImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.GRAPH_QL_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.GraphQLTest.GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.GRAPH_QL_TEST + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
     }
@@ -369,7 +369,6 @@ class ResolverImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringContext.IMPORT + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
     }
 
     @Test
@@ -387,7 +386,7 @@ class ResolverImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringContext.IMPORT + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
     }
@@ -407,7 +406,7 @@ class ResolverImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringContext.IMPORT + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.TEST_PROPERTY_SORUCE + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot4.AUTO_CONFIGURE_GRAPH_QL_TESTER + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_CLIENT_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot4.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
     }
@@ -481,7 +480,7 @@ class ResolverImportsTest {
             pkg.when(() -> PackageUtils.join("com.app.exception", GeneratorConstants.GLOBAL_GRAPHQL_EXCEPTION_HANDLER))
                     .thenReturn("com.app.exception.GlobalGraphqlExceptionHandler");
 
-            final String result = ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, model, config);
+            final String result = ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, model, config, true);
 
             assertTrue(result.contains("import com.app.entity.User;"));
             assertTrue(result.contains("import com.app.service.UserService;"));
@@ -550,7 +549,7 @@ class ResolverImportsTest {
             pkg.when(() -> PackageUtils.join("com.shop.business", "OrderBusinessService"))
                     .thenReturn("com.shop.business.OrderBusinessService");
 
-            final String result = ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, model, config);
+            final String result = ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, model, config, true);
 
             assertTrue(result.contains("import com.shop.business.OrderBusinessService;"),
                     "BusinessService import should be present when relations exist");
@@ -612,7 +611,8 @@ class ResolverImportsTest {
             final String result = ResolverImports.computeProjectImportsForMutationUnitTests(
                     outputDir,
                     model,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.app.entity.User;"));
@@ -696,7 +696,8 @@ class ResolverImportsTest {
             final String result = ResolverImports.computeProjectImportsForMutationUnitTests(
                     outputDir,
                     model,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.shop.graphql.helper.mapper.ShippingGraphQLMapper;"),
@@ -774,7 +775,8 @@ class ResolverImportsTest {
             final String result = ResolverImports.computeProjectImportsForMutationUnitTests(
                     outputDir,
                     model,
-                    packageConfiguration
+                    packageConfiguration,
+                    true
             );
 
             assertTrue(result.contains("import com.billing.business.InvoiceBusinessService;"),

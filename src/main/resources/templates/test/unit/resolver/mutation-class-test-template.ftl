@@ -18,6 +18,7 @@ import java.util.Map;
 
 ${testImports}
 ${projectImports}
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 <#if dataGenerator == "PODAM">import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;
@@ -30,15 +31,15 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
     }
 )
 @AutoConfigureGraphQlTester
-@Import({ GlobalGraphQlExceptionHandler.class, ResolverTestConfiguration.class })
+@Import({ <#if isGlobalExceptionHandlerEnabled>GlobalGraphQlExceptionHandler.class, </#if>ResolverTestConfiguration.class })
 @TestPropertySource(properties = {
     "spring.graphql.schema.locations=classpath:graphql/"
 })
 class ${strippedModelName}ResolverMutationTest {
-
     <#if dataGenerator == "PODAM">
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
-
+    
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    </#if><#t>
     <#list jsonFields as jsonField>
     <#assign jsonFieldMapperClass = jsonField?cap_first + "GraphQLMapper">
     <#assign jsonFieldMapper = jsonField?cap_first + "Mapper">
