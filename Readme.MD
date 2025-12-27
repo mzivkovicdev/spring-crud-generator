@@ -159,7 +159,9 @@ This configuration file defines:
 - database and migration settings
 - entities and relationships
 - caching, tests, and API generation
-- Both YAML and JSON formats are supported.
+- Both YAML (`.yaml/.yml`) and JSON (`.json`) formats are supported.
+
+> Full spec example: [`crud-spec-full.yaml`](docs/examples/crud-spec-full.yaml)
 
 ### Step 3: Run the Generator
 
