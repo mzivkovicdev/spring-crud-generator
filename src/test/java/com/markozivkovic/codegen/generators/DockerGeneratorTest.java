@@ -2,7 +2,6 @@ package com.markozivkovic.codegen.generators;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -15,7 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -25,10 +23,10 @@ import com.markozivkovic.codegen.context.GeneratorContext;
 import com.markozivkovic.codegen.models.CrudConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.ApplicationDockerConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration;
+import com.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
 import com.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import com.markozivkovic.codegen.models.CrudConfiguration.DbDockerConfiguration;
 import com.markozivkovic.codegen.models.CrudConfiguration.DockerConfiguration;
-import com.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
 import com.markozivkovic.codegen.models.ProjectMetadata;
 import com.markozivkovic.codegen.utils.DockerUtils;
 import com.markozivkovic.codegen.utils.FileWriterUtils;
