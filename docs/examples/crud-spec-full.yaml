@@ -1,0 +1,152 @@
+configuration:
+  database: postgresql
+  javaVersion: 21
+  optimisticLocking: true
+  docker:
+    dockerfile: true
+    dockerCompose: true
+    app:
+      image: eclipse-temurin
+      port: 8080
+    db:
+      image: postgres
+      port: 5433
+      tag: latest
+  cache: 
+    enabled: true
+    type: REDIS
+    expiration: 5
+    # maxSize: 10000 use for CAFFEINE
+  openApi:
+    apiSpec: true
+    generateResources: true
+  graphQl: true
+  errorResponse: simple
+  migrationScripts: true
+  tests:
+    unit: true
+    dataGenerator: instancio
+  additionalProperties:
+    graphql.scalarConfig: true
+    rest.basePath: /api/v1
+    optimisticLocking.retry.config: true
+    optimisticLocking.retry.maxAttempts: 5
+    optimisticLocking.backoff.delayMs: 100
+    optimisticLocking.backoff.multiplier: 2.0
+    optimisticLocking.backoff.maxDelayMs: 1000
+packages:
+  annotations: annotation
+  businessservices: businessservice
+  configurations: configuration
+  controllers: controller
+  enums: myenums
+  exceptions: exception 
+  generated: generated
+  mappers: mapper
+  models: persistance.entity
+  resolvers: graphql
+  repositories: persistance.repository
+  services: persistance.service
+  transferobjects: transferobject
+entities:
+  - name: ProductModel
+    storageName: product_table
+    description: "Represents a product"
+    fields:
+      - name: id
+        type: Long
+        description: "The unique identifier for the product"
+        id:
+          strategy: TABLE
+      - name: name
+        description: "The name of the product"
+        type: String
+        column:
+          nullable: false
+          updateable: true
+          unique: true
+          length: 10000
+      - name: price
+        description: "The price of the product"
+        type: String
+        column:
+          nullable: false
+      - name: users
+        type: UserEntity
+        relation:
+          type: OneToMany
+          fetch: LAZY
+          cascade: MERGE
+          joinColumn: product_id
+      - name: uuid
+        description: "The unique identifier for the product"
+        type: UUID
+        column:
+          nullable: false
+      - name: birthDate
+        description: "The date and time the product was created"
+        type: LocalDate
+      - name: status
+        description: "The status of the product"
+        type: Enum
+        values:
+          - ACTIVE
+          - INACTIVE
+  - name: OrderTable
+    storageName: order_table
+    description: "Represents an order"
+    fields:
+      - name: orderId
+        type: Long
+        description: "The unique identifier for the order"
+        id:
+          strategy: IDENTITY
+      - name: product
+        type: ProductModel
+        description: "Represents a product"
+        relation:
+          type: OneToOne
+          joinColumn: product_id
+          fetch: EAGER
+          cascade: MERGE
+      - name: quantity
+        type: Integer
+        column:
+          nullable: false
+      - name: users
+        type: UserEntity
+        relation:
+          type: ManyToMany
+          fetch: LAZY
+          cascade: MERGE
+          joinTable:
+            name: order_user_table
+            joinColumn: order_id
+            inverseJoinColumn: user_id
+  - name: UserEntity
+    storageName: user_table
+    description: "Represents a user"
+    fields:
+      - name: userId
+        type: Long
+        id:
+          strategy: AUTO
+      - name: username
+        type: String
+      - name: email
+        type: String
+      - name: password
+        type: String
+      - name: details
+        type: JSON<Details>
+      - type: List<String>
+        name: roles
+      - type: List<String>
+        name: permissions
+  - name: Details
+    description: "Represents a user details"
+    fields:
+      - name: firstName
+        type: String
+      - name: lastName
+        type: String
