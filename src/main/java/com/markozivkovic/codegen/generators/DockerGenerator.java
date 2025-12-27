@@ -108,6 +108,11 @@ public class DockerGenerator implements ProjectArtifactGenerator {
             }
         }
 
+        if (Objects.nonNull(this.configuration.getCache()) && Boolean.TRUE.equals(this.configuration.getCache().getEnabled())
+                    && Objects.nonNull(this.configuration.getCache().getType())) {
+            context.put("cacheType", this.configuration.getCache().getType().name().toLowerCase());
+        }
+
         final String dockerCompose = FreeMarkerTemplateProcessorUtils.processTemplate("docker/docker-compose-template.ftl", context);
 
         FileWriterUtils.writeToFile(projectMetadata.getProjectBaseDir(), "docker-compose.yml", dockerCompose);

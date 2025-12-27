@@ -75,6 +75,7 @@ public class GeneratorConstants {
         public static final String OPENAPI_CODEGEN = "openapi-codegen";
         public static final String SWAGGER = "swagger";
         public static final String RESOLVER_TEST_CONFIG = "resolver-test-config";
+        public static final String JPA_AUDITING_CONFIG = "jpa-auditing-config";
     }
 
 }

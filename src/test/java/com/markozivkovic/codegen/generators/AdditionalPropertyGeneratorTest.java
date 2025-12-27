@@ -61,7 +61,7 @@ class AdditionalPropertyGeneratorTest {
         final Env env = prepareEnv();
 
         try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
 
             cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(true);
 
@@ -80,7 +80,7 @@ class AdditionalPropertyGeneratorTest {
         env.additionalProps.put("something", true);
 
         try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
 
             cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
@@ -88,7 +88,8 @@ class AdditionalPropertyGeneratorTest {
 
             env.generator.generate("out");
 
-            genCtx.verify(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
+            genCtx.verify(
+                    () -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
             genCtx.verifyNoMoreInteractions();
         }
     }
@@ -113,34 +114,36 @@ class AdditionalPropertyGeneratorTest {
         final List<InvocationOnMock> writerInvocations = new ArrayList<>();
 
         try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
-             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl =
-                     mockStatic(FreeMarkerTemplateProcessorUtils.class, invocation -> {
-                         templateInvocations.add(invocation);
-                         if ("processTemplate".equals(invocation.getMethod().getName())) {
-                             String templateName = invocation.getArgument(0, String.class);
-                             return "TEMPLATE-" + templateName;
-                         }
-                         return null;
-                     });
-             final MockedStatic<FileWriterUtils> writer =
-                     mockStatic(FileWriterUtils.class, invocation -> {
-                         writerInvocations.add(invocation);
-                         return null;
-                     });
-             final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils =
-                     mockStatic(AdditionalPropertiesUtils.class)) {
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+                final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                        FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                            templateInvocations.add(invocation);
+                            if ("processTemplate".equals(invocation.getMethod().getName())) {
+                                String templateName = invocation.getArgument(0, String.class);
+                                return "TEMPLATE-" + templateName;
+                            }
+                            return null;
+                        });
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                    writerInvocations.add(invocation);
+                    return null;
+                });
+                final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(
+                        AdditionalPropertiesUtils.class)) {
 
             cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
                     .thenReturn(false);
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION))
+            genCtx.when(
+                    () -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION))
                     .thenReturn(false);
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
+            genCtx.when(() -> GeneratorContext
+                    .isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
                     .thenReturn(false);
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+            genCtx.when(
+                    () -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(false);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
@@ -151,39 +154,36 @@ class AdditionalPropertyGeneratorTest {
                     .thenReturn("com.example.app.annotation");
             pkg.when(() -> PackageUtils.computeAnnotationSubPackage(env.pkgConfig)).thenReturn("annotation");
 
-            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps))
+            additionalPropsUtils
+                    .when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps))
                     .thenReturn(true);
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getInt(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS))
                     .thenReturn(5);
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getInt(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS))
                     .thenReturn(100);
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getInt(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS))
                     .thenReturn(1000);
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getDouble(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getDouble(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER))
                     .thenReturn(2.0d);
 
             env.generator.generate("out");
 
             final boolean scalarTemplateUsed = templateInvocations.stream()
                     .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
-                                     && "configuration/scalar-configuration.ftl".equals(inv.getArgument(0)));
+                            && "configuration/scalar-configuration.ftl".equals(inv.getArgument(0)));
 
             final boolean retryConfigTemplateUsed = templateInvocations.stream()
                     .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
-                                     && "configuration/retry-configuration.ftl".equals(inv.getArgument(0)));
+                            && "configuration/retry-configuration.ftl".equals(inv.getArgument(0)));
 
             final AtomicReference<Map<String, Object>> retryableCtxRef = new AtomicReference<>();
             final boolean retryableTemplateUsed = templateInvocations.stream()
                     .filter(inv -> "processTemplate".equals(inv.getMethod().getName())
-                                   && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)))
+                            && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)))
                     .peek(inv -> {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> ctx = inv.getArgument(1, Map.class);
@@ -205,21 +205,21 @@ class AdditionalPropertyGeneratorTest {
 
             final boolean wroteGraphQlConfig = writerInvocations.stream()
                     .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
-                                     && "out".equals(inv.getArgument(0))
-                                     && "config".equals(inv.getArgument(1))
-                                     && "GraphQlConfiguration.java".equals(inv.getArgument(2)));
+                            && "out".equals(inv.getArgument(0))
+                            && "config".equals(inv.getArgument(1))
+                            && "GraphQlConfiguration.java".equals(inv.getArgument(2)));
 
             final boolean wroteRetryConfig = writerInvocations.stream()
                     .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
-                                     && "out".equals(inv.getArgument(0))
-                                     && "config".equals(inv.getArgument(1))
-                                     && "EnableRetryConfiguration.java".equals(inv.getArgument(2)));
+                            && "out".equals(inv.getArgument(0))
+                            && "config".equals(inv.getArgument(1))
+                            && "EnableRetryConfiguration.java".equals(inv.getArgument(2)));
 
             final boolean wroteRetryableAnnotation = writerInvocations.stream()
                     .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
-                                     && "out".equals(inv.getArgument(0))
-                                     && "annotation".equals(inv.getArgument(1))
-                                     && "OptimisticLockingRetry.java".equals(inv.getArgument(2)));
+                            && "out".equals(inv.getArgument(0))
+                            && "annotation".equals(inv.getArgument(1))
+                            && "OptimisticLockingRetry.java".equals(inv.getArgument(2)));
 
             assertTrue(wroteGraphQlConfig, "GraphQlConfiguration.java should be written");
             assertTrue(wroteRetryConfig, "EnableRetryConfiguration.java should be written");
@@ -243,21 +243,22 @@ class AdditionalPropertyGeneratorTest {
         final List<InvocationOnMock> writerInvocations = new ArrayList<>();
 
         try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
-             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl =
-                     mockStatic(FreeMarkerTemplateProcessorUtils.class, invocation -> {
-                         templateInvocations.add(invocation);
-                         if ("processTemplate".equals(invocation.getMethod().getName())) {
-                             return "TEMPLATE-" + invocation.getArgument(0, String.class);
-                         }
-                         return null;
-                     });
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
-                         writerInvocations.add(invocation);
-                         return null;
-                     });
-             final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(AdditionalPropertiesUtils.class)) {
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+                final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                        FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                            templateInvocations.add(invocation);
+                            if ("processTemplate".equals(invocation.getMethod().getName())) {
+                                return "TEMPLATE-" + invocation.getArgument(0, String.class);
+                            }
+                            return null;
+                        });
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                    writerInvocations.add(invocation);
+                    return null;
+                });
+                final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(
+                        AdditionalPropertiesUtils.class)) {
 
             cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
 
@@ -271,21 +272,23 @@ class AdditionalPropertyGeneratorTest {
                     .thenReturn("com.example.app.annotation");
             pkg.when(() -> PackageUtils.computeAnnotationSubPackage(env.pkgConfig)).thenReturn("annotation");
 
-            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps))
+            additionalPropsUtils
+                    .when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps))
                     .thenReturn(false);
 
             env.generator.generate("out");
 
             final boolean retryableTemplateUsed = templateInvocations.stream()
                     .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
-                                     && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)));
+                            && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)));
 
             final boolean wroteRetryableAnnotation = writerInvocations.stream()
                     .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
-                                     && "OptimisticLockingRetry.java".equals(inv.getArgument(2)));
+                            && "OptimisticLockingRetry.java".equals(inv.getArgument(2)));
 
             assertFalse(retryableTemplateUsed, "Retryable template should NOT be used when retry params are missing");
-            assertFalse(wroteRetryableAnnotation, "OptimisticLockingRetry.java should NOT be written when retry params are missing");
+            assertFalse(wroteRetryableAnnotation,
+                    "OptimisticLockingRetry.java should NOT be written when retry params are missing");
         }
     }
 
@@ -303,23 +306,22 @@ class AdditionalPropertyGeneratorTest {
         final List<InvocationOnMock> writerInvocations = new ArrayList<>();
 
         try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
-             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl =
-                     mockStatic(FreeMarkerTemplateProcessorUtils.class, invocation -> {
-                         templateInvocations.add(invocation);
-                         if ("processTemplate".equals(invocation.getMethod().getName())) {
-                             return "TEMPLATE-" + invocation.getArgument(0, String.class);
-                         }
-                         return null;
-                     });
-             final MockedStatic<FileWriterUtils> writer =
-                     mockStatic(FileWriterUtils.class, invocation -> {
-                         writerInvocations.add(invocation);
-                         return null;
-                     });
-             final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils =
-                     mockStatic(AdditionalPropertiesUtils.class)) {
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+                final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                        FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                            templateInvocations.add(invocation);
+                            if ("processTemplate".equals(invocation.getMethod().getName())) {
+                                return "TEMPLATE-" + invocation.getArgument(0, String.class);
+                            }
+                            return null;
+                        });
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                    writerInvocations.add(invocation);
+                    return null;
+                });
+                final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(
+                        AdditionalPropertiesUtils.class)) {
 
             cont.when(() -> ContainerUtils.isEmpty(env.additionalProps))
                     .thenReturn(false);
@@ -338,24 +340,21 @@ class AdditionalPropertyGeneratorTest {
             pkg.when(() -> PackageUtils.computeConfigurationSubPackage(env.pkgConfig))
                     .thenReturn("config");
 
-            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps))
+            additionalPropsUtils
+                    .when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps))
                     .thenReturn(true);
 
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getInt(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS))
                     .thenReturn(10);
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getInt(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS))
                     .thenReturn(1000);
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getInt(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS))
                     .thenReturn(0);
-            additionalPropsUtils.when(() ->
-                            AdditionalPropertiesUtils.getDouble(env.additionalProps,
-                                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getDouble(env.additionalProps,
+                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER))
                     .thenReturn(0.0d);
 
             env.generator.generate("out");
@@ -363,7 +362,7 @@ class AdditionalPropertyGeneratorTest {
             final AtomicReference<Map<String, Object>> ctxRef = new AtomicReference<>();
             final boolean retryableTemplateUsed = templateInvocations.stream()
                     .filter(inv -> "processTemplate".equals(inv.getMethod().getName())
-                                   && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)))
+                            && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)))
                     .peek(inv -> {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> ctx = inv.getArgument(1, Map.class);
@@ -383,8 +382,8 @@ class AdditionalPropertyGeneratorTest {
 
             final boolean wroteRetryableAnnotation = writerInvocations.stream()
                     .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
-                                     && "annotation".equals(inv.getArgument(1))
-                                     && "OptimisticLockingRetry.java".equals(inv.getArgument(2)));
+                            && "annotation".equals(inv.getArgument(1))
+                            && "OptimisticLockingRetry.java".equals(inv.getArgument(2)));
 
             assertTrue(wroteRetryableAnnotation, "OptimisticLockingRetry.java should be written");
         }
@@ -405,20 +404,19 @@ class AdditionalPropertyGeneratorTest {
         final List<InvocationOnMock> writerInvocations = new ArrayList<>();
 
         try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
-             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl =
-                     mockStatic(FreeMarkerTemplateProcessorUtils.class, invocation -> {
-                         templateInvocations.add(invocation);
-                         return null;
-                     });
-             final MockedStatic<FileWriterUtils> writer =
-                     mockStatic(FileWriterUtils.class, invocation -> {
-                         writerInvocations.add(invocation);
-                         return null;
-                     });
-             final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils =
-                     mockStatic(AdditionalPropertiesUtils.class)) {
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+                final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                        FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                            templateInvocations.add(invocation);
+                            return null;
+                        });
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                    writerInvocations.add(invocation);
+                    return null;
+                });
+                final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(
+                        AdditionalPropertiesUtils.class)) {
 
             cont.when(() -> ContainerUtils.isEmpty(env.additionalProps))
                     .thenReturn(false);
@@ -433,16 +431,17 @@ class AdditionalPropertyGeneratorTest {
 
             final boolean anyRetryTemplateUsed = templateInvocations.stream()
                     .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
-                                     && ( "configuration/retry-configuration.ftl".equals(inv.getArgument(0))
-                                          || "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)) ));
+                            && ("configuration/retry-configuration.ftl".equals(inv.getArgument(0))
+                                    || "annotation/retryable-annotation.ftl".equals(inv.getArgument(0))));
 
             final boolean anyRetryFileWritten = writerInvocations.stream()
                     .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
-                                     && ( "EnableRetryConfiguration.java".equals(inv.getArgument(2))
-                                          || "OptimisticLockingRetry.java".equals(inv.getArgument(2)) ));
+                            && ("EnableRetryConfiguration.java".equals(inv.getArgument(2))
+                                    || "OptimisticLockingRetry.java".equals(inv.getArgument(2))));
 
             assertFalse(anyRetryTemplateUsed, "Retry templates should NOT be used when optimistic locking is disabled");
-            assertFalse(anyRetryFileWritten, "Retry-related files should NOT be written when optimistic locking is disabled");
+            assertFalse(anyRetryFileWritten,
+                    "Retry-related files should NOT be written when optimistic locking is disabled");
         }
     }
 }

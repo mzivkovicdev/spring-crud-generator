@@ -25,6 +25,10 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+
+import tools.jackson.databind.json.JsonMapper;
 </#if><#t>
 
 @Configuration
@@ -39,7 +43,12 @@ public class CacheConfiguration {
                 <#if expiration??>
                 .entryTtl(Duration.ofMinutes(${expiration}))
                 </#if><#t>
-                .disableCachingNullValues();
+                .disableCachingNullValues()
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair.fromSerializer(
+                        new GenericJacksonJsonRedisSerializer(new JsonMapper())
+                    )
+                );
 
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(config)

@@ -10,20 +10,27 @@ services:
             - "${appPort}:${appPort}"
         environment:
             <#if dbType == "postgresql">
-            SPRING_DATASOURCE_URL: jdbc:postgresql://db:${dbPort}/${artifactId}
+            SPRING_DATASOURCE_URL: jdbc:postgresql://database:${dbPort}/${artifactId}
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: app
             <#elseif dbType == "mysql">
-            SPRING_DATASOURCE_URL: jdbc:mysql://db:${dbPort}/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            SPRING_DATASOURCE_URL: jdbc:mysql://database:${dbPort}/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: app
             <#elseif dbType == "mssql">
-            SPRING_DATASOURCE_URL: jdbc:sqlserver://db:${dbPort};databaseName=${artifactId};encrypt=false
+            SPRING_DATASOURCE_URL: jdbc:sqlserver://database:${dbPort};databaseName=${artifactId};encrypt=false
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: App!Passw0rd
             </#if>
+            <#if cacheType?? && cacheType?lower_case == "redis">
+            SPRING_DATA_REDIS_HOST: redis
+            SPRING_DATA_REDIS_PORT: 6379
+            </#if><#t>
         depends_on:
             - database
+            <#if cacheType?? && cacheType?lower_case == "redis">
+            - redis
+            </#if><#t>
         networks:
             - ${artifactId}-network
     
@@ -81,9 +88,26 @@ services:
             - db_data:/var/lib/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql">mysql<#elseif dbType == "mssql">mssql</#if>
         networks:
             - ${artifactId}-network
+    <#if cacheType?? && cacheType?lower_case == "redis">
 
+    redis:
+        image: redis:7-alpine
+        container_name: ${artifactId}-redis
+        restart: unless-stopped
+        command: ["redis-server", "--appendonly", "yes"]
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - ${artifactId}-network
+
+    </#if><#t>
 networks:
     ${artifactId}-network:
 
 volumes:
     db_data:
+    <#if cacheType?? && cacheType?lower_case == "redis">
+    redis_data:
+    </#if><#t>
