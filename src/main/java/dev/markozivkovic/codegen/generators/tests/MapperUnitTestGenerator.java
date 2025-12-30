@@ -92,13 +92,13 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                             ));
                     
                     this.generateHelperMapperTest(modelDefinition, jsonModel, testOutputDir, packagePath, false, swagger);
-                    if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+                    if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
                         this.generateHelperMapperTest(modelDefinition, jsonModel, testOutputDir, packagePath, true, false);
                     }
                 });
 
         this.generateMapperTest(modelDefinition, testOutputDir, packagePath, false, swagger);
-        if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+        if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
             this.generateMapperTest(modelDefinition, testOutputDir, packagePath, true, false);
         }
     }

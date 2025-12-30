@@ -74,7 +74,7 @@ public class PackageConfigurationValidator {
             if (StringUtils.isBlank(packageConfiguration.getTransferobjects())) missing.add("transferobjects");
         }
 
-        if (Boolean.TRUE.equals(configuration.getGraphQl())) {
+        if (Objects.nonNull(configuration.getGraphql()) && Boolean.TRUE.equals(configuration.getGraphql().getEnabled())) {
             if (StringUtils.isBlank(packageConfiguration.getResolvers())) {
                 missing.add("resolvers (required when graphQl is enabled)");
             }

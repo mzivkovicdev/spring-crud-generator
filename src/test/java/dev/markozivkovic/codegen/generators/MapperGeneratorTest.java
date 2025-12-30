@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.GraphQLDefinition;
 import dev.markozivkovic.codegen.models.CrudConfiguration.OpenApiDefinition;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
@@ -77,7 +78,10 @@ class MapperGeneratorTest {
         when(cfg.getOpenApi()).thenReturn(mock(OpenApiDefinition.class));
         when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
         when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
-        when(cfg.getGraphQl()).thenReturn(true);
+
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final FieldDefinition jsonField = mock(FieldDefinition.class);
@@ -172,7 +176,10 @@ class MapperGeneratorTest {
         when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
         when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
         when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
-        when(cfg.getGraphQl()).thenReturn(false);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(false);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final FieldDefinition jsonField = mock(FieldDefinition.class);

@@ -87,7 +87,7 @@ public class TransferObjectGenerator implements CodeGenerator {
                     final String fileHelperPath = PackageUtils.computeHelperRestTransferObjectSubPackage(packageConfiguration);
                     this.generateHelperTO(jsonModel, outputDir, restHelperPackagePath, fileHelperPath);
 
-                    if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+                    if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
                         final String graphQlHelperPackagePath = PackageUtils.computeHelperGraphqlTransferObjectPackage(packagePath, packageConfiguration);
                         final String fileGraphqlPath = PackageUtils.computeHelperGraphqlTransferObjectSubPackage(packageConfiguration);
                         this.generateHelperTO(jsonModel, outputDir, graphQlHelperPackagePath, fileGraphqlPath);
@@ -98,7 +98,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         final String filePathRest = PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration);
         this.generateTO(modelDefinition, outputDir, packagePathRest, filePathRest, TransferObjectTarget.REST);
         
-        if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+        if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
             final String packagePathGraphql = PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration);
             final String filePathGraphql = PackageUtils.computeGraphqlTransferObjectSubPackage(packageConfiguration);
             this.generateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, TransferObjectTarget.GRAPHQL);

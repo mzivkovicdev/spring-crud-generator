@@ -25,6 +25,7 @@ import dev.markozivkovic.codegen.context.GeneratorContext;
 import dev.markozivkovic.codegen.imports.ResolverImports;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
 import dev.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
+import dev.markozivkovic.codegen.models.CrudConfiguration.GraphQLDefinition;
 import dev.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration;
 import dev.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 import dev.markozivkovic.codegen.models.FieldDefinition;
@@ -49,11 +50,38 @@ class GraphQlUnitTestGeneratorTest {
     }
 
     @Test
-    @DisplayName("generate: unit tests disabled OR graphQl null/false -> no file writes")
-    void generate_shouldReturn_whenUnitTestsDisabledOrGraphQlOff() {
+    @DisplayName("generate: graphQl disabled -> no file writes")
+    void generate_shouldReturn_whenGraphqlDisabled() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(false);
+
+        final GraphQlUnitTestGenerator gen = new GraphQlUnitTestGenerator(cfg, List.of(), pkgCfg);
+        final ModelDefinition model = model("UserEntity", List.of());
+
+        try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            gen.generate(model, "src/main/java");
+            writer.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    @DisplayName("generate: graphQl disabled -> no file writes")
+    void generate_shouldReturn_whenUnitTestsDisabled() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
 
         final GraphQlUnitTestGenerator gen = new GraphQlUnitTestGenerator(cfg, List.of(), pkgCfg);
         final ModelDefinition model = model("UserEntity", List.of());
@@ -64,15 +92,6 @@ class GraphQlUnitTestGeneratorTest {
             unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(false);
             gen.generate(model, "src/main/java");
             writer.verifyNoInteractions();
-
-            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
-            when(cfg.getGraphQl()).thenReturn(null);
-            gen.generate(model, "src/main/java");
-            writer.verifyNoInteractions();
-
-            when(cfg.getGraphQl()).thenReturn(false);
-            gen.generate(model, "src/main/java");
-            writer.verifyNoInteractions();
         }
     }
 
@@ -81,7 +100,10 @@ class GraphQlUnitTestGeneratorTest {
     void generate_shouldSkip_whenModelHasNoIdField() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(true);
+
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final GraphQlUnitTestGenerator gen = new GraphQlUnitTestGenerator(cfg, List.of(), pkgCfg);
@@ -108,7 +130,11 @@ class GraphQlUnitTestGeneratorTest {
         final String testOutputDir = "src/test/java";
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(true);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
+
         when(cfg.getSpringBootVersion()).thenReturn("4");
         when(cfg.getErrorResponse()).thenReturn(ErrorResponse.SIMPLE);
 
@@ -220,7 +246,11 @@ class GraphQlUnitTestGeneratorTest {
         final String outputDir = "src/main/java";
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(true);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
+
         when(cfg.getSpringBootVersion()).thenReturn("3");
         when(cfg.getErrorResponse()).thenReturn(ErrorResponse.NONE);
 
@@ -323,7 +353,11 @@ class GraphQlUnitTestGeneratorTest {
     void generate_shouldThrow_whenRelatedEntityMissing() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(true);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
+
         when(cfg.getSpringBootVersion()).thenReturn("4");
         when(cfg.getErrorResponse()).thenReturn(ErrorResponse.SIMPLE);
 

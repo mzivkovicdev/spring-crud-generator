@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import dev.markozivkovic.codegen.imports.ExceptionImports;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
 import dev.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
+import dev.markozivkovic.codegen.models.CrudConfiguration.GraphQLDefinition;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.PackageConfiguration;
@@ -73,7 +74,10 @@ class GlobalExceptionHandlerGeneratorTest {
         
         final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
         when(crudConfig.getErrorResponse()).thenReturn(ErrorResponse.DETAILED);
-        when(crudConfig.getGraphQl()).thenReturn(true);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(crudConfig.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
 
         final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
 
@@ -192,7 +196,10 @@ class GlobalExceptionHandlerGeneratorTest {
         
         final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
         when(crudConfig.getErrorResponse()).thenReturn(ErrorResponse.MINIMAL);
-        when(crudConfig.getGraphQl()).thenReturn(false);
+
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(crudConfig.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(false);
 
         final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
 

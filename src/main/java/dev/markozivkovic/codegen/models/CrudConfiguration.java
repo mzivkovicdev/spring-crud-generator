@@ -29,7 +29,7 @@ public class CrudConfiguration {
     private DockerConfiguration docker;
     private CacheConfiguration cache;
     private OpenApiDefinition openApi;
-    private Boolean graphQl;
+    private GraphQLDefinition graphql;
     private ErrorResponse errorResponse;
     private Boolean migrationScripts;
     private TestConfiguration tests;
@@ -41,7 +41,7 @@ public class CrudConfiguration {
 
     public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final String springBootVersion,
             final Boolean optimisticLocking, final DockerConfiguration docker, final CacheConfiguration cache,
-            final OpenApiDefinition openApi, final Boolean graphQl, final ErrorResponse errorResponse,
+            final OpenApiDefinition openApi, final GraphQLDefinition graphql, final ErrorResponse errorResponse,
             final Boolean migrationScripts, final TestConfiguration tests, final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
@@ -50,7 +50,7 @@ public class CrudConfiguration {
         this.docker = docker;
         this.cache = cache;
         this.openApi = openApi;
-        this.graphQl = graphQl;
+        this.graphql = graphql;
         this.errorResponse = errorResponse;
         this.migrationScripts = migrationScripts;
         this.tests = tests;
@@ -124,12 +124,12 @@ public class CrudConfiguration {
         return this;
     }
 
-    public Boolean getGraphQl() {
-        return this.graphQl;
+    public GraphQLDefinition getGraphql() {
+        return this.graphql;
     }
 
-    public CrudConfiguration setGraphQl(final Boolean graphQl) {
-        this.graphQl = graphQl;
+    public CrudConfiguration setGraphql(final GraphQLDefinition graphql) {
+        this.graphql = graphql;
         return this;
     }
 
@@ -184,7 +184,7 @@ public class CrudConfiguration {
                 Objects.equals(docker, crudConfiguration.docker) &&
                 Objects.equals(cache, crudConfiguration.cache) &&
                 Objects.equals(openApi, crudConfiguration.openApi) &&
-                Objects.equals(graphQl, crudConfiguration.graphQl) &&
+                Objects.equals(graphql, crudConfiguration.graphql) &&
                 Objects.equals(errorResponse, crudConfiguration.errorResponse) &&
                 Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
                 Objects.equals(tests, crudConfiguration.tests) &&
@@ -195,7 +195,7 @@ public class CrudConfiguration {
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, springBootVersion, optimisticLocking, docker, cache, openApi,
-            graphQl, errorResponse, migrationScripts, tests, additionalProperties
+            graphql, errorResponse, migrationScripts, tests, additionalProperties
         );
     }
 
@@ -209,7 +209,7 @@ public class CrudConfiguration {
             ", docker='" + getDocker() + "'" +
             ", cache='" + getCache() + "'" +
             ", openApi='" + getOpenApi() + "'" +
-            ", graphQl='" + getGraphQl() + "'" +
+            ", graphql='" + getGraphql() + "'" +
             ", errorResponse='" + getErrorResponse() + "'" +
             ", migrationScripts='" + isMigrationScripts() + "'" +
             ", tests='" + getTests() + "'" +
@@ -228,6 +228,62 @@ public class CrudConfiguration {
         SIMPLE,
         MINIMAL,
         NONE
+    }
+
+    public static class GraphQLDefinition {
+
+        private Boolean enabled;
+        private Boolean scalarConfig;
+
+        public GraphQLDefinition() {}
+
+        public GraphQLDefinition(final Boolean enabled, final Boolean scalarConfig) {
+            this.enabled = enabled;
+            this.scalarConfig = scalarConfig;
+        }
+
+        public Boolean getEnabled() {
+            return this.enabled;
+        }
+
+        public GraphQLDefinition setEnabled(final Boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public Boolean getScalarConfig() {
+            return this.scalarConfig;
+        }
+
+        public GraphQLDefinition setScalarConfig(final Boolean scalarConfig) {
+            this.scalarConfig = scalarConfig;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof GraphQLDefinition)) {
+                return false;
+            }
+            final GraphQLDefinition graphQLDefinition = (GraphQLDefinition) o;
+            return Objects.equals(enabled, graphQLDefinition.enabled) &&
+                    Objects.equals(scalarConfig, graphQLDefinition.scalarConfig);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(enabled, scalarConfig);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " enabled='" + getEnabled() + "'" +
+                ", scalarConfig='" + getScalarConfig() + "'" +
+                "}";
+        }
     }
 
     public static class TestConfiguration {

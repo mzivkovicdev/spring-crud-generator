@@ -48,7 +48,6 @@ class AdditionalPropertyGeneratorTest {
 
         when(env.config.getAdditionalProperties()).thenReturn(env.additionalProps);
         when(env.config.getOptimisticLocking()).thenReturn(false);
-        when(env.config.getGraphQl()).thenReturn(false);
 
         env.generator = new AdditionalPropertyGenerator(env.config, env.pkgConfig);
         return env;
@@ -100,14 +99,12 @@ class AdditionalPropertyGeneratorTest {
 
         final Env env = prepareEnv();
 
-        env.additionalProps.put(AdditionalConfigurationConstants.GRAPHQL_SCALAR_CONFIG, true);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_RETRY_CONFIGURATION, true);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS, 5);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS, 100);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS, 1000);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER, 2.0);
 
-        when(env.config.getGraphQl()).thenReturn(true);
         when(env.config.getOptimisticLocking()).thenReturn(true);
 
         final List<InvocationOnMock> templateInvocations = new ArrayList<>();
@@ -172,10 +169,6 @@ class AdditionalPropertyGeneratorTest {
 
             env.generator.generate("out");
 
-            final boolean scalarTemplateUsed = templateInvocations.stream()
-                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
-                            && "configuration/scalar-configuration.ftl".equals(inv.getArgument(0)));
-
             final boolean retryConfigTemplateUsed = templateInvocations.stream()
                     .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
                             && "configuration/retry-configuration.ftl".equals(inv.getArgument(0)));
@@ -192,7 +185,6 @@ class AdditionalPropertyGeneratorTest {
                     .findAny()
                     .isPresent();
 
-            assertTrue(scalarTemplateUsed, "Scalar configuration template should be used");
             assertTrue(retryConfigTemplateUsed, "Retry configuration template should be used");
             assertTrue(retryableTemplateUsed, "Retryable annotation template should be used");
 
@@ -202,12 +194,6 @@ class AdditionalPropertyGeneratorTest {
             assertEquals(100, retryableCtx.get("delayMs"));
             assertEquals(1000, retryableCtx.get("maxDelayMs"));
             assertEquals(2.0, retryableCtx.get("multiplier"));
-
-            final boolean wroteGraphQlConfig = writerInvocations.stream()
-                    .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
-                            && "out".equals(inv.getArgument(0))
-                            && "config".equals(inv.getArgument(1))
-                            && "GraphQlConfiguration.java".equals(inv.getArgument(2)));
 
             final boolean wroteRetryConfig = writerInvocations.stream()
                     .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
@@ -221,7 +207,6 @@ class AdditionalPropertyGeneratorTest {
                             && "annotation".equals(inv.getArgument(1))
                             && "OptimisticLockingRetry.java".equals(inv.getArgument(2)));
 
-            assertTrue(wroteGraphQlConfig, "GraphQlConfiguration.java should be written");
             assertTrue(wroteRetryConfig, "EnableRetryConfiguration.java should be written");
             assertTrue(wroteRetryableAnnotation, "OptimisticLockingRetry.java should be written");
         }
@@ -233,10 +218,8 @@ class AdditionalPropertyGeneratorTest {
 
         final Env env = prepareEnv();
 
-        env.additionalProps.put(AdditionalConfigurationConstants.GRAPHQL_SCALAR_CONFIG, true);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_RETRY_CONFIGURATION, true);
 
-        when(env.config.getGraphQl()).thenReturn(true);
         when(env.config.getOptimisticLocking()).thenReturn(true);
 
         final List<InvocationOnMock> templateInvocations = new ArrayList<>();

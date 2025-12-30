@@ -73,7 +73,7 @@ public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator
         this.generateHttpResponse(outputDir);
         this.generateExceptionHandler(outputDir);
 
-        if (Objects.nonNull(this.crudConfiguration.getGraphQl()) && this.crudConfiguration.getGraphQl()) {
+        if (Objects.nonNull(this.crudConfiguration.getGraphql()) && Boolean.TRUE.equals(this.crudConfiguration.getGraphql().getEnabled())) {
             this.generateGraphQlExceptionHandler(outputDir);
         }
     }

@@ -23,9 +23,9 @@ import org.mockito.invocation.InvocationOnMock;
 
 import dev.markozivkovic.codegen.constants.GeneratorConstants;
 import dev.markozivkovic.codegen.context.GeneratorContext;
-import dev.markozivkovic.codegen.generators.GraphQlGenerator;
 import dev.markozivkovic.codegen.imports.ResolverImports;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.GraphQLDefinition;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.PackageConfiguration;
@@ -48,9 +48,47 @@ class GraphQlGeneratorTest {
     }
 
     @Test
-    void generate_shouldSkipWhenGraphQlDisabledOrNull() {
+    void generate_shouldSkipWhenGraphQlConfigNull() {
+
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(null);
+        when(cfg.getGraphql()).thenReturn(null);
+
+        final ProjectMetadata metadata = mock(ProjectMetadata.class);
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final List<ModelDefinition> entities = List.of();
+
+        final GraphQlGenerator generator = new GraphQlGenerator(cfg, metadata, entities, pkgCfg);
+        final ModelDefinition model = newModel("UserEntity", List.of());
+
+        try (final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<GraphQlTemplateContext> gqlCtx = mockStatic(GraphQlTemplateContext.class);
+             final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            generator.generate(model, "out");
+
+            genCtx.verifyNoInteractions();
+            pkg.verifyNoInteractions();
+            fieldUtils.verifyNoInteractions();
+            nameUtils.verifyNoInteractions();
+            gqlCtx.verifyNoInteractions();
+            resolverImports.verifyNoInteractions();
+            tpl.verifyNoInteractions();
+            writer.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void generate_shouldSkipWhenGraphQlDisabled() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(false);
 
         final ProjectMetadata metadata = mock(ProjectMetadata.class);
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
@@ -85,7 +123,9 @@ class GraphQlGeneratorTest {
     void generate_shouldGenerateSchemasScalarsAndResolverOnFirstCall() {
         
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(true);
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
 
         final ProjectMetadata metadata = mock(ProjectMetadata.class);
         when(metadata.getProjectBaseDir()).thenReturn("/base");
@@ -215,7 +255,9 @@ class GraphQlGeneratorTest {
     void generate_shouldNotGenerateResolverWhenModelHasNoIdField() {
         
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(true);
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
 
         final ProjectMetadata metadata = mock(ProjectMetadata.class);
         when(metadata.getProjectBaseDir()).thenReturn("/base");

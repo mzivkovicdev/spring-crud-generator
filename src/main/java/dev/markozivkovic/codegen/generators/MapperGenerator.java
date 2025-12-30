@@ -77,13 +77,13 @@ public class MapperGenerator implements CodeGenerator {
                             ));
                     
                     this.generateHelperMapper(modelDefinition, jsonModel, outputDir, packagePath, false, swagger);
-                    if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+                    if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
                         this.generateHelperMapper(modelDefinition, jsonModel, outputDir, packagePath, true, false);
                     }
                 });
 
         this.generateMapper(modelDefinition, outputDir, packagePath, false, swagger);
-        if (configuration != null && configuration.getGraphQl() != null && configuration.getGraphQl()) {
+        if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
             this.generateMapper(modelDefinition, outputDir, packagePath, true, false);
         }
     }
