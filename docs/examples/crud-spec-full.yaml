@@ -20,14 +20,15 @@ configuration:
   openApi:
     apiSpec: true
     generateResources: true
-  graphQl: true
+  graphql:
+    enabled: true
+    scalarConfig: true
   errorResponse: simple
   migrationScripts: true
   tests:
     unit: true
     dataGenerator: instancio
   additionalProperties:
-    graphql.scalarConfig: true
     rest.basePath: /api/v1
     optimisticLocking.retry.config: true
     optimisticLocking.retry.maxAttempts: 5

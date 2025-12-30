@@ -205,7 +205,6 @@ All options are defined under the root `configuration` key.
 | `javaVersion`       | number  | `17`    | Java version used for generated code and Dockerfile                                                                                                                                                                                                                                                                                          |
 | `springBootVersion` | string  | `4`     | Spring Boot **major** version (`3` or `4`). If not provided, the generator tries to detect it from the project `pom.xml` (parent version). If detection fails, it defaults to `4`. If an unsupported value is provided (e.g. `1`, `2`, `5`), it will be ignored and the generator will fall back to the detected value or the default (`4`). |
 | `optimisticLocking` | boolean | `false` | Enables optimistic locking support                                                                                                                                                                                                                                                                                                           |
-| `graphQl`           | boolean | `false` | Enables GraphQL query and mutation generation                                                                                                                                                                                                                                                                                                |
 | `errorResponse`     | string  | `-`     | Error response strategy (`simple`, `detailed`, `minimal`, `none`)                                                                                                                                                                                                                                                                            |
 | `migrationScripts`  | boolean | `false` | Enables Flyway migration script generation                                                                                                                                                                                                                                                                                                   |
 
@@ -276,6 +275,26 @@ Enables and configures caching.
 
 ---
 
+### `configuration.graphql`
+
+Controls GraphQL generation and scalar configuration.
+
+```yaml
+configuration:
+  graphql:
+    enabled: true
+    scalarConfig: true
+```
+
+| Property       | Type    | Default | Description                                                                                                                         |
+| -------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`      | boolean | `false` | Enables GraphQL support: generates `.graphqls` schema per entity with an ID and the corresponding resolver classes.                 |
+| `scalarConfig` | boolean | `false` | Enables generation of Spring GraphQL configuration for custom scalars (e.g. `Instant`, `LocalDate`, `LocalDateTime`, audit fields). |
+
+> ℹ️ GraphQL generation (schemas + resolvers) only happens when graphql.enabled: true. The scalar configuration is generated when GraphQL is enabled and graphql.scalarConfig: true.
+
+---
+
 ### `configuration.tests`
 
 Controls test generation.
@@ -306,7 +325,6 @@ Advanced and feature-specific configuration options.
 | Property                               | Type    | Default | Description                                                                                           |
 | -------------------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------- |
 | `rest.basePath`                        | string  | `/api`  | Base path for generated REST endpoints. Example: `/api/v1`                                            |
-| `graphql.scalarConfig`                 | boolean | `false` | Enables custom GraphQL scalar configuration                                                           |
 | `optimisticLocking.retry.config`       | boolean | `false` | Enables generation of a dedicated `@Retryable` configuration for optimistic locking                   |
 | `optimisticLocking.retry.maxAttempts`  | number  | `3`     | Maximum retry attempts (falls back to this value if not overridden)                                   |
 | `optimisticLocking.backoff.delayMs`    | number  | `1000`  | Initial backoff delay in milliseconds (falls back to this value if not overridden)                    |
@@ -417,8 +435,8 @@ Core packages:
 - `repositories`
 - `services`
 - `transferobjects`
-- If `graphQl: true` is enabled, the `resolvers` package is required.
-- If `openApi.generateResources: true` is enabled, the `generated` package is required.
+- If `configuration.graphql.enabled: true` is set, the `resolvers` package is **required**.
+- If `configuration.openApi.generateResources: true` is enabled, the `generated` package is required.
 - If required packages are missing, the generator fails fast with an error explaining which packages are missing.
 
 Partial customization of only core packages is `not supported` to avoid inconsistent package structures.
