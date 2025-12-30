@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.GraphQLDefinition;
 import dev.markozivkovic.codegen.models.CrudConfiguration.OpenApiDefinition;
 import dev.markozivkovic.codegen.models.PackageConfiguration;
 
@@ -17,7 +18,7 @@ class PackageConfigurationValidatorTest {
     @DisplayName("Should do nothing when package configuration is null (use defaults)")
     void validate_nullPackageConfiguration_doesNothing() {
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(true);
+        configuration.setGraphql(new GraphQLDefinition(true, true));
 
         assertDoesNotThrow(() ->
                 PackageConfigurationValidator.validate(null, configuration)
@@ -31,7 +32,7 @@ class PackageConfigurationValidatorTest {
         final PackageConfiguration pkg = new PackageConfiguration();
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(false);
+        configuration.setGraphql(new GraphQLDefinition(false, false));
         configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         assertDoesNotThrow(() ->
@@ -47,7 +48,7 @@ class PackageConfigurationValidatorTest {
         pkg.setBusinessservices("com.example.business");
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(false);
+        configuration.setGraphql(new GraphQLDefinition(false, false));
         configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -81,7 +82,7 @@ class PackageConfigurationValidatorTest {
         pkg.setTransferobjects("com.example.to");
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(false);
+        configuration.setGraphql(new GraphQLDefinition(false, false));
         configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         assertDoesNotThrow(() ->
@@ -96,7 +97,7 @@ class PackageConfigurationValidatorTest {
         final PackageConfiguration pkg = new PackageConfiguration();
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(true);
+        configuration.setGraphql(new GraphQLDefinition(true, true));
         configuration.setOpenApi(new OpenApiDefinition(false, false));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -112,7 +113,7 @@ class PackageConfigurationValidatorTest {
         final PackageConfiguration pkg = new PackageConfiguration();
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(false);
+        configuration.setGraphql(new GraphQLDefinition(false, false));
         configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -129,7 +130,7 @@ class PackageConfigurationValidatorTest {
         pkg.setBusinessservices("com.example.business");
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(true);
+        configuration.setGraphql(new GraphQLDefinition(true, true));
         configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -166,7 +167,7 @@ class PackageConfigurationValidatorTest {
         pkg.setGenerated("com.example.generated");
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(true);
+        configuration.setGraphql(new GraphQLDefinition(true, true));
         configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         assertDoesNotThrow(() ->
@@ -183,7 +184,7 @@ class PackageConfigurationValidatorTest {
         pkg.setGenerated("com.example.generated");
 
         final CrudConfiguration configuration = new CrudConfiguration();
-        configuration.setGraphQl(true);
+        configuration.setGraphql(new GraphQLDefinition(true, true));
         configuration.setOpenApi(new OpenApiDefinition(true, true));
 
         assertDoesNotThrow(() ->

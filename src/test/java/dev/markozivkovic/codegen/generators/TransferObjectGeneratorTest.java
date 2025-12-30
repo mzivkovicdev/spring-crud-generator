@@ -30,6 +30,7 @@ import dev.markozivkovic.codegen.imports.TransferObjectImports;
 import dev.markozivkovic.codegen.models.AuditDefinition;
 import dev.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.GraphQLDefinition;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.PackageConfiguration;
@@ -100,7 +101,10 @@ class TransferObjectGeneratorTest {
     void generate_shouldGenerateHelperRestAndGraphQlAndBaseCreateUpdateAndPageTO() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(true);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(true);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
 
@@ -251,7 +255,10 @@ class TransferObjectGeneratorTest {
     void generate_shouldThrowWhenJsonModelNotFound() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(false);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(false);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
 
@@ -298,7 +305,10 @@ class TransferObjectGeneratorTest {
     void generate_shouldAddAuditingImport_forBaseTransferObject_whenAuditEnabled_andNotCreateOrUpdate() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        when(cfg.getGraphQl()).thenReturn(false);
+        
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(false);
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final ModelDefinition mainModel = newModel("UserEntity", List.of());

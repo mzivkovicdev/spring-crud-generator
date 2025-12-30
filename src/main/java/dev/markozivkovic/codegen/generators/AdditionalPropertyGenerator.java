@@ -58,7 +58,6 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
             return;
         }
 
-        this.generateGraphqlConfiguration(outputDir);
         this.generateOptimisticLockingRetryConfiguration(outputDir);
         this.generateRetryableAnnotationConfiguration(outputDir);
 
@@ -143,37 +142,6 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY);
-    }
-
-    /**
-     * Generates the GraphQL configuration. This method is only called if the GraphQL scalar
-     * configuration is enabled.
-     *
-     * @param outputDir the output directory where the configuration file will be generated
-     */
-    private void generateGraphqlConfiguration(final String outputDir) {
-        
-        final boolean scalarConfig = (Boolean) configuration.getAdditionalProperties()
-                .getOrDefault(AdditionalConfigurationConstants.GRAPHQL_SCALAR_CONFIG, false);
-
-        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION) || !scalarConfig
-                || !Boolean.TRUE.equals(this.configuration.getGraphQl())) { return; }
-
-        LOGGER.info("Generating GraphQL configuration");
-
-        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-
-        final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
-                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
-            "configuration/scalar-configuration.ftl", Map.of()
-                ));
-        
-        FileWriterUtils.writeToFile(
-                outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "GraphQlConfiguration.java", sb.toString()
-        );
-
-        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION);
     }
     
 }

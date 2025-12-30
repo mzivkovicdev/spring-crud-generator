@@ -5,9 +5,9 @@
   <groupId>dev.markozivkovic</groupId>
   <artifactId>spring-crud-generator</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <name>spring-crud-generator</name>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/mzivkovicdev/spring-crud-generator</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -21,7 +21,6 @@
     <maven-plugin-api.version>4.0.0-rc-4</maven-plugin-api.version>
     <maven-plugin-plugin.version>3.15.1</maven-plugin-plugin.version>
     <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
-    <exec-maven-plugin.version>3.5.1</exec-maven-plugin.version>
     <junit-jupiter-api.version>6.0.1</junit-jupiter-api.version>
     <mockito-core.version>5.20.0</mockito-core.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
@@ -77,14 +76,7 @@
 
     <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${junit-jupiter-api.version}</version>
-        <scope>test</scope>
-    </dependency>
-
-    <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-params</artifactId>
+        <artifactId>junit-jupiter</artifactId>
         <version>${junit-jupiter-api.version}</version>
         <scope>test</scope>
     </dependency>

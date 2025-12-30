@@ -20,6 +20,7 @@ import static dev.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class GraphQlGenerator implements CodeGenerator {
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
      
-        if (configuration == null || configuration.getGraphQl() == null || !configuration.getGraphQl()) {
+        if (configuration == null || configuration.getGraphql() == null || !Boolean.TRUE.equals(configuration.getGraphql().getEnabled())) {
             return;
         }
 
@@ -96,6 +97,8 @@ public class GraphQlGenerator implements CodeGenerator {
                 String.format("%sResolver.java", ModelNameUtils.stripSuffix(modelDefinition.getName())),
                 sb.toString()
         );
+
+        this.generateGraphqlConfiguration(outputDir);
         
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL);
 
@@ -174,6 +177,35 @@ public class GraphQlGenerator implements CodeGenerator {
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/mapping/queries.ftl", context
         );
+    }
+
+    /**
+     * Generates the GraphQL configuration. This method is only called if the GraphQL scalar
+     * configuration is enabled.
+     *
+     * @param outputDir the output directory where the configuration file will be generated
+     */
+    private void generateGraphqlConfiguration(final String outputDir) {
+
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION)
+            || Objects.isNull(this.configuration.getGraphql()) 
+            || (!Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled()) && !Boolean.TRUE.equals(this.configuration.getGraphql().getScalarConfig()))) { return; }
+
+        LOGGER.info("Generating GraphQL configuration");
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
+            "configuration/scalar-configuration.ftl", Map.of()
+                ));
+        
+        FileWriterUtils.writeToFile(
+                outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "GraphQlConfiguration.java", sb.toString()
+        );
+
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION);
     }
     
 }
