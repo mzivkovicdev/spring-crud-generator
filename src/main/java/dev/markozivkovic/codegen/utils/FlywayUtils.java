@@ -887,6 +887,7 @@ public class FlywayUtils {
             return new MigrationState(
                     "1.0",
                     0,
+                    new ArrayList<>(),
                     new ArrayList<>()
             );
         } catch (final IOException e) {

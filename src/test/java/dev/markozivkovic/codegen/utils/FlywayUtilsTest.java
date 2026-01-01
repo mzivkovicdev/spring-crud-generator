@@ -1306,7 +1306,7 @@ class FlywayUtilsTest {
     void saveAndLoad_shouldPersistAndReadMigrationState() {
 
         final MigrationState original = new MigrationState(
-                "2.0", 5, new ArrayList<>()
+                "2.0", 5, new ArrayList<>(), new ArrayList<>()
         );
 
         FlywayUtils.save(tempDir.toString(), original);
@@ -1330,7 +1330,7 @@ class FlywayUtilsTest {
         Files.createDirectories(base);
 
         final MigrationState state = new MigrationState(
-                "3.0", 1, List.of()
+                "3.0", 1, List.of(), List.of()
         );
 
         FlywayUtils.save(base.toString(), state);
