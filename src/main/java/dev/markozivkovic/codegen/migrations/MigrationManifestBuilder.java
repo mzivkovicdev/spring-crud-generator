@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -30,12 +29,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.markozivkovic.codegen.models.flyway.AuditState;
 import dev.markozivkovic.codegen.models.flyway.ColumnState;
+import dev.markozivkovic.codegen.models.flyway.DdlArtifactState;
+import dev.markozivkovic.codegen.models.flyway.DdlArtifactState.DdlArtifactType;
 import dev.markozivkovic.codegen.models.flyway.EntityState;
 import dev.markozivkovic.codegen.models.flyway.FileState;
 import dev.markozivkovic.codegen.models.flyway.FkState;
 import dev.markozivkovic.codegen.models.flyway.JoinState;
-import dev.markozivkovic.codegen.models.flyway.MigrationState;
 import dev.markozivkovic.codegen.models.flyway.JoinState.JoinSide;
+import dev.markozivkovic.codegen.models.flyway.MigrationState;
 import dev.markozivkovic.codegen.utils.HashUtils;
 
 public class MigrationManifestBuilder {
@@ -43,11 +44,27 @@ public class MigrationManifestBuilder {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final MigrationState state;
     private final Map<String, EntityState> byTable = new LinkedHashMap<>();
+    private final Map<String, DdlArtifactState> byArtifactKey = new LinkedHashMap<>();
 
     public MigrationManifestBuilder(final MigrationState state) {
         this.state = state;
         state.getEntities()
                 .forEach(e -> byTable.put(e.getTable(), e));
+
+        state.getDdlArtifacts()
+                .forEach(e -> byArtifactKey.put(artifactKey(e.getType(), e.getName()), e));
+    }
+
+    /**
+     * Generates a unique key for a DDL artifact based on its type and name.
+     * The key is in the format "type:name".
+     * 
+     * @param type the type of the DDL artifact
+     * @param name the name of the DDL artifact
+     * @return a unique key for the DDL artifact
+     */
+    private static String artifactKey(final DdlArtifactType type, final String name) {
+        return type.name() + ":" + name;
     }
 
     /**
@@ -227,6 +244,42 @@ public class MigrationManifestBuilder {
     }
 
     /**
+     * Adds a file to a DDL artifact state in the migration state.
+     * 
+     * @param type the type of the DDL artifact
+     * @param artifactName the name of the DDL artifact
+     * @param ownerTable the owner table of the DDL artifact
+     * @param fileName the name of the file to add
+     * @param sqlContent the SQL content of the file to add
+     */
+    public void addDdlArtifactFile(final DdlArtifactType type, final String artifactName, final String ownerTable,
+            final String fileName, final String sqlContent) {
+
+        final String key = artifactKey(type, artifactName);
+
+        final DdlArtifactState artifact = byArtifactKey.computeIfAbsent(key, k -> {
+            final DdlArtifactState s = new DdlArtifactState();
+            s.setType(type);
+            s.setName(artifactName);
+            s.setOwnerTable(ownerTable);
+            s.setFiles(new ArrayList<>());
+            state.getDdlArtifacts().add(s);
+            return s;
+        });
+
+        if ((artifact.getOwnerTable() == null || artifact.getOwnerTable().isBlank())
+                && ownerTable != null && !ownerTable.isBlank()) {
+            artifact.setOwnerTable(ownerTable);
+        }
+
+        if (containsFile(artifact.getFiles(), fileName)) {
+            return;
+        }
+
+        artifact.getFiles().add(newFileState(fileName, sqlContent));
+    }
+
+    /**
      * Adds a file to an entity state in the migration state.
      *
      * This method will create a new entity state if it doesn't exist and then add the given file to it.
@@ -374,18 +427,62 @@ public class MigrationManifestBuilder {
      * @param content the content of the file
      * @return true if the entity state has a file with the given suffix, false otherwise
      */
-    public boolean hasEntityFileWithSuffixAndContent(final String tableName, final String fileNameSuffix, final String content) {
+    public boolean hasEntityFileWithSuffixAndContent(final String tableName, final String fileNameSuffix,
+                final String content) {
 
         final EntityState entityState = byTable.get(tableName);
-        
-        if (Objects.isNull(entityState) || Objects.isNull(entityState.getFiles())) {
+
+        if (entityState == null) {
+            return false;
+        }
+
+        return hasFileWithSuffixAndContent(entityState.getFiles(), fileNameSuffix, content);
+    }
+
+    /**
+     * Checks if a list of file states contains a file with a given suffix and content.
+     * 
+     * @param files the list of file states to search in
+     * @param fileNameSuffix the suffix to check for
+     * @param content the content to check for
+     * @return true if the list contains a file with the given suffix and content, false otherwise
+     */
+    private static boolean hasFileWithSuffixAndContent(final List<FileState> files,
+                final String fileNameSuffix, final String content) {
+        if (files == null || files.isEmpty()) {
             return false;
         }
 
         final String hashValue = HashUtils.sha256(content);
+
+        return files.stream()
+                .anyMatch(f -> f.getFile().endsWith(fileNameSuffix) && hashValue.equals(f.getHash()));
+    }
+
+    /**
+     * Returns true if the given ddl artifact state has a file with the given suffix and content.
+     *
+     * @param type the type of the ddl artifact
+     * @param artifactName the name of the ddl artifact
+     * @param fileNameSuffix the suffix to check for
+     * @param content the content to check for
+     * @return true if the ddl artifact state has a file with the given suffix and content, false otherwise
+     */
+    public boolean hasDdlArtifactFileWithSuffixAndContent(final DdlArtifactType type,
+                final String artifactName, final String fileNameSuffix, final String content) {
         
-        return entityState.getFiles().stream()
-                .anyMatch(f -> f.getFile().endsWith(fileNameSuffix) && f.getHash().equals(hashValue));
+        if (type == null || artifactName == null || artifactName.isBlank()) {
+            return false;
+        }
+
+        final String key = artifactKey(type, artifactName);
+        final DdlArtifactState artifact = byArtifactKey.get(key);
+
+        if (artifact == null) {
+            return false;
+        }
+
+        return hasFileWithSuffixAndContent(artifact.getFiles(), fileNameSuffix, content);
     }
 
 }

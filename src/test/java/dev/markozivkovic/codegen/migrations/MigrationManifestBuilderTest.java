@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.codegen.models.flyway.ColumnState;
+import dev.markozivkovic.codegen.models.flyway.DdlArtifactState;
+import dev.markozivkovic.codegen.models.flyway.DdlArtifactState.DdlArtifactType;
 import dev.markozivkovic.codegen.models.flyway.EntityState;
 import dev.markozivkovic.codegen.models.flyway.FileState;
 import dev.markozivkovic.codegen.models.flyway.FkState;
@@ -39,6 +41,12 @@ class MigrationManifestBuilderTest {
         MigrationState state = mock(MigrationState.class);
         when(state.getEntities()).thenReturn(entities);
         return state;
+    }
+
+    private MigrationState newStateWithDdlArtifactsList(final List<DdlArtifactState> artifacts) {
+        final MigrationState s = new MigrationState();
+        s.setDdlArtifacts(artifacts);
+        return s;
     }
 
     @Test
@@ -413,6 +421,118 @@ class MigrationManifestBuilderTest {
 
         assertNotNull(e.getJoins());
         assertEquals(1, e.getJoins().size());
+    }
+
+    @Test
+    void addDdlArtifactFile_shouldCreateArtifactIfMissingAndAddFile() {
+
+        final List<DdlArtifactState> artifacts = new ArrayList<>();
+        final MigrationState state = newStateWithDdlArtifactsList(artifacts);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V1__create_product_sequence.sql",
+                "CREATE SEQUENCE product_id_seq;"
+        );
+
+        assertEquals(1, artifacts.size());
+
+        final DdlArtifactState a = artifacts.get(0);
+        assertEquals(DdlArtifactType.SEQUENCE, a.getType());
+        assertEquals("product_id_seq", a.getName());
+        assertEquals("product", a.getOwnerTable());
+        assertNotNull(a.getFiles());
+        assertEquals(1, a.getFiles().size());
+        assertEquals("V1__create_product_sequence.sql", a.getFiles().get(0).getFile());
+    }
+
+    @Test
+    void addDdlArtifactFile_shouldNotAddDuplicateFile() {
+
+        final List<DdlArtifactState> artifacts = new ArrayList<>();
+        final MigrationState state = newStateWithDdlArtifactsList(artifacts);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V1__create_product_sequence.sql",
+                "SQL1"
+        );
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V1__create_product_sequence.sql", // isti fileName
+                "SQL2"
+        );
+
+        assertEquals(1, artifacts.size());
+        final DdlArtifactState a = artifacts.get(0);
+        assertEquals(1, a.getFiles().size(), "Ne sme dodati isti fileName dva puta");
+        assertEquals("V1__create_product_sequence.sql", a.getFiles().get(0).getFile());
+    }
+
+    @Test
+    void addDdlArtifactFile_shouldFillOwnerTableIfMissingOrBlank() {
+
+        final List<DdlArtifactState> artifacts = new ArrayList<>();
+        final MigrationState state = newStateWithDdlArtifactsList(artifacts);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                null,
+                "V1__create_product_sequence.sql",
+                "SQL1"
+        );
+
+        assertEquals(1, artifacts.size());
+        assertNull(artifacts.get(0).getOwnerTable());
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V2__something.sql",
+                "SQL2"
+        );
+
+        assertEquals("product", artifacts.get(0).getOwnerTable());
+        assertEquals(2, artifacts.get(0).getFiles().size());
+    }
+
+    @Test
+    void addDdlArtifactFile_shouldNotOverrideOwnerTable_whenAlreadySet() {
+
+        final List<DdlArtifactState> artifacts = new ArrayList<>();
+        final MigrationState state = newStateWithDdlArtifactsList(artifacts);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V1__create_product_sequence.sql",
+                "SQL1"
+        );
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "other_table",
+                "V2__something.sql",
+                "SQL2"
+        );
+
+        assertEquals("product", artifacts.get(0).getOwnerTable(), "OwnerTable se ne sme pregaziti kad je već setovan");
+        assertEquals(2, artifacts.get(0).getFiles().size());
     }
 
     @Test
@@ -912,6 +1032,127 @@ class MigrationManifestBuilderTest {
         );
 
         assertTrue(result);
+    }
+
+    @Test
+    void hasDdlArtifactFileWithSuffixAndContent_shouldReturnFalse_whenTypeNull() {
+
+        final MigrationState state = newStateWithDdlArtifactsList(new ArrayList<>());
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasDdlArtifactFileWithSuffixAndContent(
+                null, "product_id_seq", "create_product_sequence.sql", "SQL"
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void hasDdlArtifactFileWithSuffixAndContent_shouldReturnFalse_whenArtifactNameNullOrBlank() {
+
+        final MigrationState state = newStateWithDdlArtifactsList(new ArrayList<>());
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        assertFalse(builder.hasDdlArtifactFileWithSuffixAndContent(
+                DdlArtifactType.SEQUENCE, null, "x.sql", "SQL"
+        ));
+
+        assertFalse(builder.hasDdlArtifactFileWithSuffixAndContent(
+                DdlArtifactType.SEQUENCE, "   ", "x.sql", "SQL"
+        ));
+    }
+
+    @Test
+    void hasDdlArtifactFileWithSuffixAndContent_shouldReturnFalse_whenArtifactMissing() {
+
+        final MigrationState state = newStateWithDdlArtifactsList(new ArrayList<>());
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final boolean result = builder.hasDdlArtifactFileWithSuffixAndContent(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "create_product_sequence.sql",
+                "CREATE SEQUENCE product_id_seq;"
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void hasDdlArtifactFileWithSuffixAndContent_shouldReturnTrue_whenMatchingSuffixAndContentHashExists() {
+
+        final List<DdlArtifactState> artifacts = new ArrayList<>();
+        final MigrationState state = newStateWithDdlArtifactsList(artifacts);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final String content = "CREATE SEQUENCE product_id_seq;";
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V1__create_product_sequence.sql",
+                content
+        );
+
+        final boolean result = builder.hasDdlArtifactFileWithSuffixAndContent(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "create_product_sequence.sql", // suffix
+                content
+        );
+
+        assertTrue(result);
+    }
+
+    @Test
+    void hasDdlArtifactFileWithSuffixAndContent_shouldReturnFalse_whenSuffixDoesNotMatch() {
+
+        final List<DdlArtifactState> artifacts = new ArrayList<>();
+        final MigrationState state = newStateWithDdlArtifactsList(artifacts);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final String content = "CREATE SEQUENCE product_id_seq;";
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V1__create_product_sequence.sql",
+                content
+        );
+
+        final boolean result = builder.hasDdlArtifactFileWithSuffixAndContent(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "does_not_match.sql",
+                content
+        );
+
+        assertFalse(result);
+    }
+
+    @Test
+    void hasDdlArtifactFileWithSuffixAndContent_shouldReturnFalse_whenContentDifferent() {
+
+        final List<DdlArtifactState> artifacts = new ArrayList<>();
+        final MigrationState state = newStateWithDdlArtifactsList(artifacts);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.addDdlArtifactFile(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "product",
+                "V1__create_product_sequence.sql",
+                "CREATE SEQUENCE product_id_seq;"
+        );
+
+        final boolean result = builder.hasDdlArtifactFileWithSuffixAndContent(
+                DdlArtifactType.SEQUENCE,
+                "product_id_seq",
+                "create_product_sequence.sql",
+                "CREATE SEQUENCE product_id_seq START WITH 100;"
+        );
+
+        assertFalse(result);
     }
 
 
