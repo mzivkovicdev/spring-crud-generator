@@ -2,7 +2,7 @@
 <#list fields as field>
     <#if field.id?has_content>
     @Id
-    <#if field.id.strategy == "SEQUENCE">
+    <#if field.id.strategy == "SEQUENCE" || (field.id.strategy == "AUTO" && (db == "MSSQL" || db == "POSTGRESQL"))>
     @SequenceGenerator(
         name = "${strippedModelName}_gen",
         sequenceName = "${field.id.sequenceName! (storageName + "_id_seq")}",

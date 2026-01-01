@@ -23,6 +23,7 @@ import static dev.markozivkovic.codegen.constants.AnnotationConstants.TABLE_ANNO
 import static dev.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -33,8 +34,11 @@ import dev.markozivkovic.codegen.constants.GeneratorConstants.GeneratorContextKe
 import dev.markozivkovic.codegen.context.GeneratorContext;
 import dev.markozivkovic.codegen.imports.ModelImports;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.PackageConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
+import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.codegen.templates.JpaEntityTemplateContext;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.FileWriterUtils;
@@ -161,6 +165,9 @@ public class JpaEntityGenerator implements CodeGenerator {
         }
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
+        final boolean importSequenceIfAutoStrategy = (DatabaseType.POSTGRESQL.equals(this.configuration.getDatabase()) || DatabaseType.MSSQL.equals(this.configuration.getDatabase()))
+                && IdStrategyEnum.AUTO.equals(idField.getId().getStrategy());
         
         final String className = model.getName();
         final String tableName = model.getStorageName();
@@ -172,7 +179,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeEntityPackage(packagePath, packageConfiguration)));
         sb.append(ModelImports.getBaseImport(model, true, true));
                 
-        sb.append(ModelImports.computeJakartaImports(model, optimisticLocking))
+        sb.append(ModelImports.computeJakartaImports(model, optimisticLocking, importSequenceIfAutoStrategy))
                 .append(System.lineSeparator());
 
         final String enumAndHelperEntitiesImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir, packageConfiguration);
@@ -194,6 +201,7 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(model);
         classContext.put("optimisticLocking", optimisticLocking);
+        classContext.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
         
         final String fieldsTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/fields-template.ftl", classContext);
         final String defaultConstructor = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/default-constructor-template.ftl", classContext);

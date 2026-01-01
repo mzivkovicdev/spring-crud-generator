@@ -109,11 +109,12 @@ public class ModelImports {
     /**
      * Generates a string of import statements for the base jakarta persistence annotations.
      * 
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param modelDefinition   the model definition containing the class name, table name, and field definitions
      * @param optimisticLocking whether to include the version field
+     * @param importSequence    whether to include the sequence generator
      * @return A string containing the necessary import statements for the base jakarta persistence annotations.
      */
-    public static String computeJakartaImports(final ModelDefinition modelDefinition, final Boolean optimisticLocking) {
+    public static String computeJakartaImports(final ModelDefinition modelDefinition, final Boolean optimisticLocking, final Boolean importSequence) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final List<FieldDefinition> fields = modelDefinition.getFields();
@@ -121,7 +122,7 @@ public class ModelImports {
         final FieldDefinition idField = FieldUtils.extractIdField(fields);
 
         ImportCommon.addIf(IdStrategyEnum.TABLE.equals(idField.getId().getStrategy()), imports, ImportConstants.Jakarta.TABLE_GENERATOR);
-        ImportCommon.addIf(IdStrategyEnum.SEQUENCE.equals(idField.getId().getStrategy()), imports, ImportConstants.Jakarta.SEQUENCE_GENERATOR);
+        ImportCommon.addIf(IdStrategyEnum.SEQUENCE.equals(idField.getId().getStrategy()) || importSequence, imports, ImportConstants.Jakarta.SEQUENCE_GENERATOR);
 
         imports.addAll(Set.of(
             ImportConstants.Jakarta.ENTITY, ImportConstants.Jakarta.GENERATED_VALUE, ImportConstants.Jakarta.GENERATION_TYPE,

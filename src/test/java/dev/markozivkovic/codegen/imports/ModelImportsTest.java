@@ -226,7 +226,7 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
 
-            final String result = ModelImports.computeJakartaImports(model, false);
+            final String result = ModelImports.computeJakartaImports(model, false, false);
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.ENTITY));
             assertTrue(result.contains("import " + ImportConstants.Jakarta.GENERATED_VALUE));
@@ -272,7 +272,7 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(true);
 
-            final String result = ModelImports.computeJakartaImports(model, true);
+            final String result = ModelImports.computeJakartaImports(model, true, false);
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.ENUM_TYPE));
             assertTrue(result.contains("import " + ImportConstants.Jakarta.ENUMERATED));
@@ -319,7 +319,7 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
 
-            final String result = ModelImports.computeJakartaImports(model, false);
+            final String result = ModelImports.computeJakartaImports(model, false, false);
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.ENTITY));
             assertTrue(result.contains("import " + ImportConstants.Jakarta.COLUMN));
@@ -364,7 +364,7 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
 
-            final String result = ModelImports.computeJakartaImports(model, false);
+            final String result = ModelImports.computeJakartaImports(model, false, false);
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.TABLE_GENERATOR));
             assertFalse(result.contains("import " + ImportConstants.Jakarta.SEQUENCE_GENERATOR));
@@ -404,7 +404,47 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
 
-            final String result = ModelImports.computeJakartaImports(model, false);
+            final String result = ModelImports.computeJakartaImports(model, false, false);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.SEQUENCE_GENERATOR));
+            assertFalse(result.contains("import " + ImportConstants.Jakarta.TABLE_GENERATOR));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.ENTITY));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.ID));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.GENERATED_VALUE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeJakartaImports: SEQUENCE id is not defined as strategy → adds @SequenceGenerator import becase import sequence true")
+    void computeJakartaImports_withSequenceIdStrategyImport_idSetToAuto() {
+
+        final IdDefinition idDef = new IdDefinition();
+        idDef.setStrategy(IdStrategyEnum.AUTO);
+
+        final FieldDefinition idField = new FieldDefinition();
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
+        Mockito.when(model.getFields()).thenReturn(fields);
+        Mockito.when(model.getAudit()).thenReturn(null);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+
+            final String result = ModelImports.computeJakartaImports(model, false, true);
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.SEQUENCE_GENERATOR));
             assertFalse(result.contains("import " + ImportConstants.Jakarta.TABLE_GENERATOR));
