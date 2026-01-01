@@ -168,6 +168,12 @@ class MigrationScriptGeneratorTest {
             fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
+
+            final Map<String, Object> seqCtx = new HashMap<>();
+            seqCtx.put("name", "book_id_seq");
+            flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-sequence-table-generator.sql.ftl"), eq(seqCtx)))
+                    .thenReturn("CREATE SEQUENCE book_id_seq;");
             
             final Map<String, Object> createCtx = new HashMap<>();
             createCtx.put("table", "book");
@@ -191,8 +197,12 @@ class MigrationScriptGeneratorTest {
             generator.generate(bookModel, "out");
 
             writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath), eq("V2__create_book_table.sql"), eq("CREATE TABLE book (...);"))
-            );
+                    eq(expectedScriptsPath), eq("V2__create_book_sequence.sql"), eq("CREATE SEQUENCE book_id_seq;")
+            ));
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq(expectedScriptsPath), eq("V3__create_book_table.sql"), eq("CREATE TABLE book (...);")
+            ));
 
             ctx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT));
         }
@@ -339,6 +349,15 @@ class MigrationScriptGeneratorTest {
 
                 modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
                 modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
+                final Map<String, Object> seqCtx = new HashMap<>();
+                seqCtx.put("name", "book_id_seq");
+
+                flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-sequence-table-generator.sql.ftl"), eq(seqCtx)))
+                                .thenReturn("CREATE SEQUENCE book_id_seq;");
+
+                modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
+                modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
 
                 flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class)))
                         .thenAnswer(inv -> null);
@@ -346,13 +365,15 @@ class MigrationScriptGeneratorTest {
                 generator.generate(bookModel, "out");
 
                 writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath), eq("V2__create_book_table.sql"), eq("CREATE TABLE book (...);"))
-                );
+                        eq(expectedScriptsPath), eq("V2__create_book_sequence.sql"), eq("CREATE SEQUENCE book_id_seq;")
+                ));
 
                 writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath),
-                        eq("V3__create_book_element_collections.sql"),
-                        eq("CREATE TABLE book_tags (...);")
+                        eq(expectedScriptsPath), eq("V3__create_book_table.sql"), eq("CREATE TABLE book (...);")
+                ));
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath), eq("V4__create_book_element_collections.sql"), eq("CREATE TABLE book_tags (...);")
                 ));
 
                 ctx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT));
@@ -459,12 +480,22 @@ class MigrationScriptGeneratorTest {
                 flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class)))
                         .thenAnswer(inv -> null);
 
+                final Map<String, Object> seqCtx = new HashMap<>();
+                seqCtx.put("name", "book_id_seq");
+                flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                        eq("migration/flyway/create-sequence-table-generator.sql.ftl"), eq(seqCtx)))
+                .thenReturn("CREATE SEQUENCE book_id_seq;");
+
                 generator.generate(bookModel, "out");
 
                 writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath),
-                        eq("V2__create_book_table.sql"),
-                        eq("CREATE TABLE book (...);")
+                        eq(expectedScriptsPath), eq("V2__create_book_sequence.sql"), eq("CREATE SEQUENCE book_id_seq;")
+                ));
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath), eq("V3__create_book_table.sql"), eq("CREATE TABLE book (...);")
                 ));
 
                 tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
