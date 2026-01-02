@@ -1,12 +1,12 @@
 <#assign isPostgres = (db?string == "POSTGRESQL")>
 <#assign isMySql    = (db?string == "MYSQL")>
+<#assign isMsSql    = (db?string == "MSSQL")>
 <#if addedColumns?has_content>
 <#list addedColumns as c>
 ALTER TABLE ${table}
-  ADD COLUMN ${c.name} ${c.type}
-  <#if c.nullable?? && !c.nullable> NOT NULL</#if>
-  <#if c.defaultValue?? && c.defaultValue?has_content> DEFAULT ${c.defaultValue}</#if>
-;
+  ADD<#if !isMsSql> COLUMN</#if> ${c.name} ${c.type}
+  <#if c.nullable?? && !c.nullable> NOT NULL</#if><#t>
+  <#if c.defaultValue?? && c.defaultValue?has_content> DEFAULT ${c.defaultValue}</#if><#t>;
 <#if c.unique?? && c.unique>
 ALTER TABLE ${table}
   ADD CONSTRAINT uk_${table}_${c.name}
@@ -84,8 +84,8 @@ ALTER TABLE ${table}
 </#list>
 </#if><#t>
 <#if auditAdded?? && auditAdded>
-ALTER TABLE ${table} ADD COLUMN created_at ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr};
-ALTER TABLE ${table} ADD COLUMN updated_at ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr};
+ALTER TABLE ${table} ADD<#if !isMsSql> COLUMN</#if> created_at ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr};
+ALTER TABLE ${table} ADD<#if !isMsSql> COLUMN</#if> updated_at ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr};
 </#if><#t>
 <#if auditRemoved?? && auditRemoved>
 ALTER TABLE ${table} DROP COLUMN IF EXISTS created_at;

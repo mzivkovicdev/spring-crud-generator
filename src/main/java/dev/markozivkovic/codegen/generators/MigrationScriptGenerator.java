@@ -370,6 +370,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
         
         final Map<String, Object> ecCtx = new LinkedHashMap<>();
         ecCtx.put("collectionTables", elementCollectionTables);
+        ecCtx.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
 
         final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
             "migration/flyway/element-collection-create.ftl", ecCtx

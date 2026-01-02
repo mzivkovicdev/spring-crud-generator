@@ -1,7 +1,7 @@
 <#-- ElementCollection tables -->
 <#if collectionTables?has_content>
 <#list collectionTables as ct>
-CREATE TABLE IF NOT EXISTS ${ct.tableName} (
+CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${ct.tableName} (
   ${ct.joinColumn} ${ct.ownerPkSqlType} NOT NULL,
   ${ct.valueColumn} ${ct.valueSqlType} NOT NULL
   <#if ct.isList>, ${ct.orderColumn} INTEGER NOT NULL</#if>,
