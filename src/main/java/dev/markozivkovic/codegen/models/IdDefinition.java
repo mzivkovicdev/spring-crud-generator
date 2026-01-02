@@ -21,7 +21,7 @@ import java.util.Objects;
 public class IdDefinition {
     
     private IdStrategyEnum strategy;
-    private String sequenceName;
+    private String generatorName;
     private Integer allocationSize;
     private Integer initialValue;
     private String pkColumnName;
@@ -31,10 +31,10 @@ public class IdDefinition {
 
     }
 
-    public IdDefinition(final IdStrategyEnum strategy, final String sequenceName,
+    public IdDefinition(final IdStrategyEnum strategy, final String generatorName,
             final Integer allocationSize, final Integer initialValue) {
         this.strategy = strategy;
-        this.sequenceName = sequenceName;
+        this.generatorName = generatorName;
         this.allocationSize = allocationSize;
         this.initialValue = initialValue;
     }
@@ -48,12 +48,12 @@ public class IdDefinition {
         return this;
     }
 
-    public String getSequenceName() {
-        return this.sequenceName;
+    public String getGeneratorName() {
+        return this.generatorName;
     }
 
-    public IdDefinition setSequenceName(final String sequenceName) {
-        this.sequenceName = sequenceName;
+    public IdDefinition setGeneratorName(final String generatorName) {
+        this.generatorName = generatorName;
         return this;
     }
 
@@ -102,7 +102,7 @@ public class IdDefinition {
         }
         final IdDefinition idGenerationDefinition = (IdDefinition) o;
         return Objects.equals(strategy, idGenerationDefinition.strategy) &&
-                Objects.equals(sequenceName, idGenerationDefinition.sequenceName) &&
+                Objects.equals(generatorName, idGenerationDefinition.generatorName) &&
                 Objects.equals(allocationSize, idGenerationDefinition.allocationSize) &&
                 Objects.equals(initialValue, idGenerationDefinition.initialValue) &&
                 Objects.equals(pkColumnName, idGenerationDefinition.pkColumnName) &&
@@ -112,7 +112,7 @@ public class IdDefinition {
     @Override
     public int hashCode() {
         return Objects.hash(
-                strategy, sequenceName, allocationSize, initialValue, pkColumnName, valueColumnName
+                strategy, generatorName, allocationSize, initialValue, pkColumnName, valueColumnName
         );
     }
 
@@ -120,7 +120,7 @@ public class IdDefinition {
     public String toString() {
         return "{" +
             " strategy='" + getStrategy() + "'" +
-            ", sequenceName='" + getSequenceName() + "'" +
+            ", generatorName='" + getGeneratorName() + "'" +
             ", allocationSize='" + getAllocationSize() + "'" +
             ", initialValue='" + getInitialValue() + "'" +
             ", pkColumnName='" + getPkColumnName() + "'" +

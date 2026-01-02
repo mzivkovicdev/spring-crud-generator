@@ -27,7 +27,6 @@ import java.util.NoSuchElementException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 
@@ -41,6 +40,7 @@ import dev.markozivkovic.codegen.models.IdDefinition;
 import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.ProjectMetadata;
+import dev.markozivkovic.codegen.models.flyway.DdlArtifactState.DdlArtifactType;
 import dev.markozivkovic.codegen.models.flyway.EntityState;
 import dev.markozivkovic.codegen.models.flyway.MigrationState;
 import dev.markozivkovic.codegen.utils.FieldUtils;
@@ -122,7 +122,7 @@ class MigrationScriptGeneratorTest {
     }
 
     @Test
-    void generate_generateCreateTableScriptForNewModel() {
+    void generate_shouldGenerateCreateTableScriptForNewModel() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
@@ -168,6 +168,12 @@ class MigrationScriptGeneratorTest {
             fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
+
+            final Map<String, Object> seqCtx = new HashMap<>();
+            seqCtx.put("name", "book_id_seq");
+            flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-sequence-table-generator.sql.ftl"), eq(seqCtx)))
+                    .thenReturn("CREATE SEQUENCE book_id_seq;");
             
             final Map<String, Object> createCtx = new HashMap<>();
             createCtx.put("table", "book");
@@ -191,8 +197,12 @@ class MigrationScriptGeneratorTest {
             generator.generate(bookModel, "out");
 
             writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath), eq("V2__create_book_table.sql"), eq("CREATE TABLE book (...);"))
-            );
+                    eq(expectedScriptsPath), eq("V2__create_book_sequence.sql"), eq("CREATE SEQUENCE book_id_seq;")
+            ));
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq(expectedScriptsPath), eq("V3__create_book_table.sql"), eq("CREATE TABLE book (...);")
+            ));
 
             ctx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT));
         }
@@ -339,6 +349,15 @@ class MigrationScriptGeneratorTest {
 
                 modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
                 modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
+                final Map<String, Object> seqCtx = new HashMap<>();
+                seqCtx.put("name", "book_id_seq");
+
+                flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-sequence-table-generator.sql.ftl"), eq(seqCtx)))
+                                .thenReturn("CREATE SEQUENCE book_id_seq;");
+
+                modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
+                modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
 
                 flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class)))
                         .thenAnswer(inv -> null);
@@ -346,13 +365,15 @@ class MigrationScriptGeneratorTest {
                 generator.generate(bookModel, "out");
 
                 writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath), eq("V2__create_book_table.sql"), eq("CREATE TABLE book (...);"))
-                );
+                        eq(expectedScriptsPath), eq("V2__create_book_sequence.sql"), eq("CREATE SEQUENCE book_id_seq;")
+                ));
 
                 writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath),
-                        eq("V3__create_book_element_collections.sql"),
-                        eq("CREATE TABLE book_tags (...);")
+                        eq(expectedScriptsPath), eq("V3__create_book_table.sql"), eq("CREATE TABLE book (...);")
+                ));
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath), eq("V4__create_book_element_collections.sql"), eq("CREATE TABLE book_tags (...);")
                 ));
 
                 ctx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT));
@@ -459,12 +480,22 @@ class MigrationScriptGeneratorTest {
                 flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class)))
                         .thenAnswer(inv -> null);
 
+                final Map<String, Object> seqCtx = new HashMap<>();
+                seqCtx.put("name", "book_id_seq");
+                flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+
+                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                        eq("migration/flyway/create-sequence-table-generator.sql.ftl"), eq(seqCtx)))
+                .thenReturn("CREATE SEQUENCE book_id_seq;");
+
                 generator.generate(bookModel, "out");
 
                 writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath),
-                        eq("V2__create_book_table.sql"),
-                        eq("CREATE TABLE book (...);")
+                        eq(expectedScriptsPath), eq("V2__create_book_sequence.sql"), eq("CREATE SEQUENCE book_id_seq;")
+                ));
+
+                writer.verify(() -> FileWriterUtils.writeToFile(
+                        eq(expectedScriptsPath), eq("V3__create_book_table.sql"), eq("CREATE TABLE book (...);")
                 ));
 
                 tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -516,7 +547,7 @@ class MigrationScriptGeneratorTest {
                         final MigrationState ms = mock(MigrationState.class);
                         when(ms.getEntities()).thenReturn(null);
                         when(mock.build()).thenReturn(ms);
-                        when(mock.hasEntityFileWithSuffixAndContent(anyString(), anyString(), anyString())).thenReturn(false);
+                        when(mock.hasDdlArtifactFileWithSuffixAndContent(any(DdlArtifactType.class), anyString(), anyString(), anyString())).thenReturn(false);
                         })) {
 
                 ctx.when(() -> GeneratorContext.isGenerated(
@@ -587,7 +618,7 @@ class MigrationScriptGeneratorTest {
     }
 
     @Test
-    void generate_shouldNotGenerateSequenceScript_whenAlreadyInManifestWithSameContent() {
+    void generate_shouldNotGenerateSequenceScript_whenDdlArtifactAlreadyInManifestWithSameContent() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
@@ -610,84 +641,69 @@ class MigrationScriptGeneratorTest {
                 "/tmp/project/" + GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION;
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
-                final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
-                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-                final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-                final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
-                final MockedConstruction<MigrationManifestBuilder> manifestConstr =
-                        mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
+            final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+            final MockedConstruction<MigrationManifestBuilder> manifestConstr = mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
                         final MigrationState ms = mock(MigrationState.class);
                         when(ms.getEntities()).thenReturn(null);
+                        when(ms.getDdlArtifacts()).thenReturn(null);
                         when(mock.build()).thenReturn(ms);
-                        when(mock.hasEntityFileWithSuffixAndContent(anyString(), anyString(), anyString())).thenReturn(true);
-                        })) {
+                        when(mock.hasDdlArtifactFileWithSuffixAndContent(any(DdlArtifactType.class), anyString(), anyString(), anyString())).thenReturn(true);
+                    })) {
 
-                ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT))
-                        .thenReturn(false);
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT))
+                    .thenReturn(false);
 
-                final MigrationState initialState = mock(MigrationState.class);
-                when(initialState.getLastScriptVersion()).thenReturn(0);
-                when(initialState.getEntities()).thenReturn(null);
+            final MigrationState initialState = mock(MigrationState.class);
+            when(initialState.getLastScriptVersion()).thenReturn(0);
+            when(initialState.getEntities()).thenReturn(null);
+            when(initialState.getDdlArtifacts()).thenReturn(null);
 
-                flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
+            flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
+            flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
+            fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
 
-                flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap()))
-                        .thenReturn(Collections.emptyMap());
+            final Map<String, Object> seqCtx = new HashMap<>();
+            seqCtx.put("name", "book_gen");
+            seqCtx.put("initialValue", 1);
+            seqCtx.put("allocationSize", 50);
+            seqCtx.put("sequence", true);
 
-                fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
-                fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
+            flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
 
-                final Map<String, Object> seqCtx = new HashMap<>();
-                seqCtx.put("name", "book_gen");
-                seqCtx.put("initialValue", 1);
-                seqCtx.put("allocationSize", 50);
-                seqCtx.put("sequence", true);
+            final Map<String, Object> createCtx = new HashMap<>();
+            createCtx.put("tableName", "book");
+            createCtx.put("columns", Collections.emptyList());
 
-                flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+            flyway.when(() -> FlywayUtils.toCreateTableContext(eq(bookModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
+                    .thenReturn(createCtx);
 
-                final Map<String, Object> createCtx = new HashMap<>();
-                createCtx.put("tableName", "book");
-                createCtx.put("columns", Collections.emptyList());
+            flyway.when(() -> FlywayUtils.toForeignKeysContext(eq(bookModel), anyMap())).thenReturn(null);
+            flyway.when(() -> FlywayUtils.collectElementCollectionTables(eq(bookModel), eq(DatabaseType.POSTGRESQL))).thenReturn(Collections.emptyList());
 
-                flyway.when(() -> FlywayUtils.toCreateTableContext(eq(bookModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
-                        .thenReturn(createCtx);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                            eq("migration/flyway/create-sequence-table-generator.sql.ftl"),
+                            eq(seqCtx)))
+                    .thenReturn("CREATE SEQUENCE book_gen START WITH 1 INCREMENT BY 50;");
 
-                flyway.when(() -> FlywayUtils.toForeignKeysContext(eq(bookModel), anyMap()))
-                        .thenReturn(null);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-table.sql.ftl"), eq(createCtx)))
+                    .thenReturn("CREATE TABLE book (...);");
 
-                flyway.when(() -> FlywayUtils.collectElementCollectionTables(eq(bookModel), eq(DatabaseType.POSTGRESQL)))
-                        .thenReturn(Collections.emptyList());
+            flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class)))
+                    .thenAnswer(inv -> null);
 
-                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                                eq("migration/flyway/create-sequence-table-generator.sql.ftl"),
-                                eq(seqCtx)))
-                        .thenReturn("CREATE SEQUENCE book_gen START WITH 1 INCREMENT BY 50;");
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
 
-                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                                eq("migration/flyway/create-table.sql.ftl"),
-                                eq(createCtx)))
-                        .thenReturn("CREATE TABLE book (...);");
+            generator.generate(bookModel, "out");
 
-                flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class))).thenAnswer(inv -> null);
-
-                modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
-                modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
-
-                generator.generate(bookModel, "out");
-
-                writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath),
-                        org.mockito.ArgumentMatchers.contains("create_book_sequence.sql"),
-                        anyString()
-                ), never());
-
-                writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath),
-                        eq("V1__create_book_table.sql"),
-                        eq("CREATE TABLE book (...);")
-                ));
+            writer.verify(() -> FileWriterUtils.writeToFile(eq(expectedScriptsPath), contains("create_book_sequence.sql"), anyString()), never());
+            writer.verify(() -> FileWriterUtils.writeToFile(eq(expectedScriptsPath), eq("V1__create_book_table.sql"), eq("CREATE TABLE book (...);")));
         }
     }
 
@@ -727,7 +743,7 @@ class MigrationScriptGeneratorTest {
                         final MigrationState ms = mock(MigrationState.class);
                         when(ms.getEntities()).thenReturn(null);
                         when(mock.build()).thenReturn(ms);
-                        when(mock.hasEntityFileWithSuffixAndContent(anyString(), anyString(), anyString()))
+                        when(mock.hasDdlArtifactFileWithSuffixAndContent(any(DdlArtifactType.class), anyString(), anyString(), anyString()))
                                 .thenReturn(false);
                         })) {
 
@@ -802,7 +818,7 @@ class MigrationScriptGeneratorTest {
     }
 
     @Test
-    void generate_shouldNotGenerateTableGeneratorScript_whenAlreadyInManifestWithSameContent() {
+    void generate_shouldNotGenerateTableGeneratorScript_whenDdlArtifactAlreadyInManifestWithSameContent() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
@@ -824,76 +840,83 @@ class MigrationScriptGeneratorTest {
         final String expectedScriptsPath = "/tmp/project/" + GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION;
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
-                final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
-                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-                final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-                final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
-                final MockedConstruction<MigrationManifestBuilder> manifestConstr =
-                        mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
+             final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+             final MockedConstruction<MigrationManifestBuilder> manifestConstr = mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
+
                         final MigrationState ms = mock(MigrationState.class);
                         when(ms.getEntities()).thenReturn(null);
+                        when(ms.getDdlArtifacts()).thenReturn(null);
+
                         when(mock.build()).thenReturn(ms);
-                        when(mock.hasEntityFileWithSuffixAndContent(anyString(), anyString(), anyString()))
-                                .thenReturn(true);
-                        })) {
 
-                ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT))
-                        .thenReturn(false);
+                        when(mock.hasDdlArtifactFileWithSuffixAndContent(any(DdlArtifactType.class), anyString(), anyString(), anyString())).thenReturn(true);
+                    })) {
 
-                final MigrationState initialState = mock(MigrationState.class);
-                when(initialState.getLastScriptVersion()).thenReturn(0);
-                when(initialState.getEntities()).thenReturn(null);
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT)).thenReturn(false);
 
-                flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
-                flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
-                fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
-                fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
+            final MigrationState initialState = mock(MigrationState.class);
+            when(initialState.getLastScriptVersion()).thenReturn(0);
+            when(initialState.getEntities()).thenReturn(null);
+            when(initialState.getDdlArtifacts()).thenReturn(null);
 
-                final Map<String, Object> tableGenCtx = new HashMap<>();
-                tableGenCtx.put("name", "book_gen");
-                tableGenCtx.put("pkColumnName", "gen_name");
-                tableGenCtx.put("valueColumnName", "gen_value");
-                tableGenCtx.put("table", true);
-                tableGenCtx.put("initialValue", 1);
-                tableGenCtx.put("pkColumnValue", "book");
+            flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
+            flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
 
-                flyway.when(() -> FlywayUtils.toTableGeneratorContext(eq(bookModel))).thenReturn(tableGenCtx);
+            fieldUtils.when(() -> FieldUtils.isJsonField(idField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(List.of(idField))).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(List.of(idField))).thenReturn(idField);
 
-                final Map<String, Object> createCtx = new HashMap<>();
-                createCtx.put("tableName", "book");
-                createCtx.put("columns", Collections.emptyList());
+            final Map<String, Object> tableGenCtx = new HashMap<>();
+            tableGenCtx.put("name", "book_gen");
+            tableGenCtx.put("pkColumnName", "gen_name");
+            tableGenCtx.put("valueColumnName", "gen_value");
+            tableGenCtx.put("table", true);
+            tableGenCtx.put("initialValue", 1);
+            tableGenCtx.put("pkColumnValue", "book");
 
-                flyway.when(() -> FlywayUtils.toCreateTableContext(eq(bookModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
-                        .thenReturn(createCtx);
+            flyway.when(() -> FlywayUtils.toTableGeneratorContext(eq(bookModel))).thenReturn(tableGenCtx);
 
-                flyway.when(() -> FlywayUtils.toForeignKeysContext(eq(bookModel), anyMap())).thenReturn(null);
+            final Map<String, Object> createCtx = new HashMap<>();
+            createCtx.put("tableName", "book");
+            createCtx.put("columns", Collections.emptyList());
 
-                flyway.when(() -> FlywayUtils.collectElementCollectionTables(eq(bookModel), eq(DatabaseType.POSTGRESQL)))
-                        .thenReturn(Collections.emptyList());
+            flyway.when(() -> FlywayUtils.toCreateTableContext(eq(bookModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
+                    .thenReturn(createCtx);
 
-                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                                eq("migration/flyway/create-sequence-table-generator.sql.ftl"),eq(tableGenCtx))
-                ).thenReturn("CREATE TABLE book_id_gen (...);");
+            flyway.when(() -> FlywayUtils.toForeignKeysContext(eq(bookModel), anyMap())).thenReturn(null);
 
-                tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                                eq("migration/flyway/create-table.sql.ftl"), eq(createCtx))
-                ).thenReturn("CREATE TABLE book (...);");
+            flyway.when(() -> FlywayUtils.collectElementCollectionTables(eq(bookModel), eq(DatabaseType.POSTGRESQL)))
+                    .thenReturn(Collections.emptyList());
 
-                flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class))).thenAnswer(inv -> null);
-                modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
-                modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                            eq("migration/flyway/create-sequence-table-generator.sql.ftl"),
+                            eq(tableGenCtx)))
+                    .thenReturn("CREATE TABLE book_id_gen (...);");
 
-                generator.generate(bookModel, "out");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                            eq("migration/flyway/create-table.sql.ftl"),
+                            eq(createCtx)))
+                    .thenReturn("CREATE TABLE book (...);");
 
-                writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath), ArgumentMatchers.contains("create_book_table_generator.sql"), anyString()
-                ), never());
+            flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class)))
+                    .thenAnswer(inv -> null);
 
-                writer.verify(() -> FileWriterUtils.writeToFile(
-                        eq(expectedScriptsPath), eq("V1__create_book_table.sql"), eq("CREATE TABLE book (...);")
-                ));
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
+
+            generator.generate(bookModel, "out");
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq(expectedScriptsPath), contains("create_book_table_generator.sql"), anyString()
+            ), never());
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq(expectedScriptsPath), eq("V1__create_book_table.sql"), eq("CREATE TABLE book (...);")
+            ));
         }
     }
 

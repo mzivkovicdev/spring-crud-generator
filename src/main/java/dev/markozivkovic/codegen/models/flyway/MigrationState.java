@@ -25,15 +25,18 @@ public class MigrationState {
     private String generatorVersion;
     private Integer lastScriptVersion;
     private List<EntityState> entities = new ArrayList<>();
+    private List<DdlArtifactState> ddlArtifacts = new ArrayList<>();
 
     public MigrationState() {
 
     }
 
-    public MigrationState(final String generatorVersion, final Integer lastScriptVersion, final List<EntityState> entities) {
+    public MigrationState(final String generatorVersion, final Integer lastScriptVersion, final List<EntityState> entities,
+                final List<DdlArtifactState> ddlArtifacts) {
         this.generatorVersion = generatorVersion;
         this.lastScriptVersion = lastScriptVersion;
         this.entities = entities;
+        this.ddlArtifacts = ddlArtifacts;
     }
 
     public String getGeneratorVersion() {
@@ -63,6 +66,15 @@ public class MigrationState {
         return this;
     }
 
+    public List<DdlArtifactState> getDdlArtifacts() {
+        return this.ddlArtifacts;
+    }
+
+    public MigrationState setDdlArtifacts(final List<DdlArtifactState> ddlArtifacts) {
+        this.ddlArtifacts = ddlArtifacts;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -73,12 +85,13 @@ public class MigrationState {
         final MigrationState migrationState = (MigrationState) o;
         return Objects.equals(generatorVersion, migrationState.generatorVersion) &&
                 Objects.equals(lastScriptVersion, migrationState.lastScriptVersion) &&
-                Objects.equals(entities, migrationState.entities);
+                Objects.equals(entities, migrationState.entities) &&
+                Objects.equals(ddlArtifacts, migrationState.ddlArtifacts);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(generatorVersion, lastScriptVersion, entities);
+        return Objects.hash(generatorVersion, lastScriptVersion, entities, ddlArtifacts);
     }
 
     @Override
@@ -87,6 +100,7 @@ public class MigrationState {
             " generatorVersion='" + getGeneratorVersion() + "'" +
             ", lastScriptVersion='" + getLastScriptVersion() + "'" +
             ", entities='" + getEntities() + "'" +
+            ", ddlArtifacts='" + getDdlArtifacts() + "'" +
             "}";
     }    
 

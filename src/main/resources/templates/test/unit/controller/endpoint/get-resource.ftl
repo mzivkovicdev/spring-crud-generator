@@ -17,6 +17,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+<#if isIdUuid>
+import java.util.UUID;
+</#if><#t>
 
 ${testImports}
 ${projectImports}

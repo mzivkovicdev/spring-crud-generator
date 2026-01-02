@@ -317,6 +317,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
         final Map<String, Object> context = new HashMap<>();
+        context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
         context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
@@ -369,6 +370,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
         final Map<String, Object> context = new HashMap<>();
+        context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
         context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
@@ -418,6 +420,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
         final Map<String, Object> context = new HashMap<>();
+        context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
         context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
         context.put("className", className);
