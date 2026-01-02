@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS ${name} (
     ${valueColumnName} BIGINT
 );
 
-<#if db == "POSTGRES">
+<#if db == "POSTGRESQL">
 INSERT INTO ${name}(${pkColumnName}, ${valueColumnName})
     VALUES ('${pkColumnValue}', ${initialValue})
     ON CONFLICT DO NOTHING;
