@@ -724,14 +724,14 @@ public class FlywayUtils {
                 computeTableGeneratorName(model.getStorageName()) :
                 idField.getId().getGeneratorName();
 
-        return Map.of(
+        return new HashMap<>(Map.of(
                 "name", genName,
                 "pkColumnName", idField.getId().getPkColumnName() != null ? idField.getId().getPkColumnName() : "gen_name",
                 "valueColumnName", idField.getId().getValueColumnName() != null ? idField.getId().getValueColumnName() : "gen_value",
                 "table", true,
                 "initialValue", idField.getId().getInitialValue() != null ? idField.getId().getInitialValue() : 1,
                 "pkColumnValue", model.getStorageName()
-        );
+        ));
     }
 
     /**

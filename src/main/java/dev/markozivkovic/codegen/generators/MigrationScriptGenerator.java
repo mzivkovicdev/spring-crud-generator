@@ -469,6 +469,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     "create_%s_table_generator.sql", ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName()))
             );
             final Map<String, Object> context = FlywayUtils.toTableGeneratorContext(model);
+            context.put("db", this.configuration.getDatabase().name().toUpperCase());
             final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/create-sequence-table-generator.sql.ftl", context
             );

@@ -7,7 +7,7 @@ CREATE SEQUENCE IF NOT EXISTS ${name}
 CREATE TABLE ${name} (
     next_val BIGINT NOT NULL
 );
-INSERT INTO ${name} (next_val) VALUES (1);
+INSERT INTO ${name} (next_val) VALUES (${initialValue});
 </#if><#t>
 <#if table??>
 CREATE TABLE IF NOT EXISTS ${name} (
