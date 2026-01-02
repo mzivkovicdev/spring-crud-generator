@@ -14,6 +14,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+<#if isIdUuid>
+
+import java.util.UUID;
+</#if><#t>
 
 ${testImports}
 ${projectImports}

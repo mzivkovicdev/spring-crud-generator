@@ -8,6 +8,10 @@ import static org.mockito.Mockito.verifyNoInteractions;</#if>
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+<#if isIdUuid>
+
+import java.util.UUID;
+</#if><#t>
 
 ${testImports}
 ${projectImports}<#if dataGenerator == "PODAM">
