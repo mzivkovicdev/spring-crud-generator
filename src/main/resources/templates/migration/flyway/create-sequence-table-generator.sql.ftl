@@ -1,9 +1,14 @@
-<#if sequence??>
+<#if sequence?? && db != "MYSQL">
 CREATE SEQUENCE IF NOT EXISTS ${name}
     START WITH ${initialValue}
     INCREMENT BY ${allocationSize};
-</#if>
-
+</#if><#t>
+<#if sequence?? && db == "MYSQL">
+CREATE TABLE ${name} (
+    next_val BIGINT NOT NULL
+);
+INSERT INTO ${name} (next_val) VALUES (1);
+</#if><#t>
 <#if table??>
 CREATE TABLE IF NOT EXISTS ${name} (
     ${pkColumnName} VARCHAR(255) PRIMARY KEY,
