@@ -22,8 +22,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -327,7 +329,7 @@ public class FlywayUtils {
                 return switch (databaseType) {
                     case POSTGRESQL -> "BIGINT";
                     case MYSQL -> "BIGINT AUTO_INCREMENT";
-                    case MSSQL -> "BIGINT IDENTITY(1,1)";
+                    case MSSQL -> "BIGINT";
                 };
             case SEQUENCE:
                 return switch (databaseType) {
@@ -666,6 +668,7 @@ public class FlywayUtils {
         ctx.put("auditCreatedType", auditType(db, resolvedAuditType));
         ctx.put("auditUpdatedType", auditType(db, resolvedAuditType));
         ctx.put("auditNowExpr", auditNow(db));
+        ctx.put("db", db.name().toUpperCase(Locale.ROOT));
 
         return ctx;
     }
@@ -691,12 +694,12 @@ public class FlywayUtils {
         final String seqName = StringUtils.isBlank(idField.getId().getGeneratorName()) ? 
                 computeSequenceName(model.getStorageName()) : idField.getId().getGeneratorName(); 
 
-        return Map.of(
+        return new HashMap<>(Map.of(
                 "name", seqName,
                 "initialValue", idField.getId().getInitialValue() != null ? idField.getId().getInitialValue() : 1,
                 "allocationSize", idField.getId().getAllocationSize() != null ? idField.getId().getAllocationSize() : 50,
                 "sequence", true
-        );
+        ));
     }
 
     /**
@@ -723,14 +726,14 @@ public class FlywayUtils {
                 computeTableGeneratorName(model.getStorageName()) :
                 idField.getId().getGeneratorName();
 
-        return Map.of(
+        return new HashMap<>(Map.of(
                 "name", genName,
                 "pkColumnName", idField.getId().getPkColumnName() != null ? idField.getId().getPkColumnName() : "gen_name",
                 "valueColumnName", idField.getId().getValueColumnName() != null ? idField.getId().getValueColumnName() : "gen_value",
                 "table", true,
                 "initialValue", idField.getId().getInitialValue() != null ? idField.getId().getInitialValue() : 1,
                 "pkColumnValue", model.getStorageName()
-        );
+        ));
     }
 
     /**
@@ -880,6 +883,7 @@ public class FlywayUtils {
                 "table",  rightTable,
                 "pkColumn", rightPkCol
         ));
+        ctx.put("db", db.name().toUpperCase(Locale.ROOT));
 
         return ctx;
     }

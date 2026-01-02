@@ -1,5 +1,5 @@
 <#assign hasChecks = (checks?? && (checks?size > 0))>
-CREATE TABLE IF NOT EXISTS ${tableName} (
+CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${tableName} (
 <#list columns as c>
   ${c.name} ${c.sqlType}<#if c.defaultExpr??> DEFAULT ${c.defaultExpr}</#if><#if !c.nullable> NOT NULL</#if><#if c.unique> UNIQUE</#if><#if (c?has_next) || (auditEnabled) || (pkColumns??) || hasChecks>,</#if>
 </#list>

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -369,6 +370,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
         
         final Map<String, Object> ecCtx = new LinkedHashMap<>();
         ecCtx.put("collectionTables", elementCollectionTables);
+        ecCtx.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
 
         final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
             "migration/flyway/element-collection-create.ftl", ecCtx
@@ -427,7 +429,9 @@ public class MigrationScriptGenerator implements CodeGenerator {
         final List<ModelDefinition> modelsWithSequences = models.stream()
                 .filter(model -> {
                     final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
-                    final boolean importSequenceIfAutoStrategy = (DatabaseType.POSTGRESQL.equals(this.configuration.getDatabase()) || DatabaseType.MSSQL.equals(this.configuration.getDatabase()))
+                    final boolean importSequenceIfAutoStrategy = (DatabaseType.POSTGRESQL.equals(this.configuration.getDatabase())
+                            || DatabaseType.MSSQL.equals(this.configuration.getDatabase())
+                            || DatabaseType.MYSQL.equals(this.configuration.getDatabase()))
                              && IdStrategyEnum.AUTO.equals(idField.getId().getStrategy());
                     return IdStrategyEnum.SEQUENCE.equals(idField.getId().getStrategy()) || importSequenceIfAutoStrategy;
                 }).collect(Collectors.toList());
@@ -444,6 +448,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     "create_%s_sequence.sql", ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName()))
             );
             final Map<String, Object> context = FlywayUtils.toSequenceGeneratorContext(model);
+            context.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
             final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/create-sequence-table-generator.sql.ftl", context
             );
@@ -466,6 +471,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     "create_%s_table_generator.sql", ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName()))
             );
             final Map<String, Object> context = FlywayUtils.toTableGeneratorContext(model);
+            context.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
             final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/create-sequence-table-generator.sql.ftl", context
             );

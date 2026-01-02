@@ -166,7 +166,9 @@ public class JpaEntityGenerator implements CodeGenerator {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
-        final boolean importSequenceIfAutoStrategy = (DatabaseType.POSTGRESQL.equals(this.configuration.getDatabase()) || DatabaseType.MSSQL.equals(this.configuration.getDatabase()))
+        final boolean importSequenceIfAutoStrategy = (DatabaseType.POSTGRESQL.equals(this.configuration.getDatabase())
+                || DatabaseType.MSSQL.equals(this.configuration.getDatabase())
+                || DatabaseType.MYSQL.equals(this.configuration.getDatabase()))
                 && IdStrategyEnum.AUTO.equals(idField.getId().getStrategy());
         
         final String className = model.getName();

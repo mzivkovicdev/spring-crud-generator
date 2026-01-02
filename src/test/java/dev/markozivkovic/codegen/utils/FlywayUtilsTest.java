@@ -402,7 +402,7 @@ class FlywayUtilsTest {
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, autoField, "t"));
         assertEquals("BIGINT AUTO_INCREMENT",
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.MYSQL, autoField, "t"));
-        assertEquals("BIGINT IDENTITY(1,1)",
+        assertEquals("BIGINT",
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, autoField, "t"));
     }
 
