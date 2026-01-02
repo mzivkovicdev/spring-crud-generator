@@ -365,8 +365,8 @@ public class FlywayUtils {
             return null;
         }
 
-        final String seq = (StringUtils.isNotBlank(f.getId().getSequenceName()))
-                ? f.getId().getSequenceName()
+        final String seq = (StringUtils.isNotBlank(f.getId().getGeneratorName()))
+                ? f.getId().getGeneratorName()
                 : table + "_id_seq";
 
         return switch (d) {
@@ -687,8 +687,9 @@ public class FlywayUtils {
      */
     public static Map<String, Object> toSequenceGeneratorContext(final ModelDefinition model) {
 
-        final String seqName = generatorName(ModelNameUtils.stripSuffix(model.getName()));
         final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
+        final String seqName = StringUtils.isBlank(idField.getId().getGeneratorName()) ? 
+                computeSequenceName(model.getStorageName()) : idField.getId().getGeneratorName(); 
 
         return Map.of(
                 "name", seqName,
@@ -717,8 +718,10 @@ public class FlywayUtils {
      */
     public static Map<String, Object> toTableGeneratorContext(final ModelDefinition model) {
 
-        final String genName = generatorName(ModelNameUtils.stripSuffix(model.getName()));
         final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
+        final String genName = StringUtils.isBlank(idField.getId().getGeneratorName()) ?
+                computeTableGeneratorName(model.getStorageName()) :
+                idField.getId().getGeneratorName();
 
         return Map.of(
                 "name", genName,
@@ -732,13 +735,24 @@ public class FlywayUtils {
 
     /**
      * Returns a Flyway sequence generator name based on the given model name.
-     * The format of the sequence generator name is as follows: <strippedModelName>_gen.
+     * The format of the sequence generator name is as follows: <strippedModelName>_id_seq.
      * 
      * @param strippedModelName the stripped model name
      * @return the Flyway sequence generator name
      */
-    private static String generatorName(final String strippedModelName) {
-        return String.format("%s_gen", strippedModelName);
+    private static String computeSequenceName(final String strippedModelName) {
+        return String.format("%s_id_seq", StringUtils.uncapitalize(strippedModelName));
+    }
+
+    /**
+     * Returns a Flyway table generator name based on the given model name.
+     * The format of the table generator name is as follows: <strippedModelName>_id_gen.
+     * 
+     * @param strippedModelName the stripped model name
+     * @return the Flyway table generator name
+     */
+    private static String computeTableGeneratorName(final String strippedModelName) {
+        return String.format("%s_id_gen", StringUtils.uncapitalize(strippedModelName));
     }
 
     /**

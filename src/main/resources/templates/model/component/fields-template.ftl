@@ -5,14 +5,14 @@
     <#if field.id.strategy == "SEQUENCE" || (field.id.strategy == "AUTO" && (db == "MSSQL" || db == "POSTGRESQL"))>
     @SequenceGenerator(
         name = "${strippedModelName}_gen",
-        sequenceName = "${field.id.sequenceName! (storageName + "_id_seq")}",
+        sequenceName = "${field.id.generatorName! (storageName + "_id_seq")}",
         allocationSize = ${field.id.allocationSize!50},
         initialValue = ${field.id.initialValue!1}
     )
     <#elseif field.id.strategy == "TABLE">
     @TableGenerator(
         name = "${strippedModelName}_gen",
-        table = "${field.id.sequenceName! (storageName + "_id_gen")}",
+        table = "${field.id.generatorName! (storageName + "_id_gen")}",
         pkColumnName = "${field.id.pkColumnName! "gen_name"}",
         valueColumnName = "${field.id.valueColumnName! "gen_value"}",
         pkColumnValue = "${storageName}",
