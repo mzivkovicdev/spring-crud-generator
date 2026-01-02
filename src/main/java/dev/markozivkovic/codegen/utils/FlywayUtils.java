@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -667,6 +668,7 @@ public class FlywayUtils {
         ctx.put("auditCreatedType", auditType(db, resolvedAuditType));
         ctx.put("auditUpdatedType", auditType(db, resolvedAuditType));
         ctx.put("auditNowExpr", auditNow(db));
+        ctx.put("db", db.name().toUpperCase(Locale.ROOT));
 
         return ctx;
     }
@@ -881,6 +883,7 @@ public class FlywayUtils {
                 "table",  rightTable,
                 "pkColumn", rightPkCol
         ));
+        ctx.put("db", db.name().toUpperCase(Locale.ROOT));
 
         return ctx;
     }

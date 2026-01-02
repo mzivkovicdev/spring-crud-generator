@@ -1,5 +1,5 @@
 <#if sequence?? && db != "MYSQL">
-CREATE SEQUENCE IF NOT EXISTS ${name}
+CREATE SEQUENCE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${name}
     START WITH ${initialValue}
     INCREMENT BY ${allocationSize};
 </#if><#t>
@@ -10,7 +10,7 @@ CREATE TABLE ${name} (
 INSERT INTO ${name} (next_val) VALUES (${initialValue});
 </#if><#t>
 <#if table??>
-CREATE TABLE IF NOT EXISTS ${name} (
+CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${name} (
     ${pkColumnName} VARCHAR(255) PRIMARY KEY,
     ${valueColumnName} BIGINT
 );

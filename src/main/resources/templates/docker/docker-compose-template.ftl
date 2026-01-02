@@ -70,7 +70,7 @@ services:
             - "${dbPort}:${dbPort}"
         command:
             - bash
-            - lc
+            - -lc
             - |
                 /opt/mssql/bin/sqlservr & pid=$$!;
                 echo 'Waiting for SQL Server to be ready...';
@@ -85,7 +85,7 @@ services:
                 wait $$pid
         </#if>
         volumes:
-            - db_data:/var/lib/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql">mysql<#elseif dbType == "mssql">mssql</#if>
+            - db_data:/var/<#if dbType == "mssql">opt<#else>lib</#if>/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql">mysql<#elseif dbType == "mssql">mssql</#if>
         networks:
             - ${artifactId}-network
     <#if cacheType?? && cacheType?lower_case == "redis">

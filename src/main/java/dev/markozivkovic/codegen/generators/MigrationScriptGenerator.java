@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -446,7 +447,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     "create_%s_sequence.sql", ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName()))
             );
             final Map<String, Object> context = FlywayUtils.toSequenceGeneratorContext(model);
-            context.put("db", this.configuration.getDatabase().name().toUpperCase());
+            context.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
             final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/create-sequence-table-generator.sql.ftl", context
             );
@@ -469,7 +470,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     "create_%s_table_generator.sql", ModelNameUtils.toSnakeCase(ModelNameUtils.stripSuffix(model.getName()))
             );
             final Map<String, Object> context = FlywayUtils.toTableGeneratorContext(model);
-            context.put("db", this.configuration.getDatabase().name().toUpperCase());
+            context.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
             final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/create-sequence-table-generator.sql.ftl", context
             );
