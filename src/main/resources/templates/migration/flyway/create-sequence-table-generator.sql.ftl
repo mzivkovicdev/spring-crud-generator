@@ -15,7 +15,21 @@ CREATE TABLE IF NOT EXISTS ${name} (
     ${valueColumnName} BIGINT
 );
 
+<#if db == "POSTGRES">
 INSERT INTO ${name}(${pkColumnName}, ${valueColumnName})
     VALUES ('${pkColumnValue}', ${initialValue})
     ON CONFLICT DO NOTHING;
+</#if><#t>
+<#if db == "MYSQL">
+INSERT INTO ${name}(${pkColumnName}, ${valueColumnName})
+    VALUES ('${pkColumnValue}', ${initialValue})
+    ON DUPLICATE KEY UPDATE ${valueColumnName} = ${valueColumnName};
+</#if><#t>
+<#if db == "MSSQL">
+IF NOT EXISTS (SELECT 1 FROM ${name} WHERE ${pkColumnName} = '${pkColumnValue}')
+BEGIN
+    INSERT INTO ${name}(${pkColumnName}, ${valueColumnName})
+    VALUES ('${pkColumnValue}', ${initialValue});
+END
+</#if><#t>
 </#if>
