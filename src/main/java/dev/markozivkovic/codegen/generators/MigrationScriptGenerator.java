@@ -39,6 +39,7 @@ import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.ProjectMetadata;
 import dev.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
+import dev.markozivkovic.codegen.models.flyway.DdlArtifactState.DdlArtifactType;
 import dev.markozivkovic.codegen.models.flyway.EntityState;
 import dev.markozivkovic.codegen.models.flyway.FkState;
 import dev.markozivkovic.codegen.models.flyway.MigrationState;
@@ -446,15 +447,16 @@ public class MigrationScriptGenerator implements CodeGenerator {
             final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/create-sequence-table-generator.sql.ftl", context
             );
+            final String seqName = String.valueOf(context.get("name"));
 
-            if (manifest.hasEntityFileWithSuffixAndContent(model.getStorageName(), fileSuffix, sql)) {
+            if (manifest.hasDdlArtifactFileWithSuffixAndContent(DdlArtifactType.SEQUENCE, seqName, fileSuffix, sql)) {
                 return;
             }
 
             final String dbScriptName = String.format("V%d__%s", version, fileSuffix);
             FileWriterUtils.writeToFile(pathToDbScripts, dbScriptName, sql);
             final String tableName = model.getStorageName();
-            manifest.addEntityFile(tableName, dbScriptName, sql);
+            manifest.addDdlArtifactFile(DdlArtifactType.SEQUENCE, seqName, tableName, dbScriptName, sql);
             version++;
         });
 
@@ -467,15 +469,17 @@ public class MigrationScriptGenerator implements CodeGenerator {
             final String sql = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/create-sequence-table-generator.sql.ftl", context
             );
+            final String genTableName = String.valueOf(context.get("name"));
 
-            if (manifest.hasEntityFileWithSuffixAndContent(model.getStorageName(), fileSuffix, sql)) {
+            if (manifest.hasDdlArtifactFileWithSuffixAndContent(DdlArtifactType.TABLE_GENERATOR, genTableName, fileSuffix, sql)) {
                 return;
             }
 
             final String dbScriptName = String.format("V%d__%s", version, fileSuffix);
             FileWriterUtils.writeToFile(pathToDbScripts, dbScriptName, sql);
             final String tableName = model.getStorageName();
-            manifest.addEntityFile(tableName, dbScriptName, sql);
+            
+            manifest.addDdlArtifactFile(DdlArtifactType.TABLE_GENERATOR, genTableName, tableName, dbScriptName, sql);
             version++;
         });
     }
