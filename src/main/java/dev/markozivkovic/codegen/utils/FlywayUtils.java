@@ -329,7 +329,7 @@ public class FlywayUtils {
                 return switch (databaseType) {
                     case POSTGRESQL -> "BIGINT";
                     case MYSQL -> "BIGINT AUTO_INCREMENT";
-                    case MSSQL -> "BIGINT IDENTITY(1,1)";
+                    case MSSQL -> "BIGINT";
                 };
             case SEQUENCE:
                 return switch (databaseType) {
