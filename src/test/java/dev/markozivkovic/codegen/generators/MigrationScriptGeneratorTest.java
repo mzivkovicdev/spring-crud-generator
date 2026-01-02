@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +41,8 @@ import dev.markozivkovic.codegen.models.IdDefinition;
 import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.ProjectMetadata;
+import dev.markozivkovic.codegen.models.RelationDefinition;
+import dev.markozivkovic.codegen.models.RelationDefinition.JoinTableDefinition;
 import dev.markozivkovic.codegen.models.flyway.DdlArtifactState.DdlArtifactType;
 import dev.markozivkovic.codegen.models.flyway.EntityState;
 import dev.markozivkovic.codegen.models.flyway.MigrationState;
@@ -919,5 +922,220 @@ class MigrationScriptGeneratorTest {
             ));
         }
     }
+
+    @Test
+    void generate_shouldNotGenerateAlterTableCombined_forNewModel() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final IdDefinition idDef = mock(IdDefinition.class);
+        when(idField.getId()).thenReturn(idDef);
+        when(idDef.getStrategy()).thenReturn(IdStrategyEnum.AUTO);
+
+        final ModelDefinition bookModel = newModel("BookEntity", "book", List.of(idField));
+        final List<ModelDefinition> allEntities = List.of(bookModel);
+
+        when(cfg.isMigrationScripts()).thenReturn(true);
+        when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(cfg.getOptimisticLocking()).thenReturn(false);
+        when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
+
+        final MigrationScriptGenerator generator = new MigrationScriptGenerator(cfg, projectMetadata, allEntities);
+        final String expectedScriptsPath = "/tmp/project/" + GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION;
+
+        try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+             final MockedConstruction<MigrationManifestBuilder> manifestConstr =
+                     mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
+                         final MigrationState ms = mock(MigrationState.class);
+                         when(ms.getEntities()).thenReturn(null);
+                         when(ms.getDdlArtifacts()).thenReturn(null);
+                         when(mock.build()).thenReturn(ms);
+                         when(mock.hasDdlArtifactFileWithSuffixAndContent(any(), anyString(), anyString(), anyString()))
+                                 .thenReturn(false);
+                     })) {
+
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT)).thenReturn(false);
+
+            final MigrationState initialState = mock(MigrationState.class);
+            when(initialState.getLastScriptVersion()).thenReturn(0);
+            when(initialState.getEntities()).thenReturn(null);
+            when(initialState.getDdlArtifacts()).thenReturn(null);
+
+            flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
+            flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
+
+            fieldUtils.when(() -> FieldUtils.isJsonField(any(FieldDefinition.class))).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
+
+            final Map<String, Object> seqCtx = new HashMap<>();
+            seqCtx.put("name", "book_id_seq");
+            flyway.when(() -> FlywayUtils.toSequenceGeneratorContext(eq(bookModel))).thenReturn(seqCtx);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-sequence-table-generator.sql.ftl"), eq(seqCtx)))
+                    .thenReturn("CREATE SEQUENCE book_id_seq;");
+
+            final Map<String, Object> createCtx = new HashMap<>();
+            createCtx.put("tableName", "book");
+            createCtx.put("columns", Collections.emptyList());
+
+            flyway.when(() -> FlywayUtils.toCreateTableContext(eq(bookModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
+                    .thenReturn(createCtx);
+
+            flyway.when(() -> FlywayUtils.toForeignKeysContext(eq(bookModel), anyMap())).thenReturn(null);
+            flyway.when(() -> FlywayUtils.collectElementCollectionTables(eq(bookModel), eq(DatabaseType.POSTGRESQL)))
+                    .thenReturn(Collections.emptyList());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-table.sql.ftl"), eq(createCtx)))
+                    .thenReturn("CREATE TABLE book (...);");
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/alter-table-combined.sql.ftl"), anyMap()))
+                    .thenReturn("-- ALTER COMBINED --");
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("BookEntity")).thenReturn("Book");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("Book")).thenReturn("book");
+
+            flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class))).thenAnswer(inv -> null);
+
+            generator.generate(bookModel, "out");
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq(expectedScriptsPath), contains("create_book_table.sql"), eq("CREATE TABLE book (...);")
+            ));
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("migration/flyway/alter-table-combined.sql.ftl"), anyMap()
+            ), never());
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq(expectedScriptsPath),
+                    contains("alter_table_book.sql"),
+                    anyString()
+            ), never());
+        }
+    }
+
+    @Test
+    void generate_shouldGenerateJoinTableScript_onlyOnce_whenTwoModelsShareSameJoinTable() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
+
+        final FieldDefinition id1 = mock(FieldDefinition.class);
+        final IdDefinition idDef1 = mock(IdDefinition.class);
+        when(id1.getId()).thenReturn(idDef1);
+        when(idDef1.getStrategy()).thenReturn(IdStrategyEnum.IDENTITY);
+
+        final FieldDefinition mtm1 = mock(FieldDefinition.class);
+        final RelationDefinition rel1 = mock(RelationDefinition.class);
+        final JoinTableDefinition jt1 = mock(JoinTableDefinition.class);
+        when(mtm1.getRelation()).thenReturn(rel1);
+        when(rel1.getType()).thenReturn("ManyToMany");
+        when(rel1.getJoinTable()).thenReturn(jt1);
+        when(jt1.getName()).thenReturn("user_roles");
+
+        final ModelDefinition userModel = newModel("UserEntity", "users", List.of(id1, mtm1));
+        final FieldDefinition id2 = mock(FieldDefinition.class);
+        final IdDefinition idDef2 = mock(IdDefinition.class);
+        when(id2.getId()).thenReturn(idDef2);
+        when(idDef2.getStrategy()).thenReturn(IdStrategyEnum.IDENTITY);
+
+        final FieldDefinition mtm2 = mock(FieldDefinition.class);
+        final RelationDefinition rel2 = mock(RelationDefinition.class);
+        final JoinTableDefinition jt2 = mock(JoinTableDefinition.class);
+        when(mtm2.getRelation()).thenReturn(rel2);
+        when(rel2.getType()).thenReturn("ManyToMany");
+        when(rel2.getJoinTable()).thenReturn(jt2);
+        when(jt2.getName()).thenReturn("user_roles");
+
+        final ModelDefinition roleModel = newModel("RoleEntity", "roles", List.of(id2, mtm2));
+
+        final List<ModelDefinition> allEntities = List.of(userModel, roleModel);
+
+        when(cfg.isMigrationScripts()).thenReturn(true);
+        when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(cfg.getOptimisticLocking()).thenReturn(false);
+        when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
+
+        final MigrationScriptGenerator generator = new MigrationScriptGenerator(cfg, projectMetadata, allEntities);
+        final String expectedScriptsPath = "/tmp/project/" + GeneratorConstants.SRC_MAIN_RESOURCES_DB_MIGRATION;
+
+        try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FlywayUtils> flyway = mockStatic(FlywayUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedConstruction<MigrationManifestBuilder> manifestConstr =
+                     mockConstruction(MigrationManifestBuilder.class, (mock, constructionContext) -> {
+                         final MigrationState ms = mock(MigrationState.class);
+                         when(ms.getEntities()).thenReturn(null);
+                         when(ms.getDdlArtifacts()).thenReturn(null);
+                         when(mock.build()).thenReturn(ms);
+                     })) {
+
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.MIGRATION_SCRIPT)).thenReturn(false);
+
+            final MigrationState initialState = mock(MigrationState.class);
+            when(initialState.getLastScriptVersion()).thenReturn(0);
+            when(initialState.getEntities()).thenReturn(null);
+            when(initialState.getDdlArtifacts()).thenReturn(null);
+
+            flyway.when(() -> FlywayUtils.loadOrEmpty("/tmp/project")).thenReturn(initialState);
+            flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
+
+            fieldUtils.when(() -> FieldUtils.isJsonField(any(FieldDefinition.class))).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenAnswer(inv -> {
+                    @SuppressWarnings("unchecked")
+                    final List<FieldDefinition> fs = (List<FieldDefinition>) inv.getArgument(0);
+                    return fs.stream().filter(f -> f.getId() != null).findFirst().orElse(fs.get(0));
+            });
+
+            final Map<String, Object> createUsers = new HashMap<>();
+            createUsers.put("tableName", "users");
+            createUsers.put("columns", Collections.emptyList());
+
+            final Map<String, Object> createRoles = new HashMap<>();
+            createRoles.put("tableName", "roles");
+            createRoles.put("columns", Collections.emptyList());
+
+            flyway.when(() -> FlywayUtils.toCreateTableContext(eq(userModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
+                    .thenReturn(createUsers);
+            flyway.when(() -> FlywayUtils.toCreateTableContext(eq(roleModel), eq(DatabaseType.POSTGRESQL), anyMap(), anyList(), anyBoolean()))
+                    .thenReturn(createRoles);
+
+            flyway.when(() -> FlywayUtils.toForeignKeysContext(any(ModelDefinition.class), anyMap())).thenReturn(null);
+            flyway.when(() -> FlywayUtils.collectElementCollectionTables(any(ModelDefinition.class), eq(DatabaseType.POSTGRESQL)))
+                    .thenReturn(Collections.emptyList());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-table.sql.ftl"), anyMap()))
+                    .thenReturn("CREATE TABLE ...;");
+
+            final Map<String, Object> joinCtx = new HashMap<>();
+            joinCtx.put("tableName", "user_roles");
+
+            flyway.when(() -> FlywayUtils.toJoinTableContext(any(ModelDefinition.class), any(FieldDefinition.class), eq(DatabaseType.POSTGRESQL), anyMap()))
+                  .thenReturn(joinCtx);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-join-table.sql.ftl"), eq(joinCtx)))
+                    .thenReturn("CREATE TABLE user_roles (...);");
+
+            flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class))).thenAnswer(inv -> null);
+
+            generator.generate(userModel, "out");
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq(expectedScriptsPath), contains("create_user_roles.sql"), eq("CREATE TABLE user_roles (...);")
+            ), times(1));
+        }
+    }
+
 
 }
