@@ -20,6 +20,14 @@
   <#return false>
 </#function>
 
+<#function isList fieldType>
+  <#assign t = fieldType?trim>
+  <#if t?starts_with("List<") && t?ends_with(">")>
+    <#return true>
+  </#if>
+  <#return false>
+</#function>
+
 <#function toSnakeCase s>
   <#if !s??>
     <#return "">

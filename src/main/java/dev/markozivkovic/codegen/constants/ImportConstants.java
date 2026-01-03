@@ -60,6 +60,7 @@ public final class ImportConstants {
         public static final String COLUMN = "jakarta.persistence.Column";
         public static final String JOIN_COLUMN = "jakarta.persistence.JoinColumn";
         public static final String JOIN_TABLE = "jakarta.persistence.JoinTable";
+        public static final String ORDER_COLUMN = "jakarta.persistence.OrderColumn";
         public static final String ONE_TO_ONE = "jakarta.persistence.OneToOne";
         public static final String MANY_TO_MANY = "jakarta.persistence.ManyToMany";
         public static final String ONE_TO_MANY = "jakarta.persistence.OneToMany";

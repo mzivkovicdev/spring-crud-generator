@@ -27,6 +27,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.markozivkovic.codegen.enums.SpecialType;
 import dev.markozivkovic.codegen.models.ColumnDefinition;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
@@ -241,6 +242,18 @@ public class FieldUtils {
     public static boolean isAnyFieldSimpleCollection(final List<FieldDefinition> fields) {
         
         return fields.stream().anyMatch(field -> isSimpleCollectionField(field));
+    }
+
+    /**
+     * Returns true if any field in the given list of fields is a simple list type (i.e. a field of type "List&lt;name&gt;"), false otherwise.
+     * 
+     * @param fields The list of fields to check.
+     * @return True if any field is a simple list type, false otherwise.
+     */
+    public static boolean isAnyFieldSimpleListType(final List<FieldDefinition> fields) {
+        
+        return fields.stream().filter(field -> isSimpleCollectionField(field))
+                .anyMatch(field -> SpecialType.isListType(field.getType()));
     }
 
     /**

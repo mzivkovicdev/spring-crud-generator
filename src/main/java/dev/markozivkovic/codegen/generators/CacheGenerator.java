@@ -19,17 +19,21 @@ package dev.markozivkovic.codegen.generators;
 import static dev.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.codegen.constants.GeneratorConstants;
 import dev.markozivkovic.codegen.context.GeneratorContext;
+import dev.markozivkovic.codegen.imports.ConfigurationImports;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
-import dev.markozivkovic.codegen.models.PackageConfiguration;
 import dev.markozivkovic.codegen.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
+import dev.markozivkovic.codegen.models.ModelDefinition;
+import dev.markozivkovic.codegen.models.PackageConfiguration;
 import dev.markozivkovic.codegen.utils.FileWriterUtils;
 import dev.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.codegen.utils.PackageUtils;
@@ -40,10 +44,13 @@ public class CacheGenerator implements ProjectArtifactGenerator {
     
     private final CrudConfiguration crudConfiguration;
     private final PackageConfiguration packageConfiguration;
+    private final List<ModelDefinition> entities;
 
-    public CacheGenerator(final CrudConfiguration crudConfiguration, final PackageConfiguration packageConfiguration) {
+    public CacheGenerator(final CrudConfiguration crudConfiguration, final PackageConfiguration packageConfiguration,
+            final List<ModelDefinition> entities) {
         this.crudConfiguration = crudConfiguration;
         this.packageConfiguration = packageConfiguration;
+        this.entities = entities;
     }
 
     @Override
@@ -73,8 +80,18 @@ public class CacheGenerator implements ProjectArtifactGenerator {
         if (Objects.nonNull(this.crudConfiguration.getCache().getExpiration())) {
             context.put("expiration", this.crudConfiguration.getCache().getExpiration());
         }
-        
+
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final List<String> entityNames = entities.stream()
+                .filter(e -> Objects.nonNull(e.getStorageName()))
+                .map(ModelDefinition::getName)
+                .collect(Collectors.toList());
+
+        final String modelImports = ConfigurationImports.getModelImports(packagePath, packageConfiguration, entityNames);
+
+        context.put("modelImports", modelImports);
+        context.put("entities", entityNames);
+
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
