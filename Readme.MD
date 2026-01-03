@@ -1,12 +1,17 @@
 # 🚀 Spring CRUD Generator
 
-![Java](https://img.shields.io/badge/Java-17--25-blue)
+[![CI](https://github.com/mzivkovicdev/spring-crud-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/mzivkovicdev/spring-crud-generator/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat)](https://opensource.org/licenses/Apache-2.0)
+![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success?style=flat)
+
+![Java](https://img.shields.io/badge/Java-17--25-blue?style=flat&logo=openjdk&logoColor=white)
+![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat&logo=springboot&logoColor=white)
+![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.x-6DB33F?style=flat&logo=springboot&logoColor=white)
+
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
-![MicrosoftSQLServer](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=for-the-badge&logo=microsoft%20sql%20server&logoColor=white)
-![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
-![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=flat&logo=microsoftsqlserver&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DD0031?style=flat&logo=redis&logoColor=white)
 
 **Spring CRUD Generator** is an open-source code generation tool designed to accelerate backend development with Spring Boot.  
 It generates production-ready CRUD layers, database migrations, API documentation, Docker resources, tests, and more — directly from a single YAML or JSON configuration file.
