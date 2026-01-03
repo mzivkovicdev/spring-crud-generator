@@ -60,7 +60,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
 
         this.ARTIFACT_GENERATORS = Stream.of(
             Map.entry(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration)),
-            Map.entry(CACHE, new CacheGenerator(crudConfiguration, packageConfiguration)),
+            Map.entry(CACHE, new CacheGenerator(crudConfiguration, packageConfiguration, entites)),
             Map.entry(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata)),
             Map.entry(EXCEPTION, new ExceptionGenerator(packageConfiguration)),
             Map.entry(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entites, packageConfiguration)),
