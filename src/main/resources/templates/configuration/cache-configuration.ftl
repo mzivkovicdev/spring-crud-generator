@@ -45,6 +45,7 @@ public class CacheConfiguration {
     );
 
     @Bean
+    @SuppressWarnings("unchecked")
     RedisCacheManager cacheManager(final RedisConnectionFactory factory) {
 
         final RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
