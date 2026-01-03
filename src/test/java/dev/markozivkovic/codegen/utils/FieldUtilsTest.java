@@ -687,6 +687,44 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("isAnyFieldSimpleListType: empty list -> false")
+    void isAnyFieldSimpleListType_emptyList_false() {
+        assertFalse(FieldUtils.isAnyFieldSimpleListType(Collections.emptyList()));
+    }
+
+    @Test
+    @DisplayName("isAnyFieldSimpleListType: no simple collection fields -> false")
+    void isAnyFieldSimpleListType_noSimpleCollections_false() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("name", "String"),
+                fieldWithNameAndType("age", "Integer")
+        );
+
+        assertFalse(FieldUtils.isAnyFieldSimpleListType(fields));
+    }
+
+    @Test
+    @DisplayName("isAnyFieldSimpleListType: contains Set<T> (simple collection) -> false")
+    void isAnyFieldSimpleListType_setField_false() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("roles", "Set<String>")
+        );
+
+        assertFalse(FieldUtils.isAnyFieldSimpleListType(fields));
+    }
+
+    @Test
+    @DisplayName("isAnyFieldSimpleListType: contains List<T> field without relation -> true")
+    void isAnyFieldSimpleListType_listField_true() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("name", "String"),
+                fieldWithNameAndType("phoneNumbers", "List<String>")
+        );
+
+        assertTrue(FieldUtils.isAnyFieldSimpleListType(fields));
+    }
+
+    @Test
     @DisplayName("extractEnumFields returns empty list when there are no Enum fields")
     void extractEnumFields_shouldReturnEmpty_whenNoEnumFields() {
         

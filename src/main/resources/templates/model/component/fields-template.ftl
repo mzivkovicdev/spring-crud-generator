@@ -45,6 +45,9 @@
         name = "${storageName}_${toSnakeCase(field.name)}",
         joinColumns = @JoinColumn(name = "${strippedModelName?uncap_first}_id")
     )
+    <#if isBaseEntity && isList(field.resolvedType)>
+    @OrderColumn(name = "order_index")
+    </#if><#t>
     </#if><#t>
     private ${field.resolvedType} ${field.name}<#if isCollection(field.resolvedType)> = new ${collectionImpl(field.resolvedType)}<>()</#if>;
     </#if>

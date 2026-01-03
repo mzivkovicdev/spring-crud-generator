@@ -152,6 +152,7 @@ public class ModelImports {
         ImportCommon.addIf(isAuditingEnabled, imports, ImportConstants.Jakarta.ENTITY_LISTENERS);
         ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.ELEMENT_COLLECTION);
         ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.COLLECTION_TABLE);
+        ImportCommon.addIf(FieldUtils.isAnyFieldSimpleListType(fields), imports, ImportConstants.Jakarta.ORDER_COLUMN);
 
         final String jakartaImports = imports.stream()
                   .map(imp -> String.format(IMPORT, imp))

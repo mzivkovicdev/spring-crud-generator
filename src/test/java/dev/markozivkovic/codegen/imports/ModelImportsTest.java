@@ -363,6 +363,7 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(anyList())).thenReturn(false);
 
             final String result = ModelImports.computeJakartaImports(model, false, false);
 
@@ -371,6 +372,48 @@ class ModelImportsTest {
             assertTrue(result.contains("import " + ImportConstants.Jakarta.ENTITY));
             assertTrue(result.contains("import " + ImportConstants.Jakarta.ID));
             assertTrue(result.contains("import " + ImportConstants.Jakarta.GENERATED_VALUE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeJakartaImports: TABLE id strategy → adds @TableGenerator import, add @OrderColumn")
+    void computeJakartaImports_withTableIdStrategyAndOrderColumn() {
+
+        final IdDefinition idDef = new IdDefinition();
+        idDef.setStrategy(IdStrategyEnum.TABLE);
+
+        final FieldDefinition idField = new FieldDefinition();
+        idField.setId(idDef);
+
+        final List<FieldDefinition> fields = List.of(idField);
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
+        Mockito.when(model.getFields()).thenReturn(fields);
+        Mockito.when(model.getAudit()).thenReturn(null);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(anyList())).thenReturn(true);
+
+            final String result = ModelImports.computeJakartaImports(model, false, false);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.TABLE_GENERATOR));
+            assertFalse(result.contains("import " + ImportConstants.Jakarta.SEQUENCE_GENERATOR));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.ENTITY));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.ID));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.GENERATED_VALUE));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.ORDER_COLUMN));
         }
     }
 
@@ -403,6 +446,7 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(anyList())).thenReturn(false);
 
             final String result = ModelImports.computeJakartaImports(model, false, false);
 
@@ -443,6 +487,7 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(anyList())).thenReturn(false);
 
             final String result = ModelImports.computeJakartaImports(model, false, true);
 
