@@ -66,7 +66,7 @@ This project aims to eliminate repetitive boilerplate code while keeping full co
   - [🧾 Column Constraints: column.*](#-column-constraints-column)
   - [🔗 Relationships: relation.*](#-relationships-relation)
   - [🧩 Enums: type: Enum + values](#-enums-type-enum--values)
-  - [JSON Fields: JSON<Type>](#json-fields-jsontype)
+  - [JSON Fields: JSON<Type>](#json-fields-json)
   - [🚫 Ignoring an Entity](#-ignoring-an-entity)
 - [Incremental Generation & State Files](#incremental-generation--state-files)
 - [Migrations Behavior (Flyway)](#migrations-behavior-flyway)
