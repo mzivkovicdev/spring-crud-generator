@@ -21,7 +21,7 @@
         results.forEach(result -> {
 
             final ${modelName} ${strippedModelName?uncap_first} = ${strippedModelName?uncap_first}s.stream()
-                    .filter(${modelName?uncap_first} -> ${modelName?uncap_first}.get${idField?cap_first}().equals(result.get${idField?cap_first}()))
+                    .filter(obj -> obj.get${idField?cap_first}().equals(result.get${idField?cap_first}()))
                     .findFirst()
                     .orElseThrow();
 
