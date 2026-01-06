@@ -1,4 +1,4 @@
-# 🚀 Spring CRUD Generator
+# Spring CRUD Generator
 
 [![CI](https://github.com/mzivkovicdev/spring-crud-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/mzivkovicdev/spring-crud-generator/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat)](https://opensource.org/licenses/Apache-2.0)
@@ -20,9 +20,78 @@ This project aims to eliminate repetitive boilerplate code while keeping full co
 
 ---
 
-## ✨ Key Features
+## Table of Contents
 
-### 🏗️ Code Generation
+- [Spring CRUD Generator](#spring-crud-generator)
+- [Key Features](#key-features)
+  - [Code Generation](#code-generation)
+  - [Database & Migrations](#database--migrations)
+  - [API & Documentation](#api--documentation)
+  - [Testing & Data Generation](#testing--data-generation)
+  - [DevOps & Containers](#devops--containers)
+  - [Caching](#caching)
+  - [Optimistic Locking](#optimistic-locking)
+  - [Configuration Formats](#configuration-formats)
+- [Supported Java Versions](#supported-java-versions)
+- [🚀 Quick Start](#-quick-start)
+  - [Step 1: Add Maven Profile](#step-1-add-maven-profile)
+  - [Step 2: Create Configuration File](#step-2-create-configuration-file)
+  - [Step 3: Run the Generator](#step-3-run-the-generator)
+  - [Step 4: Configuration Parameters](#step-4-configuration-parameters)
+  - [Important Notes](#important-notes)
+- [⚙️ Configuration Reference](#️-configuration-reference)
+  - [`configuration`](#configuration)
+  - [`configuration.openApi`](#configurationopenapi)
+  - [`configuration.docker`](#configurationdocker)
+    - [`configuration.docker.app`](#configurationdockerapp)
+    - [`configuration.docker.db`](#configurationdockerdb)
+  - [`configuration.cache`](#configurationcache)
+  - [`configuration.graphql`](#configurationgraphql)
+  - [`configuration.tests`](#configurationtests)
+  - [`configuration.additionalProperties`](#configurationadditionalproperties)
+  - [⚠️ Java Version & Docker Image Notes](#️-java-version--docker-image-notes)
+- [Packages Configuration](#packages-configuration)
+  - [Default Package Structure](#default-package-structure)
+  - [Custom Package Structure](#custom-package-structure)
+    - [Validation Rules & Notes](#validation-rules--notes)
+- [Entity & Field Schema](#entity--field-schema)
+  - [Entity Schema](#entity-schema)
+  - [Audit configuration](#audit-configuration)
+  - [Field Schema](#field-schema)
+  - [Simple collections (ElementCollection)](#simple-collections-elementcollection)
+  - [🔑 Primary Key: id.strategy](#-primary-key-idstrategy)
+    - [Sequence-Based ID Example](#sequence-based-id-example)
+    - [Table-Based ID Example](#table-based-id-example)
+    - [Note](#note)
+  - [🧾 Column Constraints: column.*](#-column-constraints-column)
+  - [🔗 Relationships: relation.*](#-relationships-relation)
+  - [🧩 Enums: type: Enum + values](#-enums-type-enum--values)
+  - [JSON Fields: JSON<Type>](#json-fields-jsontype)
+  - [🚫 Ignoring an Entity](#-ignoring-an-entity)
+- [Incremental Generation & State Files](#incremental-generation--state-files)
+- [Migrations Behavior (Flyway)](#migrations-behavior-flyway)
+  - [How Migration Generation Works](#how-migration-generation-works)
+    - [migration-state.json](#migration-statejson)
+    - [Supported Migration Scenarios](#supported-migration-scenarios)
+      - [➕ Adding a New Entity](#-adding-a-new-entity)
+      - [➕ Adding a New Field](#-adding-a-new-field)
+      - [➖ Removing a Field](#-removing-a-field)
+  - [⚠️ Important Limitation: No Table Drop](#️-important-limitation-no-table-drop)
+- [Generator State (`generator-state.json`)](#generator-state-generator-statejson)
+  - [What Is Stored in generator-state.json](#what-is-stored-in-generator-statejson)
+  - [How Change Detection Works](#how-change-detection-works)
+    - [Entity-Level Changes](#entity-level-changes)
+    - [Configuration-Level Changes](#configuration-level-changes)
+  - [Interaction with forceRegeneration](#interaction-with-forceregeneration)
+    - [Ignored Entities](#ignored-entities)
+- [📄 License](#-license)
+- [🤝 Contact](#-contact)
+
+---
+
+## Key Features
+
+### Code Generation
 - Entity models (JPA/Hibernate)
 - Repositories
 - Services
@@ -33,7 +102,7 @@ This project aims to eliminate repetitive boilerplate code while keeping full co
 - Custom annotations
 - Javadoc (optional, based on descriptions)
 
-### 🗄️ Database & Migrations
+### Database & Migrations
 - SQL database support (MySQL, PostgreSQL and Microsoft SQL)
 - Flyway migration script generation
 - Automatic detection of:
@@ -43,39 +112,39 @@ This project aims to eliminate repetitive boilerplate code while keeping full co
 - Safe schema evolution  
   ⚠️ **Table deletion is NOT supported** (must be done manually)
 
-### 📦 API & Documentation
+### API & Documentation
 - Swagger / OpenAPI specification generation
 - Integrated OpenAPI Generator
 - Automatic API resource generation
 
-### 🧪 Testing & Data Generation
+### Testing & Data Generation
 - Unit test generation
 - Test data generation using:
   - **Instancio**
   - **Podam**
 
-### 🐳 DevOps & Containers
+### DevOps & Containers
 - Dockerfile generation
 - Docker Compose generation
 
-### ⚡ Caching
+### Caching
 - Supported cache providers:
   - **Redis**
   - **Caffeine**
 - Configurable expiration and size limits
 
-### 🔒 Optimistic Locking
+### Optimistic Locking
 - Built-in optimistic locking support
 - Optional custom annotations
 - Retry & backoff configuration support
 
-### 📄 Configuration Formats
+### Configuration Formats
 - YAML
 - JSON
 
 ---
 
-## ☕ Supported Java Versions
+## Supported Java Versions
 
 - **Java 17 – Java 25**
 
@@ -296,7 +365,7 @@ configuration:
 | `enabled`      | boolean | `false` | Enables GraphQL support: generates `.graphqls` schema per entity with an ID and the corresponding resolver classes.                 |
 | `scalarConfig` | boolean | `false` | Enables generation of Spring GraphQL configuration for custom scalars (e.g. `Instant`, `LocalDate`, `LocalDateTime`, audit fields). |
 
-> ℹ️ GraphQL generation (schemas + resolvers) only happens when graphql.enabled: true. The scalar configuration is generated when GraphQL is enabled and graphql.scalarConfig: true.
+> GraphQL generation (schemas + resolvers) only happens when graphql.enabled: true. The scalar configuration is generated when GraphQL is enabled and graphql.scalarConfig: true.
 
 ---
 
@@ -336,7 +405,7 @@ Advanced and feature-specific configuration options.
 | `optimisticLocking.backoff.multiplier` | number  | `0.0`   | Backoff multiplier. `0.0` means no exponential backoff (constant delay) unless explicitly overridden  |
 | `optimisticLocking.backoff.maxDelayMs` | number  | `0`     | Maximum backoff delay in milliseconds. `0` means “no explicit max”, only `delay * multiplier` applies |
 
-> ℹ️ The retry configuration is generated only if **optimisticLocking** is enabled. Custom retry annotation is genereted if at least one of the `optimisticLocking.retry.*` / `optimisticLocking.backoff.*` properties is provided. Any missing values fall back to the defaults listed above.
+> The retry configuration is generated only if **optimisticLocking** is enabled. Custom retry annotation is genereted if at least one of the `optimisticLocking.retry.*` / `optimisticLocking.backoff.*` properties is provided. Any missing values fall back to the defaults listed above.
 
 ---
 
@@ -357,7 +426,7 @@ This allows combinations such as:
 - Java 21 with ```eclipse-temurin:21-alpine```
 - Java 17 with ```eclipse-temurin:17-jre```
 
-## 📦 Packages Configuration
+## Packages Configuration
 
 By default, the generator uses a predefined package structure for all generated code.  
 If you want full control over package naming and organization, you can override the default structure using the `packages` section.
@@ -446,7 +515,7 @@ Core packages:
 
 Partial customization of only core packages is `not supported` to avoid inconsistent package structures.
 
-## 🧱 Entity & Field Schema
+## Entity & Field Schema
 
 Entities are defined under the `entities` section. Each entity describes:
 - a generated Java model/entity class
@@ -670,7 +739,7 @@ To define an enum field:
 ```
 - `values` is required when type is Enum.
 
-### 🧷 JSON Fields: JSON<Type>
+### JSON Fields: JSON<Type>
 
 JSON fields are declared using the `JSON<Type>` syntax:
 ```yaml
@@ -698,7 +767,7 @@ To skip generation for a specific entity:
   fields: []
 ```
 
-## 🔄 Incremental Generation & State Files
+## Incremental Generation & State Files
 
 The generator produces two internal state files:
 
@@ -710,7 +779,7 @@ Tracks schema changes to safely generate Flyway migration scripts.
 
 ---
 
-## 🗄️ Migrations Behavior (Flyway)
+## Migrations Behavior (Flyway)
 
 The generator supports automatic database schema migrations for SQL databases using **Flyway**.
 
@@ -772,7 +841,7 @@ When a field is removed from an existing entity:
 - Table removal must be handled manually by the user
 This design choice is intentional to prevent accidental data loss.
 
-## 🔄 Generator State (`generator-state.json`)
+## Generator State (`generator-state.json`)
 
 To avoid unnecessary regeneration of code, the generator uses a state-based mechanism.
 
@@ -803,7 +872,7 @@ This allows fast, incremental code generation.
 - If the configuration SHA changes, `all entities are regenerated, regardless of individual entity changes`
 This ensures consistency when global settings (e.g. caching, Swagger/OpenApi, GraphQL, tests, etc.) are modified.
 
-### 🔁 Interaction with forceRegeneration
+### Interaction with forceRegeneration
 
 By default, regeneration is controlled by generator-state.json.
 
