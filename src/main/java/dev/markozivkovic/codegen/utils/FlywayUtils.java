@@ -458,13 +458,9 @@ public class FlywayUtils {
     /**
      * Resolves the foreign key constraints for the given model definition and adds them to a context map.
      * 
-     * The returned context map will contain a single entry with key "fks" and value a list of foreign key
-     * definitions. Each foreign key definition is a map with the following entries:
-     * The returned context map will be empty if the given model definition does not have any one-to-one
-     * or many-to-one relations.
-     * 
-     * @param model the model definition for which to resolve the foreign key constraints
-     * @param modelsByName a map of model names to their definitions
+     * @param model              the model definition for which to resolve the foreign key constraints
+     * @param modelsByName       a map of model names to their definitions
+     * @param extrasByChildTable a map of child table names to a list of extra foreign key constraints
      * @return a context map containing the foreign key constraints of the given model definition
      */
     public static Map<String, Object> toForeignKeysContext(final ModelDefinition model, final Map<String, ModelDefinition> modelsByName,
