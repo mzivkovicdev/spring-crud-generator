@@ -884,7 +884,7 @@ public class FlywayUtils {
         }
 
         final String joinTable = relationField.getRelation().getJoinTable().getName();
-        if (!StringUtils.isNotBlank(joinTable)) {
+        if (StringUtils.isBlank(joinTable)) {
             throw new IllegalArgumentException(
                 String.format("Many-to-many relation field '%s' has no join table", relationField.getName())
             );
