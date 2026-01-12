@@ -3,6 +3,7 @@
 <#assign serviceField = strippedModelName?uncap_first + "Service">
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
+<#assign relationId = strippedRelationClassName?uncap_first + relIdField?cap_first>
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -54,14 +55,14 @@ class ${className} {
 
         final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
         <#if isCollection>
-        final ${relIdType} ${relIdField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${relIdType}.class);
+        final ${relIdType} ${relationId} = ${generatorFieldName}.${singleObjectMethodName}(${relIdType}.class);
         </#if>
 
-        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relationId}</#if>))
                 .andExpect(status().isNoContent());
 
         <#if isCollection>
-        verify(this.${businessServiceField}).remove${relationFieldModel}(${idField?uncap_first}, ${relIdField?uncap_first});
+        verify(this.${businessServiceField}).remove${relationFieldModel}(${idField?uncap_first}, ${relationId});
         <#else>
         verify(this.${serviceField}).remove${relationFieldModel}(${idField?uncap_first});
         </#if>
@@ -72,21 +73,21 @@ class ${className} {
 
         final ${invalidIdType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidIdType}.class);
         <#if isCollection>
-        final ${relIdType} ${relIdField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${relIdType}.class);
+        final ${relIdType} ${relationId} = ${generatorFieldName}.${singleObjectMethodName}(${relIdType}.class);
         </#if>
 
-        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relationId}</#if>))
                 .andExpect(status().isBadRequest());
     }
 
     <#if isCollection>
     @Test
-    void ${methodName}_invalid${relIdField?cap_first}Format() throws Exception {
+    void ${methodName}_invalid${relationId?cap_first}Format() throws Exception {
 
         final ${idType} ${idField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
-        final ${invalidRelIdType} ${relIdField?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${invalidRelIdType}.class);
+        final ${invalidRelIdType} ${relationId} = ${generatorFieldName}.${singleObjectMethodName}(${invalidRelIdType}.class);
 
-        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s/{relationId}", ${idField?uncap_first}<#if isCollection>, ${relIdField?uncap_first}</#if>))
+        this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s/{relationId}", ${idField?uncap_first}<#if isCollection>, ${relationId}</#if>))
                 .andExpect(status().isBadRequest());
     }
     </#if>

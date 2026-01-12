@@ -37,11 +37,11 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.markozivkovic.codegen.enums.SpecialType;
+import dev.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.codegen.models.FieldDefinition;
+import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.RelationDefinition;
-import dev.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
-import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.codegen.models.flyway.MigrationState;
 
 public class FlywayUtils {
@@ -458,22 +458,18 @@ public class FlywayUtils {
     /**
      * Resolves the foreign key constraints for the given model definition and adds them to a context map.
      * 
-     * The returned context map will contain a single entry with key "fks" and value a list of foreign key
-     * definitions. Each foreign key definition is a map with the following entries:
-     * The returned context map will be empty if the given model definition does not have any one-to-one
-     * or many-to-one relations.
-     * 
-     * @param model the model definition for which to resolve the foreign key constraints
-     * @param modelsByName a map of model names to their definitions
+     * @param model              the model definition for which to resolve the foreign key constraints
+     * @param modelsByName       a map of model names to their definitions
+     * @param extrasByChildTable a map of child table names to a list of extra foreign key constraints
      * @return a context map containing the foreign key constraints of the given model definition
      */
-    public static Map<String, Object> toForeignKeysContext(
-        final ModelDefinition model,
-        final Map<String, ModelDefinition> modelsByName) {
+    public static Map<String, Object> toForeignKeysContext(final ModelDefinition model, final Map<String, ModelDefinition> modelsByName,
+            final Map<String, List<Map<String, Object>>> extrasByChildTable) {
 
         final String tableName = model.getStorageName();
         final List<Map<String, Object>> fks = new ArrayList<>();
 
+        // foreign keys - to-one relations
         for (final FieldDefinition field : model.getFields()) {
             if (!isToOneRelation(field)) continue;
 
@@ -497,6 +493,38 @@ public class FlywayUtils {
             fk.put("refTable", refTable);
             fk.put("refColumn", refPkCol);
             fks.add(fk);
+        }
+
+        // foreign keys - to-many relations
+        if (Objects.nonNull(extrasByChildTable)) {
+            final List<Map<String, Object>> extrasCols = extrasByChildTable.get(tableName);
+            
+            if (Objects.nonNull(extrasCols)) {
+                extrasCols.forEach(column -> {
+                    final Object fkName = column.get("fkName");
+                    final Object colName = column.get("name");
+                    final Object refTable = column.get("refTable");
+                    final Object refCol = column.get("refColumn");
+    
+                    if (Objects.isNull(fkName) || Objects.isNull(colName) || Objects.isNull(refTable) || Objects.isNull(refCol))
+                        return;
+    
+                    final Map<String, Object> fk = new LinkedHashMap<>();
+                    fk.put("table", tableName);
+                    fk.put("name", fkName.toString());
+                    fk.put("column", colName.toString());
+                    fk.put("refTable", refTable.toString());
+                    fk.put("refColumn", refCol.toString());
+    
+                    final boolean already = fks.stream().anyMatch(x ->
+                        Objects.equals(x.get("name"), fk.get("name"))
+                    );
+    
+                    if(!already) {
+                        fks.add(fk);
+                    }
+                });
+            }
         }
 
         final Map<String, Object> ctx = new LinkedHashMap<>();
@@ -539,12 +567,19 @@ public class FlywayUtils {
                         ? f.getRelation().getJoinColumn()
                         : ModelNameUtils.toSnakeCase(parent.getName()) + "_id";
 
+                final String parentPkCol = (parentPk != null)
+                        ? ModelNameUtils.toSnakeCase(StringUtils.uncapitalize(parentPk.getName()))
+                        : "id";
+
                 final Map<String,Object> col = new LinkedHashMap<>();
                 col.put("name", childFkCol);
                 col.put("sqlType", parentPkSql);
                 col.put("nullable", true);
                 col.put("unique", false);
                 col.put("isPk", false);
+                col.put("refTable", parent.getStorageName());
+                col.put("fkName", String.format("fk_%s_%s", child.getStorageName(), childFkCol));
+                col.put("refColumn", parentPkCol);
 
                 extras.computeIfAbsent(childTable, k -> new ArrayList<>());
                 final List<Map<String,Object>> dst = extras.get(childTable);
