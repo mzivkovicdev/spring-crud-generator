@@ -37,6 +37,8 @@ import dev.markozivkovic.codegen.models.flyway.FkState;
 import dev.markozivkovic.codegen.models.flyway.JoinState;
 import dev.markozivkovic.codegen.models.flyway.JoinState.JoinSide;
 import dev.markozivkovic.codegen.models.flyway.MigrationState;
+import dev.markozivkovic.codegen.models.flyway.SchemaDiff.FkChange;
+import dev.markozivkovic.codegen.utils.ContainerUtils;
 import dev.markozivkovic.codegen.utils.HashUtils;
 
 public class MigrationManifestBuilder {
@@ -78,14 +80,14 @@ public class MigrationManifestBuilder {
     public void applyCreateContext(final String modelName, final String tableName, final Map<String,Object> createCtx) {
         
         final EntityState entityState = byTable.computeIfAbsent(tableName, t -> {
-            final EntityState ne = new EntityState();
-            ne.setName(modelName);
-            ne.setTable(tableName);
-            ne.setColumns(new LinkedHashMap<>());
-            ne.setPk(new ArrayList<>());
-            ne.setFiles(new ArrayList<>());
-            ne.setJoins(new ArrayList<>());
-            ne.setFks(new ArrayList<>());
+            final EntityState ne = new EntityState()
+                    .setName(modelName)
+                    .setTable(tableName)
+                    .setColumns(new LinkedHashMap<>())
+                    .setPk(new ArrayList<>())
+                    .setFiles(new ArrayList<>())
+                    .setJoins(new ArrayList<>())
+                    .setFks(new ArrayList<>());
             state.getEntities().add(ne);
             return ne;
         });
@@ -105,6 +107,20 @@ public class MigrationManifestBuilder {
         }
         entityState.setColumns(cols);
 
+        if (createCtx.containsKey("fksCtx") && createCtx.get("fksCtx") != null) {
+            final Map<String,Object> fkCtx = (Map<String,Object>) createCtx.get("fksCtx");
+            final List<Map<String,Object>> fks = !ContainerUtils.isEmpty(fkCtx) 
+                    ? (List<Map<String,Object>>) fkCtx.get("fks")
+                    : (List<Map<String,Object>>) createCtx.get("fks");
+            
+            for (final Map<String,Object> m : fks) {
+                final String col = String.valueOf(m.get("column"));
+                final String rt  = String.valueOf(m.get("refTable"));
+                final String rc  = String.valueOf(m.get("refColumn"));
+                entityState.getFks().add(new FkState(col, rt, rc));
+            }
+        }
+
         if (createCtx.containsKey("pkColumns") && createCtx.get("pkColumns") != null) {
             final String raw = String.valueOf(createCtx.get("pkColumns"));
             final List<String> pk = new ArrayList<>();
@@ -123,6 +139,49 @@ public class MigrationManifestBuilder {
         audit.setType(at != null ? at.toString() : null);
         entityState.setAudit(audit);
         entityState.setFingerprint(fingerprintFromCreateCtx(createCtx));
+    }
+
+    /**
+     * Removes the given foreign keys from the migration state. The given foreign keys are removed from the entity state
+     * associated with the given table name. If the entity state does not exist, it is created.
+     * 
+     * @param tableName the table name
+     * @param removedFks the foreign keys to remove
+     */
+    public void removeForeignKeys(final String tableName, final List<FkChange> removedFks) {
+        
+        if (ContainerUtils.isEmpty(removedFks)) {
+            return;
+        }
+
+        final EntityState entityState = byTable.computeIfAbsent(tableName, t -> {
+            final EntityState newEntityState = new EntityState();
+            newEntityState.setTable(tableName);
+            newEntityState.setColumns(new LinkedHashMap<>());
+            newEntityState.setPk(new ArrayList<>());
+            newEntityState.setFiles(new ArrayList<>());
+            newEntityState.setJoins(new ArrayList<>());
+            newEntityState.setFks(new ArrayList<>());
+            state.getEntities().add(newEntityState);
+            return newEntityState;
+        });
+
+        if (entityState.getFks() == null) {
+            entityState.setFks(new ArrayList<>());
+        }
+        final Set<String> dedup = new HashSet<>();
+        for (final FkState existing : entityState.getFks()) {
+            dedup.add(fkKey(existing.getColumn(), existing.getRefTable(), existing.getRefColumn()));
+        }
+
+        removedFks.forEach(removedFk -> {
+            final String key = fkKey(removedFk.getColumn(), removedFk.getRefTable(), removedFk.getRefColumn());
+            if (dedup.contains(key)) {
+                entityState.getFks().removeIf(e -> e.getColumn().equals(removedFk.getColumn()) &&
+                        e.getRefColumn().equals(removedFk.getRefColumn()) &&
+                        e.getRefTable().equals(removedFk.getRefTable()));
+            }
+        });
     }
 
     /**

@@ -13,9 +13,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -441,9 +443,9 @@ class FlywayUtilsTest {
     }
 
     @Test
-    @DisplayName("toForeignKeysContext returns empty context when model has no to-one relations")
-    void toForeignKeysContext_shouldReturnEmpty_whenNoToOneRelations() {
-        
+    @DisplayName("toForeignKeysContext returns empty context when model has no to-one relations and no extras")
+    void toForeignKeysContext_shouldReturnEmpty_whenNoToOneRelationsAndNoExtras() {
+
         final FieldDefinition f1 = new FieldDefinition();
         f1.setName("id");
         final IdDefinition id = new IdDefinition();
@@ -456,15 +458,15 @@ class FlywayUtilsTest {
         final ModelDefinition model = model("Order", "order", List.of(f1, f2));
         final Map<String, ModelDefinition> modelsByName = new LinkedHashMap<>();
 
-        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(model, modelsByName);
+        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(model, modelsByName, null);
 
         assertTrue(ctx.isEmpty());
     }
 
     @Test
-    @DisplayName("toForeignKeysContext builds foreign key context with default column and ref names")
-    void toForeignKeysContext_shouldBuildFkContext_withDefaults() {
-        
+    @DisplayName("toForeignKeysContext builds FK context for to-one relation with default column and ref names")
+    void toForeignKeysContext_shouldBuildFkContext_withDefaults_toOne() {
+
         final FieldDefinition orderId = new FieldDefinition();
         orderId.setName("id");
         final IdDefinition orderIdDef = new IdDefinition();
@@ -486,7 +488,7 @@ class FlywayUtilsTest {
         final Map<String, ModelDefinition> modelsByName = new LinkedHashMap<>();
         modelsByName.put("Customer", customerModel);
 
-        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(orderModel, modelsByName);
+        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(orderModel, modelsByName, null);
 
         assertFalse(ctx.isEmpty());
         assertTrue(ctx.containsKey("fks"));
@@ -504,9 +506,9 @@ class FlywayUtilsTest {
     }
 
     @Test
-    @DisplayName("toForeignKeysContext uses explicit join column and default table/ref names when storageName is missing")
-    void toForeignKeysContext_shouldUseExplicitJoinColumn_andDefaultStorageName() {
-        
+    @DisplayName("toForeignKeysContext uses explicit join column and default ref table name when target storageName is missing")
+    void toForeignKeysContext_shouldUseExplicitJoinColumn_andDefaultStorageName_toOne() {
+
         final FieldDefinition orderId = new FieldDefinition();
         orderId.setName("id");
         final IdDefinition orderIdDef = new IdDefinition();
@@ -514,7 +516,6 @@ class FlywayUtilsTest {
         orderId.setId(orderIdDef);
 
         final FieldDefinition customerField = fieldWithRelation("customer", "Customer", "ManyToOne", "customer_fk");
-
         final ModelDefinition orderModel = model("Order", "order", List.of(orderId, customerField));
 
         final FieldDefinition customerPk = new FieldDefinition();
@@ -529,7 +530,7 @@ class FlywayUtilsTest {
         final Map<String, ModelDefinition> modelsByName = new LinkedHashMap<>();
         modelsByName.put("Customer", customerModel);
 
-        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(orderModel, modelsByName);
+        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(orderModel, modelsByName, null);
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> fks = (List<Map<String, Object>>) ctx.get("fks");
@@ -541,6 +542,105 @@ class FlywayUtilsTest {
         assertEquals("customer_fk", fk.get("column"));
         assertEquals("customer", fk.get("refTable"));
         assertEquals("customer_id", fk.get("refColumn"));
+    }
+
+    @Test
+    @DisplayName("toForeignKeysContext builds FK context from reverse one-to-many extras when present for the table")
+    void toForeignKeysContext_shouldBuildFkContext_fromExtras_toMany() {
+
+        final FieldDefinition productId = new FieldDefinition();
+        productId.setName("id");
+        final IdDefinition productIdDef = new IdDefinition();
+        productIdDef.setStrategy(IdStrategyEnum.IDENTITY);
+        productId.setId(productIdDef);
+
+        final FieldDefinition name = new FieldDefinition();
+        name.setName("name");
+
+        final ModelDefinition productModel = model("Product", "product", List.of(productId, name));
+
+        final Map<String, ModelDefinition> modelsByName = new LinkedHashMap<>();
+
+        final Map<String, Object> extraCol = new LinkedHashMap<>();
+        extraCol.put("name", "category_id");
+        extraCol.put("fkName", "fk_product_category_id");
+        extraCol.put("refTable", "category");
+        extraCol.put("refColumn", "id");
+
+        final Map<String, List<Map<String, Object>>> extrasByChildTable = new LinkedHashMap<>();
+        extrasByChildTable.put("product", List.of(extraCol));
+
+        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(productModel, modelsByName, extrasByChildTable);
+
+        assertFalse(ctx.isEmpty());
+        assertTrue(ctx.containsKey("fks"));
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> fks = (List<Map<String, Object>>) ctx.get("fks");
+        assertEquals(1, fks.size());
+
+        final Map<String, Object> fk = fks.get(0);
+        assertEquals("product", fk.get("table"));
+        assertEquals("fk_product_category_id", fk.get("name"));
+        assertEquals("category_id", fk.get("column"));
+        assertEquals("category", fk.get("refTable"));
+        assertEquals("id", fk.get("refColumn"));
+    }
+
+    @Test
+    @DisplayName("toForeignKeysContext merges to-one and extras FKs and de-duplicates by FK name")
+    void toForeignKeysContext_shouldMergeAndDeduplicate_toOnePlusExtras() {
+
+        final FieldDefinition orderId = new FieldDefinition();
+        orderId.setName("id");
+        final IdDefinition orderIdDef = new IdDefinition();
+        orderIdDef.setStrategy(IdStrategyEnum.IDENTITY);
+        orderId.setId(orderIdDef);
+
+        final FieldDefinition customerField = fieldWithRelation("customer", "Customer", "ManyToOne", null);
+        final ModelDefinition orderModel = model("Order", "order", List.of(orderId, customerField));
+
+        final FieldDefinition customerId = new FieldDefinition();
+        customerId.setName("id");
+        customerId.setType("Long");
+        final IdDefinition customerIdDef = new IdDefinition();
+        customerIdDef.setStrategy(IdStrategyEnum.IDENTITY);
+        customerId.setId(customerIdDef);
+
+        final ModelDefinition customerModel = model("Customer", "customer", List.of(customerId));
+
+        final Map<String, ModelDefinition> modelsByName = new LinkedHashMap<>();
+        modelsByName.put("Customer", customerModel);
+
+        final Map<String, Object> extraColSameFk = new LinkedHashMap<>();
+        extraColSameFk.put("name", "customer_id");
+        extraColSameFk.put("fkName", "fk_order_customer_id");
+        extraColSameFk.put("refTable", "customer");
+        extraColSameFk.put("refColumn", "id");
+
+        final Map<String, Object> extraColOtherFk = new LinkedHashMap<>();
+        extraColOtherFk.put("name", "sales_rep_id");
+        extraColOtherFk.put("fkName", "fk_order_sales_rep_id");
+        extraColOtherFk.put("refTable", "user");
+        extraColOtherFk.put("refColumn", "id");
+
+        final Map<String, List<Map<String, Object>>> extrasByChildTable = new LinkedHashMap<>();
+        extrasByChildTable.put("order", List.of(extraColSameFk, extraColOtherFk));
+
+        final Map<String, Object> ctx = FlywayUtils.toForeignKeysContext(orderModel, modelsByName, extrasByChildTable);
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> fks = (List<Map<String, Object>>) ctx.get("fks");
+
+        assertEquals(2, fks.size());
+
+        final Set<String> names = new HashSet<>();
+        for (final Map<String, Object> fk : fks) {
+            names.add(String.valueOf(fk.get("name")));
+        }
+
+        assertTrue(names.contains("fk_order_customer_id"));
+        assertTrue(names.contains("fk_order_sales_rep_id"));
     }
 
     @Test
@@ -568,8 +668,8 @@ class FlywayUtilsTest {
     }
 
     @Test
-    @DisplayName("collectReverseOneToManyExtras adds FK column with default '<parent>_id' name for OneToMany relation")
-    void collectReverseOneToManyExtras_shouldCreateFkColumn_withDefaultName() {
+    @DisplayName("collectReverseOneToManyExtras adds FK column with default '<parent>_id' name and fills FK metadata")
+    void collectReverseOneToManyExtras_shouldCreateFkColumn_withDefaultName_andFkMetadata() {
 
         final FieldDefinition orderId = new FieldDefinition();
         orderId.setName("id");
@@ -594,8 +694,9 @@ class FlywayUtilsTest {
         modelsByName.put("Order", parent);
         modelsByName.put("OrderItem", child);
 
-        final Map<String, List<Map<String, Object>>> result =
-                FlywayUtils.collectReverseOneToManyExtras(List.of(parent), DatabaseType.POSTGRESQL, modelsByName);
+        final Map<String, List<Map<String, Object>>> result = FlywayUtils.collectReverseOneToManyExtras(
+                List.of(parent), DatabaseType.POSTGRESQL, modelsByName
+        );
 
         assertFalse(result.isEmpty());
         assertTrue(result.containsKey("order_item"));
@@ -609,11 +710,14 @@ class FlywayUtilsTest {
         assertEquals(true, col.get("nullable"));
         assertEquals(false, col.get("unique"));
         assertEquals(false, col.get("isPk"));
+        assertEquals("order", col.get("refTable"));
+        assertEquals("id", col.get("refColumn"));
+        assertEquals("fk_order_item_order_id", col.get("fkName"));
     }
 
     @Test
-    @DisplayName("collectReverseOneToManyExtras uses explicit joinColumn and avoids duplicates for same child/column")
-    void collectReverseOneToManyExtras_shouldUseExplicitJoinColumn_andAvoidDuplicates() {
+    @DisplayName("collectReverseOneToManyExtras uses explicit joinColumn and avoids duplicates for same child/column; sets fkName accordingly")
+    void collectReverseOneToManyExtras_shouldUseExplicitJoinColumn_andAvoidDuplicates_andSetFkMetadata() {
 
         final FieldDefinition orderId = new FieldDefinition();
         orderId.setName("id");
@@ -640,14 +744,19 @@ class FlywayUtilsTest {
         modelsByName.put("Order", parent);
         modelsByName.put("OrderItem", child);
 
-        final Map<String, List<Map<String, Object>>> result =
-                FlywayUtils.collectReverseOneToManyExtras(List.of(parent), DatabaseType.POSTGRESQL, modelsByName);
+        final Map<String, List<Map<String, Object>>> result = FlywayUtils.collectReverseOneToManyExtras(
+                List.of(parent), DatabaseType.POSTGRESQL, modelsByName
+        );
 
+        assertTrue(result.containsKey("order_item"));
         final List<Map<String, Object>> cols = result.get("order_item");
         assertEquals(1, cols.size(), "Expected no duplicate FK columns for same name");
 
         final Map<String, Object> col = cols.get(0);
         assertEquals("order_fk", col.get("name"));
+        assertEquals("order", col.get("refTable"));
+        assertEquals("id", col.get("refColumn"));
+        assertEquals("fk_order_item_order_fk", col.get("fkName"));
     }
 
     @Test
@@ -669,10 +778,41 @@ class FlywayUtilsTest {
         modelsByName.put("Order", parent);
         modelsByName.put("OrderItem", childNoStorage);
 
-        final Map<String, List<Map<String, Object>>> result =
-                FlywayUtils.collectReverseOneToManyExtras(List.of(parent), DatabaseType.POSTGRESQL, modelsByName);
+        final Map<String, List<Map<String, Object>>> result = FlywayUtils.collectReverseOneToManyExtras(
+                List.of(parent), DatabaseType.POSTGRESQL, modelsByName
+        );
 
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("collectReverseOneToManyExtras skips duplicate FK columns even if multiple parents generate the same column for same child")
+    void collectReverseOneToManyExtras_shouldAvoidDuplicates_acrossMultipleOneToManyFields() {
+
+        final FieldDefinition parentId = new FieldDefinition();
+        parentId.setName("id");
+        parentId.setType("Long");
+        final IdDefinition parentIdDef = new IdDefinition();
+        parentIdDef.setStrategy(IdStrategyEnum.IDENTITY);
+        parentId.setId(parentIdDef);
+
+        final FieldDefinition items1 = fieldWithRelation("items", "OrderItem", "OneToMany", null);
+        final FieldDefinition items2 = fieldWithRelation("moreItems", "OrderItem", "OneToMany", null);
+
+        final ModelDefinition parent = model("Order", "order", List.of(parentId, items1, items2));
+        final ModelDefinition child = model("OrderItem", "order_item", List.of());
+
+        final Map<String, ModelDefinition> modelsByName = new LinkedHashMap<>();
+        modelsByName.put("Order", parent);
+        modelsByName.put("OrderItem", child);
+
+        final Map<String, List<Map<String, Object>>> result = FlywayUtils.collectReverseOneToManyExtras(
+                List.of(parent), DatabaseType.POSTGRESQL, modelsByName
+        );
+
+        assertTrue(result.containsKey("order_item"));
+        assertEquals(1, result.get("order_item").size(), "Expected only one generated FK col for inferred same name");
+        assertEquals("order_id", result.get("order_item").get(0).get("name"));
     }
 
     @Test

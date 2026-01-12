@@ -33,6 +33,7 @@ import dev.markozivkovic.codegen.models.flyway.FkState;
 import dev.markozivkovic.codegen.models.flyway.JoinState;
 import dev.markozivkovic.codegen.models.flyway.JoinState.JoinSide;
 import dev.markozivkovic.codegen.models.flyway.MigrationState;
+import dev.markozivkovic.codegen.models.flyway.SchemaDiff.FkChange;
 import dev.markozivkovic.codegen.utils.HashUtils;
 
 class MigrationManifestBuilderTest {
@@ -49,12 +50,19 @@ class MigrationManifestBuilderTest {
         return s;
     }
 
+    private static FkChange fkChange(final String col, final String rt, final String rc) {
+        final FkChange c = new FkChange();
+        c.setColumn(col);
+        c.setRefTable(rt);
+        c.setRefColumn(rc);
+        return c;
+    }
+
     @Test
     void applyCreateContext_shouldCreateNewEntityWhenTableNotPresent() {
-        
+
         final List<EntityState> entities = new ArrayList<>();
         final MigrationState state = newStateWithEntitiesList(entities);
-
         final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
 
         final Map<String, Object> cId = new HashMap<>();
@@ -109,15 +117,17 @@ class MigrationManifestBuilderTest {
         assertNotNull(e.getAudit());
         assertTrue(e.getAudit().getEnabled());
         assertEquals("LOCAL_DATE_TIME", e.getAudit().getType());
+
         assertNotNull(e.getFiles());
         assertNotNull(e.getJoins());
         assertNotNull(e.getFks());
+        assertTrue(e.getFks().isEmpty(), "No FK context provided -> expected empty fks");
         assertNotNull(e.getFingerprint());
     }
 
     @Test
     void applyCreateContext_shouldReuseExistingEntityAndNotDuplicateInState() {
-        
+
         final List<EntityState> entities = new ArrayList<>();
 
         final EntityState existing = new EntityState();
@@ -159,7 +169,7 @@ class MigrationManifestBuilderTest {
 
     @Test
     void applyCreateContext_shouldHandleNullColumnsAndNullPk() {
-        
+
         final List<EntityState> entities = new ArrayList<>();
         final MigrationState state = newStateWithEntitiesList(entities);
         final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
@@ -182,6 +192,254 @@ class MigrationManifestBuilderTest {
         assertNotNull(e.getAudit());
         assertFalse(Boolean.TRUE.equals(e.getAudit().getEnabled()));
         assertNull(e.getAudit().getType());
+    }
+
+    @Test
+    void applyCreateContext_shouldPopulateFks_fromNestedFksCtx() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final Map<String, Object> cId = new HashMap<>();
+        cId.put("name", "id");
+        cId.put("sqlType", "BIGINT");
+        cId.put("nullable", false);
+        cId.put("unique", false);
+
+        final Map<String, Object> createCtx = new HashMap<>();
+        createCtx.put("columns", List.of(cId));
+        createCtx.put("pkColumns", "id");
+        createCtx.put("auditEnabled", false);
+
+        final Map<String, Object> fk1 = new LinkedHashMap<>();
+        fk1.put("column", "category_id");
+        fk1.put("refTable", "category");
+        fk1.put("refColumn", "id");
+
+        final Map<String, Object> fkCtx = new LinkedHashMap<>();
+        fkCtx.put("fks", List.of(fk1));
+
+        createCtx.put("fksCtx", fkCtx);
+
+        builder.applyCreateContext("Product", "product", createCtx);
+
+        assertEquals(1, entities.size());
+        final EntityState e = entities.get(0);
+
+        assertNotNull(e.getFks());
+        assertEquals(1, e.getFks().size());
+
+        final FkState fk = e.getFks().get(0);
+        assertEquals("category_id", fk.getColumn());
+        assertEquals("category", fk.getRefTable());
+        assertEquals("id", fk.getRefColumn());
+    }
+
+    @Test
+    void applyCreateContext_shouldPopulateFks_fromCreateCtxFksFallback_whenFksCtxPresentButHasNoFks() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final Map<String, Object> createCtx = new HashMap<>();
+        createCtx.put("columns", List.of());
+        createCtx.put("auditEnabled", false);
+
+        final Map<String, Object> fk1 = new LinkedHashMap<>();
+        fk1.put("column", "customer_id");
+        fk1.put("refTable", "customer");
+        fk1.put("refColumn", "id");
+
+        createCtx.put("fksCtx", new LinkedHashMap<>());
+        createCtx.put("fks", List.of(fk1));
+
+        builder.applyCreateContext("Order", "order", createCtx);
+
+        final EntityState e = entities.get(0);
+        assertEquals(1, e.getFks().size());
+
+        final FkState fk = e.getFks().get(0);
+        assertEquals("customer_id", fk.getColumn());
+        assertEquals("customer", fk.getRefTable());
+        assertEquals("id", fk.getRefColumn());
+    }
+
+    @Test
+    void removeForeignKeys_shouldDoNothingWhenRemovedFksNullOrEmpty() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final EntityState e = new EntityState();
+        e.setTable("users");
+        e.setColumns(new LinkedHashMap<>());
+        e.setPk(new ArrayList<>());
+        e.setFiles(new ArrayList<>());
+        e.setJoins(new ArrayList<>());
+        e.setFks(new ArrayList<>());
+        e.getFks().add(new FkState("role_id", "roles", "id"));
+        entities.add(e);
+
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.removeForeignKeys("users", null);
+        builder.removeForeignKeys("users", List.of());
+
+        assertEquals(1, entities.size());
+        assertSame(e, entities.get(0));
+        assertEquals(1, e.getFks().size());
+        assertEquals("role_id", e.getFks().get(0).getColumn());
+    }
+
+    @Test
+    void removeForeignKeys_shouldCreateEntityIfMissing_butNotRemoveAnything() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.removeForeignKeys("users", List.of(fkChange("role_id", "roles", "id")));
+
+        assertEquals(1, entities.size());
+        final EntityState e = entities.get(0);
+        assertEquals("users", e.getTable());
+        assertNotNull(e.getFks());
+        assertTrue(e.getFks().isEmpty(), "No existing FK -> nothing to remove");
+    }
+
+    @Test
+    void removeForeignKeys_shouldRemoveExistingMatchingForeignKeys() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final EntityState e = new EntityState();
+        e.setTable("users");
+        e.setColumns(new LinkedHashMap<>());
+        e.setPk(new ArrayList<>());
+        e.setFiles(new ArrayList<>());
+        e.setJoins(new ArrayList<>());
+        e.setFks(new ArrayList<>());
+        e.getFks().add(new FkState("role_id", "roles", "id"));
+        e.getFks().add(new FkState("tenant_id", "tenants", "id"));
+        entities.add(e);
+
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.removeForeignKeys("users", List.of(
+                fkChange("role_id", "roles", "id")
+        ));
+
+        assertEquals(1, entities.size());
+        assertEquals(1, e.getFks().size());
+        final FkState remaining = e.getFks().get(0);
+        assertEquals("tenant_id", remaining.getColumn());
+        assertEquals("tenants", remaining.getRefTable());
+        assertEquals("id", remaining.getRefColumn());
+    }
+
+    @Test
+    void removeForeignKeys_shouldNotRemoveWhenNoMatchingForeignKeyExists() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final EntityState e = new EntityState();
+        e.setTable("users");
+        e.setColumns(new LinkedHashMap<>());
+        e.setPk(new ArrayList<>());
+        e.setFiles(new ArrayList<>());
+        e.setJoins(new ArrayList<>());
+        e.setFks(new ArrayList<>());
+        e.getFks().add(new FkState("tenant_id", "tenants", "id"));
+        entities.add(e);
+
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.removeForeignKeys("users", List.of(
+                fkChange("role_id", "roles", "id")
+        ));
+
+        assertEquals(1, e.getFks().size());
+        assertEquals("tenant_id", e.getFks().get(0).getColumn());
+    }
+
+    @Test
+    void removeForeignKeys_shouldHandleNullEntityFksList() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final EntityState e = new EntityState();
+        e.setTable("users");
+        e.setColumns(new LinkedHashMap<>());
+        e.setPk(new ArrayList<>());
+        e.setFiles(new ArrayList<>());
+        e.setJoins(new ArrayList<>());
+        e.setFks(null);
+        entities.add(e);
+
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.removeForeignKeys("users", List.of(
+                fkChange("role_id", "roles", "id")
+        ));
+
+        assertNotNull(e.getFks(), "Method should initialize fks list if null");
+        assertTrue(e.getFks().isEmpty(), "Nothing to remove because list was empty");
+    }
+
+    @Test
+    void removeForeignKeys_shouldRemoveAllDuplicatesOfSameFk_ifPresent() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final EntityState e = new EntityState();
+        e.setTable("users");
+        e.setColumns(new LinkedHashMap<>());
+        e.setPk(new ArrayList<>());
+        e.setFiles(new ArrayList<>());
+        e.setJoins(new ArrayList<>());
+        e.setFks(new ArrayList<>());
+
+        e.getFks().add(new FkState("role_id", "roles", "id"));
+        e.getFks().add(new FkState("role_id", "roles", "id"));
+        e.getFks().add(new FkState("tenant_id", "tenants", "id"));
+        entities.add(e);
+
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.removeForeignKeys("users", List.of(
+                fkChange("role_id", "roles", "id")
+        ));
+
+        assertEquals(1, e.getFks().size());
+        assertEquals("tenant_id", e.getFks().get(0).getColumn());
+    }
+
+    @Test
+    void removeForeignKeys_shouldBeIdempotent_whenSameRemovedFkRepeated() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final EntityState e = new EntityState();
+        e.setTable("users");
+        e.setColumns(new LinkedHashMap<>());
+        e.setPk(new ArrayList<>());
+        e.setFiles(new ArrayList<>());
+        e.setJoins(new ArrayList<>());
+        e.setFks(new ArrayList<>());
+        e.getFks().add(new FkState("role_id", "roles", "id"));
+        e.getFks().add(new FkState("tenant_id", "tenants", "id"));
+        entities.add(e);
+
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        builder.removeForeignKeys("users", List.of(
+                fkChange("role_id", "roles", "id"),
+                fkChange("role_id", "roles", "id")
+        ));
+
+        assertEquals(1, e.getFks().size());
+        assertEquals("tenant_id", e.getFks().get(0).getColumn());
     }
 
     @Test

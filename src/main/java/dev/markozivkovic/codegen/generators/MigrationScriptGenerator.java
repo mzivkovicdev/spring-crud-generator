@@ -197,10 +197,13 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 ? Collections.emptyMap()
                 : migrationState.getEntities().stream()
                         .collect(Collectors.toMap(EntityState::getTable, e -> e));
+        final Map<String, List<Map<String,Object>>> extrasByChildTable = FlywayUtils.collectReverseOneToManyExtras(
+                models, this.configuration.getDatabase(), modelsByName
+        );
 
         models.forEach(model -> {
 
-            final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, modelsByName);
+            final Map<String, Object> context = FlywayUtils.toForeignKeysContext(model, modelsByName, extrasByChildTable);
             if (Objects.isNull(context) || context.isEmpty()) {
                 return;
             }
@@ -307,7 +310,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 manifest.applyCreateContext(model.getName(), tableName, context);
                 manifest.addEntityFile(tableName, dbSciptName, dbScript);
             } else {
-                final Map<String,Object> fkCtx = FlywayUtils.toForeignKeysContext(model, modelsByName);
+                final Map<String,Object> fkCtx = FlywayUtils.toForeignKeysContext(model, modelsByName, extrasByChildTable);
                 if (Objects.nonNull(fkCtx) && !fkCtx.isEmpty()) {
                     context.put("fksCtx", fkCtx);
                 }
@@ -338,6 +341,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     version++;
     
                     manifest.applyCreateContext(model.getName(), tableName, context);
+                    manifest.removeForeignKeys(tableName, diff.getRemovedFks());
                     manifest.addEntityFile(tableName, dbSciptName, dbScript);
                 }
             }
