@@ -45,7 +45,8 @@
         '204':
           description: Removed ${relationField} from ${uncapModelName}
   <#else>
-  /${uncapModelName}s/{${idField}}/${relationField}s/{${relatedIdParam}}:
+  <#assign relatedIdPathParam = relationField + relatedIdParam?cap_first>
+  /${uncapModelName}s/{${idField}}/${relationField}s/{${relatedIdPathParam}}:
     parameters:
       - in: path
         name: ${idField}
@@ -55,7 +56,7 @@
           type: ${id.type}
           <#if id.format??>format: ${id.format}</#if>
       - in: path
-        name: ${relatedIdParam}
+        name: ${relatedIdPathParam}
         description: ID of related ${rel.strippedModelName} to remove
         required: true
         schema:
