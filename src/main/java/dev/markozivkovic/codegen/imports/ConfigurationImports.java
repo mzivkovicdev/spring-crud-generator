@@ -39,7 +39,7 @@ public class ConfigurationImports {
         
         return entityNames.stream()
                 .map(modelName -> {
-                    return String.format("import %s.%s;", PackageUtils.computeEntityPackage(basePath, packageConfiguration), modelName);
+                    return String.format("import %s.%s;%n", PackageUtils.computeEntityPackage(basePath, packageConfiguration), modelName);
                 })
                 .sorted()
                 .collect(Collectors.joining());

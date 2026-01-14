@@ -16,6 +16,7 @@
 
 package dev.markozivkovic.codegen.generators;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +126,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
                 .collect(Collectors.toList());
 
         model.put("properties", properties);
-
+        model.put("title", ModelNameUtils.computeOpenApiModelName(strippedModelName));
         final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
             "swagger/schema/object-template.ftl", model
         );
@@ -176,15 +177,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
     private void generateSwaggerDocumentation(final List<ModelDefinition> relationModels, final ModelDefinition e,
             final String pathToSwaggerDocs) {
 
-        final List<FieldDefinition> relations = FieldUtils.extractRelationFields(e.getFields());
-        final List<String> schemaNames = relations.stream()
-                .map(FieldDefinition::getType)
-                .filter(StringUtils::isNotBlank)
-                .map(ModelNameUtils::stripSuffix)
-                .map(StringUtils::uncapitalize)
-                .map(name -> String.format("%sPayload", name))
-                .distinct()
-                .collect(Collectors.toList());
+        final List<String> schemaNames = new ArrayList<>();
         schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(e.getName())));
 
         final List<String> relationInputSchemaNames = relationModels.stream()

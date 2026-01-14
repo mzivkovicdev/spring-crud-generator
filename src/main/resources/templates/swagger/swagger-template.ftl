@@ -1,6 +1,6 @@
 <#assign modelName = strippedModelName?cap_first>
 <#assign uncapModelName = strippedModelName?uncap_first>
-openapi: 3.0.0
+openapi: 3.1.0
 
 info:
   title: ${modelName} API

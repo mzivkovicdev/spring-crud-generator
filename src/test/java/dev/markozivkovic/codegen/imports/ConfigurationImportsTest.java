@@ -45,7 +45,7 @@ class ConfigurationImportsTest {
                     "com.example", pkg, List.of("Product")
             );
 
-            assertEquals("import com.example.models.Product;", result);
+            assertEquals(String.format("import com.example.models.Product;%n"), result);
 
             pkgUtils.verify(() -> PackageUtils.computeEntityPackage("com.example", pkg));
         }
@@ -65,10 +65,13 @@ class ConfigurationImportsTest {
                     "com.example", pkg, List.of("User", "User", "Product")
             );
 
-            final String expected =
-                    "import com.example.models.Product;"
-                  + "import com.example.models.User;"
-                  + "import com.example.models.User;";
+            final String expected = String.format(
+                """
+                    import com.example.models.Product;
+                    import com.example.models.User;
+                    import com.example.models.User;
+                        """
+            );
 
             assertEquals(expected, result);
         }
@@ -88,7 +91,7 @@ class ConfigurationImportsTest {
                     "x.y", pkg, List.of("Order")
             );
 
-            assertEquals("import x.y.domain.Order;", result);
+            assertEquals(String.format("import x.y.domain.Order;%n"), result);
         }
     }
     
