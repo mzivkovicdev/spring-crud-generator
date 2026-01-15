@@ -19,6 +19,9 @@ properties:
     <#if p.maxLength??>
     maxLength: ${p.maxLength?c}
     </#if><#t>
+    <#if p.items?? && p.uniqueItems??>
+    uniqueItems: ${p.uniqueItems?c}
+    </#if><#t>
     <#if p.items??>
     items:
       <#if p.items["$ref"]??>
