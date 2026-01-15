@@ -20,5 +20,4 @@ put:
             content:
               application/json:
                 schema:
-                  type: object
                   $ref: '#/components/schemas/${modelName}'

@@ -24,6 +24,7 @@ import java.util.Objects;
 
 import org.apache.maven.api.annotations.Nullable;
 
+import dev.markozivkovic.codegen.enums.SpecialType;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.RelationDefinition;
 
@@ -179,7 +180,9 @@ public class SwaggerUtils {
             if (isJsonField) {
                 schema = ref(FieldUtils.extractJsonFieldName(fieldDefinition));
             } else if (isSimpleCollectionType) {
-                schema = arrayOfSimpleType(FieldUtils.extractSimpleCollectionType(fieldDefinition), fieldDefinition.getValues());
+                schema = arrayOfSimpleType(
+                        FieldUtils.extractSimpleCollectionType(fieldDefinition), fieldDefinition.getValues(), SpecialType.isSetType(fieldDefinition.getType())
+                );
             } else {
                 schema = resolve(type, fieldDefinition.getValues());
             }
@@ -250,13 +253,16 @@ public class SwaggerUtils {
      * 
      * If the yamlType is an enum, the enum values will be added to the items definition.
      * 
-     * @param yamlType the yaml type of the items
+     * @param yamlType   the yaml type of the items
      * @param enumValues the values of the enum if the yamlType is an enum
+     * @param isUnique   whether the items should be unique
      * @return a Swagger array type definition
      */
-    private static Map<String, Object> arrayOfSimpleType(final String yamlType, @Nullable final List<String> enumValues) {
+    private static Map<String, Object> arrayOfSimpleType(final String yamlType, @Nullable final List<String> enumValues,
+                @Nullable final Boolean isUnique) {
         final Map<String, Object> m = new LinkedHashMap<>();
         m.put("type", "array");
+        m.put("uniqueItems", isUnique);
         m.put("items", resolve(yamlType, enumValues));
         return m;
     }
