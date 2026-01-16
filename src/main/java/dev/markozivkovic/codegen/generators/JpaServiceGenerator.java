@@ -42,13 +42,13 @@ public class JpaServiceGenerator implements CodeGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaServiceGenerator.class);
 
     private final CrudConfiguration configuration;
-    private final List<ModelDefinition> entites;
+    private final List<ModelDefinition> entities;
     private final PackageConfiguration packageConfiguration;
 
-    public JpaServiceGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites,
+    public JpaServiceGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
                 final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
-        this.entites = entites;
+        this.entities = entities;
         this.packageConfiguration = packageConfiguration;
     }
     
@@ -71,7 +71,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeServicePackage(packagePath, packageConfiguration)));
         sb.append(ServiceImports.getBaseImport(
-                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entites))
+                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities))
         );
         
         sb.append(ServiceImports.computeJpaServiceBaseImport(
@@ -132,7 +132,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String getAllByIdsMethod(final ModelDefinition modelDefinition) {
         
-        if (!FieldUtils.hasCollectionRelation(modelDefinition, entites)) {
+        if (!FieldUtils.hasCollectionRelation(modelDefinition, entities)) {
             return null;
         }
         final Map<String, Object> context = ServiceTemplateContext.createGetAllByIdsMethodContext(modelDefinition);
@@ -150,7 +150,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String getReferenceByIdMethod(ModelDefinition modelDefinition) {
 
-        if (!FieldUtils.hasRelation(modelDefinition, entites)) {
+        if (!FieldUtils.hasRelation(modelDefinition, entities)) {
             return null;
         }
 
@@ -171,7 +171,7 @@ public class JpaServiceGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = ServiceTemplateContext.createRemoveRelationMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createRemoveRelationMethodContext(modelDefinition, entities);
         if (context.isEmpty()) {
             return null;
         }

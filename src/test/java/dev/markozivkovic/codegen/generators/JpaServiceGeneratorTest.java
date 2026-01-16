@@ -143,7 +143,7 @@ class JpaServiceGeneratorTest {
                     .thenReturn(new HashMap<>());
             svcCtx.when(() -> ServiceTemplateContext.createAddRelationMethodContext(model))
                     .thenReturn(Collections.emptyMap());
-            svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model))
+            svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, allEntities))
                     .thenReturn(Collections.emptyMap());
             svcCtx.when(() -> ServiceTemplateContext.createGetAllByIdsMethodContext(model))
                     .thenReturn(new HashMap<>());
@@ -255,7 +255,7 @@ class JpaServiceGeneratorTest {
 
             svcCtx.when(() -> ServiceTemplateContext.createAddRelationMethodContext(model))
                     .thenReturn(new HashMap<>(Map.of("rel", "x")));
-            svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model))
+            svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, allEntities))
                     .thenReturn(new HashMap<>(Map.of("rel", "x")));
             svcCtx.when(() -> ServiceTemplateContext.computeGetAllContext(model))
                     .thenReturn(new HashMap<>());

@@ -50,9 +50,26 @@
 <#function gqlFieldType field isInput>
   <#if isJson(field)>
     <#return jsonInnerType(field, isInput)>
-  <#else>
-    <#return mapScalarType(field.type)>
   </#if>
+
+  <#if isCollectionType(field.type)>
+    <#assign inner = collectionInnerType(field.type)>
+    <#assign gqlInner = mapScalarType(inner)>
+    <#return "[" + gqlInner + "]">
+  </#if>
+
+  <#return mapScalarType(field.type)>
+</#function>
+
+<#function isCollectionType typeStr>
+  <#assign T = typeStr?trim>
+  <#return (T?starts_with("List<") || T?starts_with("Set<"))>
+</#function>
+
+<#function collectionInnerType typeStr>
+  <#assign T = typeStr?trim>
+  <#assign inner = T?keep_after("<")?keep_before_last(">")?trim>
+  <#return inner>
 </#function>
 
 <#function withNullability baseType field>

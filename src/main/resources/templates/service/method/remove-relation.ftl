@@ -24,7 +24,9 @@
         final ${modelName} entity = this.getById(${idField});
 
         <#if rel.isCollection?? && rel.isCollection>
-        if (!entity.get${rel.relationField?cap_first}().remove(${rel.elementParam})) {
+        final boolean result = entity.get${rel.relationField?cap_first}()
+                .removeIf(obj -> obj.get${rel.relationIdField?cap_first}().equals(${rel.elementParam}.get${rel.relationIdField?cap_first}()));
+        if (!result) {
             throw new InvalidResourceStateException("Not possible to remove ${rel.elementParam}");
         }
         <#else>
