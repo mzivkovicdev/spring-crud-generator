@@ -1,6 +1,7 @@
 configuration:
   database: postgresql
   javaVersion: 21
+  springBootVersion: 4 # valid formats are also 4.0.1 or 4.0
   optimisticLocking: true
   docker:
     dockerfile: true
