@@ -1,6 +1,7 @@
 package dev.markozivkovic.codegen.templates;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -367,6 +368,7 @@ class ServiceTemplateContextTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         final List<FieldDefinition> fields = List.of(idField);
         final ModelDefinition model = newModel("UserEntity", fields);
+        final List<ModelDefinition> allModels = List.of(model);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
@@ -376,7 +378,7 @@ class ServiceTemplateContextTest {
                       .thenReturn(List.of());
 
             final Map<String, Object> ctxAdd = ServiceTemplateContext.createAddRelationMethodContext(model);
-            final Map<String, Object> ctxRemove = ServiceTemplateContext.createRemoveRelationMethodContext(model);
+            final Map<String, Object> ctxRemove = ServiceTemplateContext.createRemoveRelationMethodContext(model, allModels);
 
             assertTrue(ctxAdd.isEmpty(), "Add-relation context should be empty when there are no relations");
             assertTrue(ctxRemove.isEmpty(), "Remove-relation context should be empty when there are no relations");
@@ -460,11 +462,13 @@ class ServiceTemplateContextTest {
             assertEquals(true, rel.get(TemplateContextConstants.IS_COLLECTION));
             assertEquals(javadocFields, rel.get(TemplateContextConstants.JAVADOC_FIELDS));
             assertEquals("addAddresses", rel.get(TemplateContextConstants.METHOD_NAME));
+
+            assertFalse(rel.containsKey(TemplateContextConstants.RELATION_ID_FIELD));
         }
     }
 
     @Test
-    void createRemoveRelationMethodContext_shouldBuildContextAndUseOptimisticLockingAnnotation() {
+    void createRemoveRelationMethodContext_shouldBuildContextAndUseOptimisticLockingAnnotation_andSetRelationIdField() {
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
         when(idField.getType()).thenReturn("java.util.UUID");
@@ -476,43 +480,37 @@ class ServiceTemplateContextTest {
         final List<FieldDefinition> fields = List.of(idField, relationField);
         final ModelDefinition model = newModel("UserEntity", fields);
 
+        final FieldDefinition roleIdField = mock(FieldDefinition.class);
+        when(roleIdField.getName()).thenReturn("roleId");
+        when(roleIdField.getType()).thenReturn("Long");
+
+        final List<FieldDefinition> roleFields = List.of(roleIdField);
+        final ModelDefinition roleModel = newModel("RoleEntity", roleFields);
+
+        final List<ModelDefinition> entities = List.of(roleModel);
+
         final List<String> javadocFields = List.of("id - user id", "role - user role");
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
 
-            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields))
-                      .thenReturn(List.of("ManyToOne"));
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(List.of("ManyToOne"));
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.computeJavadocForFields(idField, relationField)).thenReturn(javadocFields);
+            fieldUtils.when(() -> FieldUtils.extractIdField(roleFields)).thenReturn(roleIdField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("role")).thenReturn("role");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity")).thenReturn("Role");
+            genCtx.when(() -> GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION)).thenReturn(true);
 
-            fieldUtils.when(() -> FieldUtils.extractIdField(fields))
-                      .thenReturn(idField);
-
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields))
-                      .thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields))
-                      .thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields))
-                      .thenReturn(List.of(relationField));
-
-            fieldUtils.when(() -> FieldUtils.computeJavadocForFields(idField, relationField))
-                      .thenReturn(javadocFields);
-
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                     .thenReturn("User");
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("role"))
-                     .thenReturn("role");
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity"))
-                     .thenReturn("Role");
-
-            genCtx.when(() -> GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION))
-                  .thenReturn(true);
-
-            final Map<String, Object> ctx = ServiceTemplateContext.createRemoveRelationMethodContext(model);
+            final Map<String, Object> ctx = ServiceTemplateContext.createRemoveRelationMethodContext(model, entities);
 
             @SuppressWarnings("unchecked")
-            Map<String, Object> modelCtx =
-                    (Map<String, Object>) ctx.get(TemplateContextConstants.MODEL);
+            final Map<String, Object> modelCtx = (Map<String, Object>) ctx.get(TemplateContextConstants.MODEL);
 
             assertEquals("UserEntity", modelCtx.get(TemplateContextConstants.MODEL_NAME));
             assertEquals("java.util.UUID", modelCtx.get(TemplateContextConstants.ID_TYPE));
@@ -523,8 +521,7 @@ class ServiceTemplateContextTest {
                     modelCtx.get(TemplateContextConstants.TRANSACTIONAL_ANNOTATION));
 
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> relations =
-                    (List<Map<String, Object>>) ctx.get(TemplateContextConstants.RELATIONS);
+            final List<Map<String, Object>> relations = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.RELATIONS);
 
             assertEquals(1, relations.size());
             final Map<String, Object> rel = relations.get(0);
@@ -536,6 +533,94 @@ class ServiceTemplateContextTest {
             assertEquals(false, rel.get(TemplateContextConstants.IS_COLLECTION));
             assertEquals(javadocFields, rel.get(TemplateContextConstants.JAVADOC_FIELDS));
             assertEquals("removeRole", rel.get(TemplateContextConstants.METHOD_NAME));
+            assertEquals("roleId", rel.get(TemplateContextConstants.RELATION_ID_FIELD));
+        }
+    }
+
+    @Test
+    void createRemoveRelationMethodContext_shouldNotSetRelationIdFieldWhenEntitiesEmpty() {
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+
+        final FieldDefinition relationField = mock(FieldDefinition.class);
+        when(relationField.getName()).thenReturn("roles");
+        when(relationField.getType()).thenReturn("RoleEntity");
+
+        final List<FieldDefinition> fields = List.of(idField, relationField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(List.of("ManyToMany"));
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields)).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.computeJavadocForFields(idField, relationField)).thenReturn(List.of("id", "roles"));
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("roles")).thenReturn("roles");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity")).thenReturn("Role");
+            genCtx.when(() -> GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION)).thenReturn(false);
+
+            final Map<String, Object> ctx = ServiceTemplateContext.createRemoveRelationMethodContext(model, List.of());
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> relations = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.RELATIONS);
+
+            assertEquals(1, relations.size());
+            assertFalse(relations.get(0).containsKey(TemplateContextConstants.RELATION_ID_FIELD),
+                    "RELATION_ID_FIELD must not be set when entities list is empty");
+        }
+    }
+
+    @Test
+    void createRemoveRelationMethodContext_shouldNotSetRelationIdFieldWhenNoMatchingEntityFound() {
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+
+        final FieldDefinition relationField = mock(FieldDefinition.class);
+        when(relationField.getName()).thenReturn("role");
+        when(relationField.getType()).thenReturn("RoleEntity");
+
+        final List<FieldDefinition> fields = List.of(idField, relationField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+
+        final FieldDefinition otherId = mock(FieldDefinition.class);
+        when(otherId.getName()).thenReturn("otherId");
+        when(otherId.getType()).thenReturn("Long");
+
+        final List<FieldDefinition> otherFields = List.of(otherId);
+        final ModelDefinition otherModel = newModel("OtherEntity", otherFields);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(List.of("ManyToOne"));
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.computeJavadocForFields(idField, relationField)).thenReturn(List.of("id", "role"));
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("role")).thenReturn("role");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity")).thenReturn("Role");
+
+            genCtx.when(() -> GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION)).thenReturn(false);
+
+            final Map<String, Object> ctx = ServiceTemplateContext.createRemoveRelationMethodContext(model, List.of(otherModel));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> relations = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.RELATIONS);
+
+            assertEquals(1, relations.size());
+            assertFalse(relations.get(0).containsKey(TemplateContextConstants.RELATION_ID_FIELD),
+                    "RELATION_ID_FIELD must not be set when no matching entity type is found");
         }
     }
 

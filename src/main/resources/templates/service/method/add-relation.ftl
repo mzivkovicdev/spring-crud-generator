@@ -24,7 +24,8 @@
         final ${modelName} entity = this.getById(${idField});
         
         <#if rel.isCollection?? && rel.isCollection>
-        if (entity.get${rel.relationField?cap_first}().contains(${rel.elementParam})) {
+        if (entity.get${rel.relationField?cap_first}().contains(${rel.elementParam}) ||
+                !entity.get${rel.relationField?cap_first}().add(${rel.elementParam})) {
             throw new InvalidResourceStateException("Not possible to add ${rel.elementParam}");
         }
         <#else>

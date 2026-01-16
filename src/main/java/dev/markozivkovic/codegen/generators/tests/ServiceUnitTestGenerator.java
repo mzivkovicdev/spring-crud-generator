@@ -179,7 +179,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = ServiceTemplateContext.createRemoveRelationMethodContext(modelDefinition);
+        final Map<String, Object> context = ServiceTemplateContext.createRemoveRelationMethodContext(modelDefinition, entities);
         if (context.isEmpty()) {
             return null;
         }
