@@ -192,7 +192,8 @@ public class GraphQlGenerator implements CodeGenerator {
      */
     private void generateGraphqlDateTimeConfiguration(final String outputDir,final boolean isAuditEnabled) {
 
-        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_DATE_TIME_CONFIGURATION)) {
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_DATE_TIME_CONFIGURATION) ||
+                !Boolean.TRUE.equals(this.configuration.getGraphql().getScalarConfig())) {
             return;
         }
 
