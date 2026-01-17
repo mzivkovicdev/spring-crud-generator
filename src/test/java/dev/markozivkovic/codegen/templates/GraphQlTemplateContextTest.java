@@ -4,9 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -17,9 +19,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
+import dev.markozivkovic.codegen.models.AuditDefinition;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.RelationDefinition;
+import dev.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
+import dev.markozivkovic.codegen.utils.AuditUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.ModelNameUtils;
 
@@ -112,7 +117,6 @@ class GraphQlTemplateContextTest {
         when(relationField.getName()).thenReturn("addresses");
         when(relationField.getType()).thenReturn("AddressEntity");
         when(relationField.getRelation()).thenReturn(relDef);
-
      
         final FieldDefinition normalField = mock(FieldDefinition.class);
         when(normalField.getName()).thenReturn("name");
@@ -131,28 +135,21 @@ class GraphQlTemplateContextTest {
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
 
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                     .thenReturn("User");
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity"))
-                     .thenReturn("Address");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
 
-            fieldUtils.when(() -> FieldUtils.cloneFieldDefinition(relationField))
-                      .thenReturn(clonedRelationField);
+            fieldUtils.when(() -> FieldUtils.cloneFieldDefinition(relationField)).thenReturn(clonedRelationField);
             when(clonedRelationField.setType("Address")).thenReturn(clonedRelationField);
 
-            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList()))
-                      .thenReturn(List.of(clonedRelationField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(clonedRelationField))
-                      .thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of(clonedRelationField));
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(clonedRelationField)).thenReturn("AddressEntity");
 
-            final Map<String, Object> ctx =
-                    GraphQlTemplateContext.computeGraphQlSchemaContext(mainModel, allEntities);
+            final Map<String, Object> ctx = GraphQlTemplateContext.computeGraphQlSchemaContext(mainModel, allEntities);
 
             assertEquals("User", ctx.get(TemplateContextConstants.NAME));
 
             @SuppressWarnings("unchecked")
-            final List<FieldDefinition> ctxFields =
-                    (List<FieldDefinition>) ctx.get(TemplateContextConstants.FIELDS);
+            final List<FieldDefinition> ctxFields = (List<FieldDefinition>) ctx.get(TemplateContextConstants.FIELDS);
 
             assertEquals(2, ctxFields.size());
             assertSame(clonedRelationField, ctxFields.get(0));
@@ -163,6 +160,84 @@ class GraphQlTemplateContextTest {
 
             assertEquals(1, jsonModels.size());
             assertSame(addressModel, jsonModels.get(0));
+        }
+    }
+
+    @Test
+    void computeGraphQlSchemaContext_shouldNotCloneFieldsWhenNoRelations() {
+
+        final FieldDefinition normalField1 = mock(FieldDefinition.class);
+        when(normalField1.getName()).thenReturn("name");
+        when(normalField1.getType()).thenReturn("String");
+        when(normalField1.getRelation()).thenReturn(null);
+
+        final FieldDefinition normalField2 = mock(FieldDefinition.class);
+        when(normalField2.getName()).thenReturn("age");
+        when(normalField2.getType()).thenReturn("Int");
+        when(normalField2.getRelation()).thenReturn(null);
+
+        final List<FieldDefinition> fields = List.of(normalField1, normalField2);
+        final ModelDefinition mainModel = newModel("UserEntity", fields);
+
+        final List<ModelDefinition> entities = List.of(newModel("SomethingEntity", List.of()));
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+
+            final Map<String, Object> ctx = GraphQlTemplateContext.computeGraphQlSchemaContext(mainModel, entities);
+
+            assertEquals("User", ctx.get(TemplateContextConstants.NAME));
+
+            @SuppressWarnings("unchecked")
+            final List<FieldDefinition> ctxFields = (List<FieldDefinition>) ctx.get(TemplateContextConstants.FIELDS);
+
+            assertEquals(2, ctxFields.size());
+            assertSame(normalField1, ctxFields.get(0));
+            assertSame(normalField2, ctxFields.get(1));
+
+            @SuppressWarnings("unchecked")
+            final List<ModelDefinition> jsonModels = (List<ModelDefinition>) ctx.get(TemplateContextConstants.JSON_MODELS);
+
+            assertTrue(jsonModels.isEmpty());
+            fieldUtils.verify(() -> FieldUtils.cloneFieldDefinition(any()), never());
+            nameUtils.verify(() -> ModelNameUtils.stripSuffix("String"), never());
+            nameUtils.verify(() -> ModelNameUtils.stripSuffix("Int"), never());
+        }
+    }
+
+    @Test
+    void computeGraphQlSchemaContext_shouldAddAuditFieldsWhenAuditEnabled() {
+
+        final FieldDefinition normalField = mock(FieldDefinition.class);
+        when(normalField.getName()).thenReturn("name");
+        when(normalField.getType()).thenReturn("String");
+        when(normalField.getRelation()).thenReturn(null);
+
+        final List<FieldDefinition> fields = List.of(normalField);
+        final ModelDefinition mainModel = newModel("UserEntity", fields);
+
+        final AuditDefinition audit = mock(AuditDefinition.class);
+        when(audit.getEnabled()).thenReturn(true);
+        when(audit.getType()).thenReturn(AuditTypeEnum.INSTANT);
+
+        when(mainModel.getAudit()).thenReturn(audit);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            auditUtils.when(() -> AuditUtils.resolveAuditType(AuditTypeEnum.INSTANT)).thenReturn("Instant");
+
+            final Map<String, Object> ctx = GraphQlTemplateContext.computeGraphQlSchemaContext(mainModel, List.of());
+
+            assertEquals("User", ctx.get(TemplateContextConstants.NAME));
+            assertEquals(true, ctx.get(TemplateContextConstants.AUDIT_ENABLED));
+            assertEquals("Instant", ctx.get(TemplateContextConstants.AUDIT_TYPE));
         }
     }
 

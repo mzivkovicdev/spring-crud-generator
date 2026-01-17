@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
+import dev.markozivkovic.codegen.utils.AuditUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.ModelNameUtils;
 import dev.markozivkovic.codegen.utils.StringUtils;
@@ -82,11 +83,18 @@ public class GraphQlTemplateContext {
                 .filter(model -> jsonFieldNames.contains(model.getName()))
                 .collect(Collectors.toList());
 
-        return Map.of(
-            TemplateContextConstants.NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()),
-            TemplateContextConstants.FIELDS, fields,
-            TemplateContextConstants.JSON_MODELS, jsonModels
-        );
+        final Map<String, Object> context = new HashMap<>(Map.of(
+                TemplateContextConstants.NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()),
+                TemplateContextConstants.FIELDS, fields,
+                TemplateContextConstants.JSON_MODELS, jsonModels
+        ));
+
+        if (Objects.nonNull(modelDefinition.getAudit()) && Boolean.TRUE.equals(modelDefinition.getAudit().getEnabled())) {
+            context.put(TemplateContextConstants.AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
+            context.put(TemplateContextConstants.AUDIT_ENABLED, true);
+        }
+
+        return context;
     }
 
     /**

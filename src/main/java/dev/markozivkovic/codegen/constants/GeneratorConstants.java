@@ -63,6 +63,7 @@ public class GeneratorConstants {
     public static final class GeneratorContextKeys {
         private GeneratorContextKeys() {}
         public static final String GRAPHQL_CONFIGURATION = "graphql-configuration";
+        public static final String GRAPHQL_DATE_TIME_CONFIGURATION = "graphql-date-time-configuration";
         public static final String ADDITIONAL_CONFIG = "additionalConfig";
         public static final String CACHE_CONFIGURATION = "cacheConfiguration";
         public static final String OPTIMISTIC_LOCKING_RETRY = "optimisticLockingRetry";

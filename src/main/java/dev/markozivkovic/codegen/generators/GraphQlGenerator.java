@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.codegen.constants.GeneratorConstants;
+import dev.markozivkovic.codegen.constants.TemplateContextConstants;
 import dev.markozivkovic.codegen.context.GeneratorContext;
 import dev.markozivkovic.codegen.imports.ResolverImports;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
@@ -98,7 +99,11 @@ public class GraphQlGenerator implements CodeGenerator {
                 sb.toString()
         );
 
-        this.generateGraphqlConfiguration(outputDir);
+        final boolean isAduditEnabled = this.entities.stream()
+            .anyMatch(e -> Objects.nonNull(e.getAudit()) && Boolean.TRUE.equals(e.getAudit().getEnabled()));
+
+        this.generateGraphqlConfiguration(outputDir, isAduditEnabled);
+        this.generateGraphqlDateTimeConfiguration(outputDir, isAduditEnabled);
         
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL);
 
@@ -180,12 +185,47 @@ public class GraphQlGenerator implements CodeGenerator {
     }
 
     /**
+     * Generates the GraphQL DateTime configuration. This method is only called if the GraphQL scalar configuration is enabled and if the audit is enabled.
+     * 
+     * @param outputDir the directory where the generated configuration will be written
+     * @param isAuditEnabled whether the audit is enabled
+     */
+    private void generateGraphqlDateTimeConfiguration(final String outputDir,final boolean isAuditEnabled) {
+
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_DATE_TIME_CONFIGURATION) ||
+                !Boolean.TRUE.equals(this.configuration.getGraphql().getScalarConfig())) {
+            return;
+        }
+
+        if (!isAuditEnabled) {
+            return;
+        }
+
+        LOGGER.info("Generating GraphQL DateTime configuration");
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
+            "configuration/date-time-scalar-configuration.ftl",
+                    Map.of(TemplateContextConstants.AUDIT_ENABLED, isAuditEnabled)
+                ));
+        
+        FileWriterUtils.writeToFile(
+                outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "GraphQlDateTimeScalarConfig.java", sb.toString()
+        );
+
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_DATE_TIME_CONFIGURATION);
+    }
+
+    /**
      * Generates the GraphQL configuration. This method is only called if the GraphQL scalar
      * configuration is enabled.
      *
      * @param outputDir the output directory where the configuration file will be generated
      */
-    private void generateGraphqlConfiguration(final String outputDir) {
+    private void generateGraphqlConfiguration(final String outputDir, final Boolean auditEnabled) {
 
         if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION)
             || Objects.isNull(this.configuration.getGraphql()) 
@@ -198,7 +238,8 @@ public class GraphQlGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
-            "configuration/scalar-configuration.ftl", Map.of()
+            "configuration/scalar-configuration.ftl",
+                    Map.of(TemplateContextConstants.AUDIT_ENABLED, auditEnabled)
                 ));
         
         FileWriterUtils.writeToFile(

@@ -39,6 +39,10 @@ type ${name} {
   ${field.name}: ${typeWithNull}
   </#if>
   </#list>
+  <#if auditEnabled?? && auditEnabled>
+  createdAt: ${mapScalarType(auditType)}
+  updatedAt: ${mapScalarType(auditType)}
+  </#if><#t>
 }
 
 input ${name}CreateInput {
