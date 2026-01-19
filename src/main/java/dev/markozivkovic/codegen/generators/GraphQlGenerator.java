@@ -223,7 +223,8 @@ public class GraphQlGenerator implements CodeGenerator {
      * Generates the GraphQL configuration. This method is only called if the GraphQL scalar
      * configuration is enabled.
      *
-     * @param outputDir the output directory where the configuration file will be generated
+     * @param outputDir    the output directory where the configuration file will be generated
+     * @param auditEnabled whether audit functionality is enabled
      */
     private void generateGraphqlConfiguration(final String outputDir, final Boolean auditEnabled) {
 

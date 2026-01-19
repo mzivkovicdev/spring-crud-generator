@@ -1,3 +1,8 @@
+<#if auditEnabled?? && auditEnabled && swagger && auditType != "LocalDate">
+import java.time.${auditType};
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+</#if><#t>
 import java.util.List;
 
 import org.mapstruct.Mapper;
@@ -18,6 +23,27 @@ public interface ${mapperName} {
     ${swaggerModel} map${transferObjectName}To${swaggerModel}(final ${transferObjectName} transferObject);
 
     List<${swaggerModel}> map${transferObjectName}To${swaggerModel}(final List<${transferObjectName}> transferObject);
+
+    <#if auditEnabled?? && auditEnabled>
+    <#if auditType == "Instant">
+    default Instant map(final OffsetDateTime odt) {
+        return odt == null ? null : odt.toInstant();
+    }
+
+    default OffsetDateTime map(final Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
+    }
+    </#if><#t>
+    <#if auditType == "LocalDateTime">
+    default OffsetDateTime map(final LocalDateTime ldt) {
+        return ldt == null ? null : ldt.atOffset(ZoneOffset.UTC);
+    }
+
+    default LocalDateTime mapToLocalDateTime(final OffsetDateTime odt) {
+        return odt == null ? null : odt.toLocalDateTime();
+    }
+    </#if><#t>
+    </#if>
     </#if><#t>
     <#if generateAllHelperMethods?? && generateAllHelperMethods>
 

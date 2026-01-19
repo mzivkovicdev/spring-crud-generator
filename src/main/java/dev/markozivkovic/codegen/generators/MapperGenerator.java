@@ -101,8 +101,9 @@ public class MapperGenerator implements CodeGenerator {
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String mapperName = isGraphQl ? String.format("%sGraphQLMapper", strippedModelName) :
                 String.format("%sRestMapper", strippedModelName);
+        
         final Map<String, Object> context = MapperTemplateContexts.computeMapperContext(
-                        modelDefinition, packagePath, swagger, isGraphQl, packageConfiguration
+                modelDefinition, packagePath, swagger, isGraphQl, packageConfiguration
         );
         
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);

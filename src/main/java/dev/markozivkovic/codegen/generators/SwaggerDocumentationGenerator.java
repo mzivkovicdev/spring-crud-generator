@@ -27,12 +27,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.codegen.constants.GeneratorConstants;
+import dev.markozivkovic.codegen.constants.TemplateContextConstants;
 import dev.markozivkovic.codegen.context.GeneratorContext;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.ProjectMetadata;
 import dev.markozivkovic.codegen.templates.SwaggerTemplateContext;
+import dev.markozivkovic.codegen.utils.AuditUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.FileWriterUtils;
 import dev.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -115,20 +117,27 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
     private void generateObjects(final ModelDefinition e, final String pathToSwaggerDocs) {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
-        final Map<String, Object> model = new HashMap<>();
-        model.put("schemaName", e.getName());
+        final Map<String, Object> modelContext = new HashMap<>();
+        modelContext.put("schemaName", e.getName());
         if (StringUtils.isNotBlank(e.getDescription())) {
-            model.put("description", e.getDescription());
+            modelContext.put("description", e.getDescription());
         }
 
         final List<Map<String, Object>> properties = e.getFields().stream()
                 .map(field -> SwaggerUtils.toSwaggerProperty(field))
                 .collect(Collectors.toList());
 
-        model.put("properties", properties);
-        model.put("title", ModelNameUtils.computeOpenApiModelName(strippedModelName));
+        modelContext.put("properties", properties);
+        modelContext.put("title", ModelNameUtils.computeOpenApiModelName(strippedModelName));
+
+        if (Objects.nonNull(e.getAudit()) && Boolean.TRUE.equals(e.getAudit().getEnabled())) {
+            final String auditType = AuditUtils.resolveAuditType(e.getAudit().getType());
+            modelContext.put(TemplateContextConstants.AUDIT_ENABLED, true);
+            modelContext.put(TemplateContextConstants.AUDIT_TYPE, SwaggerUtils.resolve(auditType, List.of()));
+        }
+
         final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
-            "swagger/schema/object-template.ftl", model
+            "swagger/schema/object-template.ftl", modelContext
         );
         final String subDir = String.format("%s/%s", GeneratorConstants.DefaultPackageLayout.SWAGGER, "components/schemas");
 
