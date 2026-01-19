@@ -19,6 +19,7 @@ package dev.markozivkovic.codegen.utils;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -64,75 +65,75 @@ public class SwaggerUtils {
      */
     public static Map<String, Object> resolve(final String yamlType, @Nullable final List<String> enumValues) {
         
-        final String t = yamlType == null ? "" : yamlType.trim();
-        final String key = t.replaceAll("\\s+", "").toUpperCase();
-        final Map<String, Object> m = new LinkedHashMap<>();
+        final String type = yamlType == null ? "" : yamlType.trim();
+        final String key = type.replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
+        final Map<String, Object> typeContext = new LinkedHashMap<>();
 
         switch (key) {
             case "STRING":
             case "CHARSEQUENCE":
             case "CHAR":
             case "CHARACTER":
-                m.put("type", "string");
-                return m;
+                typeContext.put("type", "string");
+                return typeContext;
 
             case "UUID":
-                m.put("type", "string");
-                m.put("format", "uuid");
-                return m;
+                typeContext.put("type", "string");
+                typeContext.put("format", "uuid");
+                return typeContext;
 
             case "BOOLEAN":
-                m.put("type", "boolean");
-                return m;
+                typeContext.put("type", "boolean");
+                return typeContext;
         
             case "BYTE":
             case "SHORT":
             case "INT":
             case "INTEGER":
-                m.put("type", "integer");
-                m.put("format", "int32");
-                return m;
+                typeContext.put("type", "integer");
+                typeContext.put("format", "int32");
+                return typeContext;
 
             case "LONG":
-                m.put("type", "integer");
-                m.put("format", "int64");
-                return m;
+                typeContext.put("type", "integer");
+                typeContext.put("format", "int64");
+                return typeContext;
 
             case "FLOAT":
-                m.put("type", "number");
-                m.put("format", "float");
-                return m;
+                typeContext.put("type", "number");
+                typeContext.put("format", "float");
+                return typeContext;
 
             case "DOUBLE":
-                m.put("type", "number");
-                m.put("format", "double");
-                return m;
+                typeContext.put("type", "number");
+                typeContext.put("format", "double");
+                return typeContext;
 
             case "BIGDECIMAL":
-                m.put("type", "number");
-                return m;
+                typeContext.put("type", "number");
+                return typeContext;
 
             case "LOCALDATE":
-                m.put("type", "string");
-                m.put("format", "date");
-                return m;
+                typeContext.put("type", "string");
+                typeContext.put("format", "date");
+                return typeContext;
 
             case "LOCALDATETIME":
             case "INSTANT":
             case "DATE":
-                m.put("type", "string");
-                m.put("format", "date-time");
-                return m;
+                typeContext.put("type", "string");
+                typeContext.put("format", "date-time");
+                return typeContext;
 
             case "ENUM":
-                m.put("type", "string");
+                typeContext.put("type", "string");
                 if (enumValues != null && !enumValues.isEmpty()) {
-                    m.put("enum", new ArrayList<>(enumValues));
+                    typeContext.put("enum", new ArrayList<>(enumValues));
                 }
-                return m;
+                return typeContext;
             default:
-                m.put("type", "string");
-                return m;
+                typeContext.put("type", "string");
+                return typeContext;
         }
     }
 

@@ -44,6 +44,18 @@ properties:
     description: ${p.description}
     </#if><#t>
 </#list>
+  <#if auditEnabled?? && auditEnabled>
+  createdAt:
+    type: ${auditType.type}
+    format: ${auditType.format}
+    readOnly: true
+    description: Timestamp when the resource was created
+  updatedAt:
+    type: ${auditType.type}
+    format: ${auditType.format}
+    readOnly: true
+    description: Timestamp when the resource was updated
+  </#if><#t>
 <#if required?has_content>
 required:
 <#list required as r>

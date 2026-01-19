@@ -19,6 +19,7 @@ package dev.markozivkovic.codegen.templates;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,6 +28,7 @@ import dev.markozivkovic.codegen.imports.MapperImports;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.PackageConfiguration;
+import dev.markozivkovic.codegen.utils.AuditUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.ModelNameUtils;
 
@@ -70,6 +72,11 @@ public class MapperTemplateContexts {
                     .distinct()
                     .collect(Collectors.joining(", "));
             context.put(TemplateContextConstants.PARAMETERS, mapperParameters);
+        }
+
+        if (swagger && !isGraphQl && Objects.nonNull(modelDefinition.getAudit()) && Boolean.TRUE.equals(modelDefinition.getAudit().getEnabled())) {
+            context.put(TemplateContextConstants.AUDIT_ENABLED, true);
+            context.put(TemplateContextConstants.AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
         }
 
         context.put("projectImports", MapperImports.computeMapperImports(packagePath, modelDefinition, packageConfiguration, swagger, isGraphQl));
