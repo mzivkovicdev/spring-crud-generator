@@ -1,4 +1,4 @@
-<#if auditEnabled?? && auditEnabled && swagger>
+<#if auditEnabled?? && auditEnabled && swagger && auditType != "LocalDate">
 import java.time.${auditType};
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -32,15 +32,6 @@ public interface ${mapperName} {
 
     default OffsetDateTime map(final Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
-    }
-    </#if><#t>
-    <#if auditType == "LocalDate">
-    default OffsetDateTime map(final LocalDate date) {
-        return date == null ? null : date.atStartOfDay().atOffset(ZoneOffset.UTC);
-    }
-
-    default LocalDate map(final OffsetDateTime odt) {
-        return odt == null ? null : odt.toLocalDate();
     }
     </#if><#t>
     <#if auditType == "LocalDateTime">
