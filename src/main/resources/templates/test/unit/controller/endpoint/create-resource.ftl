@@ -131,6 +131,28 @@ class ${className} {
                 </#if>
         );
     }
+    <#if fieldsWithLength??>
+
+    @Test
+    void ${uncapModelName}sPost_validationFails() throws Exception {
+
+        <#if swagger>
+        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
+        <#else>
+        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
+        </#if><#t>
+        <#if fieldsWithLength??>
+        <#list fieldsWithLength as fieldWithLength>
+        body.${fieldWithLength.field}(generateString(${fieldWithLength.length + 10}));
+        </#list>
+        </#if><#t>
+
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(this.mapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+    </#if>
 
     @Test
     void ${uncapModelName}sPost_noRequestBody() throws Exception {

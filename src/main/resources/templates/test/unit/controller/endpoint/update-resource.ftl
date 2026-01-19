@@ -113,6 +113,30 @@ class ${className} {
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
+    <#if fieldsWithLength??>
+
+    @Test
+    void ${uncapModelName}sIdPut_validationFails() throws Exception {
+
+        final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
+        final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
+        <#if swagger>
+        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
+        <#else>
+        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
+        </#if>
+        <#if fieldsWithLength??>
+        <#list fieldsWithLength as fieldWithLength>
+        body.${fieldWithLength.field}(generateString(${fieldWithLength.length + 10}));
+        </#list>
+        </#if><#t>
+
+        this.mockMvc.perform(put("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first})
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(this.mapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+    </#if>
 
     @Test
     void ${uncapModelName}sIdPut_noRequestBody() throws Exception {
