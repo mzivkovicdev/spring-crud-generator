@@ -28,16 +28,17 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 class ${className} {
 
     <#if dataGenerator == "PODAM">
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
-
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    
+    </#if><#t>
     @MockitoBean
     private ${serviceClass?cap_first} ${serviceField};
 
     <#if hasRelations>
     @MockitoBean
     private ${businessServiceClass?cap_first} ${businessServiceField};
-    </#if>
-
+    
+    </#if><#t>
     @Autowired
     private MockMvc mockMvc;
 

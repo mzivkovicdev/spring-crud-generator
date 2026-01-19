@@ -260,9 +260,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 .map(FieldUtils::extractJsonFieldName)
                 .collect(Collectors.toList());
 
-        final Map<String, Object> context = new HashMap<>(
-                RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entities)
-        );
+        final Map<String, Object> context = RestControllerTemplateContext.computeCreateTestEndpointContext(modelDefinition, entities);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
@@ -307,37 +305,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
             final String packagePath, final String modelWithoutSuffix, final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled) {
         
         final StringBuilder sb = new StringBuilder();
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final String className = String.format("%sUpdateByIdMockMvcTest", modelWithoutSuffix);
-        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
-        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
-                .map(FieldUtils::extractJsonFieldName)
-                .collect(Collectors.toList());
-        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
 
-        final Map<String, Object> context = new HashMap<>();
-        context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
-        context.put("basePath", basePath);
-        context.put("controllerClassName", controllerClassName);
-        context.put("className", className);
-        context.put("strippedModelName", modelWithoutSuffix);
-        context.put("modelName", modelDefinition.getName());
-        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
-        context.put("idType", idField.getType());
-        context.put("idField", idField.getName());
-        context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("swagger", swagger);
-        context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
-        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(
-                UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
-        ));
-        context.put("projectImports", RestControllerImports.computeUpdateEndpointTestProjectImports( 
-                modelDefinition, outputDir, swagger, packageConfiguration, isGlobalExceptionHandlerEnabled
-        ));
-        context.put("jsonFields", jsonFields);
-        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
-        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        final Map<String, Object> context = RestControllerTemplateContext.computeUpdateByIdTestEndpointContext(
+                modelDefinition, configuration, packageConfiguration, swagger, isGlobalExceptionHandlerEnabled, outputDir, testOutputDir, packagePath
+        );
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

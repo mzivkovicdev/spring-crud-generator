@@ -24,11 +24,18 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
+import dev.markozivkovic.codegen.imports.RestControllerImports;
+import dev.markozivkovic.codegen.models.CrudConfiguration;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
+import dev.markozivkovic.codegen.models.PackageConfiguration;
+import dev.markozivkovic.codegen.utils.AdditionalPropertiesUtils;
+import dev.markozivkovic.codegen.utils.ContainerUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.ModelNameUtils;
 import dev.markozivkovic.codegen.utils.StringUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class RestControllerTemplateContext {
 
@@ -111,6 +118,102 @@ public class RestControllerTemplateContext {
         context.put(TemplateContextConstants.RELATIONS, !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
 
         return context;
+    }
+
+    /**
+     * Computes a template context for a create test endpoint of a model.
+     * The generated context contains the model name, stripped model name, input fields, and fields with length.
+     * 
+     * @param modelDefinition the model definition
+     * @param entities a list of model definitions representing entities related to the model
+     * @return a template context for the create test endpoint
+     */
+    public static Map<String, Object> computeCreateTestEndpointContext(final ModelDefinition modelDefinition,
+            final List<ModelDefinition> entities) {
+
+        final Map<String, Object> context = computeCreateEndpointContext(modelDefinition, entities);
+        
+        computeFieldsWithLength(modelDefinition, context);
+        return context;
+    }
+
+    /**
+     * Computes a template context for an update by ID test endpoint of a model.
+     * The generated context contains the model name, stripped model name, input fields, fields with length, and test imports.
+     * 
+     * @param modelDefinition                 the model definition
+     * @param configuration                   the CRUD configuration
+     * @param packageConfiguration            the package configuration
+     * @param swagger                         indicates if the swagger and open API generator is enabled
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @return a template context for the update by ID test endpoint
+     */
+    public static Map<String, Object> computeUpdateByIdTestEndpointContext(final ModelDefinition modelDefinition,
+                final CrudConfiguration configuration, final PackageConfiguration packageConfiguration,
+                final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled,
+                final String outputDir, final String testOutputDir, final String packagePath) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+
+        final String className = String.format("%sUpdateByIdMockMvcTest", modelWithoutSuffix);
+        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .collect(Collectors.toList());
+
+        context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
+        context.put("basePath", basePath);
+        context.put("controllerClassName", controllerClassName);
+        context.put("className", className);
+        context.put("strippedModelName", modelWithoutSuffix);
+        context.put("modelName", modelDefinition.getName());
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put("idType", idField.getType());
+        context.put("idField", idField.getName());
+        context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
+        context.put("swagger", swagger);
+        context.put("inputFields", FieldUtils.extractNonIdNonRelationFieldNamesForController(modelDefinition.getFields(), swagger));
+        context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+        ));
+        context.put("projectImports", RestControllerImports.computeUpdateEndpointTestProjectImports( 
+                modelDefinition, outputDir, swagger, packageConfiguration, isGlobalExceptionHandlerEnabled
+        ));
+        context.put("jsonFields", jsonFields);
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+
+        computeFieldsWithLength(modelDefinition, context);
+
+        return context;
+    }
+
+    /**
+     * Computes a list of fields with length for a given model definition and adds it to the context map
+     * 
+     * @param modelDefinition the model definition
+     * @param context the context map
+     */
+    private static void computeFieldsWithLength(final ModelDefinition modelDefinition, final Map<String, Object> context) {
+        
+        final List<Map<String, Object>> fieldsWithLength = modelDefinition.getFields().stream()
+                .filter(field -> Objects.nonNull(field.getColumn()) && Objects.nonNull(field.getColumn().getLength()))
+                .map(field -> Map.<String, Object>of(
+                    TemplateContextConstants.FIELD, field.getName(),
+                    TemplateContextConstants.LENGTH, field.getColumn().getLength()
+                ))
+                .toList();
+
+        if (!ContainerUtils.isEmpty(fieldsWithLength)) {
+            context.put(TemplateContextConstants.FIELDS_WITH_LENGTH, fieldsWithLength);
+        }
     }
 
     /**

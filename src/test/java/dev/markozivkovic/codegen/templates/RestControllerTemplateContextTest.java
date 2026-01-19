@@ -2,13 +2,19 @@ package dev.markozivkovic.codegen.templates;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -17,11 +23,21 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
+import dev.markozivkovic.codegen.imports.RestControllerImports;
+import dev.markozivkovic.codegen.models.ColumnDefinition;
+import dev.markozivkovic.codegen.models.CrudConfiguration;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
+import dev.markozivkovic.codegen.models.PackageConfiguration;
 import dev.markozivkovic.codegen.models.RelationDefinition;
+import dev.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
+import dev.markozivkovic.codegen.utils.AdditionalPropertiesUtils;
+import dev.markozivkovic.codegen.utils.ContainerUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.ModelNameUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 class RestControllerTemplateContextTest {
 
@@ -240,6 +256,209 @@ class RestControllerTemplateContextTest {
             assertEquals(true, fCtx.get(TemplateContextConstants.IS_ENUM));
             assertEquals("java.util.UUID", fCtx.get(TemplateContextConstants.RELATION_ID_TYPE));
             assertEquals("addressId", fCtx.get(TemplateContextConstants.RELATION_ID_FIELD));
+        }
+    }
+
+    @Test
+    void computeCreateTestEndpointContext_addsInputFieldsAndFieldsWithLength_andRelationIdInfo() {
+        
+        final ModelDefinition category = mock(ModelDefinition.class);
+        when(category.getName()).thenReturn("Category");
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final FieldDefinition nameField = mock(FieldDefinition.class);
+        final FieldDefinition productsField = mock(FieldDefinition.class);
+
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+        when(idField.getResolvedType()).thenReturn("Long");
+        when(idField.getRelation()).thenReturn(null);
+
+        when(nameField.getName()).thenReturn("name");
+        when(nameField.getType()).thenReturn("String");
+        when(nameField.getResolvedType()).thenReturn("String");
+
+        final ColumnDefinition nameCol = mock(ColumnDefinition.class);
+        when(nameCol.getLength()).thenReturn(3);
+        when(nameField.getColumn()).thenReturn(nameCol);
+        when(productsField.getName()).thenReturn("products");
+        when(productsField.getType()).thenReturn("Product");
+        when(productsField.getResolvedType()).thenReturn("List<Product>");
+
+        final RelationDefinition rel = mock(RelationDefinition.class);
+        when(productsField.getRelation()).thenReturn(rel);
+
+        final List<FieldDefinition> categoryFields = List.of(idField, nameField, productsField);
+        when(category.getFields()).thenReturn(categoryFields);
+
+        final ModelDefinition productEntity = mock(ModelDefinition.class);
+        when(productEntity.getName()).thenReturn("Product");
+
+        final FieldDefinition productIdField = mock(FieldDefinition.class);
+        when(productIdField.getName()).thenReturn("id");
+        when(productIdField.getType()).thenReturn("Long");
+
+        when(productEntity.getFields()).thenReturn(List.of(productIdField));
+
+        final List<ModelDefinition> entities = List.of(productEntity);
+
+        try (final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ContainerUtils> containerUtils = mockStatic(ContainerUtils.class)) {
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix(anyString())).thenAnswer(inv -> inv.getArgument(0));
+            fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(categoryFields)).thenReturn(List.of(productsField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(categoryFields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(categoryFields)).thenReturn(List.of(productsField));
+            fieldUtils.when(() -> FieldUtils.isJsonField(any())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isFieldEnum(any())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractIdField(productEntity.getFields())).thenReturn(productIdField);
+
+            containerUtils.when(() -> ContainerUtils.isEmpty(any(Collection.class))).thenAnswer(inv -> {
+                Object arg = inv.getArgument(0);
+                if (arg instanceof Collection<?> c) return c.isEmpty();
+                return arg == null;
+            });
+
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeCreateTestEndpointContext(category, entities);
+
+            assertEquals("Category", ctx.get(TemplateContextConstants.MODEL_NAME));
+            assertEquals("Category", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
+            assertEquals(true, ctx.get(TemplateContextConstants.RELATIONS));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> inputFields = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.INPUT_FIELDS);
+
+            assertNotNull(inputFields);
+            assertEquals(2, inputFields.size(), "Id field ne treba da bude u inputFields");
+
+            final Map<String, Object> nameCtx = inputFields.stream()
+                .filter(m -> "name".equals(m.get(TemplateContextConstants.FIELD)))
+                .findFirst()
+                .orElseThrow();
+            assertEquals(false, nameCtx.get(TemplateContextConstants.IS_RELATION));
+            assertEquals(false, nameCtx.get(TemplateContextConstants.IS_COLLECTION));
+
+            final Map<String, Object> productsCtx = inputFields.stream()
+                .filter(m -> "products".equals(m.get(TemplateContextConstants.FIELD)))
+                .findFirst()
+                .orElseThrow();
+            assertEquals(true, productsCtx.get(TemplateContextConstants.IS_RELATION));
+            assertEquals(true, productsCtx.get(TemplateContextConstants.IS_COLLECTION));
+            assertEquals("Long", productsCtx.get(TemplateContextConstants.RELATION_ID_TYPE));
+            assertEquals("id", productsCtx.get(TemplateContextConstants.RELATION_ID_FIELD));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> fieldsWithLength = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
+
+            assertNotNull(fieldsWithLength);
+            final Map<String, Object> lenEntry = fieldsWithLength.stream()
+                .filter(m -> "name".equals(m.get(TemplateContextConstants.FIELD)))
+                .findFirst()
+                .orElseThrow();
+            assertEquals(3, lenEntry.get(TemplateContextConstants.LENGTH));
+        }
+    }
+
+    @Test
+    void computeUpdateByIdTestEndpointContext_populatesExpectedKeys_andFieldsWithLength() {
+        
+        final ModelDefinition product = mock(ModelDefinition.class);
+        when(product.getName()).thenReturn("Product");
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+
+        final FieldDefinition nameField = mock(FieldDefinition.class);
+        when(nameField.getName()).thenReturn("name");
+        when(nameField.getType()).thenReturn("String");
+
+        final ColumnDefinition nameCol = mock(ColumnDefinition.class);
+        when(nameCol.getLength()).thenReturn(20);
+        when(nameField.getColumn()).thenReturn(nameCol);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField);
+        when(product.getFields()).thenReturn(fields);
+
+        final CrudConfiguration crudCfg = mock(CrudConfiguration.class);
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(crudCfg.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+
+        when(crudCfg.getSpringBootVersion()).thenReturn("4.0.1.RELEASE");
+
+        try (final MockedStatic<AdditionalPropertiesUtils> apu = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<UnitTestUtils> utu = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fu = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> mnu = mockStatic(ModelNameUtils.class);
+             final MockedStatic<RestControllerImports> rci = mockStatic(RestControllerImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgtc = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<ContainerUtils> cu = mockStatic(ContainerUtils.class)) {
+
+            apu.when(() -> AdditionalPropertiesUtils.resolveBasePath(crudCfg)).thenReturn("/api");
+
+            final TestDataGeneratorConfig generatorCfg = mock(TestDataGeneratorConfig.class);
+            utu.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.PODAM)).thenReturn(generatorCfg);
+
+            fu.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            mnu.when(() -> ModelNameUtils.stripSuffix("Product")).thenReturn("Product");
+
+            fu.when(() -> FieldUtils.isIdFieldUUID(idField)).thenReturn(false);
+            fu.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of());
+
+            final FieldDefinition jsonField = mock(FieldDefinition.class);
+            fu.when(() -> FieldUtils.extractJsonFields(fields)).thenReturn(List.of(jsonField));
+            fu.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("payload");
+            utu.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("invalid-id");
+            utu.when(() -> UnitTestUtils.isInstancioEnabled(crudCfg)).thenReturn(false);
+            fu.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForController(fields, true)).thenReturn(List.of("name"));
+
+            rci.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, "4.0.1.RELEASE"))
+                    .thenReturn("import x;");
+            rci.when(() -> RestControllerImports.computeUpdateEndpointTestProjectImports(eq(product), anyString(), eq(true), eq(pkgCfg), eq(true)))
+                    .thenReturn("import y;");
+            dgtc.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorCfg)).thenReturn(Map.of("dataGenerator", "PODAM"));
+
+            cu.when(() -> ContainerUtils.isEmpty(any(Collection.class))).thenAnswer(inv -> {
+                Object arg = inv.getArgument(0);
+                if (arg instanceof Collection<?> c) return c.isEmpty();
+                return arg == null;
+            });
+
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeUpdateByIdTestEndpointContext(
+                product, crudCfg, pkgCfg, true, true, "/out",
+                "/testOut", "com/demo"
+            );
+
+            assertEquals("/api", ctx.get("basePath"));
+            assertEquals("ProductController", ctx.get("controllerClassName"));
+            assertEquals("ProductUpdateByIdMockMvcTest", ctx.get("className"));
+            assertEquals("Product", ctx.get("strippedModelName"));
+            assertEquals("Product", ctx.get("modelName"));
+            assertEquals(false, ctx.get("hasRelations"));
+
+            assertEquals("Long", ctx.get("idType"));
+            assertEquals("id", ctx.get("idField"));
+            assertEquals("invalid-id", ctx.get("invalidIdType"));
+
+            @SuppressWarnings("unchecked")
+            final List<String> jsonFields = (List<String>) ctx.get("jsonFields");
+            assertEquals(List.of("payload"), jsonFields);
+
+            assertEquals("PODAM", ctx.get("dataGenerator"));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> fieldsWithLength = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
+
+            assertNotNull(fieldsWithLength);
+            final Map<String, Object> lenEntry = fieldsWithLength.stream()
+                    .filter(m -> "name".equals(m.get(TemplateContextConstants.FIELD)))
+                    .findFirst()
+                    .orElseThrow();
+            assertEquals(20, lenEntry.get(TemplateContextConstants.LENGTH));
         }
     }
 

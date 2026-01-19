@@ -24,7 +24,9 @@ public final class TemplateContextConstants {
     public static final String ID = "id";
     public static final String NAME = "name";
     public static final String FIELD = "field";
+    public static final String LENGTH = "length";
     public static final String FIELDS = "fields";
+    public static final String FIELDS_WITH_LENGTH = "fieldsWithLength";
     public static final String ID_TYPE = "idType";
     public static final String ID_FIELD = "idField";
     public static final String ID_DESCRIPTION = "idDescription";

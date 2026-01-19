@@ -32,8 +32,9 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 class ${className} {
 
     <#if dataGenerator == "PODAM">
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
-
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    
+    </#if><#t>
     private final ${mapperClass} ${mapperField} = Mappers.getMapper(${mapperClass}.class);
 
     @MockitoBean
