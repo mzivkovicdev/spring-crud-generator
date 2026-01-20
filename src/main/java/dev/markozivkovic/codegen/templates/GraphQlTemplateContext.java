@@ -24,14 +24,23 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
+import dev.markozivkovic.codegen.imports.ResolverImports;
+import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
+import dev.markozivkovic.codegen.models.PackageConfiguration;
 import dev.markozivkovic.codegen.utils.AuditUtils;
+import dev.markozivkovic.codegen.utils.ContainerUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.ModelNameUtils;
 import dev.markozivkovic.codegen.utils.StringUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class GraphQlTemplateContext {
+
+    private GraphQlTemplateContext() {}
     
     /**
      * Computes a template context for a GraphQL resolver class of a model.
@@ -157,5 +166,97 @@ public class GraphQlTemplateContext {
         context.put(TemplateContextConstants.ID_TYPE, idField.getType());
 
         return context;
+    }
+
+    /**
+     * Computes a template context for a unit test of a mutation resolver of a model.
+     * 
+     * @param modelDefinition the model definition
+     * @param configuration the CRUD configuration
+     * @param packageConfiguration the package configuration
+     * @param entities a list of model definitions representing entities related to the model
+     * @param outputDir the directory where the generated code will be written
+     * @param testOutputDir the directory where the generated unit test will be written
+     * @return a template context for the unit test of the mutation resolver
+     */
+    public static Map<String, Object> computeMutationUnitTestContext(final ModelDefinition modelDefinition,
+                final CrudConfiguration configuration, final PackageConfiguration packageConfiguration,
+                final List<ModelDefinition> entities, final String outputDir, final String testOutputDir) {
+
+        final Map<String, Object> context = new HashMap<>();
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String resolverClassName = String.format("%sResolver", modelWithoutSuffix);
+        final String className = String.format("%sResolverMutationTest", modelWithoutSuffix);
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
+                .map(FieldUtils::extractJsonFieldName)
+                .collect(Collectors.toList());
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(configuration.getErrorResponse()) ||
+                        Objects.isNull(configuration.getErrorResponse()));
+        final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
+
+        final List<Map<String, Object>> relations = new ArrayList<>();
+        context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, modelWithoutSuffix);
+        context.put("resolverClassName", resolverClassName);
+        context.put(TemplateContextConstants.CLASS_NAME, className);
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put(TemplateContextConstants.MODEL_NAME, modelDefinition.getName());
+        context.put(TemplateContextConstants.ID_TYPE, idField.getType());
+        context.put(TemplateContextConstants.ID_FIELD, idField.getName());
+        context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
+        context.put("createArgs", FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
+        context.put("updateArgs", FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.JSON_FIELDS, jsonFields);
+        context.put("testImports", ResolverImports.computeMutationResolverTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), !jsonFields.isEmpty(), configuration.getSpringBootVersion()
+        ));
+
+        context.put(TemplateContextConstants.FIELD_NAMES, FieldUtils.generateFieldNamesForCreateInputTO(modelDefinition.getFields()));
+        context.put("fieldNamesWithoutRelations", FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
+        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration, isGlobalExceptionHandlerEnabled));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+        relationFields.forEach(field -> {
+            final ModelDefinition relationModel = entities.stream()
+                    .filter(entity -> entity.getName().equals(field.getType()))
+                    .findFirst()
+                    .orElseThrow();
+            final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
+            relations.add(Map.of(
+                TemplateContextConstants.RELATION_FIELD, field.getName(),
+                TemplateContextConstants.RELATION_ID_TYPE, relationIdField.getType(),
+                TemplateContextConstants.IS_COLLECTION, collectionRelationFields.contains(field.getName()),
+                "invalidRelationIdType", UnitTestUtils.computeInvalidIdType(relationIdField)
+            ));
+        });
+        context.put(TemplateContextConstants.RELATIONS, relations);
+        
+        computeFieldsWithLength(modelDefinition, context);
+
+        return context;
+    }
+
+    /**
+     * Computes a list of fields with length for a given model definition and adds it to the context map
+     * 
+     * @param modelDefinition the model definition
+     * @param context the context map
+     */
+    private static void computeFieldsWithLength(final ModelDefinition modelDefinition, final Map<String, Object> context) {
+        
+        final List<Map<String, Object>> fieldsWithLength = modelDefinition.getFields().stream()
+                .filter(field -> Objects.nonNull(field.getColumn()) && Objects.nonNull(field.getColumn().getLength()))
+                .map(field -> Map.<String, Object>of(
+                    TemplateContextConstants.FIELD, field.getName(),
+                    TemplateContextConstants.LENGTH, field.getColumn().getLength()
+                ))
+                .toList();
+
+        if (!ContainerUtils.isEmpty(fieldsWithLength)) {
+            context.put(TemplateContextConstants.FIELDS_WITH_LENGTH, fieldsWithLength);
+        }
     }
 }

@@ -5,12 +5,15 @@
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
+import jakarta.validation.Valid;
+
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 
 ${projectImports}
 @Controller

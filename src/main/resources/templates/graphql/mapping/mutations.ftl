@@ -10,7 +10,8 @@
 </#if>
 
     @MutationMapping
-    public ${transferObjectClass} create${strippedModelName}(@Argument final ${createInputToClass} input) {
+    @Validated
+    public ${transferObjectClass} create${strippedModelName}(@Argument @Valid final ${createInputToClass} input) {
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
             this.${serviceField}.create(
                 <#list inputFieldsWithRelations as arg>${arg}<#if arg_has_next>, </#if></#list>
@@ -19,7 +20,8 @@
     }
 
     @MutationMapping
-    public ${transferObjectClass} update${strippedModelName}(@Argument final ${idType} id, @Argument final ${updateInputToClass} input) {
+    @Validated
+    public ${transferObjectClass} update${strippedModelName}(@Argument final ${idType} id, @Argument @Valid final ${updateInputToClass} input) {
 
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                 this.${baseServiceField}.updateById(id, <#list inputFieldsWithoutRelations as arg>${arg}<#if arg_has_next>, </#if></#list>)

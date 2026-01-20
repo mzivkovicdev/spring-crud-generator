@@ -2416,6 +2416,150 @@ class FieldUtilsTest {
     }
 
     @Test
+    void generateFieldNamesForCreateInputTO_shouldExcludeIdAndReturnPlainNames_forNonRelationFields() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition typeField = fieldWithNameTypeAndId("type", "String", false);
+        typeField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, typeField);
+
+        final List<String> result = FieldUtils.generateFieldNamesForCreateInputTO(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("name", result.get(0));
+        assertEquals("type", result.get(1));
+    }
+
+    @Test
+    void generateFieldNamesForCreateInputTO_shouldAppendId_forManyToOneRelation() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, ownerField, nameField);
+
+        final List<String> result = FieldUtils.generateFieldNamesForCreateInputTO(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("ownerId", result.get(0));
+        assertEquals("name", result.get(1));
+    }
+
+    @Test
+    void generateFieldNamesForCreateInputTO_shouldAppendId_forOneToOneRelation() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition profileField = fieldWithNameTypeAndRelation(
+                "profile", "ProfileModel", "OneToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, profileField);
+
+        final List<String> result = FieldUtils.generateFieldNamesForCreateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("profileId", result.get(0));
+    }
+
+    @Test
+    void generateFieldNamesForCreateInputTO_shouldAppendIds_forOneToManyRelation() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition productsField = fieldWithNameTypeAndRelation(
+                "products", "ProductModel", "OneToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, productsField);
+
+        final List<String> result = FieldUtils.generateFieldNamesForCreateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("productsIds", result.get(0));
+    }
+
+    @Test
+    void generateFieldNamesForCreateInputTO_shouldAppendIds_forManyToManyRelation() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "TagModel", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, tagsField);
+
+        final List<String> result = FieldUtils.generateFieldNamesForCreateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("tagsIds", result.get(0));
+    }
+
+    @Test
+    void generateFieldNamesForCreateInputTO_shouldPreserveFieldOrder_excludingId() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final FieldDefinition productsField = fieldWithNameTypeAndRelation(
+                "products", "ProductModel", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final FieldDefinition typeField = fieldWithNameTypeAndId("type", "String", false);
+        typeField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ownerField, productsField, typeField);
+
+        final List<String> result = FieldUtils.generateFieldNamesForCreateInputTO(fields);
+
+        assertEquals(List.of("name", "ownerId", "productsIds", "type"), result);
+    }
+
+    @Test
+    void generateFieldNamesForCreateInputTO_shouldThrow_whenNoIdField() {
+
+        final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
+        f1.setRelation(null);
+
+        final FieldDefinition f2 = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.generateFieldNamesForCreateInputTO(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found"));
+    }
+
+    @Test
     @DisplayName("generateInputArgsWithoutFinal generates '<type> <name>' for plain fields")
     void generateInputArgsWithoutFinal_shouldGeneratePlainArgs_forNonRelationNonJsonFields() {
 
