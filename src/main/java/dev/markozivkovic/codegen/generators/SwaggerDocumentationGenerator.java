@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import dev.markozivkovic.codegen.constants.GeneratorConstants;
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
 import dev.markozivkovic.codegen.context.GeneratorContext;
+import dev.markozivkovic.codegen.enums.SwaggerObjectModeEnum;
+import dev.markozivkovic.codegen.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
@@ -74,7 +76,11 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
 
         entities.stream()
             .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
-            .forEach(e -> this.generateObjects(e, pathToSwaggerDocs));
+            .forEach(e -> {
+                this.generateObjects(e, pathToSwaggerDocs);
+                this.generateCreateObjects(e, pathToSwaggerDocs);
+                this.generateUpdateObjects(e, pathToSwaggerDocs);
+            });
 
         final List<ModelDefinition> relationModels = entities.stream()
                 .filter(e -> FieldUtils.isAnyFieldId(e.getFields()))
@@ -108,29 +114,52 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
     }
 
     /**
-     * Generates swagger schema for the given model. The generated schema
-     * will have one property for each field in the given model.
+     * Generates swagger schema for the given model.
+     * Depending on the mode:
+     * - DEFAULT: includes all fields
+     * - CREATE_MODEL: excludes ID field, uses INPUT mode for properties, title ends with "Create"
+     * - UPDATE_MODEL: excludes ID field and relation fields, title ends with "Update"
      *
      * @param e the model for which to generate the swagger schema
      * @param pathToSwaggerDocs the path to the swagger documentation directory
+     * @param mode generation mode
      */
-    private void generateObjects(final ModelDefinition e, final String pathToSwaggerDocs) {
+    private void generateObjects(final ModelDefinition e, final String pathToSwaggerDocs,
+                final SwaggerObjectModeEnum mode) {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
+
         final Map<String, Object> modelContext = new HashMap<>();
         modelContext.put("schemaName", e.getName());
+
         if (StringUtils.isNotBlank(e.getDescription())) {
             modelContext.put("description", e.getDescription());
         }
 
+        final FieldDefinition idField = FieldUtils.extractIdField(e.getFields());
+
         final List<Map<String, Object>> properties = e.getFields().stream()
-                .map(field -> SwaggerUtils.toSwaggerProperty(field))
+                .filter(field -> SwaggerObjectModeEnum.DEFAULT.equals(mode) || !field.equals(idField))
+                .filter(field -> !SwaggerObjectModeEnum.UPDATE_MODEL.equals(mode) || Objects.isNull(field.getRelation()))
+                .map(field -> {
+                    if (SwaggerObjectModeEnum.CREATE_MODEL.equals(mode)) {
+                        return SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
+                    }
+                    return SwaggerUtils.toSwaggerProperty(field);
+                })
                 .collect(Collectors.toList());
 
         modelContext.put("properties", properties);
-        modelContext.put("title", ModelNameUtils.computeOpenApiModelName(strippedModelName));
 
-        if (Objects.nonNull(e.getAudit()) && Boolean.TRUE.equals(e.getAudit().getEnabled())) {
+        final String title = switch (mode) {
+            case CREATE_MODEL -> ModelNameUtils.computeOpenApiCreateModelName(strippedModelName);
+            case UPDATE_MODEL -> ModelNameUtils.computeOpenApiUpdateModelName(strippedModelName);
+            case DEFAULT -> ModelNameUtils.computeOpenApiModelName(strippedModelName);
+        };
+        modelContext.put("title", title);
+
+        if (SwaggerObjectModeEnum.DEFAULT.equals(mode) && Objects.nonNull(e.getAudit()) && Boolean.TRUE.equals(e.getAudit().getEnabled())) {
+
             final String auditType = AuditUtils.resolveAuditType(e.getAudit().getType());
             modelContext.put(TemplateContextConstants.AUDIT_ENABLED, true);
             modelContext.put(TemplateContextConstants.AUDIT_TYPE, SwaggerUtils.resolve(auditType, List.of()));
@@ -139,11 +168,40 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
             "swagger/schema/object-template.ftl", modelContext
         );
+
         final String subDir = String.format("%s/%s", GeneratorConstants.DefaultPackageLayout.SWAGGER, "components/schemas");
 
-        FileWriterUtils.writeToFile(
-            pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(strippedModelName))), swaggerObject
-        );
+        FileWriterUtils.writeToFile(pathToSwaggerDocs, subDir, String.format("%s.yaml", StringUtils.uncapitalize(title)), swaggerObject);
+    }
+
+    /**
+     * Generates create model swagger schema for the given model.
+     * 
+     * @param e                 the model definition
+     * @param pathToSwaggerDocs the path to the swagger documentation directory
+     */
+    private void generateCreateObjects(final ModelDefinition e, final String pathToSwaggerDocs) {
+        generateObjects(e, pathToSwaggerDocs, SwaggerObjectModeEnum.CREATE_MODEL);
+    }
+
+    /**
+     * Generates update model swagger schema for the given model.
+     * 
+     * @param e                 the model definition
+     * @param pathToSwaggerDocs the path to the swagger documentation directory
+     */
+    private void generateUpdateObjects(final ModelDefinition e, final String pathToSwaggerDocs) {
+        generateObjects(e, pathToSwaggerDocs, SwaggerObjectModeEnum.UPDATE_MODEL);
+    }
+
+    /**
+     * Generates default model swagger schema for the given model.
+     * 
+     * @param e                 the model definition
+     * @param pathToSwaggerDocs the path to the swagger documentation directory
+     */
+    private void generateObjects(final ModelDefinition e, final String pathToSwaggerDocs) {
+        generateObjects(e, pathToSwaggerDocs, SwaggerObjectModeEnum.DEFAULT);
     }
 
     /**
@@ -188,6 +246,8 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
 
         final List<String> schemaNames = new ArrayList<>();
         schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(e.getName())));
+        schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.computeOpenApiCreateModelName(e.getName())));
+        schemaNames.add(StringUtils.uncapitalize(ModelNameUtils.computeOpenApiUpdateModelName(e.getName())));
 
         final List<String> relationInputSchemaNames = relationModels.stream()
                 .map(ModelDefinition::getName)
@@ -234,6 +294,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         final String strippedModelName = ModelNameUtils.stripSuffix(relationModel.getName());
         final Map<String, Object> model = new HashMap<>();
         model.put("schemaName", relationModel.getName());
+        model.put("title", String.format("%sInput", strippedModelName));
         if (StringUtils.isNotBlank(relationModel.getDescription())) {
             model.put("description", relationModel.getDescription());
         }
