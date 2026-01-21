@@ -1,5 +1,6 @@
 <#assign uncapModelName = strippedModelName?uncap_first>
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
+<#assign createTransferObjectClass = strippedModelName?cap_first + "CreateTO">
 <#assign serviceClass = strippedModelName?cap_first + "Service">
 <#assign serviceField = strippedModelName?uncap_first + "Service">
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
@@ -76,17 +77,20 @@ class ${className} {
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#else>
-        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
-        </#if><#t>
         <#if fieldsWithLength??>
         <#list fieldsWithLength as fieldWithLength>
         body.${fieldWithLength.field}(generateString(${fieldWithLength.length}));
         </#list>
         </#if><#t>
-
+        <#else>
+        <#if fieldsWithLength??>
+        final ${createTransferObjectClass} body = generate${createTransferObjectClass}();
+        <#else>
+        final ${createTransferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${createTransferObjectClass}.class);
+        </#if><#t>
+        </#if><#t>
         <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
+        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "InputTO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
         <#if rel.isCollection>
         final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()
@@ -139,13 +143,13 @@ class ${className} {
 
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#else>
-        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
-        </#if><#t>
         <#if fieldsWithLength??>
         <#list fieldsWithLength as fieldWithLength>
         body.${fieldWithLength.field}(generateString(${fieldWithLength.length + 10}));
         </#list>
+        </#if><#t>
+        <#else>
+        final ${createTransferObjectClass} body = generateInvalid${createTransferObjectClass}();
         </#if><#t>
 
         this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
@@ -177,7 +181,29 @@ class ${className} {
         </#if>
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
+    <#if fieldsWithLength?? && !swagger>
 
+    private static ${createTransferObjectClass} generate${createTransferObjectClass}() {
+        final ${createTransferObjectClass} input = ${generatorFieldName}.${singleObjectMethodName}(${createTransferObjectClass}.class);
+        return new ${createTransferObjectClass}(
+            <#list fieldNames as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+
+    private static ${createTransferObjectClass} generateInvalid${createTransferObjectClass}() {
+        final ${createTransferObjectClass} input = ${generatorFieldName}.${singleObjectMethodName}(${createTransferObjectClass}.class);
+        return new ${createTransferObjectClass}(
+            <#list fieldNames as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+
+    </#if><#t>
     <#if fieldsWithLength?? && dataGenerator == "PODAM">
     private static String generateString(final int n) {
         final PodamFactory p = new PodamFactoryImpl();

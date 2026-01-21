@@ -5,14 +5,19 @@
     <#assign serviceField = strippedModelName?uncap_first + "Service">
 </#if>
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
+<#assign createTransferObjectClass = strippedModelName?cap_first + "CreateTO">
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 <#assign openApiResponse = strippedModelName + "Payload">
 <#assign openApiRequest = strippedModelName + "CreatePayload">
-<#if swagger>@Override<#else>@PostMapping</#if>
-    public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiResponse}</#if>> ${uncapModelName}sPost(<#if !swagger>@RequestBody </#if>final <#if !swagger>${transferObjectClass}<#else>${openApiRequest}</#if> body) {
+    <#if swagger>
+    @Override
+    <#else>@PostMapping
+    @Validated
+    </#if><#t>
+    public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiResponse}</#if>> ${uncapModelName}sPost(<#if !swagger>@RequestBody @Valid </#if>final <#if !swagger>${createTransferObjectClass}<#else>${openApiRequest}</#if> body) {
 
         <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
+        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "InputTO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
         <#if rel.isCollection>
         final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()
@@ -47,4 +52,5 @@
             )
         );
         </#if>
+    
     }
