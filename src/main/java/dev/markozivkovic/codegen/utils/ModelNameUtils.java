@@ -89,6 +89,41 @@ public class ModelNameUtils {
     }
 
     /**
+     * Computes the name of the OpenAPI create model, given a model name.
+     * This method strips the suffix from the model name (if it matches any of the known suffixes) and then appends "CreateTO" to the resulting string.
+     * 
+     * @param modelName the model name to compute the OpenAPI create model name from
+     * @return the computed OpenAPI create model name
+     */
+    public static String computeCreateTOModelName(final String modelName) {
+
+        return String.format("%sCreateTO", stripSuffix(modelName));
+    }
+
+    /**
+     * Computes the name of the OpenAPI update model, given a model name.
+     * This method strips the suffix from the model name (if it matches any of the known suffixes) and then appends "UpdateTO" to the resulting string.
+     * 
+     * @param modelName the model name to compute the OpenAPI update model name from
+     * @return the computed OpenAPI update model name
+     */
+    public static String computeUpdateTOModelName(final String modelName) {
+
+        return String.format("%sUpdateTO", stripSuffix(modelName));
+    }
+
+    /**
+     * Computes the name of the OpenAPI input model, given a model name.
+     * This method strips the suffix from the model name (if it matches any of the known suffixes) and then appends "InputTO" to the resulting string.
+     * 
+     * @param modelName the model name to compute the OpenAPI input model name from
+     * @return the computed OpenAPI input model name
+     */
+    public static String computeInputTOModelName(final String modelName) {
+        return String.format("%sInputTO", stripSuffix(modelName));
+    }
+
+    /**
      * Converts a camel-case string to a snake-case string.
      * @param s the string to convert
      * @return the converted string
