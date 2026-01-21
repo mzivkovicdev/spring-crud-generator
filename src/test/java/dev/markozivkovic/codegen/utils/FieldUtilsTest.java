@@ -1633,6 +1633,49 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("extractFieldNamesWithoudId excludes ID field and preserves original order")
+    void extractFieldNamesWithoudId_shouldExcludeId() {
+
+        final FieldDefinition f1 = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition f2 = fieldWithNameAndType("name", "String");
+        final FieldDefinition f3 = fieldWithNameAndType("age", "Integer");
+
+        final List<FieldDefinition> fields = List.of(f1, f2, f3);
+
+        final List<String> result = FieldUtils.extractFieldNamesWithoudId(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("name", result.get(0));
+        assertEquals("age", result.get(1));
+        assertFalse(result.contains("id"));
+    }
+
+    @Test
+    @DisplayName("extractFieldNamesWithoudId throws IllegalArgumentException when no ID field exists")
+    void extractFieldNamesWithoudId_shouldReturnAll_whenNoIdField() {
+
+        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
+        final FieldDefinition f2 = fieldWithNameAndType("age", "Integer");
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.extractFieldNamesWithoudId(fields)
+        );
+    }
+
+    @Test
+    @DisplayName("extractFieldNamesWithoudId throws IllegalArgumentException when input list is empty")
+    void extractFieldNamesWithoudId_shouldReturnEmpty_whenEmptyInput() {
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.extractFieldNamesWithoudId(List.of())
+        );
+    }
+
+    @Test
     @DisplayName("extractFieldNamesWithoutRelations excludes OneToMany and ManyToMany relation fields")
     void extractFieldNamesWithoutRelations_shouldExcludeCollectionRelations() {
 
@@ -2330,6 +2373,82 @@ class FieldUtilsTest {
         );
 
         assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO returns '<type> <name>' for plain fields excluding ID")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldReturnTypeAndName_forPlainFields_excludingId() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
+
+        assertEquals(2, result.size());
+        assertTrue(result.get(0).endsWith("String name"));
+        assertTrue(result.get(1).endsWith("Integer age"));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates '<Relation>InputTO <name>' for ManyToOne/OneToOne relations")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSingleInputTO_forToOneRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
+                "category", "Category", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, categoryField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("CategoryInputTO category", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates 'List<<Relation>InputTO> <name>' for OneToMany/ManyToMany relations")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateListOfInputTO_forToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "ManyToMany", "ALL", "EAGER"
+        );
+
+        final FieldDefinition commentsField = fieldWithNameTypeAndRelation(
+                "comments", "Comment", "OneToMany", "ALL", "LAZY"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, tagsField, commentsField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("List<TagInputTO> tags", result.get(0));
+        assertEquals("List<CommentInputTO> comments", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalCreateInputTO strips suffix from relation type before adding InputTO")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldStripSuffix_beforeAppendingInputTO_forRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
+                "category", "CategoryEntity", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, categoryField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("CategoryInputTO category", result.get(0));
     }
 
     @Test
