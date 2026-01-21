@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 import org.openapitools.codegen.ClientOptInput;
 import org.openapitools.codegen.DefaultGenerator;
@@ -117,11 +118,22 @@ public class OpenApiCodeGenerator implements ProjectArtifactGenerator {
                         .setLibrary("spring-boot")
                         .setOutputDir(projectMetadata.getProjectBaseDir())
                         .setApiPackage(String.format("%s.api", packagePath))
-                        .setModelPackage(String.format("%s.model", packagePath));
+                        .setModelPackage(String.format("%s.model", packagePath))
+                        .addAdditionalProperty("useSpringBoot3", true)
+                        .addAdditionalProperty("interfaceOnly", true)
+                        .addAdditionalProperty("hideGenerationTimestamp", true);
 
-                cfg.addAdditionalProperty("useSpringBoot3", true);
-                cfg.addAdditionalProperty("interfaceOnly", true);
-                cfg.addAdditionalProperty("hideGenerationTimestamp", true);
+                this.entities.stream()
+                        .map(ModelDefinition::getName)
+                        .map(ModelNameUtils::stripSuffix)
+                        .forEach(modelNameWithoutSuffix -> {
+                            IntStream.range(0, this.entities.size()).forEach(i -> {
+                                cfg.addTypeMapping(
+                                    String.format("%sInput%s", modelNameWithoutSuffix, i),
+                                    String.format("%sInput", modelNameWithoutSuffix)
+                                );
+                            });
+                        });
 
                 final ClientOptInput opts = cfg.toClientOptInput();
                 opts.openAPI(pr.getOpenAPI());
