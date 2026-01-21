@@ -116,17 +116,20 @@ public class RestControllerImports {
                 IMPORT,
                 PackageUtils.join(PackageUtils.computeGeneratedApiPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%ssApi", modelWithoutSuffix))
             ));
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiCreateModelName(modelWithoutSuffix))
+            ));
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiUpdateModelName(modelWithoutSuffix))
+            ));
         }
 
         Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
             if (!swagger) {
                 imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", relationModel))));
-            } else {
-                imports.add(String.format(
-                    IMPORT,
-                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(relationModel))
-                ));
             }
         });
 
@@ -370,6 +373,10 @@ public class RestControllerImports {
 
         if (swagger) {
             imports.addAll(EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration));
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiUpdateModelName(modelWithoutSuffix))
+            ));
         }
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
@@ -436,13 +443,17 @@ public class RestControllerImports {
             } else {
                 imports.add(String.format(
                     IMPORT,
-                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(relationModel))
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiInputModelName(relationModel))
                 ));
             }
         });
 
         if (swagger) {
             imports.addAll(EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration));
+            imports.add(String.format(
+                    IMPORT,
+                    PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiCreateModelName(modelWithoutSuffix))
+            ));
         }
 
         if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
