@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.apache.maven.api.annotations.Nullable;
 
 import dev.markozivkovic.codegen.enums.SpecialType;
+import dev.markozivkovic.codegen.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.RelationDefinition;
 
@@ -138,12 +139,24 @@ public class SwaggerUtils {
     }
 
     /**
-     * Creates a Swagger property from a given {@link FieldDefinition}.
+     * Creates a Swagger property from a given {@link FieldDefinition} using the default Swagger schema mode.
      *
      * @param fieldDefinition the field definition to create a Swagger property from
      * @return a Swagger property
      */
     public static Map<String, Object> toSwaggerProperty(final FieldDefinition fieldDefinition) {
+        
+        return toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+    }
+
+    /**
+     * Creates a Swagger property from a given {@link FieldDefinition}.
+     *
+     * @param fieldDefinition   the field definition to create a Swagger property from
+     * @param swaggerSchemaMode the Swagger schema mode
+     * @return a Swagger property
+     */
+    public static Map<String, Object> toSwaggerProperty(final FieldDefinition fieldDefinition, final SwaggerSchemaModeEnum swaggerSchemaMode) {
 
         final Map<String, Object> property = new LinkedHashMap<>();
         
@@ -167,14 +180,14 @@ public class SwaggerUtils {
             switch (rel.getType()) {
                 case ONE_TO_ONE:
                 case MANY_TO_ONE:
-                    schema = ref(type);
+                    schema = ref(type, swaggerSchemaMode);
                     break;
                 case ONE_TO_MANY:
                 case MANY_TO_MANY:
-                    schema = arrayOfRef(type);
+                    schema = arrayOfRef(type, swaggerSchemaMode);
                     break;
                 default:
-                    schema = ref(type);
+                    schema = ref(type, swaggerSchemaMode);
                     break;
             }
         } else {
@@ -225,14 +238,32 @@ public class SwaggerUtils {
     /**
      * Return a Swagger $ref definition to the given targetSchemaName.
      *
-     * @param targetSchemaName the name of the target schema
+     * @param targetSchemaName  the name of the target schema
      * @return a Swagger $ref definition
      */
     public static Map<String, Object> ref(final String targetSchemaName) {
+    
+        return ref(targetSchemaName, SwaggerSchemaModeEnum.DEFAULT);
+    }
+
+    /**
+     * Return a Swagger $ref definition to the given targetSchemaName.
+     * 
+     * @param targetSchemaName the name of the target schema
+     * @param swaggerSchemaMode the Swagger schema mode
+     * @return a Swagger $ref definition
+     */
+    public static Map<String, Object> ref(final String targetSchemaName, final SwaggerSchemaModeEnum swaggerSchemaMode) {
         
         final Map<String, Object> m = new LinkedHashMap<>();
         final String schemaName = ModelNameUtils.stripSuffix(targetSchemaName);
-        m.put("$ref", String.format("./%s.yaml", StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(schemaName))));
+        final String ref;
+        if (SwaggerSchemaModeEnum.INPUT.equals(swaggerSchemaMode)) {
+            ref = String.format("./%sInput.yaml", StringUtils.uncapitalize(schemaName));
+        } else {
+            ref = String.format("./%s.yaml", StringUtils.uncapitalize(ModelNameUtils.computeOpenApiModelName(schemaName)));
+        }
+        m.put("$ref", ref);
         return m;
     }
 
@@ -243,9 +274,21 @@ public class SwaggerUtils {
      * @return a Swagger array type definition
      */
     public static Map<String, Object> arrayOfRef(final String targetSchemaName) {
+    
+        return arrayOfRef(targetSchemaName, SwaggerSchemaModeEnum.DEFAULT);
+    }
+
+    /**
+     * Return a Swagger array type definition which references the given targetSchemaName.
+     * 
+     * @param targetSchemaName the name of the target schema
+     * @param swaggerSchemaMode the Swagger schema mode
+     * @return a Swagger array type definition
+     */
+    public static Map<String, Object> arrayOfRef(final String targetSchemaName, final SwaggerSchemaModeEnum swaggerSchemaMode) {
         final Map<String, Object> m = new LinkedHashMap<>();
         m.put("type", "array");
-        m.put("items", ref(targetSchemaName));
+        m.put("items", ref(targetSchemaName, swaggerSchemaMode));
         return m;
     }
 
