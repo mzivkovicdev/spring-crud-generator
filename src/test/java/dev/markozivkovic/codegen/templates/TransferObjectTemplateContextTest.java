@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -79,6 +80,59 @@ class TransferObjectTemplateContextTest {
             assertEquals(expectedArgs, ctx.get(TemplateContextConstants.INPUT_ARGS));
         }
     }
+
+    @Test
+    void computeCreateTransferObjectContext_contextWithClassNameAndInputArgs() {
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition f1 = mock(FieldDefinition.class);
+        final List<FieldDefinition> fields = List.of(f1);
+
+        when(model.getName()).thenReturn("OrderEntity");
+        when(model.getFields()).thenReturn(fields);
+
+        final List<String> expectedArgs = List.of("orderArg");
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("OrderEntity"))
+                     .thenReturn("Order");
+
+            fieldUtils.when(() -> FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields))
+                      .thenReturn(expectedArgs);
+
+            final Map<String, Object> ctx = TransferObjectTemplateContext.computeCreateTransferObjectContext(model);
+
+            assertEquals("OrderCreate", ctx.get(TemplateContextConstants.CLASS_NAME));
+            assertEquals(expectedArgs, ctx.get(TemplateContextConstants.INPUT_ARGS));
+        }
+    }
+
+    @Test
+    void computeCreateTransferObjectContext_shouldCallStripSuffixWithModelName_andGenerateArgsWithFields() {
+        final ModelDefinition model = mock(ModelDefinition.class);
+        final FieldDefinition f1 = mock(FieldDefinition.class);
+        final List<FieldDefinition> fields = List.of(f1);
+
+        when(model.getName()).thenReturn("InvoiceTO");
+        when(model.getFields()).thenReturn(fields);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("InvoiceTO"))
+                     .thenReturn("Invoice");
+
+            fieldUtils.when(() -> FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields))
+                      .thenReturn(List.of("arg1"));
+
+            TransferObjectTemplateContext.computeCreateTransferObjectContext(model);
+
+            nameUtils.verify(() -> ModelNameUtils.stripSuffix("InvoiceTO"), times(1));
+            fieldUtils.verify(() -> FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields), times(1));
+        }
+    }
+
 
     @Test
     void computeInputTransferObjectContext_shouldUseIdFieldTypeAndStrippedName() {
