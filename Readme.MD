@@ -165,9 +165,9 @@ Add the following `profile` section to your **`pom.xml`**:
         <build>
             <plugins>
                 <plugin>
-                    <groupId>com.markozivkovic.codegen</groupId>
+                    <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.0-SNAPSHOT</version>
+                    <version>1.0</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>
