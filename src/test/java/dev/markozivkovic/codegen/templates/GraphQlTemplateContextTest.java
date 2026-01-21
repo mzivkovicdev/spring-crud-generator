@@ -1,11 +1,16 @@
 package dev.markozivkovic.codegen.templates;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -19,14 +24,23 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
+import dev.markozivkovic.codegen.imports.ResolverImports;
 import dev.markozivkovic.codegen.models.AuditDefinition;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
+import dev.markozivkovic.codegen.models.PackageConfiguration;
 import dev.markozivkovic.codegen.models.RelationDefinition;
 import dev.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
+import dev.markozivkovic.codegen.models.ColumnDefinition;
+import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
+import dev.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 import dev.markozivkovic.codegen.utils.AuditUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.ModelNameUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils;
+import dev.markozivkovic.codegen.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 class GraphQlTemplateContextTest {
 
@@ -437,4 +451,232 @@ class GraphQlTemplateContextTest {
             assertEquals("java.util.UUID", ctx.get(TemplateContextConstants.ID_TYPE));
         }
     }
+
+    @Test
+    void computeMutationUnitTestContext_shouldPutFieldsWithLength_whenLengthExists() {
+
+        final ModelDefinition modelDefinition = mock(ModelDefinition.class);
+        when(modelDefinition.getName()).thenReturn("ProductEntity");
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setLength(12);
+
+        final FieldDefinition nameField = mock(FieldDefinition.class);
+        when(nameField.getName()).thenReturn("name");
+        when(nameField.getColumn()).thenReturn(column);
+        when(modelDefinition.getFields()).thenReturn(List.of(idField, nameField));
+
+        final CrudConfiguration configuration = mock(CrudConfiguration.class);
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(configuration.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.INSTANCIO);
+        when(configuration.getErrorResponse()).thenReturn(ErrorResponse.NONE);
+        when(configuration.getSpringBootVersion()).thenReturn("3.3.0");
+
+        final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
+
+        final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+            final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+            final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(any())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.generateFieldNamesForCreateInputTO(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNames(anyList())).thenReturn(List.of("name"));
+
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.INSTANCIO)).thenReturn(generatorConfig);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(configuration)).thenReturn(true);
+            unitTestUtils.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("999");
+
+            resolverImports.when(() -> ResolverImports.computeMutationResolverTestImports(true, false, "3.3.0"))
+                    .thenReturn("import a;");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForMutationUnitTests(
+                    anyString(), eq(modelDefinition), eq(packageConfiguration), anyBoolean()
+            )).thenReturn("import x;");
+
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig)).thenReturn(Map.of("generatorFieldName", "Instancio"));
+
+            final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
+                    modelDefinition, configuration, packageConfiguration, List.of(), "out", "testOut"
+            );
+
+            assertEquals("Product", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
+            assertEquals("ProductResolver", ctx.get("resolverClassName"));
+            assertEquals("ProductResolverMutationTest", ctx.get(TemplateContextConstants.CLASS_NAME));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> fieldsWithLength =
+                    (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
+
+            assertNotNull(fieldsWithLength);
+            assertEquals(1, fieldsWithLength.size());
+            assertEquals("name", fieldsWithLength.get(0).get(TemplateContextConstants.FIELD));
+            assertEquals(12, fieldsWithLength.get(0).get(TemplateContextConstants.LENGTH));
+        }
+    }
+
+    @Test
+    void computeMutationUnitTestContext_shouldNotPutFieldsWithLength_whenNoLengthExists() {
+
+        final ModelDefinition modelDefinition = mock(ModelDefinition.class);
+        when(modelDefinition.getName()).thenReturn("ProductEntity");
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+
+        final FieldDefinition nameField = mock(FieldDefinition.class);
+        when(nameField.getName()).thenReturn("name");
+        when(nameField.getColumn()).thenReturn(null);
+
+        when(modelDefinition.getFields()).thenReturn(List.of(idField, nameField));
+
+        final CrudConfiguration configuration = mock(CrudConfiguration.class);
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(configuration.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.INSTANCIO);
+        when(configuration.getErrorResponse()).thenReturn(ErrorResponse.NONE);
+        when(configuration.getSpringBootVersion()).thenReturn("3.3.0");
+
+        final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
+        final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+            final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+            final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(any())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.generateFieldNamesForCreateInputTO(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNames(anyList())).thenReturn(List.of("name"));
+
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.INSTANCIO)).thenReturn(generatorConfig);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(configuration)).thenReturn(true);
+            unitTestUtils.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("999");
+
+            resolverImports.when(() -> ResolverImports.computeMutationResolverTestImports(true, false, "3.3.0"))
+                    .thenReturn("import a;");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForMutationUnitTests(
+                    anyString(), eq(modelDefinition), eq(packageConfiguration), anyBoolean()
+            )).thenReturn("import x;");
+
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig)).thenReturn(Map.of("generatorFieldName", "Instancio"));
+
+            final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
+                    modelDefinition, configuration, packageConfiguration, List.of(), "out", "testOut"
+            );
+
+            assertFalse(ctx.containsKey(TemplateContextConstants.FIELDS_WITH_LENGTH));
+        }
+    }
+
+    @Test
+    void computeMutationUnitTestContext_shouldBuildRelationsContext_withCollectionFlagAndInvalidIdType() {
+
+        final RelationDefinition relDef = mock(RelationDefinition.class);
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+
+        final FieldDefinition relationField = mock(FieldDefinition.class);
+        when(relationField.getName()).thenReturn("products");
+        when(relationField.getType()).thenReturn("ProductEntity");
+        when(relationField.getRelation()).thenReturn(relDef);
+
+        final ModelDefinition modelDefinition = mock(ModelDefinition.class);
+        when(modelDefinition.getName()).thenReturn("CategoryEntity");
+        when(modelDefinition.getFields()).thenReturn(List.of(idField, relationField));
+
+        final FieldDefinition relIdField = mock(FieldDefinition.class);
+        when(relIdField.getName()).thenReturn("id");
+        when(relIdField.getType()).thenReturn("Long");
+
+        final ModelDefinition relationModel = mock(ModelDefinition.class);
+        when(relationModel.getName()).thenReturn("ProductEntity");
+        when(relationModel.getFields()).thenReturn(List.of(relIdField));
+
+        final CrudConfiguration configuration = mock(CrudConfiguration.class);
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(configuration.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.INSTANCIO);
+        when(configuration.getErrorResponse()).thenReturn(ErrorResponse.NONE);
+        when(configuration.getSpringBootVersion()).thenReturn("3.3.0");
+
+        final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
+        final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+            final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+            final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("CategoryEntity")).thenReturn("Category");
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(modelDefinition.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(modelDefinition.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(modelDefinition)).thenReturn(List.of("products"));
+
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(anyList())).thenReturn(List.of("products"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.generateFieldNamesForCreateInputTO(anyList())).thenReturn(List.of("productsIds"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNames(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractIdField(relationModel.getFields())).thenReturn(relIdField);
+
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.INSTANCIO)).thenReturn(generatorConfig);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(configuration)).thenReturn(true);
+            unitTestUtils.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("999");
+            unitTestUtils.when(() -> UnitTestUtils.computeInvalidIdType(relIdField)).thenReturn("888");
+
+            resolverImports.when(() -> ResolverImports.computeMutationResolverTestImports(true, false, "3.3.0"))
+                    .thenReturn("import a;");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForMutationUnitTests(
+                    anyString(), eq(modelDefinition), eq(packageConfiguration), anyBoolean()
+            )).thenReturn("import x;");
+
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig))
+                    .thenReturn(Map.of("generatorFieldName", "Instancio"));
+
+            final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
+                    modelDefinition, configuration, packageConfiguration, List.of(relationModel), "out", "testOut"
+            );
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> relations = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.RELATIONS);
+
+            assertNotNull(relations);
+            assertEquals(1, relations.size());
+
+            final Map<String, Object> relCtx = relations.get(0);
+            assertEquals("products", relCtx.get(TemplateContextConstants.RELATION_FIELD));
+            assertEquals("Long", relCtx.get(TemplateContextConstants.RELATION_ID_TYPE));
+            assertEquals(true, relCtx.get(TemplateContextConstants.IS_COLLECTION));
+            assertEquals("888", relCtx.get("invalidRelationIdType"));
+        }
+    }
+
 }

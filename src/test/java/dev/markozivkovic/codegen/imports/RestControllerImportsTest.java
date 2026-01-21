@@ -202,9 +202,9 @@ class RestControllerImportsTest {
     }
 
     @Test
-    @DisplayName("No swagger, no relations, no JSON → basic imports only")
+    @DisplayName("No swagger, no relations, no JSON → basic imports only (Entity, Service, ModelTO, PageTO, RestMapper)")
     void computeControllerProjectImports_noSwagger_noRelations_noJson() {
-        
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -215,53 +215,33 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.app");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
 
-            names.when(() -> ModelNameUtils.stripSuffix("User"))
-                    .thenReturn("User");
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
 
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(false);
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.entity");
-            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
-                    .thenReturn("com.app.entity.User");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.service");
-            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
-                    .thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO")).thenReturn("com.app.rest.to.UserTO");
 
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.to");
-            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
-                    .thenReturn("com.app.rest.to.UserTO");
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.app", packageConfiguration)).thenReturn("com.app.to");
+            pkg.when(() -> PackageUtils.join("com.app.to", GeneratorConstants.PAGE_TO)).thenReturn("com.app.to.PageTO");
 
-            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.to");
-            pkg.when(() -> PackageUtils.join("com.app.to", GeneratorConstants.PAGE_TO))
-                    .thenReturn("com.app.to.PageTO");
-
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
-                    .thenReturn("com.app.rest.mapper.UserRestMapper");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
 
             final String result = RestControllerImports.computeControllerProjectImports(
-                    model,
-                    outputDir,
-                    false,
-                    packageConfiguration
+                    model, outputDir, false, packageConfiguration
             );
 
             assertTrue(result.contains("import com.app.entity.User;"));
@@ -269,17 +249,18 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.to.PageTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertFalse(result.contains("generated"),
-                    "No generated model/api imports expected when swagger=false");
-            assertFalse(result.contains("BusinessService"),
-                    "No BusinessService import expected when no relations");
+
+            assertFalse(result.contains("generated"), "No generated model/api imports expected when swagger=false");
+            assertFalse(result.contains("BusinessService"), "No BusinessService import expected when no relations");
+
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
-    @DisplayName("No swagger, relations and collection relations → relation TOs + InputTOs + BusinessService")
+    @DisplayName("No swagger, relations + collection relations → RelationTOs + RelationInputTOs + BusinessService")
     void computeControllerProjectImports_noSwagger_withRelationsAndCollectionRelations() {
-        
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -293,82 +274,62 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.shop");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.shop");
 
-            names.when(() -> ModelNameUtils.stripSuffix("Order"))
-                    .thenReturn("Order");
-            names.when(() -> ModelNameUtils.stripSuffix("OrderItem"))
-                    .thenReturn("OrderItem");
+            names.when(() -> ModelNameUtils.stripSuffix("Order")).thenReturn("Order");
+            names.when(() -> ModelNameUtils.stripSuffix("OrderItem")).thenReturn("OrderItem");
 
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.entity");
-            pkg.when(() -> PackageUtils.join("com.shop.entity", "Order"))
-                    .thenReturn("com.shop.entity.Order");
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.service");
-            pkg.when(() -> PackageUtils.join("com.shop.service", "OrderService"))
-                    .thenReturn("com.shop.service.OrderService");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration)).thenReturn("com.shop.entity");
+            pkg.when(() -> PackageUtils.join("com.shop.entity", "Order")).thenReturn("com.shop.entity.Order");
 
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.to");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderTO"))
-                    .thenReturn("com.shop.rest.to.OrderTO");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderItemTO"))
-                    .thenReturn("com.shop.rest.to.OrderItemTO");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderItemInputTO"))
-                    .thenReturn("com.shop.rest.to.OrderItemInputTO");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.service");
+            pkg.when(() -> PackageUtils.join("com.shop.service", "OrderService")).thenReturn("com.shop.service.OrderService");
 
-            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.to");
-            pkg.when(() -> PackageUtils.join("com.shop.to", GeneratorConstants.PAGE_TO))
-                    .thenReturn("com.shop.to.PageTO");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.to");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderTO")).thenReturn("com.shop.rest.to.OrderTO");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderItemTO")).thenReturn("com.shop.rest.to.OrderItemTO");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderItemInputTO")).thenReturn("com.shop.rest.to.OrderItemInputTO");
 
-            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.business");
-            pkg.when(() -> PackageUtils.join("com.shop.business", "OrderBusinessService"))
-                    .thenReturn("com.shop.business.OrderBusinessService");
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.shop", packageConfiguration)).thenReturn("com.shop.to");
+            pkg.when(() -> PackageUtils.join("com.shop.to", GeneratorConstants.PAGE_TO)).thenReturn("com.shop.to.PageTO");
 
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "OrderRestMapper"))
-                    .thenReturn("com.shop.rest.mapper.OrderRestMapper");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.business");
+            pkg.when(() -> PackageUtils.join("com.shop.business", "OrderBusinessService")).thenReturn("com.shop.business.OrderBusinessService");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "OrderRestMapper")).thenReturn("com.shop.rest.mapper.OrderRestMapper");
 
             final String result = RestControllerImports.computeControllerProjectImports(
-                    model,
-                    outputDir,
-                    false,
-                    packageConfiguration
+                    model, outputDir, false, packageConfiguration
             );
 
             assertTrue(result.contains("import com.shop.rest.to.OrderItemTO;"));
             assertTrue(result.contains("import com.shop.rest.to.OrderItemInputTO;"));
             assertTrue(result.contains("import com.shop.business.OrderBusinessService;"));
+
             assertTrue(result.contains("import com.shop.entity.Order;"));
             assertTrue(result.contains("import com.shop.service.OrderService;"));
             assertTrue(result.contains("import com.shop.rest.to.OrderTO;"));
             assertTrue(result.contains("import com.shop.to.PageTO;"));
             assertTrue(result.contains("import com.shop.rest.mapper.OrderRestMapper;"));
+
             assertFalse(result.contains("generated"));
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
     @DisplayName("No swagger, JSON fields present → helper REST mappers imported")
     void computeControllerProjectImports_noSwagger_withJsonFields() {
-        
+
         final String outputDir = "/out/json";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -382,65 +343,39 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.api");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.api");
+            names.when(() -> ModelNameUtils.stripSuffix("Profile")).thenReturn("Profile");
 
-            names.when(() -> ModelNameUtils.stripSuffix("Profile"))
-                    .thenReturn("Profile");
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
 
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isJsonField(normalField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Settings");
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isJsonField(normalField))
-                    .thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
-                    .thenReturn("Settings");
+            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.helper.mapper");
+            pkg.when(() -> PackageUtils.join("com.api.rest.helper.mapper", "SettingsRestMapper")).thenReturn("com.api.rest.helper.mapper.SettingsRestMapper");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.api", packageConfiguration)).thenReturn("com.api.entity");
+            pkg.when(() -> PackageUtils.join("com.api.entity", "Profile")).thenReturn("com.api.entity.Profile");
 
-            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.helper.mapper");
-            pkg.when(() -> PackageUtils.join("com.api.rest.helper.mapper", "SettingsRestMapper"))
-                    .thenReturn("com.api.rest.helper.mapper.SettingsRestMapper");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.api", packageConfiguration)).thenReturn("com.api.service");
+            pkg.when(() -> PackageUtils.join("com.api.service", "ProfileService")).thenReturn("com.api.service.ProfileService");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.entity");
-            pkg.when(() -> PackageUtils.join("com.api.entity", "Profile"))
-                    .thenReturn("com.api.entity.Profile");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.to");
+            pkg.when(() -> PackageUtils.join("com.api.rest.to", "ProfileTO")).thenReturn("com.api.rest.to.ProfileTO");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.service");
-            pkg.when(() -> PackageUtils.join("com.api.service", "ProfileService"))
-                    .thenReturn("com.api.service.ProfileService");
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.api", packageConfiguration)).thenReturn("com.api.to");
+            pkg.when(() -> PackageUtils.join("com.api.to", GeneratorConstants.PAGE_TO)).thenReturn("com.api.to.PageTO");
 
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.to");
-            pkg.when(() -> PackageUtils.join("com.api.rest.to", "ProfileTO"))
-                    .thenReturn("com.api.rest.to.ProfileTO");
-
-            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.to");
-            pkg.when(() -> PackageUtils.join("com.api.to", GeneratorConstants.PAGE_TO))
-                    .thenReturn("com.api.to.PageTO");
-
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.api.rest.mapper", "ProfileRestMapper"))
-                    .thenReturn("com.api.rest.mapper.ProfileRestMapper");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.api.rest.mapper", "ProfileRestMapper")).thenReturn("com.api.rest.mapper.ProfileRestMapper");
 
             final String result = RestControllerImports.computeControllerProjectImports(
-                    model,
-                    outputDir,
-                    false,
-                    packageConfiguration
+                    model, outputDir, false, packageConfiguration
             );
 
             assertTrue(result.contains("import com.api.rest.helper.mapper.SettingsRestMapper;"));
@@ -449,14 +384,16 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.api.rest.to.ProfileTO;"));
             assertTrue(result.contains("import com.api.to.PageTO;"));
             assertTrue(result.contains("import com.api.rest.mapper.ProfileRestMapper;"));
+
             assertFalse(result.contains("generated"));
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
-    @DisplayName("Swagger enabled, relations present, no JSON → generated API + generated models + BusinessService imports")
+    @DisplayName("Swagger enabled, relations present, no JSON → generated API + create/update + model + get200 + relation Input + BusinessService")
     void computeControllerProjectImports_swagger_withRelations_noJson() {
-        
+
         final String outputDir = "/out/swagger";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -470,84 +407,209 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.shop");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.shop");
 
-            names.when(() -> ModelNameUtils.stripSuffix("Order"))
-                    .thenReturn("Order");
-            names.when(() -> ModelNameUtils.stripSuffix("OrderItem"))
-                    .thenReturn("OrderItem");
-            names.when(() -> ModelNameUtils.computeOpenApiModelName("Order"))
-                    .thenReturn("OrderDTO");
-            names.when(() -> ModelNameUtils.computeOpenApiModelName("OrderItem"))
-                    .thenReturn("OrderItemDTO");
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(false);
+            names.when(() -> ModelNameUtils.stripSuffix("Order")).thenReturn("Order");
+            names.when(() -> ModelNameUtils.stripSuffix("OrderItem")).thenReturn("OrderItem");
+
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("Order")).thenReturn("OrderDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Order")).thenReturn("OrderCreateDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("Order")).thenReturn("OrderUpdateDTO");
+
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
 
             enumImports.when(() -> EnumImports.computeEnumImports(model, "com.shop", packageConfiguration))
                     .thenReturn(Set.of("import com.shop.enums.StatusEnum;"));
+
             pkg.when(() -> PackageUtils.computeGeneratedApiPackage("com.shop", packageConfiguration, "order"))
                     .thenReturn("com.shop.generated.api.order");
-            pkg.when(() -> PackageUtils.join("com.shop.generated.api.order", "OrdersApi"))
-                    .thenReturn("com.shop.generated.api.order.OrdersApi");
-
+            pkg.when(() -> PackageUtils.join("com.shop.generated.api.order", "OrdersApi")).thenReturn("com.shop.generated.api.order.OrdersApi");
             pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.shop", packageConfiguration, "order"))
                     .thenReturn("com.shop.generated.model.order");
-            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrderItemDTO"))
-                    .thenReturn("com.shop.generated.model.order.OrderItemDTO");
-            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrderDTO"))
-                    .thenReturn("com.shop.generated.model.order.OrderDTO");
-            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrdersGet200Response"))
-                    .thenReturn("com.shop.generated.model.order.OrdersGet200Response");
+            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrderItemInput")).thenReturn("com.shop.generated.model.order.OrderItemInput");
+            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrderCreateDTO")).thenReturn("com.shop.generated.model.order.OrderCreateDTO");
+            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrderUpdateDTO")).thenReturn("com.shop.generated.model.order.OrderUpdateDTO");
+            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrderDTO")).thenReturn("com.shop.generated.model.order.OrderDTO");
+            pkg.when(() -> PackageUtils.join("com.shop.generated.model.order", "OrdersGet200Response")).thenReturn("com.shop.generated.model.order.OrdersGet200Response");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration)).thenReturn("com.shop.entity");
+            pkg.when(() -> PackageUtils.join("com.shop.entity", "Order")).thenReturn("com.shop.entity.Order");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.entity");
-            pkg.when(() -> PackageUtils.join("com.shop.entity", "Order"))
-                    .thenReturn("com.shop.entity.Order");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.service");
+            pkg.when(() -> PackageUtils.join("com.shop.service", "OrderService")).thenReturn("com.shop.service.OrderService");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.service");
-            pkg.when(() -> PackageUtils.join("com.shop.service", "OrderService"))
-                    .thenReturn("com.shop.service.OrderService");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.business");
+            pkg.when(() -> PackageUtils.join("com.shop.business", "OrderBusinessService")).thenReturn("com.shop.business.OrderBusinessService");
 
-            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.business");
-            pkg.when(() -> PackageUtils.join("com.shop.business", "OrderBusinessService"))
-                    .thenReturn("com.shop.business.OrderBusinessService");
-
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "OrderRestMapper"))
-                    .thenReturn("com.shop.rest.mapper.OrderRestMapper");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "OrderRestMapper")).thenReturn("com.shop.rest.mapper.OrderRestMapper");
 
             final String result = RestControllerImports.computeControllerProjectImports(
-                    model,
-                    outputDir,
-                    true, 
-                    packageConfiguration
+                    model, outputDir, true, packageConfiguration
             );
 
             assertTrue(result.contains("import com.shop.enums.StatusEnum;"));
             assertTrue(result.contains("import com.shop.generated.api.order.OrdersApi;"));
-            assertTrue(result.contains("import com.shop.generated.model.order.OrderItemDTO;"));
+
+            assertTrue(result.contains("import com.shop.generated.model.order.OrderCreateDTO;"));
+            assertTrue(result.contains("import com.shop.generated.model.order.OrderUpdateDTO;"));
             assertTrue(result.contains("import com.shop.generated.model.order.OrderDTO;"));
             assertTrue(result.contains("import com.shop.generated.model.order.OrdersGet200Response;"));
+            assertTrue(result.contains("import com.shop.generated.model.order.OrderItemInput;"));
+
             assertTrue(result.contains("import com.shop.business.OrderBusinessService;"));
             assertTrue(result.contains("import com.shop.entity.Order;"));
             assertTrue(result.contains("import com.shop.service.OrderService;"));
             assertTrue(result.contains("import com.shop.rest.mapper.OrderRestMapper;"));
             assertFalse(result.contains(".rest.to.OrderTO;"));
+            assertFalse(result.contains(".rest.to.OrderItemTO;"));
             assertFalse(result.contains("PageTO"));
+
+            enumImports.verify(() -> EnumImports.computeEnumImports(model, "com.shop", packageConfiguration));
         }
     }
+
+    @Test
+    @DisplayName("Swagger enabled, no relations, no JSON → generated API + create/update + model + get200; no BusinessService, no relation inputs")
+    void computeControllerProjectImports_swagger_noRelations_noJson() {
+
+        final String outputDir = "/out/swagger";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+        model.setFields(Collections.emptyList());
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
+
+            enumImports.when(() -> EnumImports.computeEnumImports(model, "com.app", packageConfiguration))
+                    .thenReturn(Set.of());
+
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("UserDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiCreateModelName("User")).thenReturn("UserCreateDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("User")).thenReturn("UserUpdateDTO");
+
+            pkg.when(() -> PackageUtils.computeGeneratedApiPackage("com.app", packageConfiguration, "user"))
+                    .thenReturn("com.app.generated.api.user");
+            pkg.when(() -> PackageUtils.join("com.app.generated.api.user", "UsersApi"))
+                    .thenReturn("com.app.generated.api.user.UsersApi");
+
+            pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.app", packageConfiguration, "user"))
+                    .thenReturn("com.app.generated.model.user");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UserCreateDTO"))
+                    .thenReturn("com.app.generated.model.user.UserCreateDTO");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UserUpdateDTO"))
+                    .thenReturn("com.app.generated.model.user.UserUpdateDTO");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UserDTO"))
+                    .thenReturn("com.app.generated.model.user.UserDTO");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UsersGet200Response"))
+                    .thenReturn("com.app.generated.model.user.UsersGet200Response");
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
+
+            final String result = RestControllerImports.computeControllerProjectImports(
+                    model, outputDir, true, packageConfiguration
+            );
+
+            assertTrue(result.contains("import com.app.generated.api.user.UsersApi;"));
+            assertTrue(result.contains("import com.app.generated.model.user.UserCreateDTO;"));
+            assertTrue(result.contains("import com.app.generated.model.user.UserUpdateDTO;"));
+            assertTrue(result.contains("import com.app.generated.model.user.UserDTO;"));
+            assertTrue(result.contains("import com.app.generated.model.user.UsersGet200Response;"));
+
+            assertFalse(result.contains("BusinessService"));
+            assertFalse(result.contains("Input;"), "No relation input imports expected when no relations");
+            assertFalse(result.contains("PageTO"));
+            assertFalse(result.contains(".rest.to.UserTO;"));
+
+            enumImports.verify(() -> EnumImports.computeEnumImports(model, "com.app", packageConfiguration));
+        }
+    }
+
+    @Test
+    @DisplayName("No swagger: relation exists but NOT in many-to-many/one-to-many → only RelationInputTO (no RelationTO) + BusinessService")
+    void computeControllerProjectImports_noSwagger_relationButNotCollection_onlyInputTO() {
+
+        final String outputDir = "/out";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final FieldDefinition relationField = new FieldDefinition();
+        relationField.setType("Child");
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("Parent");
+        model.setFields(List.of(relationField));
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.x");
+
+            names.when(() -> ModelNameUtils.stripSuffix("Parent")).thenReturn("Parent");
+            names.when(() -> ModelNameUtils.stripSuffix("Child")).thenReturn("Child");
+
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
+
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.x", packageConfiguration)).thenReturn("com.x.business");
+            pkg.when(() -> PackageUtils.join("com.x.business", "ParentBusinessService")).thenReturn("com.x.business.ParentBusinessService");
+
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.x", packageConfiguration)).thenReturn("com.x.rest.to");
+            pkg.when(() -> PackageUtils.join("com.x.rest.to", "ChildInputTO")).thenReturn("com.x.rest.to.ChildInputTO");
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.x", packageConfiguration)).thenReturn("com.x.entity");
+            pkg.when(() -> PackageUtils.join("com.x.entity", "Parent")).thenReturn("com.x.entity.Parent");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.x", packageConfiguration)).thenReturn("com.x.service");
+            pkg.when(() -> PackageUtils.join("com.x.service", "ParentService")).thenReturn("com.x.service.ParentService");
+
+            pkg.when(() -> PackageUtils.join("com.x.rest.to", "ParentTO")).thenReturn("com.x.rest.to.ParentTO");
+
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.x", packageConfiguration)).thenReturn("com.x.to");
+            pkg.when(() -> PackageUtils.join("com.x.to", GeneratorConstants.PAGE_TO)).thenReturn("com.x.to.PageTO");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.x", packageConfiguration)).thenReturn("com.x.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.x.rest.mapper", "ParentRestMapper")).thenReturn("com.x.rest.mapper.ParentRestMapper");
+
+            final String result = RestControllerImports.computeControllerProjectImports(
+                    model, outputDir, false, packageConfiguration
+            );
+
+            assertTrue(result.contains("import com.x.rest.to.ChildInputTO;"));
+            assertFalse(result.contains("import com.x.rest.to.ChildTO;"), "ChildTO should NOT be imported (not a collection relation)");
+
+            assertTrue(result.contains("import com.x.business.ParentBusinessService;"));
+
+            enumImports.verifyNoInteractions();
+        }
+    }
+
 
     @Test
     @DisplayName("computeAddRelationEndpointBaseImports: UUID id field → UUID import added")
@@ -955,9 +1017,9 @@ class RestControllerImportsTest {
     }
 
     @Test
-    @DisplayName("No swagger, no relations, no JSON, no GlobalExceptionHandler → basic imports only")
+    @DisplayName("No swagger, no relations, no JSON, GlobalExceptionHandler=false → basic imports only")
     void computeUpdateEndpointTestProjectImports_noSwagger_noRelations_noJson_noGlobalExceptionHandler() {
-        
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -968,66 +1030,49 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.app");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
 
-            names.when(() -> ModelNameUtils.stripSuffix("User"))
-                    .thenReturn("User");
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
 
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(false);
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.entity");
-            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
-                    .thenReturn("com.app.entity.User");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.service");
-            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
-                    .thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO")).thenReturn("com.app.rest.to.UserTO");
 
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.to");
-            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
-                    .thenReturn("com.app.rest.to.UserTO");
-
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
-                    .thenReturn("com.app.rest.mapper.UserRestMapper");
-
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.exception");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
 
             final String result = RestControllerImports.computeUpdateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    false, 
-                    packageConfiguration,
-                    false
+                    model, outputDir, false, packageConfiguration, false
             );
 
             assertTrue(result.contains("import com.app.entity.User;"));
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertFalse(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
+
+            assertFalse(result.contains("GlobalRestExceptionHandler"));
             assertFalse(result.contains("BusinessService"));
             assertFalse(result.contains("HelperRestMapper"));
             assertFalse(result.contains("generated"));
             assertFalse(result.contains("StatusEnum"));
+
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
-    @DisplayName("No swagger, no relations, no JSON → basic imports only")
-    void computeUpdateEndpointTestProjectImports_noSwagger_noRelations_noJson() {
-        
+    @DisplayName("No swagger, no relations, no JSON, GlobalExceptionHandler=true → adds GlobalRestExceptionHandler")
+    void computeUpdateEndpointTestProjectImports_noSwagger_noRelations_noJson_withGlobalExceptionHandler() {
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -1038,68 +1083,46 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.app");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
 
-            names.when(() -> ModelNameUtils.stripSuffix("User"))
-                    .thenReturn("User");
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
 
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(false);
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.entity");
-            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
-                    .thenReturn("com.app.entity.User");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.service");
-            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
-                    .thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO")).thenReturn("com.app.rest.to.UserTO");
 
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.to");
-            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
-                    .thenReturn("com.app.rest.to.UserTO");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
 
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
-                    .thenReturn("com.app.rest.mapper.UserRestMapper");
-
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.exception");
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration)).thenReturn("com.app.exception");
             pkg.when(() -> PackageUtils.join("com.app.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
                     .thenReturn("com.app.exception.GlobalRestExceptionHandler");
 
             final String result = RestControllerImports.computeUpdateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    false, 
-                    packageConfiguration,
-                    true
+                    model, outputDir, false, packageConfiguration, true
             );
 
-            assertTrue(result.contains("import com.app.entity.User;"));
-            assertTrue(result.contains("import com.app.service.UserService;"));
-            assertTrue(result.contains("import com.app.rest.to.UserTO;"));
-            assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
             assertTrue(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
-            assertFalse(result.contains("BusinessService"));
-            assertFalse(result.contains("HelperRestMapper"));
             assertFalse(result.contains("generated"));
             assertFalse(result.contains("StatusEnum"));
+
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
     @DisplayName("No swagger, relations and JSON fields → BusinessService + helper REST mappers + rest TO")
     void computeUpdateEndpointTestProjectImports_noSwagger_withRelations_andJson() {
-        
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -1107,74 +1130,53 @@ class RestControllerImportsTest {
         relationField.setRelation(new RelationDefinition());
         relationField.setType("ProfileJson");
 
-        FieldDefinition jsonField = new FieldDefinition();
+        final FieldDefinition jsonField = new FieldDefinition();
         jsonField.setRelation(null);
 
-        ModelDefinition model = new ModelDefinition();
+        final ModelDefinition model = new ModelDefinition();
         model.setName("Account");
         model.setFields(List.of(relationField, jsonField));
 
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.api");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.api");
+            names.when(() -> ModelNameUtils.stripSuffix("Account")).thenReturn("Account");
 
-            names.when(() -> ModelNameUtils.stripSuffix("Account"))
-                    .thenReturn("Account");
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
 
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isJsonField(relationField))
-                    .thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
-                    .thenReturn("Settings");
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Settings");
 
-            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.helper.mapper");
+            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.api.rest.helper.mapper", "SettingsRestMapper"))
                     .thenReturn("com.api.rest.helper.mapper.SettingsRestMapper");
 
-            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.business");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.api", packageConfiguration)).thenReturn("com.api.business");
             pkg.when(() -> PackageUtils.join("com.api.business", "AccountBusinessService"))
                     .thenReturn("com.api.business.AccountBusinessService");
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.entity");
-            pkg.when(() -> PackageUtils.join("com.api.entity", "Account"))
-                    .thenReturn("com.api.entity.Account");
-            pkg.when(() -> PackageUtils.computeServicePackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.service");
-            pkg.when(() -> PackageUtils.join("com.api.service", "AccountService"))
-                    .thenReturn("com.api.service.AccountService");
 
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.to");
-            pkg.when(() -> PackageUtils.join("com.api.rest.to", "AccountTO"))
-                    .thenReturn("com.api.rest.to.AccountTO");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.api", packageConfiguration)).thenReturn("com.api.entity");
+            pkg.when(() -> PackageUtils.join("com.api.entity", "Account")).thenReturn("com.api.entity.Account");
 
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.api.rest.mapper", "AccountRestMapper"))
-                    .thenReturn("com.api.rest.mapper.AccountRestMapper");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.api", packageConfiguration)).thenReturn("com.api.service");
+            pkg.when(() -> PackageUtils.join("com.api.service", "AccountService")).thenReturn("com.api.service.AccountService");
 
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.exception");
-            pkg.when(() -> PackageUtils.join("com.api.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
-                    .thenReturn("com.api.exception.GlobalRestExceptionHandler");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.to");
+            pkg.when(() -> PackageUtils.join("com.api.rest.to", "AccountTO")).thenReturn("com.api.rest.to.AccountTO");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.api.rest.mapper", "AccountRestMapper")).thenReturn("com.api.rest.mapper.AccountRestMapper");
+
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.api", packageConfiguration)).thenReturn("com.api.exception");
+            pkg.when(() -> PackageUtils.join("com.api.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)).thenReturn("com.api.exception.GlobalRestExceptionHandler");
 
             final String result = RestControllerImports.computeUpdateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    false,
-                    packageConfiguration,
-                    true
+                    model, outputDir, false, packageConfiguration, true
             );
 
             assertTrue(result.contains("import com.api.business.AccountBusinessService;"));
@@ -1184,14 +1186,17 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.api.rest.to.AccountTO;"));
             assertTrue(result.contains("import com.api.rest.mapper.AccountRestMapper;"));
             assertTrue(result.contains("import com.api.exception.GlobalRestExceptionHandler;"));
+
             assertFalse(result.contains("generated"));
+
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
-    @DisplayName("Swagger enabled, relations and JSON fields → enum imports, BusinessService, helper mappers, generated model")
+    @DisplayName("Swagger enabled, relations and JSON fields → enum imports, BusinessService, helper mappers, generated model + update model")
     void computeUpdateEndpointTestProjectImports_swagger_withRelations_andJson() {
-        
+
         final String outputDir = "/out/swagger";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -1209,68 +1214,49 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.shop");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.shop");
 
-            names.when(() -> ModelNameUtils.stripSuffix("Parent"))
-                    .thenReturn("Parent");
-            names.when(() -> ModelNameUtils.computeOpenApiModelName("Parent"))
-                    .thenReturn("ParentDTO");
+            names.when(() -> ModelNameUtils.stripSuffix("Parent")).thenReturn("Parent");
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("Parent")).thenReturn("ParentDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("Parent")).thenReturn("ParentUpdateDTO");
+
             enumImports.when(() -> EnumImports.computeEnumImports(model, "com.shop", packageConfiguration))
                     .thenReturn(Set.of("import com.shop.enums.StatusEnum;"));
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(List.of(relationField));
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
-                    .thenReturn("Config");
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Config");
 
-            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.helper.mapper");
+            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.shop.rest.helper.mapper", "ConfigRestMapper"))
                     .thenReturn("com.shop.rest.helper.mapper.ConfigRestMapper");
 
-            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.business");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.business");
             pkg.when(() -> PackageUtils.join("com.shop.business", "ParentBusinessService"))
                     .thenReturn("com.shop.business.ParentBusinessService");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.entity");
-            pkg.when(() -> PackageUtils.join("com.shop.entity", "Parent"))
-                    .thenReturn("com.shop.entity.Parent");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration)).thenReturn("com.shop.entity");
+            pkg.when(() -> PackageUtils.join("com.shop.entity", "Parent")).thenReturn("com.shop.entity.Parent");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.service");
-            pkg.when(() -> PackageUtils.join("com.shop.service", "ParentService"))
-                    .thenReturn("com.shop.service.ParentService");
-
+            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.service");
+            pkg.when(() -> PackageUtils.join("com.shop.service", "ParentService")).thenReturn("com.shop.service.ParentService");
             pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.shop", packageConfiguration, "parent"))
                     .thenReturn("com.shop.generated.model.parent");
-            pkg.when(() -> PackageUtils.join("com.shop.generated.model.parent", "ParentDTO"))
-                    .thenReturn("com.shop.generated.model.parent.ParentDTO");
+            pkg.when(() -> PackageUtils.join("com.shop.generated.model.parent", "ParentDTO")).thenReturn("com.shop.generated.model.parent.ParentDTO");
+            pkg.when(() -> PackageUtils.join("com.shop.generated.model.parent", "ParentUpdateDTO")).thenReturn("com.shop.generated.model.parent.ParentUpdateDTO");
 
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "ParentRestMapper"))
-                    .thenReturn("com.shop.rest.mapper.ParentRestMapper");
-
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.exception");
-            pkg.when(() -> PackageUtils.join("com.shop.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
-                    .thenReturn("com.shop.exception.GlobalRestExceptionHandler");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "ParentRestMapper")).thenReturn("com.shop.rest.mapper.ParentRestMapper");
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.shop", packageConfiguration)).thenReturn("com.shop.exception");
+            pkg.when(() -> PackageUtils.join("com.shop.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)).thenReturn("com.shop.exception.GlobalRestExceptionHandler");
 
             final String result = RestControllerImports.computeUpdateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    true,
-                    packageConfiguration,
-                    true
+                    model, outputDir, true, packageConfiguration, true
             );
 
             assertTrue(result.contains("import com.shop.enums.StatusEnum;"));
@@ -1281,15 +1267,69 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.rest.mapper.ParentRestMapper;"));
             assertTrue(result.contains("import com.shop.exception.GlobalRestExceptionHandler;"));
             assertTrue(result.contains("import com.shop.generated.model.parent.ParentDTO;"));
-            assertFalse(result.contains(".rest.to.ParentTO;"),
-                    "Plain REST TO should not be imported in swagger mode");
+            assertTrue(result.contains("import com.shop.generated.model.parent.ParentUpdateDTO;"));
+            assertFalse(result.contains(".rest.to.ParentTO;"), "Plain REST TO should not be imported in swagger mode");
+
+            enumImports.verify(() -> EnumImports.computeEnumImports(model, "com.shop", packageConfiguration));
         }
     }
 
     @Test
-    @DisplayName("No swagger, no relations, no JSON, no GlobalExceptionHandler → basic imports only")
-    void computeCreateEndpointTestProjectImports_noSwagger_noRelations_noJson_noGlobalExceptionHandler() {
-        
+    @DisplayName("Swagger enabled, no relations, no JSON → should include generated model + update model, no BusinessService/helper mappers")
+    void computeUpdateEndpointTestProjectImports_swagger_noRelations_noJson() {
+
+        final String outputDir = "/out/swagger";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+        model.setFields(Collections.emptyList());
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("UserDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("User")).thenReturn("UserUpdateDTO");
+
+            enumImports.when(() -> EnumImports.computeEnumImports(model, "com.app", packageConfiguration)).thenReturn(Set.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.app", packageConfiguration, "user")).thenReturn("com.app.generated.model.user");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UserDTO")).thenReturn("com.app.generated.model.user.UserDTO");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UserUpdateDTO")).thenReturn("com.app.generated.model.user.UserUpdateDTO");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
+
+            final String result = RestControllerImports.computeUpdateEndpointTestProjectImports(
+                    model, outputDir, true, packageConfiguration, false
+            );
+
+            assertTrue(result.contains("import com.app.generated.model.user.UserDTO;"));
+            assertTrue(result.contains("import com.app.generated.model.user.UserUpdateDTO;"));
+
+            assertFalse(result.contains("BusinessService"));
+            assertFalse(result.contains("HelperRestMapper"));
+            assertFalse(result.contains(".rest.to.UserTO;"));
+
+            enumImports.verify(() -> EnumImports.computeEnumImports(model, "com.app", packageConfiguration));
+        }
+    }
+
+    @Test
+    @DisplayName("GlobalExceptionHandler null → should not import it")
+    void computeUpdateEndpointTestProjectImports_globalExceptionHandlerNull_doesNotImport() {
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -1300,67 +1340,91 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.app");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
 
-            names.when(() -> ModelNameUtils.stripSuffix("User"))
-                    .thenReturn("User");
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.entity");
-            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
-                    .thenReturn("com.app.entity.User");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.service");
-            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
-                    .thenReturn("com.app.service.UserService");
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.to");
-            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
-                    .thenReturn("com.app.rest.to.UserTO");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
 
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
-                    .thenReturn("com.app.rest.mapper.UserRestMapper");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO")).thenReturn("com.app.rest.to.UserTO");
 
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.exception");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
+
+            final String result = RestControllerImports.computeUpdateEndpointTestProjectImports(
+                    model, outputDir, false, packageConfiguration, null
+            );
+
+            assertFalse(result.contains("GlobalRestExceptionHandler"));
+
+            enumImports.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    @DisplayName("No swagger, no relations, no JSON, GlobalExceptionHandler=false → basic imports only")
+    void computeCreateEndpointTestProjectImports_noSwagger_noRelations_noJson_noGlobalExceptionHandler() {
+
+        final String outputDir = "/out";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+        model.setFields(Collections.emptyList());
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO")).thenReturn("com.app.rest.to.UserTO");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
 
             final String result = RestControllerImports.computeCreateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    false,
-                    packageConfiguration,
-                    false
+                    model, outputDir, false, packageConfiguration, false
             );
 
             assertTrue(result.contains("import com.app.entity.User;"));
             assertTrue(result.contains("import com.app.service.UserService;"));
             assertTrue(result.contains("import com.app.rest.to.UserTO;"));
             assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
-            assertFalse(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
+
+            assertFalse(result.contains("GlobalRestExceptionHandler"));
             assertFalse(result.contains("BusinessService"));
             assertFalse(result.contains("generated"));
             assertFalse(result.contains("StatusEnum"));
+
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
-    @DisplayName("No swagger, no relations, no JSON → basic imports only")
-    void computeCreateEndpointTestProjectImports_noSwagger_noRelations_noJson() {
-        
+    @DisplayName("No swagger, no relations, no JSON, GlobalExceptionHandler=true → adds GlobalRestExceptionHandler")
+    void computeCreateEndpointTestProjectImports_noSwagger_noRelations_noJson_withGlobalExceptionHandler() {
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -1371,72 +1435,49 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.app");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
 
-            names.when(() -> ModelNameUtils.stripSuffix("User"))
-                    .thenReturn("User");
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.entity");
-            pkg.when(() -> PackageUtils.join("com.app.entity", "User"))
-                    .thenReturn("com.app.entity.User");
-
-            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.service");
-            pkg.when(() -> PackageUtils.join("com.app.service", "UserService"))
-                    .thenReturn("com.app.service.UserService");
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.to");
-            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO"))
-                    .thenReturn("com.app.rest.to.UserTO");
-
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper"))
-                    .thenReturn("com.app.rest.mapper.UserRestMapper");
-
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration))
-                    .thenReturn("com.app.exception");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.to");
+            pkg.when(() -> PackageUtils.join("com.app.rest.to", "UserTO")).thenReturn("com.app.rest.to.UserTO");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.app", packageConfiguration)).thenReturn("com.app.exception");
             pkg.when(() -> PackageUtils.join("com.app.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
                     .thenReturn("com.app.exception.GlobalRestExceptionHandler");
 
             final String result = RestControllerImports.computeCreateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    false,
-                    packageConfiguration,
-                    true
+                    model, outputDir, false, packageConfiguration, true
             );
 
-            assertTrue(result.contains("import com.app.entity.User;"));
-            assertTrue(result.contains("import com.app.service.UserService;"));
-            assertTrue(result.contains("import com.app.rest.to.UserTO;"));
-            assertTrue(result.contains("import com.app.rest.mapper.UserRestMapper;"));
             assertTrue(result.contains("import com.app.exception.GlobalRestExceptionHandler;"));
 
             assertFalse(result.contains("BusinessService"));
             assertFalse(result.contains("generated"));
             assertFalse(result.contains("StatusEnum"));
+
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
     @DisplayName("No swagger, many-to-many/one-to-many + JSON + relations → relation TOs, BusinessService, helper RestMapper")
     void computeCreateEndpointTestProjectImports_noSwagger_withRelations_andJson() {
-        
+
         final String outputDir = "/out";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
         final FieldDefinition relationField = new FieldDefinition();
         relationField.setType("OrderItem");
         relationField.setRelation(new RelationDefinition());
@@ -1451,73 +1492,49 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.shop");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.shop");
 
-            names.when(() -> ModelNameUtils.stripSuffix("Order"))
-                    .thenReturn("Order");
-            names.when(() -> ModelNameUtils.stripSuffix("OrderItem"))
-                    .thenReturn("OrderItem");
+            names.when(() -> ModelNameUtils.stripSuffix("Order")).thenReturn("Order");
+            names.when(() -> ModelNameUtils.stripSuffix("OrderItem")).thenReturn("OrderItem");
 
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
-                    .thenReturn("Shipping");
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Shipping");
 
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.to");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderItemTO"))
-                    .thenReturn("com.shop.rest.to.OrderItemTO");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderTO"))
-                    .thenReturn("com.shop.rest.to.OrderTO");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.to");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderItemTO")).thenReturn("com.shop.rest.to.OrderItemTO");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderTO")).thenReturn("com.shop.rest.to.OrderTO");
 
-            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.helper.mapper");
+            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.shop.rest.helper.mapper", "ShippingRestMapper"))
                     .thenReturn("com.shop.rest.helper.mapper.ShippingRestMapper");
 
-            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.business");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.business");
             pkg.when(() -> PackageUtils.join("com.shop.business", "OrderBusinessService"))
                     .thenReturn("com.shop.business.OrderBusinessService");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.entity");
-            pkg.when(() -> PackageUtils.join("com.shop.entity", "Order"))
-                    .thenReturn("com.shop.entity.Order");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.shop", packageConfiguration)).thenReturn("com.shop.entity");
+            pkg.when(() -> PackageUtils.join("com.shop.entity", "Order")).thenReturn("com.shop.entity.Order");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.service");
-            pkg.when(() -> PackageUtils.join("com.shop.service", "OrderService"))
-                    .thenReturn("com.shop.service.OrderService");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration)).thenReturn("com.shop.service");
+            pkg.when(() -> PackageUtils.join("com.shop.service", "OrderService")).thenReturn("com.shop.service.OrderService");
 
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "OrderRestMapper"))
-                    .thenReturn("com.shop.rest.mapper.OrderRestMapper");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.shop.rest.mapper", "OrderRestMapper")).thenReturn("com.shop.rest.mapper.OrderRestMapper");
 
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.shop", packageConfiguration))
-                    .thenReturn("com.shop.exception");
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.shop", packageConfiguration)).thenReturn("com.shop.exception");
             pkg.when(() -> PackageUtils.join("com.shop.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
                     .thenReturn("com.shop.exception.GlobalRestExceptionHandler");
 
             final String result = RestControllerImports.computeCreateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    false,
-                    packageConfiguration,
-                    true
+                    model, outputDir, false, packageConfiguration, true
             );
 
             assertTrue(result.contains("import com.shop.rest.to.OrderItemTO;"));
@@ -1528,14 +1545,16 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.shop.rest.to.OrderTO;"));
             assertTrue(result.contains("import com.shop.rest.mapper.OrderRestMapper;"));
             assertTrue(result.contains("import com.shop.exception.GlobalRestExceptionHandler;"));
+
             assertFalse(result.contains("generated"));
+            enumImports.verifyNoInteractions();
         }
     }
 
     @Test
-    @DisplayName("Swagger enabled, relations + many-to-many + JSON → relation generated models, enums, BusinessService, helper RestMapper")
+    @DisplayName("Swagger enabled, relations + many-to-many + JSON → relation Input models (generated), enums, Create model, BusinessService, helper RestMapper, base model")
     void computeCreateEndpointTestProjectImports_swagger_withRelations_andJson() {
-        
+
         final String outputDir = "/out/swagger";
         final PackageConfiguration packageConfiguration = new PackageConfiguration();
 
@@ -1553,83 +1572,60 @@ class RestControllerImportsTest {
         try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
-             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class);) {
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                    .thenReturn("com.api");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.api");
 
-            names.when(() -> ModelNameUtils.stripSuffix("Parent"))
-                    .thenReturn("Parent");
-            names.when(() -> ModelNameUtils.stripSuffix("Child"))
-                    .thenReturn("Child");
-            names.when(() -> ModelNameUtils.computeOpenApiModelName("Parent"))
-                    .thenReturn("ParentDTO");
-            names.when(() -> ModelNameUtils.computeOpenApiModelName("Child"))
-                    .thenReturn("ChildDTO");
+            names.when(() -> ModelNameUtils.stripSuffix("Parent")).thenReturn("Parent");
+            names.when(() -> ModelNameUtils.stripSuffix("Child")).thenReturn("Child");
 
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("Parent")).thenReturn("ParentDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Parent")).thenReturn("ParentCreateDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiInputModelName("Child")).thenReturn("ChildInputDTO");
             enumImports.when(() -> EnumImports.computeEnumImports(model, "com.api", packageConfiguration))
                     .thenReturn(Set.of("import com.api.enums.StatusEnum;"));
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
-                    .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isJsonField(relationField))
-                    .thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
-                    .thenReturn("Config");
-            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.helper.mapper");
+
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Config");
+
+            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.api.rest.helper.mapper", "ConfigRestMapper"))
                     .thenReturn("com.api.rest.helper.mapper.ConfigRestMapper");
-
             pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.api", packageConfiguration, "parent"))
                     .thenReturn("com.api.generated.model.parent");
-            pkg.when(() -> PackageUtils.join("com.api.generated.model.parent", "ChildDTO"))
-                    .thenReturn("com.api.generated.model.parent.ChildDTO");
-            pkg.when(() -> PackageUtils.join("com.api.generated.model.parent", "ParentDTO"))
-                    .thenReturn("com.api.generated.model.parent.ParentDTO");
+            pkg.when(() -> PackageUtils.join("com.api.generated.model.parent", "ChildInputDTO"))
+                    .thenReturn("com.api.generated.model.parent.ChildInputDTO");
+            pkg.when(() -> PackageUtils.join("com.api.generated.model.parent", "ParentCreateDTO"))
+                    .thenReturn("com.api.generated.model.parent.ParentCreateDTO");
+            pkg.when(() -> PackageUtils.join("com.api.generated.model.parent", "ParentDTO")).thenReturn("com.api.generated.model.parent.ParentDTO");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.api", packageConfiguration)).thenReturn("com.api.business");
+            pkg.when(() -> PackageUtils.join("com.api.business", "ParentBusinessService")).thenReturn("com.api.business.ParentBusinessService");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.api", packageConfiguration)).thenReturn("com.api.entity");
+            pkg.when(() -> PackageUtils.join("com.api.entity", "Parent")).thenReturn("com.api.entity.Parent");
 
-            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.business");
-            pkg.when(() -> PackageUtils.join("com.api.business", "ParentBusinessService"))
-                    .thenReturn("com.api.business.ParentBusinessService");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.api", packageConfiguration)).thenReturn("com.api.service");
+            pkg.when(() -> PackageUtils.join("com.api.service", "ParentService")).thenReturn("com.api.service.ParentService");
 
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.entity");
-            pkg.when(() -> PackageUtils.join("com.api.entity", "Parent"))
-                    .thenReturn("com.api.entity.Parent");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.api.rest.mapper", "ParentRestMapper")).thenReturn("com.api.rest.mapper.ParentRestMapper");
 
-            pkg.when(() -> PackageUtils.computeServicePackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.service");
-            pkg.when(() -> PackageUtils.join("com.api.service", "ParentService"))
-                    .thenReturn("com.api.service.ParentService");
-
-            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.rest.mapper");
-            pkg.when(() -> PackageUtils.join("com.api.rest.mapper", "ParentRestMapper"))
-                    .thenReturn("com.api.rest.mapper.ParentRestMapper");
-
-            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.api", packageConfiguration))
-                    .thenReturn("com.api.exception");
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.api", packageConfiguration)).thenReturn("com.api.exception");
             pkg.when(() -> PackageUtils.join("com.api.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
                     .thenReturn("com.api.exception.GlobalRestExceptionHandler");
 
             final String result = RestControllerImports.computeCreateEndpointTestProjectImports(
-                    model,
-                    outputDir,
-                    true,
-                    packageConfiguration,
-                    true
+                    model, outputDir, true, packageConfiguration, true
             );
 
             assertTrue(result.contains("import com.api.enums.StatusEnum;"));
-            assertTrue(result.contains("import com.api.generated.model.parent.ChildDTO;"));
+            assertTrue(result.contains("import com.api.generated.model.parent.ChildInputDTO;"));
+            assertTrue(result.contains("import com.api.generated.model.parent.ParentCreateDTO;"));
             assertTrue(result.contains("import com.api.generated.model.parent.ParentDTO;"));
             assertTrue(result.contains("import com.api.business.ParentBusinessService;"));
             assertTrue(result.contains("import com.api.rest.helper.mapper.ConfigRestMapper;"));
@@ -1638,9 +1634,119 @@ class RestControllerImportsTest {
             assertTrue(result.contains("import com.api.rest.mapper.ParentRestMapper;"));
             assertTrue(result.contains("import com.api.exception.GlobalRestExceptionHandler;"));
             assertFalse(result.contains(".rest.to.ParentTO;"));
+
+            enumImports.verify(() -> EnumImports.computeEnumImports(model, "com.api", packageConfiguration));
         }
     }
 
+    @Test
+    @DisplayName("Swagger enabled, no relations, no JSON, GlobalExceptionHandler=null → no exception handler import; still has create+model+enums")
+    void computeCreateEndpointTestProjectImports_swagger_noRelations_noJson_globalNull() {
+
+        final String outputDir = "/out/swagger";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+        model.setFields(Collections.emptyList());
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.app");
+            names.when(() -> ModelNameUtils.stripSuffix("User")).thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
+
+            enumImports.when(() -> EnumImports.computeEnumImports(model, "com.app", packageConfiguration)).thenReturn(Set.of());
+
+            names.when(() -> ModelNameUtils.computeOpenApiCreateModelName("User")).thenReturn("UserCreateDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("UserDTO");
+            pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.app", packageConfiguration, "user")).thenReturn("com.app.generated.model.user");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UserCreateDTO")).thenReturn("com.app.generated.model.user.UserCreateDTO");
+            pkg.when(() -> PackageUtils.join("com.app.generated.model.user", "UserDTO")).thenReturn("com.app.generated.model.user.UserDTO");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.app", packageConfiguration)).thenReturn("com.app.entity");
+            pkg.when(() -> PackageUtils.join("com.app.entity", "User")).thenReturn("com.app.entity.User");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.app", packageConfiguration)).thenReturn("com.app.service");
+            pkg.when(() -> PackageUtils.join("com.app.service", "UserService")).thenReturn("com.app.service.UserService");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.app", packageConfiguration)).thenReturn("com.app.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.app.rest.mapper", "UserRestMapper")).thenReturn("com.app.rest.mapper.UserRestMapper");
+
+            final String result = RestControllerImports.computeCreateEndpointTestProjectImports(
+                    model, outputDir, true, packageConfiguration, null
+            );
+
+            assertTrue(result.contains("import com.app.generated.model.user.UserCreateDTO;"));
+            assertTrue(result.contains("import com.app.generated.model.user.UserDTO;"));
+            assertFalse(result.contains("GlobalRestExceptionHandler"));
+
+            enumImports.verify(() -> EnumImports.computeEnumImports(model, "com.app", packageConfiguration));
+        }
+    }
+
+    @Test
+    @DisplayName("Swagger enabled, relation exists but NOT in many-to-many/one-to-many → no relation input import from stream; BusinessService still added")
+    void computeCreateEndpointTestProjectImports_swagger_relationButNotCollection_noRelationInputFromStream() {
+
+        final String outputDir = "/out/swagger";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final FieldDefinition relationField = new FieldDefinition();
+        relationField.setType("Child");
+        relationField.setRelation(new RelationDefinition());
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("Parent");
+        model.setFields(List.of(relationField));
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<EnumImports> enumImports = Mockito.mockStatic(EnumImports.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.x");
+            names.when(() -> ModelNameUtils.stripSuffix("Parent")).thenReturn("Parent");
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(false);
+            enumImports.when(() -> EnumImports.computeEnumImports(model, "com.x", packageConfiguration)).thenReturn(Set.of());
+            names.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Parent")).thenReturn("ParentCreateDTO");
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("Parent")).thenReturn("ParentDTO");
+
+            pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.x", packageConfiguration, "parent"))
+                    .thenReturn("com.x.generated.model.parent");
+            pkg.when(() -> PackageUtils.join("com.x.generated.model.parent", "ParentCreateDTO"))
+                    .thenReturn("com.x.generated.model.parent.ParentCreateDTO");
+            pkg.when(() -> PackageUtils.join("com.x.generated.model.parent", "ParentDTO"))
+                    .thenReturn("com.x.generated.model.parent.ParentDTO");
+
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.x", packageConfiguration)).thenReturn("com.x.business");
+            pkg.when(() -> PackageUtils.join("com.x.business", "ParentBusinessService"))
+                    .thenReturn("com.x.business.ParentBusinessService");
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.x", packageConfiguration)).thenReturn("com.x.entity");
+            pkg.when(() -> PackageUtils.join("com.x.entity", "Parent")).thenReturn("com.x.entity.Parent");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.x", packageConfiguration)).thenReturn("com.x.service");
+            pkg.when(() -> PackageUtils.join("com.x.service", "ParentService")).thenReturn("com.x.service.ParentService");
+
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.x", packageConfiguration)).thenReturn("com.x.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.x.rest.mapper", "ParentRestMapper")).thenReturn("com.x.rest.mapper.ParentRestMapper");
+
+            final String result = RestControllerImports.computeCreateEndpointTestProjectImports(
+                    model, outputDir, true, packageConfiguration, false
+            );
+
+            assertTrue(result.contains("import com.x.business.ParentBusinessService;"));
+            assertFalse(result.contains("Input"), "No relation input import expected from stream for non-collection relations");
+        }
+    }
     @Test
     @DisplayName("Short overload delegates to full overload")
     void shortOverloadDelegatesToFullOverload() {

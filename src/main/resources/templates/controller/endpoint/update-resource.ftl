@@ -3,7 +3,7 @@
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 <#assign openApiResponse = strippedModelName + "Payload">
-<#assign openApiRequest = strippedModelName + "Payload">
+<#assign openApiRequest = strippedModelName + "UpdatePayload">
 
     <#if swagger>@Override<#else>@PutMapping("/{id}")</#if>
     public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiResponse}</#if>> ${uncapModelName}sIdPut(<#if !swagger>@PathVariable </#if>final ${idType} id, <#if !swagger>@RequestBody </#if>final <#if !swagger>${transferObjectClass}<#else>${openApiRequest}</#if> body) {

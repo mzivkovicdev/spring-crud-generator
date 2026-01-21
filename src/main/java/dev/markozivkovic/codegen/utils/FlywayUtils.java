@@ -649,7 +649,8 @@ public class FlywayUtils {
                 }
             }
 
-            final boolean nullable = field.getColumn() == null || Boolean.TRUE.equals(field.getColumn().getNullable());
+            final boolean nullable = field.getColumn() == null || Objects.isNull(field.getColumn().getNullable())
+                    || Boolean.TRUE.equals(field.getColumn().getNullable());
             column.put("nullable", nullable);
 
             final boolean unique = field.getColumn() != null && Boolean.TRUE.equals(field.getColumn().getUnique());

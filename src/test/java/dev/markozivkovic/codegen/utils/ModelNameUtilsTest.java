@@ -64,6 +64,78 @@ class ModelNameUtilsTest {
     }
 
     @Test
+    @DisplayName("computeOpenApiInputModelName strips suffix and appends Input")
+    void computeOpenApiInputModelName_shouldStripSuffixAndAppendInput() {
+
+        assertEquals("UserInput", ModelNameUtils.computeOpenApiInputModelName("UserEntity"));
+        assertEquals("OrderInput", ModelNameUtils.computeOpenApiInputModelName("OrderModel"));
+        assertEquals("ProductInput", ModelNameUtils.computeOpenApiInputModelName("ProductTable"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiInputModelName appends Input when no suffix matches")
+    void computeOpenApiInputModelName_shouldAppendInput_whenNoSuffix() {
+
+        assertEquals("UserInput", ModelNameUtils.computeOpenApiInputModelName("User"));
+        assertEquals("OrderDtoInput", ModelNameUtils.computeOpenApiInputModelName("OrderDto"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiInputModelName works when name is exactly a suffix and becomes Input-only prefix")
+    void computeOpenApiInputModelName_shouldHandleNameEqualToSuffix() {
+
+        assertEquals("Input", ModelNameUtils.computeOpenApiInputModelName("Entity"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiCreateModelName strips suffix and appends CreatePayload")
+    void computeOpenApiCreateModelName_shouldStripSuffixAndAppendCreatePayload() {
+
+        assertEquals("UserCreatePayload", ModelNameUtils.computeOpenApiCreateModelName("UserEntity"));
+        assertEquals("OrderCreatePayload", ModelNameUtils.computeOpenApiCreateModelName("OrderModel"));
+        assertEquals("ProductCreatePayload", ModelNameUtils.computeOpenApiCreateModelName("ProductTable"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiCreateModelName appends CreatePayload when no suffix matches")
+    void computeOpenApiCreateModelName_shouldAppendCreatePayload_whenNoSuffix() {
+
+        assertEquals("UserCreatePayload", ModelNameUtils.computeOpenApiCreateModelName("User"));
+        assertEquals("OrderDtoCreatePayload", ModelNameUtils.computeOpenApiCreateModelName("OrderDto"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiCreateModelName works when name is exactly a suffix and becomes CreatePayload-only prefix")
+    void computeOpenApiCreateModelName_shouldHandleNameEqualToSuffix() {
+
+        assertEquals("CreatePayload", ModelNameUtils.computeOpenApiCreateModelName("Entity"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiUpdateModelName strips suffix and appends UpdatePayload")
+    void computeOpenApiUpdateModelName_shouldStripSuffixAndAppendUpdatePayload() {
+
+        assertEquals("UserUpdatePayload", ModelNameUtils.computeOpenApiUpdateModelName("UserEntity"));
+        assertEquals("OrderUpdatePayload", ModelNameUtils.computeOpenApiUpdateModelName("OrderModel"));
+        assertEquals("ProductUpdatePayload", ModelNameUtils.computeOpenApiUpdateModelName("ProductTable"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiUpdateModelName appends UpdatePayload when no suffix matches")
+    void computeOpenApiUpdateModelName_shouldAppendUpdatePayload_whenNoSuffix() {
+
+        assertEquals("UserUpdatePayload", ModelNameUtils.computeOpenApiUpdateModelName("User"));
+        assertEquals("OrderDtoUpdatePayload", ModelNameUtils.computeOpenApiUpdateModelName("OrderDto"));
+    }
+
+    @Test
+    @DisplayName("computeOpenApiUpdateModelName works when name is exactly a suffix and becomes UpdatePayload-only prefix")
+    void computeOpenApiUpdateModelName_shouldHandleNameEqualToSuffix() {
+
+        assertEquals("UpdatePayload", ModelNameUtils.computeOpenApiUpdateModelName("Entity"));
+    }
+
+    @Test
     @DisplayName("toSnakeCase converts simple camelCase to snake_case")
     void toSnakeCase_shouldConvertSimpleCamelCase() {
 

@@ -18,12 +18,10 @@ package dev.markozivkovic.codegen.generators.tests;
 
 import static dev.markozivkovic.codegen.constants.ImportConstants.PACKAGE;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +31,12 @@ import dev.markozivkovic.codegen.context.GeneratorContext;
 import dev.markozivkovic.codegen.generators.CodeGenerator;
 import dev.markozivkovic.codegen.imports.ResolverImports;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.PackageConfiguration;
-import dev.markozivkovic.codegen.models.CrudConfiguration.ErrorResponse;
 import dev.markozivkovic.codegen.templates.DataGeneratorTemplateContext;
+import dev.markozivkovic.codegen.templates.GraphQlTemplateContext;
 import dev.markozivkovic.codegen.utils.FieldUtils;
 import dev.markozivkovic.codegen.utils.FileWriterUtils;
 import dev.markozivkovic.codegen.utils.FreeMarkerTemplateProcessorUtils;
@@ -124,52 +123,11 @@ public class GraphQlUnitTestGenerator implements CodeGenerator {
                 final String packagePath, final String modelWithoutSuffix) {
 
         final StringBuilder sb = new StringBuilder();
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final String className = String.format("%sResolverMutationTest", modelWithoutSuffix);
-        final String resolverClassName = String.format("%sResolver", modelWithoutSuffix);
-        final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
-                .map(FieldUtils::extractJsonFieldName)
-                .collect(Collectors.toList());
-        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
-        final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
-        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(this.configuration.getErrorResponse()) ||
-                        Objects.isNull(this.configuration.getErrorResponse()));
 
-        final Map<String, Object> context = new HashMap<>();
-        final List<Map<String, Object>> relations = new ArrayList<>();
-        context.put("strippedModelName", modelWithoutSuffix);
-        context.put("resolverClassName", resolverClassName);
-        context.put("className", className);
-        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
-        context.put("modelName", modelDefinition.getName());
-        context.put("idType", idField.getType());
-        context.put("idField", idField.getName());
-        context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
-        context.put("createArgs", FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
-        context.put("updateArgs", FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
-        context.put("jsonFields", jsonFields);
-        context.put("testImports", ResolverImports.computeMutationResolverTestImports(
-                UnitTestUtils.isInstancioEnabled(configuration), !jsonFields.isEmpty(), configuration.getSpringBootVersion()
-        ));
-        context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration, isGlobalExceptionHandlerEnabled));
-        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
-        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
-        
-        relationFields.forEach(field -> {
-            final ModelDefinition relationModel = this.entities.stream()
-                    .filter(entity -> entity.getName().equals(field.getType()))
-                    .findFirst()
-                    .orElseThrow();
-            final FieldDefinition relationIdField = FieldUtils.extractIdField(relationModel.getFields());
-            relations.add(Map.of(
-                "relationField", field.getName(),
-                "relationIdType", relationIdField.getType(),
-                "isCollection", collectionRelationFields.contains(field.getName()),
-                "invalidRelationIdType", UnitTestUtils.computeInvalidIdType(relationIdField)
-            ));
-        });
-        context.put("relations", relations);
+        final Map<String, Object> context = GraphQlTemplateContext.computeMutationUnitTestContext(
+                modelDefinition, configuration, packageConfiguration, entities, outputDir, testOutputDir
+        );
 
         sb.append(String.format(PACKAGE, PackageUtils.computeResolversPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

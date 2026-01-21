@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mockStatic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +15,9 @@ import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
+import dev.markozivkovic.codegen.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.RelationDefinition;
 
@@ -414,6 +417,68 @@ class SwaggerUtilsTest {
     }
 
     @Test
+    @DisplayName("toSwaggerProperty(INPUT): ONE_TO_ONE relation should use Input $ref")
+    void toSwaggerProperty_inputMode_oneToOne_usesInputRef() {
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("user");
+        field.setType("UserDto");
+        field.setRelation(new RelationDefinition().setType("OneToOne"));
+
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+
+            final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
+
+            assertEquals("user", property.get("name"));
+            assertEquals("./userInput.yaml", property.get("$ref"));
+            assertFalse(property.containsKey("type"));
+        }
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty(INPUT): ONE_TO_MANY relation should use array with Input $ref items")
+    void toSwaggerProperty_inputMode_oneToMany_usesArrayOfInputRef() {
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("users");
+        field.setType("UserDto");
+        field.setRelation(new RelationDefinition().setType("OneToMany"));
+
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+
+            final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
+
+            assertEquals("users", property.get("name"));
+            assertEquals("array", property.get("type"));
+            final Map<String, Object> itemsMap = asMap(property.get("items"));
+            assertEquals("./userInput.yaml", itemsMap.get("$ref"));
+        }
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty(INPUT): JSON field still uses DEFAULT ref (implementation uses ref(...) without mode)")
+    void toSwaggerProperty_inputMode_jsonField_usesDefaultRef() {
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("payload");
+        field.setType("JsonNode");
+
+        try (MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isJsonField(field)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isSimpleCollectionField(field)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(field)).thenReturn("PayloadDto");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("PayloadDto")).thenReturn("Payload");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("Payload")).thenReturn("Payload");
+
+            final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
+
+            assertEquals("payload", property.get("name"));
+            assertEquals("./payload.yaml", property.get("$ref"));
+        }
+    }
+
+    @Test
     @DisplayName("ref: should create $ref entry with .yaml path")
     void ref_createsRefWithYamlPath() {
         final Map<String, Object> result = SwaggerUtils.ref("UserDto");
@@ -458,6 +523,75 @@ class SwaggerUtilsTest {
 
         final Map<String, Object> itemsMap = asMap(array.get("items"));
         assertEquals(ref, itemsMap);
+    }
+
+    @Test
+    @DisplayName("ref(DEFAULT): should create $ref entry with ./<model>.yaml using computeOpenApiModelName")
+    void ref_default_createsRefWithYamlPath_usingComputeModelName() {
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
+
+            final Map<String, Object> result = SwaggerUtils.ref("UserDto", SwaggerSchemaModeEnum.DEFAULT);
+
+            assertEquals(1, result.size());
+            assertEquals("./user.yaml", result.get("$ref"));
+        }
+    }
+
+    @Test
+    @DisplayName("ref(INPUT): should create $ref entry with ./<model>Input.yaml")
+    void ref_input_createsRefWithInputYamlPath() {
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+
+            final Map<String, Object> result = SwaggerUtils.ref("UserDto", SwaggerSchemaModeEnum.INPUT);
+
+            assertEquals(1, result.size());
+            assertEquals("./userInput.yaml", result.get("$ref"));
+        }
+    }
+
+    @Test
+    @DisplayName("ref: overload without mode delegates to DEFAULT")
+    void ref_overload_delegatesToDefault() {
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
+
+            final Map<String, Object> result = SwaggerUtils.ref("UserDto");
+
+            assertEquals("./user.yaml", result.get("$ref"));
+        }
+    }
+
+    @Test
+    @DisplayName("arrayOfRef(INPUT): should create array with items $ref pointing to Input schema")
+    void arrayOfRef_input_createsArrayWithInputRefItems() {
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+
+            final Map<String, Object> result = SwaggerUtils.arrayOfRef("UserDto", SwaggerSchemaModeEnum.INPUT);
+
+            assertEquals("array", result.get("type"));
+            final Map<String, Object> itemsMap = asMap(result.get("items"));
+            assertEquals("./userInput.yaml", itemsMap.get("$ref"));
+        }
+    }
+
+    @Test
+    @DisplayName("arrayOfRef: overload without mode delegates to DEFAULT")
+    void arrayOfRef_overload_delegatesToDefault() {
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
+
+            final Map<String, Object> array = SwaggerUtils.arrayOfRef("UserDto");
+
+            assertEquals("array", array.get("type"));
+            final Map<String, Object> itemsMap = asMap(array.get("items"));
+            assertEquals("./user.yaml", itemsMap.get("$ref"));
+        }
     }
     
 }

@@ -69,7 +69,11 @@ class ${strippedModelName}ResolverMutationTest {
     void create${strippedModelName}() {
 
         final ${modelName} saved = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
+        <#if fieldsWithLength??>
+        final ${createInputTO} input = generate${createInputTO}();
+        <#else>
         final ${createInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${createInputTO}.class);
+        </#if>
         final Map<String, Object> inputVars = this.mapper.convertValue(
                 input, new TypeReference<Map<String,Object>>() {}
         );
@@ -100,6 +104,31 @@ class ${strippedModelName}ResolverMutationTest {
         assertThat(result).isNotNull();
         assertThat(result.${idField?uncap_first}()).isEqualTo(saved.get${idField?cap_first}());
     }
+    <#if fieldsWithLength??>
+
+    @Test
+    void create${strippedModelName}_validationFails() {
+        
+        final ${createInputTO} input = generateInvalid${createInputTO}();
+        final Map<String, Object> inputVars = this.mapper.convertValue(
+                input, new TypeReference<Map<String,Object>>() {}
+        );
+
+        final String mutation = """
+            mutation($input: ${createInputGraphQL}!) {
+              create${strippedModelName}(input: $input) {
+                ${idField?uncap_first}
+              }
+            }
+        """;
+
+        this.graphQlTester.document(mutation)
+            .variable("input", inputVars)
+            .execute()
+            .errors()
+            .satisfy(errors -> assertThat(errors).isNotEmpty());
+    }
+    </#if><#t>
 
     @Test
     void create${strippedModelName}_missingInput_error() {
@@ -123,7 +152,11 @@ class ${strippedModelName}ResolverMutationTest {
 
         final ${modelName} updated = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = updated.get${idField?cap_first}();
+        <#if fieldsWithLength??>
+        final ${updateInputTO} input = generate${updateInputTO}();
+        <#else>
         final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
+        </#if>
         final Map<String, Object> inputVars = this.mapper.convertValue(
                 input, new TypeReference<Map<String,Object>>() {}
         );
@@ -156,6 +189,34 @@ class ${strippedModelName}ResolverMutationTest {
         assertThat(result).isNotNull();
         assertThat(result.${idField?uncap_first}()).isEqualTo(updated.get${idField?cap_first}());
     }
+    <#if fieldsWithLength??>
+
+    @Test
+    void update${strippedModelName}_validationFails() {
+
+        final ${modelName} updated = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
+        final ${idType} ${idField?uncap_first} = updated.get${idField?cap_first}();
+        final ${updateInputTO} input = generateInvalid${updateInputTO}();
+        final Map<String, Object> inputVars = this.mapper.convertValue(
+                input, new TypeReference<Map<String,Object>>() {}
+        );
+
+        final String mutation = """
+            mutation($id: ID!, $input: ${updateInputGraphQL}!) {
+              update${strippedModelName}(id: $id, input: $input) {
+                ${idField?uncap_first}
+              }
+            }
+        """;
+
+        this.graphQlTester.document(mutation)
+            .variable("id", ${idField?uncap_first})
+            .variable("input", inputVars)
+            .execute()
+            .errors()
+            .satisfy(errors -> assertThat(errors).isNotEmpty());
+    }
+    </#if><#t>
 
     @Test
     void update${strippedModelName}_idTypeMismatch_error() {
@@ -357,5 +418,77 @@ class ${strippedModelName}ResolverMutationTest {
     }</#if>
     </#list>
     </#if>
+    <#if fieldsWithLength??>
 
+    private static ${createInputTO} generate${createInputTO}() {
+        final ${createInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${createInputTO}.class);
+        return new ${createInputTO}(
+            <#list fieldNames as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+
+    private static ${createInputTO} generateInvalid${createInputTO}() {
+        final ${createInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${createInputTO}.class);
+        return new ${createInputTO}(
+            <#list fieldNames as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+
+    private static ${updateInputTO} generate${updateInputTO}() {
+        <#assign needInput = (fieldsWithLength?default([])?size != fieldNamesWithoutRelations?default([])?size)>
+        <#if needInput>
+        final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
+        </#if>
+        return new ${updateInputTO}(
+            <#list fieldNamesWithoutRelations as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched><#if needInput>input.${fieldName}()<#else>null</#if></#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+
+    private static ${updateInputTO} generateInvalid${updateInputTO}() {
+        <#assign needInput = (fieldsWithLength?default([])?size != fieldNamesWithoutRelations?default([])?size)>
+        <#if needInput>
+        final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
+        </#if>
+        return new ${updateInputTO}(
+            <#list fieldNamesWithoutRelations as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched><#if needInput>input.${fieldName}()<#else>null</#if></#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+    </#if>
+    <#if fieldsWithLength?? && dataGenerator == "PODAM">
+
+    private static String generateString(final int n) {
+        final PodamFactory p = new PodamFactoryImpl();
+        p.getStrategy().addOrReplaceTypeManufacturer(String.class, (strategy, attributeMetadata, genericTypesArgumentsMap) -> {
+            final java.security.SecureRandom rnd = new java.security.SecureRandom();
+            final char[] alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
+
+            final StringBuilder sb = new StringBuilder(n);
+            for (int i = 0; i < n; i++) {
+                sb.append(alphabet[rnd.nextInt(alphabet.length)]);
+            }
+            return sb.toString();
+        });
+        return p.manufacturePojo(String.class);
+    }
+    </#if><#t>
+    <#if fieldsWithLength?? && dataGenerator == "INSTANCIO">
+
+    private static String generateString(final int n) {
+        return Instancio.gen().string()
+                .length(n)
+                .get();
+    }
+    </#if><#t>
 }

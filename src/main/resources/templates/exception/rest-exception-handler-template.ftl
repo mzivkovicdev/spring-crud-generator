@@ -1,4 +1,5 @@
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,6 +28,7 @@ public class GlobalRestExceptionHandler {
     private static final String REQUEST_NOT_READABLE_MESSAGE = "Not readable HTTP message";
     private static final String GENERAL_EXCEPTION_MESSAGE = "Server is unavailable.";
     private static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
+    private static final String VALIDATION_FAILED_MESSAGE = "Validation failed.";
     <#if hasRelations>
     private static final String INVALID_RESOURCE_STATE_MESSAGE = "Invalid resource state";
     </#if><#t>
@@ -52,6 +55,30 @@ public class GlobalRestExceptionHandler {
         return new ResponseEntity<>(
                 new HttpResponse(
                         String.format(EXTENDED_MESSAGE_FORMAT, INVALID_FORMAT_MESSAGE, e.getMessage())<#if isDetailed>,
+                        HttpStatus.BAD_REQUEST</#if>
+                ),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<HttpResponse> methodArgumentNotValidError(final MethodArgumentNotValidException e) {
+
+        final String details = e.getBindingResult().getFieldErrors().isEmpty() ?
+                VALIDATION_FAILED_MESSAGE : 
+                e.getBindingResult().getFieldErrors().stream()
+                        .map(err -> {
+                            final String field = err.getField();
+                            final Object rejected = err.getRejectedValue();
+                            final String msg = err.getDefaultMessage();
+                            return String.format("%s: %s (rejected: %s)", field, msg, rejected);
+                        })
+                        .distinct()
+                        .collect(Collectors.joining("; "));
+
+        return new ResponseEntity<>(
+                new HttpResponse(
+                        String.format(EXTENDED_MESSAGE_FORMAT, VALIDATION_FAILED_MESSAGE, details)<#if isDetailed>,
                         HttpStatus.BAD_REQUEST</#if>
                 ),
                 HttpStatus.BAD_REQUEST

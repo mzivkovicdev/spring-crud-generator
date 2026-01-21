@@ -6,7 +6,8 @@
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign mapperClass = strippedModelName?cap_first + "RestMapper">
 <#assign mapperField = strippedModelName?uncap_first + "RestMapper">
-<#assign openApiModel = strippedModelName + "Payload">
+<#assign requestModelName = strippedModelName?cap_first + "CreatePayload">
+<#assign responseModelName = strippedModelName?cap_first + "Payload">
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
@@ -35,8 +36,9 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 class ${className} {
 
     <#if dataGenerator == "PODAM">
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
-
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    
+    </#if><#t>
     private final ${mapperClass} ${mapperField} = Mappers.getMapper(${mapperClass}.class);
     <#list jsonFields as jsonField>
     <#assign jsonFieldMapperClass = jsonField?cap_first + "RestMapper">
@@ -50,8 +52,8 @@ class ${className} {
     <#if hasRelations>
     @MockitoBean
     private ${businessServiceClass?cap_first} ${businessServiceField};
-    </#if>
-
+    
+    </#if><#t>
     @Autowired
     private JsonMapper mapper;
 
@@ -73,13 +75,18 @@ class ${className} {
 
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if swagger>
-        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
+        final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
         <#else>
         final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
         </#if><#t>
+        <#if fieldsWithLength??>
+        <#list fieldsWithLength as fieldWithLength>
+        body.${fieldWithLength.field}(generateString(${fieldWithLength.length}));
+        </#list>
+        </#if><#t>
 
         <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Payload"></#if>
+        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
         <#if rel.isCollection>
         final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()
@@ -110,9 +117,9 @@ class ${className} {
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.mapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${responseModelName}</#if> result = this.mapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
+                <#if !swagger>${transferObjectClass?cap_first}<#else>${responseModelName}</#if>.class
         );
 
         verify${strippedModelName}(result, ${modelName?uncap_first});
@@ -125,6 +132,28 @@ class ${className} {
                 </#if>
         );
     }
+    <#if fieldsWithLength??>
+
+    @Test
+    void ${uncapModelName}sPost_validationFails() throws Exception {
+
+        <#if swagger>
+        final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
+        <#else>
+        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
+        </#if><#t>
+        <#if fieldsWithLength??>
+        <#list fieldsWithLength as fieldWithLength>
+        body.${fieldWithLength.field}(generateString(${fieldWithLength.length + 10}));
+        </#list>
+        </#if><#t>
+
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(this.mapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+    </#if>
 
     @Test
     void ${uncapModelName}sPost_noRequestBody() throws Exception {
@@ -134,11 +163,11 @@ class ${className} {
                 .andExpect(status().isBadRequest());
     }
 
-    private void verify${strippedModelName}(final <#if swagger>${openApiModel}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
+    private void verify${strippedModelName}(final <#if swagger>${responseModelName}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
         
         assertThat(result).isNotNull();
         <#if swagger>
-        final ${openApiModel} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${openApiModel}(
+        final ${responseModelName} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${responseModelName}(
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>
@@ -148,4 +177,28 @@ class ${className} {
         </#if>
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
+
+    <#if fieldsWithLength?? && dataGenerator == "PODAM">
+    private static String generateString(final int n) {
+        final PodamFactory p = new PodamFactoryImpl();
+        p.getStrategy().addOrReplaceTypeManufacturer(String.class, (strategy, attributeMetadata, genericTypesArgumentsMap) -> {
+            final java.security.SecureRandom rnd = new java.security.SecureRandom();
+            final char[] alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
+
+            final StringBuilder sb = new StringBuilder(n);
+            for (int i = 0; i < n; i++) {
+                sb.append(alphabet[rnd.nextInt(alphabet.length)]);
+            }
+            return sb.toString();
+        });
+        return p.manufacturePojo(String.class);
+    }
+    </#if><#t>
+    <#if fieldsWithLength?? && dataGenerator == "INSTANCIO">
+    private static String generateString(final int n) {
+        return Instancio.gen().string()
+                .length(n)
+                .get();
+    }
+    </#if><#t>
 }

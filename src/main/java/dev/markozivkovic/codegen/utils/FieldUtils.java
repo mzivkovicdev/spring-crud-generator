@@ -905,6 +905,37 @@ public class FieldUtils {
     }
 
     /**
+     * Generates a list of strings representing the field names for a create input TO.
+     * For fields that have a relation, the generated field name is in the format "<fieldName>Id" for a one-to-one or many-to-one
+     * relation and "<fieldName>Ids" for a many-to-many or one-to-many relation. For all other fields, the generated field name is the
+     * name of the field.
+     *
+     * @param fields The list of fields to generate the field names from.
+     * @return A list of strings representing the field names for a create input TO.
+     */
+    public static List<String> generateFieldNamesForCreateInputTO(final List<FieldDefinition> fields) {
+        final FieldDefinition idField = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.equals(idField))
+                .map(field -> {
+
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String inputArg;
+                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                            inputArg = String.format("%sIds", field.getName());
+                        } else {
+                            inputArg = String.format("%sId", field.getName());
+                        }
+                        return inputArg;
+                    }
+
+                    return String.format("%s", field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Generates a list of strings representing the input arguments for a constructor or method without the final keyword
      * for the updateInputTO of a model.
      * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
