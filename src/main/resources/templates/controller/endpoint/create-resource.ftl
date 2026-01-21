@@ -7,12 +7,12 @@
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 <#assign openApiResponse = strippedModelName + "Payload">
-<#assign openApiRequest = strippedModelName + "Payload">
+<#assign openApiRequest = strippedModelName + "CreatePayload">
 <#if swagger>@Override<#else>@PostMapping</#if>
     public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiResponse}</#if>> ${uncapModelName}sPost(<#if !swagger>@RequestBody </#if>final <#if !swagger>${transferObjectClass}<#else>${openApiRequest}</#if> body) {
 
         <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Payload"></#if>
+        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
         <#if rel.isCollection>
         final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()

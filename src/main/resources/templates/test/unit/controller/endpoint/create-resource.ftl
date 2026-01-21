@@ -6,7 +6,8 @@
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign mapperClass = strippedModelName?cap_first + "RestMapper">
 <#assign mapperField = strippedModelName?uncap_first + "RestMapper">
-<#assign openApiModel = strippedModelName + "Payload">
+<#assign requestModelName = strippedModelName?cap_first + "CreatePayload">
+<#assign responseModelName = strippedModelName?cap_first + "Payload">
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
@@ -74,7 +75,7 @@ class ${className} {
 
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if swagger>
-        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
+        final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
         <#else>
         final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
         </#if><#t>
@@ -85,7 +86,7 @@ class ${className} {
         </#if><#t>
 
         <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Payload"></#if>
+        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "TO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
         <#if rel.isCollection>
         final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()
@@ -116,9 +117,9 @@ class ${className} {
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${openApiModel}</#if> result = this.mapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${responseModelName}</#if> result = this.mapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                <#if !swagger>${transferObjectClass?cap_first}<#else>${openApiModel}</#if>.class
+                <#if !swagger>${transferObjectClass?cap_first}<#else>${responseModelName}</#if>.class
         );
 
         verify${strippedModelName}(result, ${modelName?uncap_first});
@@ -137,7 +138,7 @@ class ${className} {
     void ${uncapModelName}sPost_validationFails() throws Exception {
 
         <#if swagger>
-        final ${openApiModel} body = ${generatorFieldName}.${singleObjectMethodName}(${openApiModel}.class);
+        final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
         <#else>
         final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
         </#if><#t>
@@ -162,11 +163,11 @@ class ${className} {
                 .andExpect(status().isBadRequest());
     }
 
-    private void verify${strippedModelName}(final <#if swagger>${openApiModel}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
+    private void verify${strippedModelName}(final <#if swagger>${responseModelName}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
         
         assertThat(result).isNotNull();
         <#if swagger>
-        final ${openApiModel} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${openApiModel}(
+        final ${responseModelName} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${responseModelName}(
                 ${mapperField}.map${modelName?cap_first}To${transferObjectClass}(${modelName?uncap_first})
         );
         <#else>
