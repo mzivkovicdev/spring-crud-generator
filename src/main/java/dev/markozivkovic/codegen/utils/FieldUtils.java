@@ -82,7 +82,7 @@ public class FieldUtils {
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link RelationDefinition#ONE_TO_ONE}.
+     * Determines if any of the given fields have a relation of type {@link FieldUtils#ONE_TO_ONE}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a one-to-one relation, false otherwise.
@@ -95,7 +95,7 @@ public class FieldUtils {
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link RelationDefinition#ONE_TO_MANY}.
+     * Determines if any of the given fields have a relation of type {@link FieldUtils#ONE_TO_MANY}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a one-to-many relation, false otherwise.
@@ -108,7 +108,7 @@ public class FieldUtils {
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link RelationDefinition#MANY_TO_ONE}.
+     * Determines if any of the given fields have a relation of type {@link FieldUtils#MANY_TO_ONE}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a many-to-one relation, false otherwise.
@@ -121,7 +121,7 @@ public class FieldUtils {
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link RelationDefinition#MANY_TO_MANY}.
+     * Determines if any of the given fields have a relation of type {@link FieldUtils#MANY_TO_MANY}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a many-to-many relation, false otherwise.
@@ -699,9 +699,9 @@ public class FieldUtils {
      * @param entities The list of model definitions to search for a relation.
      * @return true if a relation to the given model definition is found, false otherwise.
      */
-    public static boolean hasCollectionRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entites) {
+    public static boolean hasCollectionRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
 
-        return entites.stream()
+        return entities.stream()
                 .flatMap(entity -> entity.getFields().stream())
                 .filter(field -> Objects.nonNull(field.getRelation()))
                 .filter(field -> field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) || field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY))
@@ -716,9 +716,9 @@ public class FieldUtils {
      * @param entities The list of model definitions to search for a relation.
      * @return true if a relation to the given model definition is found, false otherwise.
      */
-    public static boolean hasRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entites) {
+    public static boolean hasRelation(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
 
-        return entites.stream()
+        return entities.stream()
                 .flatMap(entity -> entity.getFields().stream())
                 .filter(field -> Objects.nonNull(field.getRelation()))
                 .anyMatch(field -> field.getType().equals(modelDefinition.getName()));

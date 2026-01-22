@@ -37,7 +37,7 @@ public final class HashUtils {
     /**
      * Calculate the SHA-256 hash of a given string.
      *
-     * @param str String to hash
+     * @param data Byte array to hash
      * @return SHA-256 hash of the given string
      */
     public static String sha256(final byte[] data) {
