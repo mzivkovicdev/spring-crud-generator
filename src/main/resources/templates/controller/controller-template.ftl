@@ -6,9 +6,14 @@
 <#assign mapperClass = strippedModelName?cap_first + "RestMapper">
 <#assign mapperField = strippedModelName?cap_first + "Mapper">
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
+<#if !swagger>
+import jakarta.validation.Valid;
+
+</#if><#t>
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;<#if !swagger>
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

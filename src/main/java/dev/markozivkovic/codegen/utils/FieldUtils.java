@@ -635,6 +635,22 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts the names of all fields from the given list, excluding the ID field.
+     * 
+     * @param fields The list of fields to extract names from.
+     * @return A list of names of the fields, excluding the ID field.
+     */
+    public static List<String> extractFieldNamesWithoudId(final List<FieldDefinition> fields) {
+        
+        final FieldDefinition id = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.equals(id))
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Extracts the names of all fields from the given list.
      * 
      * @param fields The list of fields to extract names from.
@@ -892,6 +908,46 @@ public class FieldUtils {
                             inputArg = String.format("List<%s> %sIds", relationId.getType(), field.getName());
                         } else {
                             inputArg = String.format("%s %sId", relationId.getType(), field.getName());
+                        }
+                        return inputArg;
+                    }
+
+                    if (isJsonField(field)) {
+                        return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName());
+                    }
+                    return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName());
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword
+     * for a create input TO.
+     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
+     * <name> is the name of the field. The ID field is excluded from the list. If the field has a relation,
+     * the name is the camel-cased version of the type of the related entity, and if the relation is
+     * many-to-many or one-to-many, the name is in the plural form.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @return A list of strings representing the input arguments for a constructor or method without the final keyword
+     *         for a create input TO.
+     */
+    public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields) {
+        
+        final FieldDefinition idField = extractIdField(fields);
+        
+        return fields.stream()
+                .filter(field -> !field.equals(idField))
+                .map(field -> {
+                    final String annotations = computeValidationAnnotations(field);
+
+                    if (Objects.nonNull(field.getRelation())) {
+                        final String inputArg;
+                        final String relationType = String.format("%sInputTO", ModelNameUtils.stripSuffix(field.getType()));
+                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                            inputArg = String.format("List<%s> %s", relationType, field.getName());
+                        } else {
+                            inputArg = String.format("%s %s", relationType, field.getName());
                         }
                         return inputArg;
                     }

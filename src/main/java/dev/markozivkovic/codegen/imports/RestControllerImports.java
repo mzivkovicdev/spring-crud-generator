@@ -107,9 +107,6 @@ public class RestControllerImports {
 
         final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
-        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
-
         if (swagger) {
             imports.addAll(EnumImports.computeEnumImports(modelDefinition, packagePath, packageConfiguration));
             imports.add(String.format(
@@ -126,17 +123,10 @@ public class RestControllerImports {
             ));
         }
 
-        Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
-            final String relationModel = ModelNameUtils.stripSuffix(field.getType());
-            if (!swagger) {
-                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", relationModel))));
-            }
-        });
-
         relations.forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
             if (!swagger) {
-                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sInputTO", relationModel))));
+                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), ModelNameUtils.computeInputTOModelName(relationModel))));
             } else {
                 imports.add(String.format(
                     IMPORT,
@@ -162,6 +152,8 @@ public class RestControllerImports {
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
         if (!swagger) {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), ModelNameUtils.computeCreateTOModelName(modelWithoutSuffix))));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), ModelNameUtils.computeUpdateTOModelName(modelWithoutSuffix))));
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeTransferObjectPackage(packagePath, packageConfiguration), GeneratorConstants.PAGE_TO)));
         } else {
             imports.add(String.format(
@@ -396,6 +388,7 @@ public class RestControllerImports {
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
         if (!swagger) {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))));
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), ModelNameUtils.computeUpdateTOModelName(modelWithoutSuffix))));
         } else {
             imports.add(String.format(
                 IMPORT,
@@ -439,7 +432,7 @@ public class RestControllerImports {
         Stream.concat(manyToManyFields.stream(), oneToManyFields.stream()).forEach(field -> {
             final String relationModel = ModelNameUtils.stripSuffix(field.getType());
             if (!swagger) {
-                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", relationModel))));
+                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), ModelNameUtils.computeInputTOModelName(relationModel))));
             } else {
                 imports.add(String.format(
                     IMPORT,
@@ -478,6 +471,10 @@ public class RestControllerImports {
             imports.add(String.format(
                 IMPORT,
                 PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))
+            ));
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), ModelNameUtils.computeCreateTOModelName(modelWithoutSuffix))
             ));
         } else {
             imports.add(String.format(

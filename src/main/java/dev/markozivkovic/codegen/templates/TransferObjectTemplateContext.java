@@ -63,6 +63,23 @@ public class TransferObjectTemplateContext {
         return context;
     }
 
+    /**
+     * Computes a template context for the create transfer object of a model.
+     * 
+     * The generated context contains the class name and input arguments for the create transfer object.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @return a template context for the create transfer object
+     */
+    public static Map<String, Object> computeCreateTransferObjectContext(final ModelDefinition modelDefinition) {
+        
+        final Map<String, Object> context = new HashMap<>();
+        context.put(TemplateContextConstants.CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Create");
+        context.put(TemplateContextConstants.INPUT_ARGS, FieldUtils.generateInputArgsWithoutFinalCreateInputTO(modelDefinition.getFields()));
+    
+        return context;
+    }
+
      /**
      * Creates a template context for the input transfer object of a model.
      * 

@@ -363,7 +363,7 @@ class RestControllerTemplateContextTest {
 
     @Test
     void computeUpdateByIdTestEndpointContext_populatesExpectedKeys_andFieldsWithLength() {
-        
+
         final ModelDefinition product = mock(ModelDefinition.class);
         when(product.getName()).thenReturn("Product");
 
@@ -384,6 +384,7 @@ class RestControllerTemplateContextTest {
 
         final CrudConfiguration crudCfg = mock(CrudConfiguration.class);
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
         final TestConfiguration testsCfg = mock(TestConfiguration.class);
         when(crudCfg.getTests()).thenReturn(testsCfg);
         when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
@@ -412,25 +413,25 @@ class RestControllerTemplateContextTest {
             final FieldDefinition jsonField = mock(FieldDefinition.class);
             fu.when(() -> FieldUtils.extractJsonFields(fields)).thenReturn(List.of(jsonField));
             fu.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("payload");
+
             utu.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("invalid-id");
             utu.when(() -> UnitTestUtils.isInstancioEnabled(crudCfg)).thenReturn(false);
             fu.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForController(fields, true)).thenReturn(List.of("name"));
-
-            rci.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, "4.0.1.RELEASE"))
-                    .thenReturn("import x;");
-            rci.when(() -> RestControllerImports.computeUpdateEndpointTestProjectImports(eq(product), anyString(), eq(true), eq(pkgCfg), eq(true)))
-                    .thenReturn("import y;");
+            fu.when(() -> FieldUtils.extractNonIdNonRelationFieldNames(fields)).thenReturn(List.of("name"));
+            rci.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, "4.0.1.RELEASE")).thenReturn("import x;");
+            rci.when(() -> RestControllerImports.computeUpdateEndpointTestProjectImports(
+                    eq(product), anyString(), eq(true), eq(pkgCfg), eq(true)
+            )).thenReturn("import y;");
             dgtc.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorCfg)).thenReturn(Map.of("dataGenerator", "PODAM"));
 
             cu.when(() -> ContainerUtils.isEmpty(any(Collection.class))).thenAnswer(inv -> {
-                Object arg = inv.getArgument(0);
+                final Object arg = inv.getArgument(0);
                 if (arg instanceof Collection<?> c) return c.isEmpty();
                 return arg == null;
             });
 
             final Map<String, Object> ctx = RestControllerTemplateContext.computeUpdateByIdTestEndpointContext(
-                product, crudCfg, pkgCfg, true, true, "/out",
-                "/testOut", "com/demo"
+                    product, crudCfg, pkgCfg, true, true, "/out", "/testOut", "com/demo"
             );
 
             assertEquals("/api", ctx.get("basePath"));
@@ -439,10 +440,16 @@ class RestControllerTemplateContextTest {
             assertEquals("Product", ctx.get("strippedModelName"));
             assertEquals("Product", ctx.get("modelName"));
             assertEquals(false, ctx.get("hasRelations"));
-
+            assertEquals(false, ctx.get("isIdUuid"));
             assertEquals("Long", ctx.get("idType"));
             assertEquals("id", ctx.get("idField"));
             assertEquals("invalid-id", ctx.get("invalidIdType"));
+            assertEquals(true, ctx.get("swagger"));
+            assertEquals(true, ctx.get("isGlobalExceptionHandlerEnabled"));
+            assertEquals(List.of("name"), ctx.get("inputFields"));
+            assertEquals(List.of("name"), ctx.get("fieldNames"));
+            assertEquals("import x;", ctx.get("testImports"));
+            assertEquals("import y;", ctx.get("projectImports"));
 
             @SuppressWarnings("unchecked")
             final List<String> jsonFields = (List<String>) ctx.get("jsonFields");
@@ -458,6 +465,7 @@ class RestControllerTemplateContextTest {
                     .filter(m -> "name".equals(m.get(TemplateContextConstants.FIELD)))
                     .findFirst()
                     .orElseThrow();
+
             assertEquals(20, lenEntry.get(TemplateContextConstants.LENGTH));
         }
     }

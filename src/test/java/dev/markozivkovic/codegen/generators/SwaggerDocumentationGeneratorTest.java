@@ -113,7 +113,7 @@ class SwaggerDocumentationGeneratorTest {
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
-        when(openApi.getApiSpec()).thenReturn(true);
+        when(openApi.getApiSpec()).thenReturn(false);
         when(openApi.getGenerateResources()).thenReturn(false);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);

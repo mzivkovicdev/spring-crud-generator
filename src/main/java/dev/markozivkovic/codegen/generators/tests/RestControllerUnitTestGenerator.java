@@ -279,6 +279,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("jsonFields", jsonFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        context.put("fieldNames", FieldUtils.extractFieldNamesWithoudId(modelDefinition.getFields()));
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

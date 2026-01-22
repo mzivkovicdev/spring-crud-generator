@@ -24,8 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import dev.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectTarget;
-import dev.markozivkovic.codegen.generators.TransferObjectGenerator.TransferObjectType;
 import dev.markozivkovic.codegen.imports.TransferObjectImports;
 import dev.markozivkovic.codegen.models.AuditDefinition;
 import dev.markozivkovic.codegen.models.AuditDefinition.AuditTypeEnum;
@@ -98,10 +96,10 @@ class TransferObjectGeneratorTest {
     }
 
     @Test
-    void generate_shouldGenerateHelperRestAndGraphQlAndBaseCreateUpdateAndPageTO() {
+    void generate_shouldGenerateHelperRestAndGraphQlAndBaseCreateUpdateAndPageTO_whenGraphqlEnabled() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        
+
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(cfg.getGraphql()).thenReturn(graphQlDef);
         when(graphQlDef.getEnabled()).thenReturn(true);
@@ -178,20 +176,19 @@ class TransferObjectGeneratorTest {
             fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(jsonModel.getFields()))
                       .thenReturn(false);
 
-            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectType.BASE))
+            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.BASE))
                      .thenReturn("BASE_IMPORT_MAIN;");
-            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectType.CREATE))
+            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.CREATE))
                      .thenReturn("BASE_IMPORT_CREATE;");
-            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectType.UPDATE))
+            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.UPDATE))
                      .thenReturn("BASE_IMPORT_UPDATE;");
-            toImports.when(() -> TransferObjectImports.getBaseImport(jsonModel))
-                     .thenReturn("BASE_IMPORT_HELPER;");
+            toImports.when(() -> TransferObjectImports.getBaseImport(jsonModel)).thenReturn("BASE_IMPORT_HELPER;");
 
             toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(
-                    mainModel, outputDir, true, TransferObjectTarget.REST, pkgCfg))
-                     .thenReturn("");
+                    mainModel, outputDir, true, TransferObjectGenerator.TransferObjectTarget.REST, pkgCfg)
+            ).thenReturn("");
             toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(
-                    mainModel, outputDir, true, TransferObjectTarget.GRAPHQL, pkgCfg))
+                    mainModel, outputDir, true, TransferObjectGenerator.TransferObjectTarget.GRAPHQL, pkgCfg))
                      .thenReturn("");
             toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(
                     jsonModel, outputDir, false, null, pkgCfg))
@@ -205,27 +202,19 @@ class TransferObjectGeneratorTest {
             when(mainModel.getAudit()).thenReturn(null);
             when(jsonModel.getAudit()).thenReturn(null);
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(mainModel.getFields()))
-                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(mainModel.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(Collections.emptyList());
+            toCtx.when(() -> TransferObjectTemplateContext.computeTransferObjectContext(mainModel)).thenReturn(new HashMap<>());
+            toCtx.when(() -> TransferObjectTemplateContext.computeTransferObjectContext(jsonModel)).thenReturn(new HashMap<>());
 
-            fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields()))
-                    .thenReturn(Collections.emptyList());
-
-            toCtx.when(() -> TransferObjectTemplateContext.computeTransferObjectContext(mainModel))
-                .thenReturn(new HashMap<>());
-            toCtx.when(() -> TransferObjectTemplateContext.computeTransferObjectContext(jsonModel))
-                .thenReturn(new HashMap<>());
-
-            toCtx.when(() -> TransferObjectTemplateContext.computeCreateTransferObjectContext(mainModel, entities))
-                .thenReturn(new HashMap<>());
-            toCtx.when(() -> TransferObjectTemplateContext.computeUpdateTransferObjectContext(mainModel))
-                .thenReturn(new HashMap<>());
+            toCtx.when(() -> TransferObjectTemplateContext.computeCreateTransferObjectContext(mainModel, entities)).thenReturn(new HashMap<>());
+            toCtx.when(() -> TransferObjectTemplateContext.computeUpdateTransferObjectContext(mainModel)).thenReturn(new HashMap<>());
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/transfer-object-template.ftl"), anyMap()))
-                .thenReturn("/* TO TEMPLATE */");
+                    .thenReturn("/* TO TEMPLATE */");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/page-transfer-object-template.ftl"), anyMap()))
-                .thenReturn("/* PAGE TO TEMPLATE */");
+                    .thenReturn("/* PAGE TO TEMPLATE */");
 
             writer.when(() -> FileWriterUtils.writeToFile(eq(outputDir), anyString(), anyString(), anyString()))
                     .thenAnswer(inv -> {
@@ -239,10 +228,10 @@ class TransferObjectGeneratorTest {
             generator.generate(mainModel, outputDir);
         }
 
-        assertTrue(writtenClassNames.contains("AddressTO"), "Expected helper AddressTO to be generated (at least once)");
-        assertTrue(writtenClassNames.contains("UserTO"), "Expected UserTO (REST/GraphQL) to be generated");
-        assertTrue(writtenClassNames.contains("UserCreateTO"), "Expected UserCreateTO to be generated");
-        assertTrue(writtenClassNames.contains("UserUpdateTO"), "Expected UserUpdateTO to be generated");
+        assertTrue(writtenClassNames.contains("AddressTO"), "Expected helper AddressTO to be generated");
+        assertTrue(writtenClassNames.contains("UserTO"), "Expected UserTO (REST and GraphQL) to be generated");
+        assertTrue(writtenClassNames.contains("UserCreateTO"), "Expected UserCreateTO to be generated (GraphQL enabled)");
+        assertTrue(writtenClassNames.contains("UserUpdateTO"), "Expected UserUpdateTO to be generated (GraphQL enabled)");
         assertTrue(writtenClassNames.contains("PageTO"), "Expected PageTO to be generated");
         assertTrue(writtenSubDirs.contains("to/helper/rest"), "Expected helper REST subdir");
         assertTrue(writtenSubDirs.contains("to/helper/graphql"), "Expected helper GraphQL subdir");
@@ -255,7 +244,7 @@ class TransferObjectGeneratorTest {
     void generate_shouldThrowWhenJsonModelNotFound() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        
+
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(cfg.getGraphql()).thenReturn(graphQlDef);
         when(graphQlDef.getEnabled()).thenReturn(false);
@@ -272,28 +261,14 @@ class TransferObjectGeneratorTest {
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-             final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class);
-             final MockedStatic<TransferObjectTemplateContext> toCtx = mockStatic(TransferObjectTemplateContext.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-             final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities))
-                    .thenReturn(false);
-
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
-                   .thenReturn("com.example.app");
-
-            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
-                    .thenReturn("AddressEntity");
-
-            fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(mainModel.getFields()))
-                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities)).thenReturn(false);
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.example.app");
+            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(mainModel.getFields())).thenReturn(false);
 
             assertThrows(IllegalArgumentException.class, () -> generator.generate(mainModel, outputDir));
 
@@ -305,7 +280,6 @@ class TransferObjectGeneratorTest {
     void generate_shouldAddAuditingImport_forBaseTransferObject_whenAuditEnabled_andNotCreateOrUpdate() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
-        
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(cfg.getGraphql()).thenReturn(graphQlDef);
         when(graphQlDef.getEnabled()).thenReturn(false);
@@ -323,41 +297,35 @@ class TransferObjectGeneratorTest {
         final String outputDir = "out";
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-            final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class);
-            final MockedStatic<TransferObjectTemplateContext> toCtx = mockStatic(TransferObjectTemplateContext.class);
-            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-            final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class)) {
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class);
+             final MockedStatic<TransferObjectTemplateContext> toCtx = mockStatic(TransferObjectTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(mainModel.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(Collections.emptyList());
-
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.example.app");
-            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.example.app", pkgCfg))
-                    .thenReturn("com.example.app.to.rest");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.to.rest");
             pkg.when(() -> PackageUtils.computeRestTransferObjectSubPackage(pkgCfg)).thenReturn("to/rest");
             pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.to");
             pkg.when(() -> PackageUtils.computeTransferObjectSubPackage(pkgCfg)).thenReturn("to");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
-
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields()))
-                    .thenReturn(false);
-
-            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectType.BASE)).thenReturn("BASE_IMPORTS\n");
-            toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(eq(mainModel), eq(outputDir), anyBoolean(), any(), eq(pkgCfg)))
-                    .thenReturn("");
+            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
+            toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.BASE))
+                    .thenReturn("BASE_IMPORTS\n");
+            toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(
+                    eq(mainModel), eq(outputDir), anyBoolean(), any(), eq(pkgCfg)
+            )).thenReturn("");
             toImports.when(() -> TransferObjectImports.computeValidationImport(mainModel)).thenReturn("");
-
             toCtx.when(() -> TransferObjectTemplateContext.computeTransferObjectContext(mainModel)).thenReturn(new HashMap<>());
-
-            auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCALDATETIME))
-                    .thenReturn("org.springframework.data.annotation.CreatedDate");
-
+            auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCALDATETIME)).thenReturn("org.springframework.data.annotation.CreatedDate");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/transfer-object-template.ftl"), anyMap()))
                     .thenReturn("/* TO TEMPLATE */");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/page-transfer-object-template.ftl"), anyMap()))
+                    .thenReturn("/* PAGE TO TEMPLATE */");
 
             final AtomicReference<String> written = new AtomicReference<>();
             writer.when(() -> FileWriterUtils.writeToFile(eq(outputDir), anyString(), anyString(), anyString()))
@@ -369,8 +337,85 @@ class TransferObjectGeneratorTest {
             generator.generate(mainModel, outputDir);
 
             auditUtils.verify(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.LOCALDATETIME), times(1));
-
             assertNotNull(written.get(), "Expected something to be written");
         }
+    }
+
+    @Test
+    void generate_shouldGenerateInputTO_whenRelationsExist_andAddUuidImportWhenRelationIdIsUuid() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final FieldDefinition relationField = mock(FieldDefinition.class);
+        when(relationField.getType()).thenReturn("RoleEntity");
+
+        final ModelDefinition mainModel = newModel("UserEntity", List.of(relationField));
+
+        final FieldDefinition roleIdField = mock(FieldDefinition.class);
+        final ModelDefinition roleModel = newModel("RoleEntity", List.of(roleIdField));
+
+        final List<ModelDefinition> entities = List.of(mainModel, roleModel);
+
+        final TransferObjectGenerator generator = new TransferObjectGenerator(cfg, entities, pkgCfg);
+        final String outputDir = "out";
+
+        final AtomicReference<String> inputToContent = new AtomicReference<>();
+        final List<String> writtenClassNames = new ArrayList<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<TransferObjectTemplateContext> toCtx = mockStatic(TransferObjectTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(List.of("REL"));
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(mainModel.getFields())).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractIdField(roleModel.getFields())).thenReturn(roleIdField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(roleIdField)).thenReturn(true);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.to.rest");
+            pkg.when(() -> PackageUtils.computeRestTransferObjectSubPackage(pkgCfg)).thenReturn("to/rest");
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.to");
+            pkg.when(() -> PackageUtils.computeTransferObjectSubPackage(pkgCfg)).thenReturn("to");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity")).thenReturn("Role");
+            toImports.when(() -> TransferObjectImports.getBaseImport(eq(mainModel), eq(entities), eq(TransferObjectGenerator.TransferObjectType.BASE)))
+                    .thenReturn("");
+            toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(
+                    eq(mainModel), eq(outputDir), eq(true), eq(TransferObjectGenerator.TransferObjectTarget.REST), eq(pkgCfg)
+            )).thenReturn("");
+
+            toCtx.when(() -> TransferObjectTemplateContext.computeTransferObjectContext(mainModel)).thenReturn(new HashMap<>());
+            toCtx.when(() -> TransferObjectTemplateContext.computeInputTransferObjectContext(roleModel)).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/transfer-object-template.ftl"), anyMap()))
+                    .thenReturn("/* TO TEMPLATE */");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/page-transfer-object-template.ftl"), anyMap()))
+                    .thenReturn("/* PAGE TO TEMPLATE */");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("transferobject/transfer-object-input-template.ftl"), anyMap()))
+                    .thenReturn("/* INPUT TO TEMPLATE */");
+
+            writer.when(() -> FileWriterUtils.writeToFile(eq(outputDir), anyString(), anyString(), anyString()))
+                    .thenAnswer(inv -> {
+                        final String cls = inv.getArgument(2, String.class);
+                        writtenClassNames.add(cls);
+                        if ("RoleInputTO".equals(cls)) {
+                            inputToContent.set(inv.getArgument(3, String.class));
+                        }
+                        return null;
+                    });
+
+            generator.generate(mainModel, outputDir);
+        }
+
+        assertTrue(writtenClassNames.contains("RoleInputTO"), "Expected relation InputTO to be generated");
+        assertNotNull(inputToContent.get(), "Expected RoleInputTO content to be written");
+        assertTrue(inputToContent.get().contains("UUID"), "Expected UUID import to be present when relation ID is UUID");
     }
 }

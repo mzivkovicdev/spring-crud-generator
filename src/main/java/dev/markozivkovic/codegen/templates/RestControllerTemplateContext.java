@@ -189,6 +189,7 @@ public class RestControllerTemplateContext {
         context.put("jsonFields", jsonFields);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        context.put("fieldNames", FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
 
         computeFieldsWithLength(modelDefinition, context);
 

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ModelNameUtilsTest {
 
@@ -133,6 +135,39 @@ class ModelNameUtilsTest {
     void computeOpenApiUpdateModelName_shouldHandleNameEqualToSuffix() {
 
         assertEquals("UpdatePayload", ModelNameUtils.computeOpenApiUpdateModelName("Entity"));
+    }
+
+    @ParameterizedTest(name = "computeCreateTOModelName({0}) -> {1}")
+    @CsvSource({
+            "User, UserCreateTO",
+            "UserEntity, UserCreateTO",
+            "UserModel, UserCreateTO"
+    })
+    @DisplayName("computeCreateTOModelName strips known suffixes and appends CreateTO")
+    void computeCreateTOModelName_shouldStripSuffixAndAppendCreateTO(final String input, final String expected) {
+        assertEquals(expected, ModelNameUtils.computeCreateTOModelName(input));
+    }
+
+    @ParameterizedTest(name = "computeUpdateTOModelName({0}) -> {1}")
+    @CsvSource({
+            "User, UserUpdateTO",
+            "UserEntity, UserUpdateTO",
+            "UserModel, UserUpdateTO"
+    })
+    @DisplayName("computeUpdateTOModelName strips known suffixes and appends UpdateTO")
+    void computeUpdateTOModelName_shouldStripSuffixAndAppendUpdateTO(final String input, final String expected) {
+        assertEquals(expected, ModelNameUtils.computeUpdateTOModelName(input));
+    }
+
+    @ParameterizedTest(name = "computeInputTOModelName({0}) -> {1}")
+    @CsvSource({
+            "User, UserInputTO",
+            "UserEntity, UserInputTO",
+            "UserModel, UserInputTO"
+    })
+    @DisplayName("computeInputTOModelName strips known suffixes and appends InputTO")
+    void computeInputTOModelName_shouldStripSuffixAndAppendInputTO(final String input, final String expected) {
+        assertEquals(expected, ModelNameUtils.computeInputTOModelName(input));
     }
 
     @Test

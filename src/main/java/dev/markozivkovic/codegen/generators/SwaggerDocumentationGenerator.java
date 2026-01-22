@@ -63,8 +63,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
     public void generate(final String outputDir) {
 
         if (Objects.isNull(this.configuration) || Objects.isNull(configuration.getOpenApi())
-                    || !Boolean.TRUE.equals(configuration.getOpenApi().getApiSpec())
-                    || !Boolean.TRUE.equals(configuration.getOpenApi().getGenerateResources())) {
+                    || !Boolean.TRUE.equals(configuration.getOpenApi().getApiSpec())) {
             return;
         }
 

@@ -1,5 +1,6 @@
 <#assign uncapModelName = strippedModelName?uncap_first>
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
+<#assign updateTransferObjectClass = strippedModelName?cap_first + "UpdateTO">
 <#assign serviceClass = strippedModelName?cap_first + "Service">
 <#assign serviceField = strippedModelName?uncap_first + "Service">
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
@@ -73,14 +74,18 @@ class ${className} {
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#else>
-        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
-        </#if>
         <#if fieldsWithLength??>
         <#list fieldsWithLength as fieldWithLength>
         body.${fieldWithLength.field}(generateString(${fieldWithLength.length}));
         </#list>
         </#if><#t>
+        <#else>
+        <#if fieldsWithLength??>
+        final ${updateTransferObjectClass} body = generate${updateTransferObjectClass}();
+        <#else>
+        final ${updateTransferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${updateTransferObjectClass}.class);
+        </#if><#t>
+        </#if>
 
         when(this.${serviceField}.updateById(${idField?uncap_first}, <#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>)).thenReturn(${modelName?uncap_first});
 
@@ -106,7 +111,7 @@ class ${className} {
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
         <#else>
-        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
+        final ${updateTransferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${updateTransferObjectClass}.class);
         </#if>
 
         this.mockMvc.perform(put("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first})
@@ -123,14 +128,14 @@ class ${className} {
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#else>
-        final ${transferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${transferObjectClass}.class);
-        </#if>
         <#if fieldsWithLength??>
         <#list fieldsWithLength as fieldWithLength>
         body.${fieldWithLength.field}(generateString(${fieldWithLength.length + 10}));
         </#list>
         </#if><#t>
+        <#else>
+        final ${updateTransferObjectClass} body = generateInvalid${updateTransferObjectClass}();
+        </#if>
 
         this.mockMvc.perform(put("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -164,6 +169,35 @@ class ${className} {
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
 
+    <#if fieldsWithLength?? && !swagger>
+
+    private static ${updateTransferObjectClass} generate${updateTransferObjectClass}() {
+        <#assign needInput = (fieldsWithLength?default([])?size != fieldNames?default([])?size)>
+        <#if needInput>
+        final ${updateTransferObjectClass} input = ${generatorFieldName}.${singleObjectMethodName}(${updateTransferObjectClass}.class);
+        </#if>
+        return new ${updateTransferObjectClass}(
+            <#list fieldNames as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+
+    private static ${updateTransferObjectClass} generateInvalid${updateTransferObjectClass}() {
+        <#assign needInput = (fieldsWithLength?default([])?size != fieldNames?default([])?size)>
+        <#if needInput>
+        final ${updateTransferObjectClass} input = ${generatorFieldName}.${singleObjectMethodName}(${updateTransferObjectClass}.class);
+        </#if>
+        return new ${updateTransferObjectClass}(
+            <#list fieldNames as fieldName>
+                <#assign matched = false>
+                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+            </#list>
+        );
+    }
+
+    </#if><#t>
     <#if fieldsWithLength?? && dataGenerator == "PODAM">
     private static String generateString(final int n) {
         final PodamFactory p = new PodamFactoryImpl();
