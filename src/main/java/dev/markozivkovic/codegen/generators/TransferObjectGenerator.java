@@ -97,13 +97,17 @@ public class TransferObjectGenerator implements CodeGenerator {
         final String packagePathRest = PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration);
         final String filePathRest = PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration);
         this.generateTO(modelDefinition, outputDir, packagePathRest, filePathRest, TransferObjectTarget.REST);
+        if (Objects.isNull(this.configuration.getOpenApi()) || !Boolean.TRUE.equals(this.configuration.getOpenApi().getGenerateResources())) {
+            this.generateCreateTO(modelDefinition, outputDir, packagePathRest, filePathRest, TransferObjectTarget.REST);
+            this.generateUpdateTO(modelDefinition, outputDir, packagePathRest, filePathRest, TransferObjectTarget.REST);
+        }
         
         if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
             final String packagePathGraphql = PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration);
             final String filePathGraphql = PackageUtils.computeGraphqlTransferObjectSubPackage(packageConfiguration);
             this.generateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, TransferObjectTarget.GRAPHQL);
-            this.generateCreateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
-            this.generateUpdateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql);
+            this.generateCreateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, TransferObjectTarget.GRAPHQL);
+            this.generateUpdateTO(modelDefinition, outputDir, packagePathGraphql, filePathGraphql, TransferObjectTarget.GRAPHQL);
         }
 
         generatePageTO(packagePath, outputDir);
@@ -137,17 +141,25 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param outputDir       the directory where the generated class will be written
      * @param packagePath     the package path of the directory where the generated class will be written
      * @param subDir          the sub directory where the generated class will be written
+     * @param target          the target of the transfer object
      */
-    private void generateCreateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
+    private void generateCreateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath,
+                final String subDir, final TransferObjectTarget target) {
 
         if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
             return;
         }
 
-        generateTO(
-            modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
-            TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition, this.entities), TransferObjectType.CREATE, TransferObjectTarget.GRAPHQL
-        );
+        switch (target) {
+            case GRAPHQL -> this.generateTO(
+                modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
+                TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition, this.entities), TransferObjectType.CREATE, target
+            );
+            case REST -> generateTO(
+                modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
+                TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition), TransferObjectType.CREATE, target
+            );
+        }
     }
 
     /**
@@ -157,8 +169,10 @@ public class TransferObjectGenerator implements CodeGenerator {
      * @param outputDir       the directory where the generated class will be written
      * @param packagePath     the package path of the directory where the generated class will be written
      * @param subDir          the sub directory where the generated class will be written
+     * @param target          the target of the transfer object
      */
-    private void generateUpdateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir) {
+    private void generateUpdateTO(final ModelDefinition modelDefinition, final String outputDir, final String packagePath, final String subDir,
+                final TransferObjectTarget target) {
 
         if (!FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
             return;
@@ -168,7 +182,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         final Map<String, Object> toContext = TransferObjectTemplateContext.computeUpdateTransferObjectContext(modelDefinition);
 
         generateTO(
-            modelDefinition, outputDir, packagePath, subDir, transferObjName, toContext, TransferObjectType.UPDATE, TransferObjectTarget.GRAPHQL
+            modelDefinition, outputDir, packagePath, subDir, transferObjName, toContext, TransferObjectType.UPDATE, target
         );
     }
 
