@@ -167,7 +167,7 @@ Add the following `profile` section to your **`pom.xml`**:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.0</version>
+                    <version>1.0.0</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>
@@ -903,7 +903,7 @@ ignore: true
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE.txt) file for details.
 
 ---
 
