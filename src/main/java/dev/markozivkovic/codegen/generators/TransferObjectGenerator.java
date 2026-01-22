@@ -155,7 +155,7 @@ public class TransferObjectGenerator implements CodeGenerator {
                 modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
                 TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition, this.entities), TransferObjectType.CREATE, target
             );
-            case REST -> generateTO(
+            case REST -> this.generateTO(
                 modelDefinition, outputDir, packagePath, subDir, String.format("%sCreateTO", ModelNameUtils.stripSuffix(modelDefinition.getName())),
                 TransferObjectTemplateContext.computeCreateTransferObjectContext(modelDefinition), TransferObjectType.CREATE, target
             );
