@@ -3,6 +3,7 @@
 [![CI](https://github.com/mzivkovicdev/spring-crud-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/mzivkovicdev/spring-crud-generator/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat)](https://opensource.org/licenses/Apache-2.0)
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success?style=flat)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.markozivkovic/spring-crud-generator.svg)](https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator)
 
 ![Java](https://img.shields.io/badge/Java-17--25-blue?style=flat&logo=openjdk&logoColor=white)
 ![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat&logo=springboot&logoColor=white)
@@ -155,6 +156,9 @@ This project aims to eliminate repetitive boilerplate code while keeping full co
 Generate a fully functional Spring Boot CRUD application in minutes using a single YAML or JSON configuration file.
 
 ### Step 1: Add Maven Profile
+
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.0.0`  
+> Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator  
 
 Add the following `profile` section to your **`pom.xml`**:
 
