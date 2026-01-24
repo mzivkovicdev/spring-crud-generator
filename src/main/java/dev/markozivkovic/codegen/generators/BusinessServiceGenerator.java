@@ -43,11 +43,11 @@ public class BusinessServiceGenerator implements CodeGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessServiceGenerator.class);
 
-    private final List<ModelDefinition> entites;
+    private final List<ModelDefinition> entities;
     private final PackageConfiguration packageConfiguration;
 
-    public BusinessServiceGenerator(final List<ModelDefinition> entites, final PackageConfiguration packageConfiguration) {
-        this.entites = entites;
+    public BusinessServiceGenerator(final List<ModelDefinition> entities, final PackageConfiguration packageConfiguration) {
+        this.entities = entities;
         this.packageConfiguration = packageConfiguration;
     }
 
@@ -74,9 +74,9 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration)));
-        sb.append(BusinessServiceImports.getBaseImport(modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entites)));
+        sb.append(BusinessServiceImports.getBaseImport(modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities)));
 
-        if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entites)) {
+        if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entities)) {
             sb.append(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
@@ -120,7 +120,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
      */
     private String createResourceMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(modelDefinition, entities);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/create-resource.ftl", context);
     }
@@ -134,7 +134,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
      */
     private String addRelationMethod(final ModelDefinition modelDefinition) {
         
-        final Map<String, Object> context = BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(modelDefinition, entities);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/add-relation.ftl", context);
     }
@@ -148,7 +148,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
      */
     private String removeRelationMethod(final ModelDefinition modelDefinition) {
 
-        final Map<String, Object> context = BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(modelDefinition, entites);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(modelDefinition, entities);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/remove-relation.ftl", context);
     }

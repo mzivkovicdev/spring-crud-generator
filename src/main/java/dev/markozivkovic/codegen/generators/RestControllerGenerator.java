@@ -46,10 +46,10 @@ public class RestControllerGenerator implements CodeGenerator {
     private final List<ModelDefinition> entities;
     private final PackageConfiguration packageConfiguration;
 
-    public RestControllerGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entites,
+    public RestControllerGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
                 final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
-        this.entities = entites;
+        this.entities = entities;
         this.packageConfiguration = packageConfiguration;
     }
 
