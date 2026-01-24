@@ -16,6 +16,9 @@
 
 package dev.markozivkovic.codegen.constants;
 
+/**
+ * Constants for import statements and package declarations used in the code generation process.
+ */
 public final class ImportConstants {
 
     private ImportConstants() {}

@@ -16,6 +16,9 @@
 
 package dev.markozivkovic.codegen.constants;
 
+/**
+ * Constants representing keys used in the template context for code generation.
+ */
 public final class TemplateContextConstants {
 
     private TemplateContextConstants() {}

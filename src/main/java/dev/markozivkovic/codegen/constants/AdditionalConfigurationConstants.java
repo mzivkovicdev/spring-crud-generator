@@ -16,6 +16,9 @@
 
 package dev.markozivkovic.codegen.constants;
 
+/**
+ * Keys for additional configuration options used in the code generation process.
+ */
 public class AdditionalConfigurationConstants {
     
     private AdditionalConfigurationConstants() {}

@@ -16,6 +16,9 @@
 
 package dev.markozivkovic.codegen.constants;
 
+/**
+ * Constants for commonly used annotations in the code generation process.
+ */
 public class AnnotationConstants {
     
     private AnnotationConstants(){

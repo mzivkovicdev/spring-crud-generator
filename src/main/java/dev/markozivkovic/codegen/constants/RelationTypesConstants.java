@@ -16,6 +16,9 @@
 
 package dev.markozivkovic.codegen.constants;
 
+/**
+ * Keys for relation types used in the code generation process.
+ */
 public class RelationTypesConstants {
     
     private RelationTypesConstants() {}
