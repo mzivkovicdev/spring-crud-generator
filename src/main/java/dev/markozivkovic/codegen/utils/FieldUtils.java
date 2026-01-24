@@ -726,11 +726,11 @@ public class FieldUtils {
 
     /**
      * Generates a list of strings representing the input arguments for a business service method.
-     * The generated list of strings is in the format "<name>" where <name> is the name of the field.
+     * The generated list of strings is in the format {@code "<name>"} where {@code <name>} is the name of the field.
      * If the field has a relation, the name is the camel-cased version of the type of the related
      * entity, and if the relation is many-to-many or one-to-many, the name is in the plural form.
      * The generated list does not include the ID field.
-     * 
+     *
      * @param fields The list of fields to generate the input arguments from.
      * @return A list of strings representing the input arguments for a business service method.
      */
@@ -760,10 +760,10 @@ public class FieldUtils {
 
     /**
      * Generates a list of strings representing the input arguments for a constructor or method,
-     * excluding the ID field. The generated list of strings is in the format "final <type> <name>"
-     * where <type> is the type of the field and <name> is the name of the field. If the field
-     * has a relation, the name is formatted as "<modelName>Id" for a one-to-one or many-to-one
-     * relation, and as "<modelName>Ids" for a many-to-many or one-to-many relation. The ID field
+     * excluding the ID field. The generated list of strings is in the format {@code final <type> <name>}
+     * where {@code <type>} is the type of the field and {@code <name>} is the name of the field. If the field
+     * has a relation, the name is formatted as {@code <modelName>Id} for a one-to-one or many-to-one
+     * relation, and as {@code <modelName>Ids} for a many-to-many or one-to-many relation. The ID field
      * is excluded from the list.
      *
      * @param fields The list of fields to generate the input arguments from.
@@ -803,8 +803,8 @@ public class FieldUtils {
     /**
      * Generates a list of strings representing the input arguments for a test method, excluding the ID field.
      * The generated list of strings is in the format expected by the test layer.
-     * If the field has a relation, the name is formatted as "<modelName>Id" for a one-to-one or many-to-one
-     * relation, and as "<modelName>Ids" for a many-to-many or one-to-many relation.
+     * If the field has a relation, the name is formatted as {@code <modelName>Id} for a one-to-one or many-to-one
+     * relation, and as {@code <modelName>Ids} for a many-to-many or one-to-many relation.
      * 
      * @param fields The list of fields to generate the input arguments from.
      * @param entities The list of model definitions to resolve related model types.
@@ -840,8 +840,8 @@ public class FieldUtils {
 
     /**
      * Generates a list of strings representing the input arguments for a constructor or method, excluding the ID field.
-     * The generated list of strings is in the format "final <type> <name>" where <type> is the type of the field and
-     * <name> is the name of the field. The ID field is excluded from the list.
+     * The generated list of strings is in the format {@code final <type> <name>} where {@code <type>} is the type of the field and
+     * {@code <name>} is the name of the field. The ID field is excluded from the list.
      *
      * @param fields The list of fields to generate the input arguments from.
      * @return A list of strings representing the input arguments for a constructor or method, excluding the ID field.
@@ -866,8 +866,8 @@ public class FieldUtils {
 
     /**
      * Generates a list of strings representing the input arguments for a constructor or method.
-     * The generated list of strings is in the format "final <type> <name>" where <type> is the type of the field and
-     * <name> is the name of the field.
+     * The generated list of strings is in the format {@code "final <type> <name>"} where {@code <type>} is the type of the field and
+     * {@code <name>} is the name of the field.
      *
      * @param fields The list of fields to generate the input arguments from.
      * @return A list of strings representing the input arguments for a constructor or method.
@@ -881,12 +881,12 @@ public class FieldUtils {
     }
 
     /**
-     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword.
-     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
-     * <name> is the name of the field.
+     * Generates a list of strings representing the input arguments for a constructor or method without the {@code final} keyword.
+     * The generated list of strings is in the format {@code "<type> <name>"} where {@code <type>} is the type of the field and
+     * {@code <name>} is the name of the field.
      *
      * @param fields The list of fields to generate the input arguments from.
-     * @return A list of strings representing the input arguments for a constructor or method without the final keyword.
+     * @return A list of strings representing the input arguments for a constructor or method without the {@code final} keyword.
      */
     public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
         
@@ -921,15 +921,15 @@ public class FieldUtils {
     }
 
     /**
-     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword
+     * Generates a list of strings representing the input arguments for a constructor or method without the {@code final} keyword
      * for a create input TO.
-     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
-     * <name> is the name of the field. The ID field is excluded from the list. If the field has a relation,
+     * The generated list of strings is in the format {@code "<type> <name>"} where {@code <type>} is the type of the field and
+     * {@code <name>} is the name of the field. The ID field is excluded from the list. If the field has a relation,
      * the name is the camel-cased version of the type of the related entity, and if the relation is
      * many-to-many or one-to-many, the name is in the plural form.
      *
      * @param fields The list of fields to generate the input arguments from.
-     * @return A list of strings representing the input arguments for a constructor or method without the final keyword
+     * @return A list of strings representing the input arguments for a constructor or method without the {@code final} keyword
      *         for a create input TO.
      */
     public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields) {
@@ -962,8 +962,8 @@ public class FieldUtils {
 
     /**
      * Generates a list of strings representing the field names for a create input TO.
-     * For fields that have a relation, the generated field name is in the format "<fieldName>Id" for a one-to-one or many-to-one
-     * relation and "<fieldName>Ids" for a many-to-many or one-to-many relation. For all other fields, the generated field name is the
+     * For fields that have a relation, the generated field name is in the format {@code "<fieldName>Id"} for a one-to-one or many-to-one
+     * relation and {@code "<fieldName>Ids"} for a many-to-many or one-to-many relation. For all other fields, the generated field name is the
      * name of the field.
      *
      * @param fields The list of fields to generate the field names from.
@@ -992,13 +992,13 @@ public class FieldUtils {
     }
 
     /**
-     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword
+     * Generates a list of strings representing the input arguments for a constructor or method without the {@code final} keyword
      * for the updateInputTO of a model.
-     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
-     * <name> is the name of the field, for all fields that are not relations.
+     * The generated list of strings is in the format {@code "<type> <name>"} where {@code <type>} is the type of the field and
+     * {@code <name>} is the name of the field, for all fields that are not relations.
      *
      * @param fields The list of fields to generate the input arguments from.
-     * @return A list of strings representing the input arguments for a constructor or method without the final keyword
+     * @return A list of strings representing the input arguments for a constructor or method without the {@code final} keyword
      *         for the updateInputTO of a model.
      */
     public static List<String> generateInputArgsWithoutFinalUpdateInputTO(final List<FieldDefinition> fields) {
@@ -1020,8 +1020,8 @@ public class FieldUtils {
 
     /**
      * Generates a list of strings representing the input arguments for a constructor or method without the final keyword.
-     * The generated list of strings is in the format "<type> <name>" where <type> is the type of the field and
-     * <name> is the name of the field.
+     * The generated list of strings is in the format {@code "<type> <name>"} where {@code <type>} is the type of the field and
+     * {@code <name>} is the name of the field.
      *
      * @param fields The list of fields to generate the input arguments from.
      * @return A list of strings representing the input arguments for a constructor or method without the final keyword.

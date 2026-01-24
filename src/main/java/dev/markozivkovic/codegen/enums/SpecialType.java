@@ -21,6 +21,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Enum representing special types used in code generation.
+ */
 public enum SpecialType {
     
     ENUM("Enum"),
@@ -51,7 +54,7 @@ public enum SpecialType {
 
     /**
      * Returns true if the given type is a JSON type, false otherwise.
-     * A JSON type is a type that starts with "JSON<" and ends with ">". For example, "JSON<SomeType>" is a JSON type.
+     * A JSON type is a type that starts with {@code JSON<} and ends with {@code >}. For example, {@code JSON<SomeType>} is a JSON type.
      * 
      * @param type the type to check
      * @return true if the type is a JSON type, false otherwise
@@ -65,7 +68,7 @@ public enum SpecialType {
 
     /**
      * Returns true if the given type is a collection type, false otherwise.
-     * A collection type is a type that starts with "List<" or "Set<" and ends with ">". For example, "List<SomeType>" is a collection type.
+     * A collection type is a type that starts with {@code List<} or {@code Set<} and ends with {@code >}. For example, {@code List<SomeType>} is a collection type.
      * 
      * @param type the type to check
      * @return true if the type is a collection type, false otherwise
@@ -80,7 +83,7 @@ public enum SpecialType {
 
     /**
      * Returns true if the given type is a List type, false otherwise.
-     * A List type is a type that starts with "List<" and ends with ">". For example, "List<SomeType>" is a List type.
+     * A List type is a type that starts with {@code List<} and ends with {@code >}. For example, {@code List<SomeType>} is a List type.
      * 
      * @param type the type to check
      * @return true if the type is a List type, false otherwise
@@ -94,7 +97,7 @@ public enum SpecialType {
 
     /**
      * Returns true if the given type is a Set type, false otherwise.
-     * A Set type is a type that starts with "Set<" and ends with ">". For example, "Set<SomeType>" is a Set type.
+     * A Set type is a type that starts with {@code Set<} and ends with {@code >}. For example, {@code Set<SomeType>} is a Set type.
      * 
      * @param type the type to check
      * @return true if the type is a Set type, false otherwise

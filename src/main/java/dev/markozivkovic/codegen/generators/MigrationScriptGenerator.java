@@ -31,15 +31,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.codegen.constants.GeneratorConstants;
+import dev.markozivkovic.codegen.constants.RelationTypesConstants;
 import dev.markozivkovic.codegen.context.GeneratorContext;
 import dev.markozivkovic.codegen.migrations.MigrationDiffer;
 import dev.markozivkovic.codegen.migrations.MigrationManifestBuilder;
 import dev.markozivkovic.codegen.models.CrudConfiguration;
+import dev.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.codegen.models.FieldDefinition;
+import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.ProjectMetadata;
-import dev.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
-import dev.markozivkovic.codegen.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.codegen.models.flyway.DdlArtifactState.DdlArtifactType;
 import dev.markozivkovic.codegen.models.flyway.EntityState;
 import dev.markozivkovic.codegen.models.flyway.FkState;
@@ -151,7 +152,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 continue;
 
             for (final FieldDefinition f : owner.getFields()) {
-                if (Objects.isNull(f.getRelation()) || !"ManyToMany".equals(f.getRelation().getType())) continue;
+                if (Objects.isNull(f.getRelation()) || !RelationTypesConstants.MANY_TO_MANY.equals(f.getRelation().getType())) continue;
 
                 final String joinTable = f.getRelation().getJoinTable().getName();
                 if (existingJoinTables.contains(joinTable)) {

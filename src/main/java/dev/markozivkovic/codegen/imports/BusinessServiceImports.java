@@ -92,11 +92,10 @@ public class BusinessServiceImports {
     }
 
     /**
-     * Generates a string of import statements based on the fields present in the given model definition, with options to include
-     * the java.util.Objects class and the java.util.List interface.
+     * Computes the necessary imports for the given model definition for the test base, including imports for the types of its fields,
+     * as well as imports for the types of its relations, if any.
      *
      * @param modelDefinition The model definition containing field information used to determine necessary imports.
-     * @param importList      Whether to include the java.util.List import.
      * @return A string containing the necessary import statements for the model.
      */
     public static String getTestBaseImport(final ModelDefinition modelDefinition) {
