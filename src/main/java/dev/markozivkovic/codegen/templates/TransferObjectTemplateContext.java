@@ -93,6 +93,7 @@ public class TransferObjectTemplateContext {
         final Map<String, Object> context = new HashMap<>();
         context.put(TemplateContextConstants.CLASS_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         context.put(TemplateContextConstants.ID_TYPE, idField.getType());
+        context.put(TemplateContextConstants.ID_FIELD, idField.getName());
         
         return context;
     }

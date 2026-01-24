@@ -599,6 +599,84 @@ class SwaggerDocumentationGeneratorTest {
     }
 
     @Test
+    @DisplayName("generate should set relation input schema property name to relation model id field name")
+    void generate_shouldUseRelationIdFieldNameInRelationInputSchema() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
+        when(cfg.getOpenApi()).thenReturn(openApi);
+        when(openApi.getApiSpec()).thenReturn(true);
+
+        final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
+        when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
+
+        final FieldDefinition userIdField = mock(FieldDefinition.class);
+
+        final FieldDefinition userRelationField = mock(FieldDefinition.class);
+        final RelationDefinition relation = mock(RelationDefinition.class);
+        when(userRelationField.getRelation()).thenReturn(relation);
+        when(userRelationField.getType()).thenReturn("AddressEntity");
+
+        final ModelDefinition userEntity = newModel("UserEntity", List.of(userIdField, userRelationField), null);
+
+        final FieldDefinition addressIdField = mock(FieldDefinition.class);
+        when(addressIdField.getName()).thenReturn("addressId");
+        final ModelDefinition addressEntity = newModel("AddressEntity", List.of(addressIdField), null);
+
+        final List<ModelDefinition> entities = List.of(userEntity, addressEntity);
+
+        final SwaggerDocumentationGenerator generator = new SwaggerDocumentationGenerator(cfg, projectMetadata, entities);
+
+        try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(userEntity.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(addressEntity.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields())).thenReturn(userIdField);
+            fieldUtils.when(() -> FieldUtils.extractIdField(addressEntity.getFields())).thenReturn(addressIdField);
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
+            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class), eq(SwaggerSchemaModeEnum.INPUT))).thenReturn(new HashMap<>());
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName(anyString())).thenAnswer(inv -> inv.getArgument(0));
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName(anyString())).thenAnswer(inv -> inv.getArgument(0) + "Create");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName(anyString())).thenAnswer(inv -> inv.getArgument(0) + "Update");
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), eq(entities))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeContextWithId(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeBaseContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> modelCtx = inv.getArgument(1, Map.class);
+                        if ("AddressInput".equals(modelCtx.get("title"))) {
+                            @SuppressWarnings("unchecked")
+                            final List<Map<String, Object>> props = (List<Map<String, Object>>) modelCtx.get("properties");
+                            assertEquals(1, props.size());
+                            final Map<String, Object> idProp = props.get(0);
+                            assertEquals("addressId", idProp.get("name"), "Expected relation input property name to match id field name");
+                        }
+                        return "OBJECT_SCHEMA";
+                    });
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/swagger-template.ftl"), anyMap())).thenReturn("SWAGGER_DOC");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(startsWith("swagger/endpoint/"), anyMap())).thenReturn("EP");
+            generator.generate("out");
+        }
+    }
+
+    @Test
     @DisplayName("generate should skip entities without ID field")
     void generate_shouldSkipEntitiesWithoutId() {
         

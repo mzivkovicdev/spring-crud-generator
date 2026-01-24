@@ -143,6 +143,7 @@ class TransferObjectTemplateContextTest {
         when(model.getName()).thenReturn("ProductEntity");
         when(model.getFields()).thenReturn(fields);
         when(idField.getType()).thenReturn("java.util.UUID");
+        when(idField.getName()).thenReturn("id");
 
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
@@ -157,6 +158,7 @@ class TransferObjectTemplateContextTest {
 
             assertEquals("Product", ctx.get(TemplateContextConstants.CLASS_NAME));
             assertEquals("java.util.UUID", ctx.get(TemplateContextConstants.ID_TYPE));
+            assertEquals("id", ctx.get(TemplateContextConstants.ID_FIELD));
         }
     }
 

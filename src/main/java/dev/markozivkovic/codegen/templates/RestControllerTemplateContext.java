@@ -298,9 +298,10 @@ public class RestControllerTemplateContext {
      * Computes a template context for an add resource relation endpoint of a model.
      * 
      * @param modelDefinition the model definition
+     * @param entities        a list of model definitions
      * @return a template context for the add resource relation endpoint
      */
-    public static Map<String, Object> computeAddResourceRelationEndpointContext(final ModelDefinition modelDefinition) {
+    public static Map<String, Object> computeAddResourceRelationEndpointContext(final ModelDefinition modelDefinition, final List<ModelDefinition> entities) {
         
         if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             return Map.of();
@@ -322,6 +323,14 @@ public class RestControllerTemplateContext {
             final Map<String, Object> relationContext = new HashMap<>();
             final String strippedRelationClassName = ModelNameUtils.stripSuffix(relation.getType());
 
+            final ModelDefinition relationEntity = entities.stream()
+                    .filter(entity -> entity.getName().equals(relation.getType()))
+                    .findFirst()
+                    .orElseThrow();
+
+            final FieldDefinition entityIdField = FieldUtils.extractIdField(relationEntity.getFields());
+
+            relationContext.put(TemplateContextConstants.RELATION_ID_FIELD, entityIdField.getName());
             relationContext.put(TemplateContextConstants.RELATION_FIELD_MODEL, relation.getName());
             relationContext.put(TemplateContextConstants.STRIPPED_RELATION_CLASS_NAME, strippedRelationClassName);
             relationContext.put(TemplateContextConstants.METHOD_NAME, String.format("%ssId%ssPost", StringUtils.uncapitalize(strippedModelName), strippedRelationClassName));

@@ -66,7 +66,7 @@ class ${className} {
         final ${strippedRelationClassName}InputTO body = ${generatorFieldName}.${singleObjectMethodName}(${strippedRelationClassName}InputTO.class);
         </#if>
 
-        when(this.${businessServiceField}.add${relationFieldModel}(${idField?uncap_first}, body.<#if swagger>getId<#else>id</#if>())).thenReturn(${modelName?uncap_first});
+        when(this.${businessServiceField}.add${relationFieldModel}(${idField?uncap_first}, body.<#if swagger>get${relationIdField?cap_first}<#else>${relationIdField}</#if>())).thenReturn(${modelName?uncap_first});
         
         final ResultActions resultActions = this.mockMvc.perform(post("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -80,7 +80,7 @@ class ${className} {
 
         verify${strippedModelName}(result, ${modelName?uncap_first});
 
-        verify(this.${businessServiceField}).add${relationFieldModel}(${idField?uncap_first}, body.<#if swagger>getId<#else>id</#if>());
+        verify(this.${businessServiceField}).add${relationFieldModel}(${idField?uncap_first}, body.<#if swagger>get${relationIdField?cap_first}<#else>${relationIdField}</#if>());
     }
 
     @Test

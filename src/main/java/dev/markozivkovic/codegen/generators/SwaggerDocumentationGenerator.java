@@ -135,18 +135,24 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
             modelContext.put("description", e.getDescription());
         }
 
-        final FieldDefinition idField = FieldUtils.extractIdField(e.getFields());
-
-        final List<Map<String, Object>> properties = e.getFields().stream()
-                .filter(field -> SwaggerObjectModeEnum.DEFAULT.equals(mode) || !field.equals(idField))
-                .filter(field -> !SwaggerObjectModeEnum.UPDATE_MODEL.equals(mode) || Objects.isNull(field.getRelation()))
-                .map(field -> {
-                    if (SwaggerObjectModeEnum.CREATE_MODEL.equals(mode)) {
-                        return SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
-                    }
-                    return SwaggerUtils.toSwaggerProperty(field);
-                })
-                .collect(Collectors.toList());
+        final List<Map<String, Object>> properties;
+        if (!SwaggerObjectModeEnum.JSON_MODEL.equals(mode)) {
+            final FieldDefinition idField = FieldUtils.extractIdField(e.getFields());
+            properties = e.getFields().stream()
+                    .filter(field -> SwaggerObjectModeEnum.DEFAULT.equals(mode) || !field.equals(idField))
+                    .filter(field -> !SwaggerObjectModeEnum.UPDATE_MODEL.equals(mode) || Objects.isNull(field.getRelation()))
+                    .map(field -> {
+                        if (SwaggerObjectModeEnum.CREATE_MODEL.equals(mode)) {
+                            return SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
+                        }
+                        return SwaggerUtils.toSwaggerProperty(field);
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            properties = e.getFields().stream()
+                    .map(field -> SwaggerUtils.toSwaggerProperty(field))
+                    .collect(Collectors.toList());
+        }
 
         modelContext.put("properties", properties);
 
@@ -154,6 +160,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
             case CREATE_MODEL -> ModelNameUtils.computeOpenApiCreateModelName(strippedModelName);
             case UPDATE_MODEL -> ModelNameUtils.computeOpenApiUpdateModelName(strippedModelName);
             case DEFAULT -> ModelNameUtils.computeOpenApiModelName(strippedModelName);
+            case JSON_MODEL -> ModelNameUtils.computeOpenApiModelName(strippedModelName);
         };
         modelContext.put("title", title);
 
@@ -204,6 +211,16 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
     }
 
     /**
+     * Generates JSON object swagger schema for the given model.
+     * 
+     * @param e                 the model definition
+     * @param pathToSwaggerDocs the path to the swagger documentation directory
+     */
+    private void generateJsonObjects(final ModelDefinition e, final String pathToSwaggerDocs) {
+        generateObjects(e, pathToSwaggerDocs, SwaggerObjectModeEnum.JSON_MODEL);
+    }
+
+    /**
      * Generates JSON objects for all entities that have fields of type JSON or JSONB.
      * The generated JSON objects will be created in the specified path to the Swagger
      * documentation directory.
@@ -225,7 +242,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         this.entities.stream()
             .filter(entity -> jsonFields.contains(entity.getName()))
             .forEach(entity -> {
-                this.generateObjects(entity, pathToSwaggerDocs);
+                this.generateJsonObjects(entity, pathToSwaggerDocs);
             });
     }
 
@@ -300,7 +317,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
 
         final FieldDefinition idField = FieldUtils.extractIdField(relationModel.getFields());
         final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
-        idProperty.put("name", "id");
+        idProperty.put("name", idField.getName());
 
         model.put("properties", List.of(idProperty));
 

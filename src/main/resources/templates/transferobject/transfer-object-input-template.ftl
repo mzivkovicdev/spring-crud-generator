@@ -1,3 +1,3 @@
-public record ${className}InputTO(${idType} id) {
+public record ${className}InputTO(${idType} ${idField}) {
 
 }
