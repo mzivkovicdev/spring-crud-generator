@@ -147,7 +147,7 @@ class RestControllerGeneratorTest {
                     .thenReturn(new HashMap<>());
             controllerCtx.when(() -> RestControllerTemplateContext.computeDeleteEndpointContext(model))
                     .thenReturn(new HashMap<>());
-            controllerCtx.when(() -> RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model))
+            controllerCtx.when(() -> RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model, allEntities))
                     .thenReturn(new HashMap<>());
             controllerCtx.when(() -> RestControllerTemplateContext.computeRemoveResourceRelationEndpointContext(model, allEntities))
                     .thenReturn(new HashMap<>());
@@ -285,7 +285,7 @@ class RestControllerGeneratorTest {
             controllerCtx.when(() -> RestControllerTemplateContext.computeDeleteEndpointContext(model))
                     .thenReturn(new HashMap<>());
 
-            controllerCtx.when(() -> RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model))
+            controllerCtx.when(() -> RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model, allEntities))
                     .thenReturn(Collections.emptyMap());
             controllerCtx.when(() -> RestControllerTemplateContext.computeRemoveResourceRelationEndpointContext(model, allEntities))
                     .thenReturn(Collections.emptyMap());
