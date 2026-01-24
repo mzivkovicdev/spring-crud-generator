@@ -8,6 +8,7 @@
 <#assign relationField = rel.strippedRelationClassName?uncap_first>
 <#assign relationInput = rel.strippedRelationClassName?cap_first + "Input">
 <#assign relationInputTO = rel.strippedRelationClassName?cap_first + "InputTO">
+<#assign relationId = rel.relationIdField>
 <#assign openApiReturnModel = model.strippedModelName + "Payload">
 
     <#if swagger>@Override<#else>@PostMapping("/{id}/${relationField}s")</#if>
@@ -16,14 +17,14 @@
         <#if !swagger>
         return ResponseEntity.ok(
             ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
-                this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.id())
+                this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.${relationId}())
             )
         );
         <#else>
         return ResponseEntity.ok(
             ${mapperClass}.map${transferObjectClass}To${openApiReturnModel}(
                 ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
-                    this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.getId())
+                    this.${businessServiceField}.add${relationFieldModel?cap_first}(id, body.get${relationId?cap_first}())
                 )
             )
         );

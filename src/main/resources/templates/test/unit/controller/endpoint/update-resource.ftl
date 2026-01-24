@@ -1,3 +1,4 @@
+<#setting number_format="computer">
 <#assign uncapModelName = strippedModelName?uncap_first>
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign updateTransferObjectClass = strippedModelName?cap_first + "UpdateTO">
