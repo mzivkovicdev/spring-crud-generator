@@ -39,7 +39,9 @@ class JpaEntityTemplateContextTest {
 
     @Test
     void computeJpaModelContext_shouldUseIdAwareArgsAndNonIdFieldNames_whenNoException() {
+        
         final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
         final FieldDefinition f1 = mock(FieldDefinition.class);
         final FieldDefinition f2 = mock(FieldDefinition.class);
         final List<FieldDefinition> fields = List.of(idField, f1, f2);
@@ -55,6 +57,9 @@ class JpaEntityTemplateContextTest {
             fieldUtils.when(() -> FieldUtils.extractFieldNames(fields)).thenReturn(allFieldNames);
             fieldUtils.when(() -> FieldUtils.generateInputArgsExcludingId(fields)).thenReturn(inputArgsExcludingId);
             fieldUtils.when(() -> FieldUtils.extractNonIdFieldNames(fields)).thenReturn(nonIdFieldNames);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+
             modelNameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
 
             final Map<String, Object> ctx = JpaEntityTemplateContext.computeJpaModelContext(model);
@@ -63,13 +68,11 @@ class JpaEntityTemplateContextTest {
             assertEquals(allFieldNames, ctx.get(TemplateContextConstants.FIELD_NAMES));
             assertEquals("UserEntity", ctx.get(TemplateContextConstants.CLASS_NAME));
             assertEquals("User", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
-
             assertEquals(inputArgsExcludingId, ctx.get(TemplateContextConstants.INPUT_ARGS));
             assertEquals(nonIdFieldNames, ctx.get(TemplateContextConstants.NON_ID_FIELD_NAMES));
-
+            assertEquals("id", ctx.get(TemplateContextConstants.ID_FIELD));
             assertFalse(ctx.containsKey(TemplateContextConstants.AUDIT_ENABLED));
             assertFalse(ctx.containsKey(TemplateContextConstants.AUDIT_TYPE));
-
             assertEquals(true, ctx.get(TemplateContextConstants.IS_BASE_ENTITY));
             assertEquals("user_table", ctx.get(TemplateContextConstants.STORAGE_NAME));
 
@@ -99,7 +102,7 @@ class JpaEntityTemplateContextTest {
             fieldUtils.when(() -> FieldUtils.extractFieldNames(fields)).thenReturn(allFieldNames);
             fieldUtils.when(() -> FieldUtils.generateInputArgsExcludingId(fields)).thenThrow(new IllegalArgumentException("No id field"));
             fieldUtils.when(() -> FieldUtils.generateInputArgsWithoutRelations(fields)).thenReturn(fallbackInputArgs);
-            fieldUtils.when(() -> FieldUtils.extractFieldNames(fields)).thenReturn(allFieldNames);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(false);
             auditUtils.when(() -> AuditUtils.resolveAuditType(AuditTypeEnum.INSTANT)).thenReturn("JPA_AUDIT_TYPE");
             modelNameUtils.when(() -> ModelNameUtils.stripSuffix("OrderEntity")).thenReturn("Order");
 
@@ -115,9 +118,43 @@ class JpaEntityTemplateContextTest {
 
             assertEquals(true, ctx.get(TemplateContextConstants.AUDIT_ENABLED));
             assertEquals("JPA_AUDIT_TYPE", ctx.get(TemplateContextConstants.AUDIT_TYPE));
-
             assertEquals(false, ctx.get(TemplateContextConstants.IS_BASE_ENTITY));
             assertNull(ctx.get(TemplateContextConstants.STORAGE_NAME));
+            assertFalse(ctx.containsKey(TemplateContextConstants.ID_FIELD));
+        }
+    }
+
+    @Test
+    void computeJpaModelContext_shouldNotIncludeAuditInfo_whenAuditDisabled() {
+        
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        
+        final List<FieldDefinition> fields = List.of(idField);
+        final AuditDefinition audit = mock(AuditDefinition.class);
+        
+        when(audit.isEnabled()).thenReturn(false);
+
+        final ModelDefinition model = newModel("UserEntity", "users", fields, audit);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractFieldNames(fields)).thenReturn(List.of("id"));
+            fieldUtils.when(() -> FieldUtils.generateInputArgsExcludingId(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNames(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+
+            final Map<String, Object> ctx = JpaEntityTemplateContext.computeJpaModelContext(model);
+
+            assertFalse(ctx.containsKey(TemplateContextConstants.AUDIT_ENABLED));
+            assertFalse(ctx.containsKey(TemplateContextConstants.AUDIT_TYPE));
+
+            auditUtils.verifyNoInteractions();
         }
     }
 }

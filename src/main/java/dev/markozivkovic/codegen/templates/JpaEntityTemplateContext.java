@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import dev.markozivkovic.codegen.constants.TemplateContextConstants;
+import dev.markozivkovic.codegen.models.FieldDefinition;
 import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.utils.AuditUtils;
 import dev.markozivkovic.codegen.utils.FieldUtils;
@@ -53,6 +54,11 @@ public class JpaEntityTemplateContext {
         if (Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled()) {
             context.put(TemplateContextConstants.AUDIT_ENABLED, modelDefinition.getAudit().isEnabled());
             context.put(TemplateContextConstants.AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
+        }
+
+        if (FieldUtils.isAnyFieldId(modelDefinition.getFields())) {
+            final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+            context.put(TemplateContextConstants.ID_FIELD, idField.getName());
         }
 
         context.put(TemplateContextConstants.IS_BASE_ENTITY, Objects.nonNull(modelDefinition.getStorageName()));
