@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.markozivkovic.codegen.constants.RelationTypesConstants;
 import dev.markozivkovic.codegen.enums.SpecialType;
 import dev.markozivkovic.codegen.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.codegen.models.FieldDefinition;
@@ -44,6 +45,9 @@ import dev.markozivkovic.codegen.models.ModelDefinition;
 import dev.markozivkovic.codegen.models.RelationDefinition;
 import dev.markozivkovic.codegen.models.flyway.MigrationState;
 
+/**
+ * Utility class for Flyway-related operations.
+ */
 public class FlywayUtils {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(FlywayUtils.class);
@@ -388,7 +392,7 @@ public class FlywayUtils {
         if (Objects.isNull(f.getRelation()))
             return false;
         final String t = f.getRelation().getType();
-        return "OneToOne".equals(t) || "ManyToOne".equals(t);
+        return RelationTypesConstants.ONE_TO_ONE.equals(t) || RelationTypesConstants.MANY_TO_ONE.equals(t);
     }
 
     /**
@@ -400,7 +404,8 @@ public class FlywayUtils {
      */
     private static boolean isCollectionRelation(final FieldDefinition f) {
         return f.getRelation() != null &&
-            ("OneToMany".equals(f.getRelation().getType()) || "ManyToMany".equals(f.getRelation().getType()));
+            (RelationTypesConstants.ONE_TO_MANY.equals(f.getRelation().getType())
+                    || RelationTypesConstants.MANY_TO_MANY.equals(f.getRelation().getType()));
     }
 
     /**
@@ -597,7 +602,7 @@ public class FlywayUtils {
      * @return true if the field definition has a one-to-many relation, false otherwise
      */
     private static boolean isOneToMany(final FieldDefinition f) {
-        return f.getRelation() != null && "OneToMany".equals(f.getRelation().getType());
+        return f.getRelation() != null && RelationTypesConstants.ONE_TO_MANY.equals(f.getRelation().getType());
     }
     
     /**
@@ -878,7 +883,7 @@ public class FlywayUtils {
             final DatabaseType db,
             final Map<String, ModelDefinition> modelsByName) {
 
-        if (relationField.getRelation() == null || !"ManyToMany".equals(relationField.getRelation().getType())) {
+        if (relationField.getRelation() == null || !RelationTypesConstants.MANY_TO_MANY.equals(relationField.getRelation().getType())) {
             throw new IllegalArgumentException(
                 String.format("Field '%s' is not a many-to-many relation field", relationField.getName())
             );

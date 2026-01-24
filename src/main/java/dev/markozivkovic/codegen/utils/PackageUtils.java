@@ -428,7 +428,6 @@ public class PackageUtils {
      * Computes the repository package by joining the base package with either the user-defined repository package or the default repository package path.
      * If the user-defined repository package is not null or empty, it is used, otherwise the default repository package path is used.
      * 
-     * @param basePackage          the base package path
      * @param packageConfiguration the package configuration object
      * @return the computed repository package path
      */

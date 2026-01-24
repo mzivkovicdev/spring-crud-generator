@@ -16,6 +16,9 @@
 
 package dev.markozivkovic.codegen.constants;
 
+/**
+ * Constants used in the code generation process.
+ */
 public class GeneratorConstants {
     
     private GeneratorConstants() {}

@@ -16,7 +16,6 @@
 
 package dev.markozivkovic.codegen.migrations;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import dev.markozivkovic.codegen.models.flyway.ColumnState;
 import dev.markozivkovic.codegen.models.flyway.EntityState;
@@ -34,6 +35,9 @@ import dev.markozivkovic.codegen.models.flyway.SchemaDiff.AddedColumn;
 import dev.markozivkovic.codegen.models.flyway.SchemaDiff.ColumnChange;
 import dev.markozivkovic.codegen.models.flyway.SchemaDiff.Result;
 
+/**
+ * Class for computing differences between two states of a database entity.
+ */
 public class MigrationDiffer {
 
     private MigrationDiffer() {}
@@ -52,9 +56,7 @@ public class MigrationDiffer {
         final List<Map<String,Object>> cList = (List<Map<String,Object>>) newCreateCtx.get("columns");
 
         if (Objects.nonNull(cList)) {
-            for (final Map<String,Object> c : cList) {
-                newCols.put(String.valueOf(c.get("name")), c);
-            }
+            cList.forEach(c -> newCols.put(String.valueOf(c.get("name")), c));
         }
 
         final Map<String, ColumnState> oldCols = oldState != null && oldState.getColumns() != null ?
@@ -81,7 +83,7 @@ public class MigrationDiffer {
      */
     private static void diffColumns(final Result r, final Map<String, ColumnState> oldCols, final Map<String, Map<String, Object>> newCols) {
 
-        for (final String n : newCols.keySet()) {
+        newCols.keySet().forEach(n -> {
             if (!oldCols.containsKey(n)) {
                 final Map<String,Object> v = newCols.get(n);
                 final String nt = String.valueOf(v.get("sqlType"));
@@ -90,15 +92,16 @@ public class MigrationDiffer {
                 final String nd = (String) v.get("defaultExpr");
                 r.getAddedColumns().add(new AddedColumn(n, nt, nn, nu, nd));
             }
-        }
+        });
 
-        for (String n : oldCols.keySet()) {
+        oldCols.keySet().forEach(n -> {
             if (!newCols.containsKey(n)) {
                 r.getRemovedColumns().add(n);
             }
-        }
+        });
 
-        for (final String n : newCols.keySet()) {
+        newCols.keySet().forEach(n -> {
+
             if (oldCols.containsKey(n)) {
                 final ColumnState o = oldCols.get(n);
                 final Map<String,Object> nv = newCols.get(n);
@@ -106,7 +109,7 @@ public class MigrationDiffer {
                 final Boolean newNullable = Boolean.TRUE.equals(nv.get("nullable"));
                 final Boolean newUnique = Boolean.TRUE.equals(nv.get("unique"));
                 final String newDefaultExpression = (String) nv.get("defaultExpr");
-
+    
                 final ColumnChange columnChange = new ColumnChange(
                         n, o.getType(), newType, o.getNullable(), newNullable, o.getUnique(), newUnique,
                         o.getDefaultExpr(), newDefaultExpression, !Objects.equals(o.getType(), newType),
@@ -118,7 +121,7 @@ public class MigrationDiffer {
                     r.getModifiedColumns().add(columnChange);
                 }
             }
-        }
+        });
     }
 
     /**
@@ -155,11 +158,11 @@ public class MigrationDiffer {
         final Set<String> oldFkKeys = new LinkedHashSet<>();
         final Map<String, FkState> oldFkByKey = new LinkedHashMap<>();
         if (oldState != null && oldState.getFks() != null) {
-            for (FkState f : oldState.getFks()) {
+            oldState.getFks().forEach(f -> {
                 final String key = fkKey(f.getColumn(), f.getRefTable(), f.getRefColumn());
                 oldFkKeys.add(key);
                 oldFkByKey.put(key, f);
-            }
+            });
         }
         final Set<String> newFkKeys = new LinkedHashSet<>();
         final Map<String, Map<String,Object>> newFkByKey = new LinkedHashMap<>();
@@ -169,17 +172,17 @@ public class MigrationDiffer {
                 : (List<Map<String,Object>>) newCreateCtx.get("fks");
 
         if (fks != null) {
-            for (Map<String,Object> m : fks) {
+            fks.forEach(m -> {
                 final String col = String.valueOf(m.get("column"));
                 final String rt  = String.valueOf(m.get("refTable"));
                 final String rc  = String.valueOf(m.get("refColumn"));
                 final String key = fkKey(col, rt, rc);
                 newFkKeys.add(key);
                 newFkByKey.put(key, m);
-            }
+            });
         }
 
-        for (final String k : newFkKeys) {
+        newFkKeys.forEach(k -> {
             if (!oldFkKeys.contains(k)) {
                 final Map<String,Object> m = newFkByKey.get(k);
                 final SchemaDiff.FkChange fc = new SchemaDiff.FkChange();
@@ -188,9 +191,9 @@ public class MigrationDiffer {
                 fc.setRefColumn(String.valueOf(m.get("refColumn")));
                 r.getAddedFks().add(fc);
             }
-        }
+        });
 
-        for (final String k : oldFkKeys) {
+        oldFkKeys.forEach(k -> {
             if (!newFkKeys.contains(k)) {
                 final FkState f = oldFkByKey.get(k);
                 final SchemaDiff.FkChange fc = new SchemaDiff.FkChange();
@@ -199,7 +202,7 @@ public class MigrationDiffer {
                 fc.setRefColumn(f.getRefColumn());
                 r.getRemovedFks().add(fc);
             }
-        }
+        });
     }
 
     /**
@@ -239,7 +242,7 @@ public class MigrationDiffer {
      * Creates a string that uniquely identifies a foreign key.
      * 
      * The string is in the format of:
-     * <column_name>-><referenced_table_name>(<referenced_column_name>)
+     * {@code <column_name>-><referenced_table_name>(<referenced_column_name>)}
      * 
      * @param col the column name of the foreign key
      * @param rt the referenced table name of the foreign key
@@ -261,25 +264,22 @@ public class MigrationDiffer {
     private static List<String> splitCsv(final String raw) {
         if (raw == null || "null".equals(raw))
             return Collections.emptyList();
-        
-        final List<String> out = new ArrayList<>();
-        for (String p : raw.split(",")) {
-            final String t = p.trim();
-            if (!t.isEmpty()) out.add(t);
-        }
-        return out;
+
+        return Stream.of(raw.split(","))
+                .map(p -> p.trim())
+                .filter(p -> !p.isEmpty())
+                .collect(Collectors.toList());
     }
 
     /**
      * Compares two lists ignoring order.
      * 
-     * @param a the first list
-     * @param b the second list
+     * @param firstList  the first list
+     * @param secondList the second list
      * @return true if the lists are equal ignoring order, false otherwise
      */
-    private static boolean equalListIgnoreOrder(final List<String> a, final List<String> b) {
-        return new HashSet<>(a)
-                .equals(new HashSet<>(b));
+    private static boolean equalListIgnoreOrder(final List<String> firstList, final List<String> secondList) {
+        return new HashSet<>(firstList).equals(new HashSet<>(secondList));
     }
 
 }

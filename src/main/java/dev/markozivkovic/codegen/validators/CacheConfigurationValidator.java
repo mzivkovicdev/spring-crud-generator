@@ -39,7 +39,7 @@ public class CacheConfigurationValidator {
      * - If cache.enabled is set to true, but no cache.type, cache.maxSize or cache.expiration are provided, a warning is logged and the cache type is set to SIMPLE.
      * - If cache.type is set to CAFFEINE, cache.maxSize must be > 0, otherwise an {@link IllegalArgumentException} is thrown.
      * - If cache.type is not set to CAFFEINE, cache.maxSize is ignored and a warning is logged.
-     * - If cache.expiration is set to <= 0, an {@link IllegalArgumentException} is thrown.
+     * - If cache.expiration is set to {@code <= 0}, an {@link IllegalArgumentException} is thrown.
      * 
      * @param cacheConfiguration the cache configuration to validate
      * @throws IllegalArgumentException if the cache configuration is invalid
