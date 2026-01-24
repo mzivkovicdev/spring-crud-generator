@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.codegen.constants.TemplateContextConstants;
 import dev.markozivkovic.codegen.generators.CodeGenerator;
 import dev.markozivkovic.codegen.imports.RestControllerImports;
 import dev.markozivkovic.codegen.imports.RestControllerImports.RestEndpointOperation;
@@ -122,6 +123,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 final String strippedRelationField = ModelNameUtils.stripSuffix(relationField.getType());
                 final String className = String.format("%sAdd%sMockMvcTest", modelWithoutSuffix, strippedRelationField);
                 final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+                final ModelDefinition relationEntity = entities.stream()
+                        .filter(entity -> entity.getName().equals(relationField.getType()))
+                        .findFirst()
+                        .orElseThrow();
+                final FieldDefinition entityIdField = FieldUtils.extractIdField(relationEntity.getFields());
 
                 final Map<String, Object> context = new HashMap<>();
                 final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
@@ -140,6 +146,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("invalidIdType", UnitTestUtils.computeInvalidIdType(idField));
                 context.put("strippedRelationClassName", strippedRelationField);
                 context.put("relationFieldModel", StringUtils.capitalize(relationField.getName()));
+                context.put(TemplateContextConstants.RELATION_ID_FIELD, entityIdField.getName());
                 context.put("baseImports", RestControllerImports.computeAddRelationEndpointBaseImports(modelDefinition));
                 context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
                         modelDefinition, outputDir, swagger, RestEndpointOperation.ADD_RELATION, relationField, packageConfiguration, isGlobalExceptionHandlerEnabled

@@ -625,6 +625,7 @@ class RestControllerTemplateContextTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         final List<FieldDefinition> fields = List.of(idField);
         final ModelDefinition model = newModel("UserEntity", fields);
+        final List<ModelDefinition> entities = List.of(model);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
@@ -632,7 +633,7 @@ class RestControllerTemplateContextTest {
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields))
                       .thenReturn(List.of());
 
-            final Map<String, Object> ctx = RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model);
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model, entities);
 
             assertTrue(ctx.isEmpty(), "Expected empty context when there are no relation types");
         }
@@ -640,36 +641,36 @@ class RestControllerTemplateContextTest {
 
     @Test
     void computeAddResourceRelationEndpointContext_shouldBuildModelAndRelations() {
-        
-        final FieldDefinition idField = mock(FieldDefinition.class);
-        when(idField.getType()).thenReturn("Long");
+
+        final FieldDefinition userIdField = mock(FieldDefinition.class);
+        when(userIdField.getType()).thenReturn("Long");
 
         final FieldDefinition relationField = mock(FieldDefinition.class);
         when(relationField.getName()).thenReturn("roles");
         when(relationField.getType()).thenReturn("RoleEntity");
 
-        final List<FieldDefinition> fields = List.of(idField, relationField);
-        final ModelDefinition model = newModel("UserEntity", fields);
+        final List<FieldDefinition> userFields = List.of(userIdField, relationField);
+        final ModelDefinition userModel = newModel("UserEntity", userFields);
+
+        final FieldDefinition roleIdField = mock(FieldDefinition.class);
+        when(roleIdField.getName()).thenReturn("roleId");
+
+        final List<FieldDefinition> roleFields = List.of(roleIdField);
+        final ModelDefinition roleModel = newModel("RoleEntity", roleFields);
+
+        final List<ModelDefinition> entities = List.of(userModel, roleModel);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields))
-                    .thenReturn(List.of("ManyToMany"));
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(userFields)).thenReturn(List.of("ManyToMany"));
+            fieldUtils.when(() -> FieldUtils.extractIdField(userFields)).thenReturn(userIdField);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(userFields)).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractIdField(roleFields)).thenReturn(roleIdField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity")).thenReturn("Role");
 
-            fieldUtils.when(() -> FieldUtils.extractIdField(fields))
-                    .thenReturn(idField);
-
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields))
-                    .thenReturn(List.of(relationField));
-
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                    .thenReturn("User");
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity"))
-                    .thenReturn("Role");
-
-            final Map<String, Object> ctx =
-                    RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model);
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeAddResourceRelationEndpointContext(userModel, entities);
 
             assertTrue(ctx.containsKey(TemplateContextConstants.MODEL));
             assertTrue(ctx.containsKey(TemplateContextConstants.RELATIONS));
@@ -687,10 +688,40 @@ class RestControllerTemplateContextTest {
             assertEquals(1, relations.size());
             final Map<String, Object> relCtx = relations.get(0);
 
+            assertEquals("roleId", relCtx.get(TemplateContextConstants.RELATION_ID_FIELD));
             assertEquals("roles", relCtx.get(TemplateContextConstants.RELATION_FIELD_MODEL));
             assertEquals("Role", relCtx.get(TemplateContextConstants.STRIPPED_RELATION_CLASS_NAME));
-
             assertEquals("usersIdRolesPost", relCtx.get(TemplateContextConstants.METHOD_NAME));
+        }
+    }
+
+    @Test
+    void computeAddResourceRelationEndpointContext_shouldThrowWhenRelationEntityNotFound() {
+
+        final FieldDefinition userIdField = mock(FieldDefinition.class);
+        when(userIdField.getType()).thenReturn("Long");
+
+        final FieldDefinition relationField = mock(FieldDefinition.class);
+        when(relationField.getName()).thenReturn("roles");
+        when(relationField.getType()).thenReturn("RoleEntity");
+
+        final List<FieldDefinition> userFields = List.of(userIdField, relationField);
+        final ModelDefinition userModel = newModel("UserEntity", userFields);
+
+        final List<ModelDefinition> entities = List.of(userModel);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(userFields)).thenReturn(List.of("ManyToMany"));
+            fieldUtils.when(() -> FieldUtils.extractIdField(userFields)).thenReturn(userIdField);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(userFields)).thenReturn(List.of(relationField));
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity")).thenReturn("Role");
+
+            assertThrows(NoSuchElementException.class, () ->
+                    RestControllerTemplateContext.computeAddResourceRelationEndpointContext(userModel, entities)
+            );
         }
     }
 
