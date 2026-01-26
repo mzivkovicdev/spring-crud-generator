@@ -296,11 +296,11 @@ class SpecificationValidatorTest {
 
         final FieldDefinition nameField = new FieldDefinition();
         nameField.setName("name");
-        nameField.setType("string");
+        nameField.setType("String");
 
         final FieldDefinition duplicatedNamefield = new FieldDefinition();
         duplicatedNamefield.setName("name");
-        duplicatedNamefield.setType("string");
+        duplicatedNamefield.setType("String");
 
         model.setFields(List.of(idField, nameField, duplicatedNamefield));
 
@@ -362,7 +362,7 @@ class SpecificationValidatorTest {
 
         final FieldDefinition addressId = new FieldDefinition();
         addressId.setName("id");
-        addressId.setType("string");
+        addressId.setType("String");
         addressId.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
 
         address.setFields(List.of(addressId));

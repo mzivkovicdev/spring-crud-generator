@@ -321,8 +321,8 @@ public class SpecificationValidator {
         if (!isBasicType && !isEnumType && !isJsonType && !modelReference && !isCollectionType) {
             throw new IllegalArgumentException(
                 String.format(
-                    "Field type %s for field %s in model %s is invalid. It must be a basic type [%s], special type [%s] or reference to another model.",
-                    type, field.getName(), model.getName(), BasicType.getSupportedValues(), SpecialType.getSupportedValues()
+                    "Field type %s for field %s in model %s is invalid. It must be a basic type [%s], special type [%s] or reference to another model %s.",
+                    type, field.getName(), model.getName(), BasicType.getSupportedValues(), SpecialType.getSupportedValues(), modelNames
                 )
             );
         }

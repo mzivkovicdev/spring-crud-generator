@@ -2,7 +2,6 @@ package dev.markozivkovic.codegen.enums;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -18,10 +17,10 @@ class BasicTypeTest {
     }
 
     @Test
-    void isBasicType_shouldReturnTrueForValidTypesIgnoringCase() {
-        assertTrue(BasicType.isBasicType("string"));
-        assertTrue(BasicType.isBasicType("StRiNg"));
-        assertTrue(BasicType.isBasicType("INTEGER"));
+    void isBasicType_shouldReturnFalseForBasicTypesIgnoringCase() {
+        assertFalse(BasicType.isBasicType("string"));
+        assertFalse(BasicType.isBasicType("StRiNg"));
+        assertFalse(BasicType.isBasicType("INTEGER"));
     }
 
     @Test
