@@ -1,0 +1,107 @@
+/*
+ * Copyright 2025-present Marko Zivkovic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package dev.markozivkovic.springcrudgenerator.models.flyway;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public class MigrationState {
+    
+    private String generatorVersion;
+    private Integer lastScriptVersion;
+    private List<EntityState> entities = new ArrayList<>();
+    private List<DdlArtifactState> ddlArtifacts = new ArrayList<>();
+
+    public MigrationState() {
+
+    }
+
+    public MigrationState(final String generatorVersion, final Integer lastScriptVersion, final List<EntityState> entities,
+                final List<DdlArtifactState> ddlArtifacts) {
+        this.generatorVersion = generatorVersion;
+        this.lastScriptVersion = lastScriptVersion;
+        this.entities = entities;
+        this.ddlArtifacts = ddlArtifacts;
+    }
+
+    public String getGeneratorVersion() {
+        return this.generatorVersion;
+    }
+
+    public MigrationState setGeneratorVersion(final String generatorVersion) {
+        this.generatorVersion = generatorVersion;
+        return this;
+    }
+
+    public Integer getLastScriptVersion() {
+        return this.lastScriptVersion;
+    }
+
+    public MigrationState setLastScriptVersion(final Integer lastScriptVersion) {
+        this.lastScriptVersion = lastScriptVersion;
+        return this;
+    }
+
+    public List<EntityState> getEntities() {
+        return this.entities;
+    }
+
+    public MigrationState setEntities(final List<EntityState> entities) {
+        this.entities = entities;
+        return this;
+    }
+
+    public List<DdlArtifactState> getDdlArtifacts() {
+        return this.ddlArtifacts;
+    }
+
+    public MigrationState setDdlArtifacts(final List<DdlArtifactState> ddlArtifacts) {
+        this.ddlArtifacts = ddlArtifacts;
+        return this;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof MigrationState)) {
+            return false;
+        }
+        final MigrationState migrationState = (MigrationState) o;
+        return Objects.equals(generatorVersion, migrationState.generatorVersion) &&
+                Objects.equals(lastScriptVersion, migrationState.lastScriptVersion) &&
+                Objects.equals(entities, migrationState.entities) &&
+                Objects.equals(ddlArtifacts, migrationState.ddlArtifacts);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(generatorVersion, lastScriptVersion, entities, ddlArtifacts);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " generatorVersion='" + getGeneratorVersion() + "'" +
+            ", lastScriptVersion='" + getLastScriptVersion() + "'" +
+            ", entities='" + getEntities() + "'" +
+            ", ddlArtifacts='" + getDdlArtifacts() + "'" +
+            "}";
+    }    
+
+}
