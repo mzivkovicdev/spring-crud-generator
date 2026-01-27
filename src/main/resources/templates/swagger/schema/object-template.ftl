@@ -1,5 +1,7 @@
 type: object
+<#if description??>
 description: ${description}
+</#if>
 <#if title??>
 title: ${title}
 </#if><#t>

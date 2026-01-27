@@ -171,7 +171,7 @@ Add the following `profile` section to your **`pom.xml`**:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.0.1</version>
+                    <version>1.0.2</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>
