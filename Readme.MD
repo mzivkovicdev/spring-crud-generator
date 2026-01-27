@@ -157,7 +157,7 @@ Generate a fully functional Spring Boot CRUD application in minutes using a sing
 
 ### Step 1: Add Maven Profile
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.0.1`  
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.0.2`  
 > Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator  
 
 Add the following `profile` section to your **`pom.xml`**:
