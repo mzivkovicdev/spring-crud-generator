@@ -5,7 +5,7 @@
     <groupId>dev.markozivkovic</groupId>
     <artifactId>spring-crud-generator</artifactId>
     <packaging>maven-plugin</packaging>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <name>spring-crud-generator</name>
     <description>
         Maven plugin that generates production-ready Spring Boot CRUD layers, database migrations, API docs, Docker resources, tests, and more from a single YAML/JSON configuration file.
