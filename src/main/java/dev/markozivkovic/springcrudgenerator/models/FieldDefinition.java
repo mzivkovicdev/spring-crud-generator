@@ -31,6 +31,7 @@ public class FieldDefinition {
     private List<String> values = new ArrayList<>();
     private RelationDefinition relation;
     private ColumnDefinition column;
+    private ValidationDefinition validation;
 
     public FieldDefinition() {
 
@@ -38,7 +39,7 @@ public class FieldDefinition {
 
     public FieldDefinition(final String name, final String type, final String description,
             final IdDefinition id, final List<String> values, final RelationDefinition relation,
-            final ColumnDefinition column) {
+            final ColumnDefinition column, final ValidationDefinition validation) {
         this.name = name;
         this.type = type;
         this.description = description;
@@ -46,6 +47,7 @@ public class FieldDefinition {
         this.values = values;
         this.relation = relation;
         this.column = column;
+        this.validation = validation;
     }
 
     public String getName() {
@@ -115,6 +117,15 @@ public class FieldDefinition {
         return this;
     }
 
+    public ValidationDefinition getValidation() {
+        return this.validation;
+    }
+
+    public FieldDefinition setValidation(final ValidationDefinition validation) {
+        this.validation = validation;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -129,12 +140,13 @@ public class FieldDefinition {
                 id == fieldDefinition.id &&
                 Objects.equals(values, fieldDefinition.values) &&
                 Objects.equals(relation, fieldDefinition.relation) &&
-                Objects.equals(column, fieldDefinition.column);
+                Objects.equals(column, fieldDefinition.column) &&
+                Objects.equals(validation, fieldDefinition.validation);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, description, id, values, relation, column);
+        return Objects.hash(name, type, description, id, values, relation, column, validation);
     }
 
     @Override
@@ -147,6 +159,7 @@ public class FieldDefinition {
             ", values='" + getValues() + "'" +
             ", relation='" + getRelation() + "'" +
             ", column='" + getColumn() + "'" +
+            ", validation='" + getValidation() + "'" +
             "}";
     }
 
