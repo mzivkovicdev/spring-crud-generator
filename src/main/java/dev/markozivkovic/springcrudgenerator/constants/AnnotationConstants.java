@@ -26,10 +26,21 @@ public class AnnotationConstants {
     }
 
     public static final String ID_ANNOTATION = "@Id";
-    public static final String GENERATED_VALUE_ANNOTATION = "@GeneratedValue(strategy = GenerationType.IDENTITY)";
     public static final String ENTITY_ANNOTATION = "@Entity";
     public static final String TABLE_ANNOTATION = "@Table(name = \"%s\")";
     public static final String ENTITY_LISTENERS_ANNOTATION = "@EntityListeners({%s})";
     public static final String AUDITING_ENTITY_LISTENER_CLASS = "AuditingEntityListener.class";
     public static final String TRANSACTIONAL_ANNOTATION = "@Transactional";
+
+    public static final String NOT_NULL_ANNOTATION = "@NotNull";
+    public static final String NOT_EMPTY_ANNOTATION = "@NotEmpty";
+    public static final String NOT_BLANK_ANNOTATION = "@NotBlank";
+    public static final String SIZE_MIN_ANNOTATION = "@Size(min = %d)";
+    public static final String SIZE_MAX_ANNOTATION = "@Size(max = %d)";
+    public static final String SIZE_MIN_MAX_ANNOTATION = "@Size(min = %d, max = %d)";
+    public static final String EMAIL_ANNOTATION = "@Email";
+    public static final String MIN_ANNOTATION = "@Min(%d)";
+    public static final String MAX_ANNOTATION = "@Max(%d)";
+    public static final String DECIMAL_MIN_ANNOTATION = "@DecimalMin(\"%s\")";
+    public static final String DECIMAL_MAX_ANNOTATION = "@DecimalMax(\"%s\")";
 }
