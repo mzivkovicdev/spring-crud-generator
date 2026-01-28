@@ -71,6 +71,27 @@ public enum BasicType {
     }
 
     /**
+     * Returns a BasicType object from the given string representation of the type.
+     * 
+     * @param type the string representation of the type to convert
+     * @return the BasicType object corresponding converted
+     * @throws IllegalArgumentException if the given string does not represent one of the supported basic types
+     */
+    public static BasicType fromString(final String type) {
+        return Stream.of(values())
+                .filter(v -> v.getKey().equals(type.trim()))
+                .findFirst()
+                .orElseThrow(
+                    () -> new IllegalArgumentException(
+                        String.format(
+                            "Unsupported basic type: %s. Supported basic types are: %s",
+                            type, getSupportedValues()
+                        )
+                    )
+                );
+    }
+
+    /**
      * Returns a string containing all supported basic types, separated by commas.
      * 
      * @return a string containing all supported basic types, separated by commas
