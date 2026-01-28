@@ -172,9 +172,13 @@ class TransferObjectGeneratorTest {
                      .thenReturn("Address");
 
             fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields()))
-                      .thenReturn(false);
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(mainModel.getFields()))
+                    .thenReturn(false);
             fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(jsonModel.getFields()))
-                      .thenReturn(false);
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(jsonModel.getFields()))
+                    .thenReturn(false);
 
             toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.BASE))
                      .thenReturn("BASE_IMPORT_MAIN;");
@@ -314,6 +318,7 @@ class TransferObjectGeneratorTest {
             pkg.when(() -> PackageUtils.computeTransferObjectSubPackage(pkgCfg)).thenReturn("to");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(mainModel.getFields())).thenReturn(false);
             toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.BASE))
                     .thenReturn("BASE_IMPORTS\n");
             toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(
@@ -373,6 +378,7 @@ class TransferObjectGeneratorTest {
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(mainModel.getFields())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(List.of("REL"));
             fieldUtils.when(() -> FieldUtils.extractRelationFields(mainModel.getFields())).thenReturn(List.of(relationField));
             fieldUtils.when(() -> FieldUtils.extractIdField(roleModel.getFields())).thenReturn(roleIdField);
