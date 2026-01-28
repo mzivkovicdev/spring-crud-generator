@@ -32,6 +32,8 @@ import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 
 public class FieldUtils {
 
@@ -1061,17 +1063,14 @@ public class FieldUtils {
      */
     private static String computeValidationAnnotations(final FieldDefinition field) {
 
-        final StringBuilder sb = new StringBuilder();
+        final String validationAnnotations = FieldValidationResolver.resolveValidationForField(field).stream()
+                .collect(Collectors.joining(" ", "", " "));
 
-        if (Objects.nonNull(field.getColumn()) && Boolean.FALSE.equals(field.getColumn().getNullable())) {
-            sb.append("@NotNull ");
+        if (StringUtils.isBlank(validationAnnotations)) {
+            return "";
         }
 
-        if (Objects.nonNull(field.getColumn()) && Objects.nonNull(field.getColumn().getLength())) {
-            sb.append(String.format("@Size(max = %d) ", field.getColumn().getLength()));
-        }
-
-        return sb.toString();
+        return validationAnnotations;
     }
 
     /**
@@ -1223,6 +1222,45 @@ public class FieldUtils {
                     final ColumnDefinition column = field.getColumn();
                     return Objects.nonNull(column) && (Boolean.FALSE.equals(column.getNullable()) ||
                             Objects.nonNull(column.getLength()));
+                });
+    }
+
+    /**
+     * Checks if any of the fields in the given list have any validation defined.
+     * 
+     * A field is considered to have validation defined if it has any of the following defined:
+     * - required
+     * - notBlank
+     * - notEmpty
+     * - minLength
+     * - maxLength
+     * - min
+     * - max
+     * - minItems
+     * - maxItems
+     * - email
+     * 
+     * @param fields The list of fields to check for validations.
+     * @return True if any of the fields has any validation defined, false otherwise.
+     */
+    public static boolean hasAnyFieldValidation(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ValidationDefinition validation = field.getValidation();
+                    final boolean isValidationDefined = Objects.nonNull(validation) && (
+                            Boolean.TRUE.equals(validation.isRequired()) ||
+                            Boolean.TRUE.equals(validation.isNotBlank()) ||
+                            Boolean.TRUE.equals(validation.isNotEmpty()) ||
+                            Objects.nonNull(validation.getMinLength()) ||
+                            Objects.nonNull(validation.getMaxLength()) ||
+                            Objects.nonNull(validation.getMin()) ||
+                            Objects.nonNull(validation.getMax()) ||
+                            Objects.nonNull(validation.getMinItems()) ||
+                            Objects.nonNull(validation.getMaxItems()) ||
+                            Boolean.TRUE.equals(validation.isEmail())
+                    );
+                    return isValidationDefined;
                 });
     }
 
