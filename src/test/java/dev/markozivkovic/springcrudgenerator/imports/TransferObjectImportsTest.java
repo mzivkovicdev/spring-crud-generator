@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -27,10 +28,13 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
 class TransferObjectImportsTest {
+
+    private static final String COLLECTION_TYPE = "List<String>";
 
     @Test
     @DisplayName("getBaseImport(model): no special types and no list relations → empty string")
@@ -324,15 +328,15 @@ class TransferObjectImportsTest {
     @Test
     @DisplayName("computeValidationImport: no non-null and no size validations → empty string")
     void computeValidationImport_noConstraints_returnsEmpty() {
-        
-        final ModelDefinition model = new ModelDefinition();
-        model.setFields(Collections.emptyList());
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(Collections.emptyList());
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
-            final String result = TransferObjectImports.computeValidationImport(model);
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
             assertEquals("", result);
         }
@@ -341,61 +345,419 @@ class TransferObjectImportsTest {
     @Test
     @DisplayName("computeValidationImport: only @NotNull → imports jakarta.validation.constraints.NotNull")
     void computeValidationImport_onlyNotNull() {
-        
-        final ModelDefinition model = new ModelDefinition();
-        model.setFields(List.of(new FieldDefinition()));
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(new FieldDefinition())); // validation null -> loop preskače
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
-            final String result = TransferObjectImports.computeValidationImport(model);
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
-            assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_NULL),
-                    "Expected @NotNull import");
-            assertFalse(result.contains(ImportConstants.Jakarta.SIZE),
-                    "SIZE import should not be present");
-            assertTrue(result.endsWith("\n"));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_NULL), "Expected @NotNull import");
+            assertFalse(result.contains("import " + ImportConstants.Jakarta.SIZE), "SIZE import should not be present");
+            assertTrue(result.endsWith(System.lineSeparator()), "Expected trailing line separator");
         }
     }
 
     @Test
     @DisplayName("computeValidationImport: only @Size → imports jakarta.validation.constraints.Size")
     void computeValidationImport_onlySize() {
-        
-        final ModelDefinition model = new ModelDefinition();
-        model.setFields(List.of(new FieldDefinition()));
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(new FieldDefinition())); // validation null -> loop preskače
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(true);
 
-            final String result = TransferObjectImports.computeValidationImport(model);
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
-            assertTrue(result.contains("import " + ImportConstants.Jakarta.SIZE),
-                    "Expected @Size import");
-            assertFalse(result.contains(ImportConstants.Jakarta.NOT_NULL),
-                    "NotNull import should not be present");
-            assertTrue(result.endsWith("\n"));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.SIZE), "Expected @Size import");
+            assertFalse(result.contains("import " + ImportConstants.Jakarta.NOT_NULL), "NotNull import should not be present");
+            assertTrue(result.endsWith(System.lineSeparator()), "Expected trailing line separator");
         }
     }
 
     @Test
     @DisplayName("computeValidationImport: both @NotNull and @Size → imports both")
     void computeValidationImport_notNullAndSize() {
-        
-        final ModelDefinition model = new ModelDefinition();
-        model.setFields(List.of(new FieldDefinition()));
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(new FieldDefinition())); // validation null -> loop preskače
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(true);
 
-            final String result = TransferObjectImports.computeValidationImport(model);
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_NULL));
             assertTrue(result.contains("import " + ImportConstants.Jakarta.SIZE));
-            assertTrue(result.endsWith("\n"));
+            assertTrue(result.endsWith(System.lineSeparator()), "Expected trailing line separator");
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: field validation.required=true adds NotNull even if FieldUtils says false")
+    void computeValidationImport_requiredTrue_addsNotNull_evenIfFieldUtilsFalse() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setRequired(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_NULL));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: String minLength adds Size even if FieldUtils says false")
+    void computeValidationImport_stringMinLength_addsSize_evenIfFieldUtilsFalse() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMinLength(2);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.SIZE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: String maxLength adds Size even if FieldUtils says false")
+    void computeValidationImport_stringMaxLength_addsSize_evenIfFieldUtilsFalse() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMaxLength(10);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.SIZE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: String notBlank adds NotBlank import")
+    void computeValidationImport_stringNotBlank_addsNotBlank() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setNotBlank(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_BLANK));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: String notEmpty adds NotEmpty import")
+    void computeValidationImport_stringNotEmpty_addsNotEmpty() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setNotEmpty(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_EMPTY));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: String email adds Email import")
+    void computeValidationImport_stringEmail_addsEmail() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setEmail(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.EMAIL));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: Integer min adds Min import")
+    void computeValidationImport_integerMin_addsMin() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMin(new BigDecimal("1"));
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("Integer");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.MIN));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: Integer max adds Max import")
+    void computeValidationImport_integerMax_addsMax() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMax(new BigDecimal("99"));
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("Integer");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.MAX));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: BigDecimal min adds DecimalMin import")
+    void computeValidationImport_decimalMin_addsDecimalMin() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMin(new BigDecimal("5.5"));
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("BigDecimal");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.DECIMAL_MIN));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: BigDecimal max adds DecimalMax import")
+    void computeValidationImport_decimalMax_addsDecimalMax() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMax(new BigDecimal("10.25"));
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("BigDecimal");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.DECIMAL_MAX));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: collection notEmpty adds NotEmpty import")
+    void computeValidationImport_collectionNotEmpty_addsNotEmpty() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setNotEmpty(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType(COLLECTION_TYPE);
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_EMPTY));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: collection minItems adds Size import")
+    void computeValidationImport_collectionMinItems_addsSize() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMinItems(1);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType(COLLECTION_TYPE);
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.SIZE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: collection maxItems adds Size import")
+    void computeValidationImport_collectionMaxItems_addsSize() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMaxItems(3);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType(COLLECTION_TYPE);
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.SIZE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: deduplicates NotNull when added from FieldUtils and from field.required")
+    void computeValidationImport_notNullDeduplicated() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setRequired(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true); // dodaje NotNull
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            final String needle = "import " + ImportConstants.Jakarta.NOT_NULL;
+            final int firstIndex = result.indexOf(needle);
+            final int lastIndex = result.lastIndexOf(needle);
+
+            assertTrue(firstIndex >= 0, "Expected NotNull import");
+            assertEquals(firstIndex, lastIndex, "NotNull import should appear only once");
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: fields with null validation are ignored (no additional imports besides FieldUtils)")
+    void computeValidationImport_nullValidation_ignored() {
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(null);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertEquals("", result);
         }
     }
 

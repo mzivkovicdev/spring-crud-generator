@@ -25,10 +25,13 @@ import java.util.Objects;
 
 import org.apache.maven.api.annotations.Nullable;
 
+import dev.markozivkovic.springcrudgenerator.enums.BasicType;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
 import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
+import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 
 public class SwaggerUtils {
 
@@ -165,7 +168,7 @@ public class SwaggerUtils {
             property.put("description", fieldDefinition.getDescription());
         }
 
-        if (Objects.nonNull(fieldDefinition.getColumn())) {
+        if (Objects.nonNull(fieldDefinition.getColumn()) || Objects.nonNull(fieldDefinition.getValidation())) {
             property.putAll(applySwaggerValidation(fieldDefinition));
         }
 
@@ -221,15 +224,117 @@ public class SwaggerUtils {
 
         final Map<String, Object> validationSchema = new LinkedHashMap<>();
 
-        if (Objects.nonNull(fieldDefinition.getColumn().getNullable())) {
+        final boolean basicType = BasicType.isBasicType(fieldDefinition.getType());
+        final boolean isCollection = SpecialType.isCollectionType(fieldDefinition.getType());
+
+        if (Objects.nonNull(fieldDefinition.getColumn()) && Objects.nonNull(fieldDefinition.getColumn().getNullable())) {
             validationSchema.put("nullable", fieldDefinition.getColumn().getNullable());
         }
+        
+        if ((Objects.nonNull(fieldDefinition.getValidation()) && Boolean.TRUE.equals(fieldDefinition.getValidation().getRequired()))) {
+            validationSchema.put("nullable", !fieldDefinition.getValidation().getRequired());
+        }
 
-        if (Objects.nonNull(fieldDefinition.getColumn().getLength())) {
-            final String type = fieldDefinition.getResolvedType();
-            if (type.equalsIgnoreCase("String") || type.equalsIgnoreCase("CharSequence")) {
-                validationSchema.put("maxLength", fieldDefinition.getColumn().getLength());
+        if (basicType) {
+            validationSchema.putAll(applyBasicTypeSwaggerValidation(fieldDefinition));
+        }
+
+        if (isCollection) {
+            validationSchema.putAll(applyCollectionTypeSwaggerValidation(fieldDefinition));
+        }
+
+        return validationSchema;
+    }
+
+    /**
+     * Applies Swagger validation annotations for a given field definition that is a collection.
+     * 
+     * If the minimum items constraint is present on the field definition, it will be added to the validation schema.
+     * If the maximum items constraint is present on the field definition, it will be added to the validation schema.
+     * If the not empty constraint is present on the field definition, it will set the minimum items constraint to 1.
+     * 
+     * @param fieldDefinition the field definition to apply the Swagger validation annotations to
+     * @return a map containing the Swagger validation annotations
+     */
+    private static Map<String, Object> applyCollectionTypeSwaggerValidation(final FieldDefinition fieldDefinition) {
+
+        final Map<String, Object> validationSchema = new LinkedHashMap<>();
+        final ValidationDefinition validationDefinition = fieldDefinition.getValidation();
+
+        if (Objects.isNull(validationDefinition)) {
+            return Map.of();
+        }
+
+        if (Objects.nonNull(validationDefinition.getMinItems())) { validationSchema.put("minItems", validationDefinition.getMinItems()); }
+        if (Objects.nonNull(validationDefinition.getMaxItems())) { validationSchema.put("maxItems", validationDefinition.getMaxItems()); }
+
+        if (Boolean.TRUE.equals(validationDefinition.isNotEmpty())) {
+            final Object existingMinItems = validationSchema.get("minItems");
+            if (!(existingMinItems instanceof Integer) || ((Integer) existingMinItems) < 1) {
+                validationSchema.put("minItems", 1);
             }
+        }
+
+        return validationSchema;
+    }
+
+    /**
+     * Applies Swagger validation annotations to a given field definition that is a basic type (String, Integer, Long, BigInteger, Double, Float, BigDecimal).
+     * 
+     * If the minimum length constraint is present on the field definition, it will be added to the validation schema.
+     * If the maximum length constraint is present on the field definition, it will be added to the validation schema.
+     * If the not empty constraint is present on the field definition, it will set the minimum length constraint to 1.
+     * If the not blank constraint is present on the field definition, it will set the minimum length constraint to 1.
+     * If the email constraint is present on the field definition, it will set the format constraint to "email".
+     * 
+     * @param fieldDefinition the field definition to apply the Swagger validation annotations to
+     * @return a map containing the Swagger validation annotations
+     */
+    private static Map<String, Object> applyBasicTypeSwaggerValidation(final FieldDefinition fieldDefinition) {
+
+        final BasicType basicFieldType = BasicType.fromString(fieldDefinition.getType().trim());
+        final ValidationDefinition validationDefinition = fieldDefinition.getValidation();
+        final ColumnDefinition columnDefinition = fieldDefinition.getColumn();
+        final Map<String, Object> validationSchema = new LinkedHashMap<>();
+
+        switch (basicFieldType) {
+            case STRING:
+                Integer minLength = Objects.nonNull(validationDefinition) ? validationDefinition.getMinLength() : null;
+                Integer maxLength = Objects.nonNull(validationDefinition) ? validationDefinition.getMaxLength() : null;
+
+                if (Objects.isNull(maxLength) && Objects.nonNull(columnDefinition) && Objects.nonNull(columnDefinition.getLength())) {
+                    maxLength = columnDefinition.getLength();
+                }
+                if (Objects.nonNull(minLength)) { validationSchema.put("minLength", minLength); }
+                if (Objects.nonNull(maxLength)) { validationSchema.put("maxLength", maxLength); }
+
+                if (Objects.nonNull(validationDefinition)) {
+
+                    if (Boolean.TRUE.equals(validationDefinition.getNotEmpty()) || Boolean.TRUE.equals(validationDefinition.getNotBlank())) {
+                        final Object existingMinLength = validationSchema.get("minLength");
+                        if (!(existingMinLength instanceof Integer) || ((Integer) existingMinLength) < 1) { validationSchema.put("minLength", 1); }
+                    }
+                    if (Boolean.TRUE.equals(validationDefinition.getEmail())) { validationSchema.put("format", "email"); }
+                }
+                break;
+            case INTEGER:
+            case LONG:
+            case BIG_INTEGER:
+                if (Objects.nonNull(validationDefinition)) {
+                    if (Objects.nonNull(validationDefinition.getMin())) { validationSchema.put("minimum", validationDefinition.getMin().longValue()); }
+                    if (Objects.nonNull(validationDefinition.getMax())) { validationSchema.put("maximum", validationDefinition.getMax().longValue()); }
+                }
+                break;
+            case DOUBLE:
+            case FLOAT:
+            case BIG_DECIMAL:
+                if (Objects.nonNull(validationDefinition)) {
+                    if (Objects.nonNull(validationDefinition.getMin())) { validationSchema.put("minimum", validationDefinition.getMin()); }
+                    if (Objects.nonNull(validationDefinition.getMax())) { validationSchema.put("maximum", validationDefinition.getMax()); }
+                }
+                break;
+            default:
+                break;
         }
 
         return validationSchema;

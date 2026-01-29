@@ -19,6 +19,7 @@ package dev.markozivkovic.springcrudgenerator.utils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -32,6 +33,8 @@ import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 
 public class FieldUtils {
 
@@ -1061,17 +1064,14 @@ public class FieldUtils {
      */
     private static String computeValidationAnnotations(final FieldDefinition field) {
 
-        final StringBuilder sb = new StringBuilder();
+        final String validationAnnotations = FieldValidationResolver.resolveValidationForField(field).stream()
+                .collect(Collectors.joining(" ", "", " "));
 
-        if (Objects.nonNull(field.getColumn()) && Boolean.FALSE.equals(field.getColumn().getNullable())) {
-            sb.append("@NotNull ");
+        if (StringUtils.isBlank(validationAnnotations)) {
+            return "";
         }
 
-        if (Objects.nonNull(field.getColumn()) && Objects.nonNull(field.getColumn().getLength())) {
-            sb.append(String.format("@Size(max = %d) ", field.getColumn().getLength()));
-        }
-
-        return sb.toString();
+        return validationAnnotations;
     }
 
     /**
@@ -1224,6 +1224,103 @@ public class FieldUtils {
                     return Objects.nonNull(column) && (Boolean.FALSE.equals(column.getNullable()) ||
                             Objects.nonNull(column.getLength()));
                 });
+    }
+
+    /**
+     * Checks if any of the fields in the given list have any validation defined.
+     * 
+     * A field is considered to have validation defined if it has any of the following defined:
+     * - required
+     * - notBlank
+     * - notEmpty
+     * - minLength
+     * - maxLength
+     * - min
+     * - max
+     * - minItems
+     * - maxItems
+     * - email
+     * 
+     * @param fields The list of fields to check for validations.
+     * @return True if any of the fields has any validation defined, false otherwise.
+     */
+    public static boolean hasAnyFieldValidation(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ValidationDefinition validation = field.getValidation();
+                    final boolean isValidationDefined = Objects.nonNull(validation) && (
+                            Boolean.TRUE.equals(validation.isRequired()) ||
+                            Boolean.TRUE.equals(validation.isNotBlank()) ||
+                            Boolean.TRUE.equals(validation.isNotEmpty()) ||
+                            Objects.nonNull(validation.getMinLength()) ||
+                            Objects.nonNull(validation.getMaxLength()) ||
+                            Objects.nonNull(validation.getMin()) ||
+                            Objects.nonNull(validation.getMax()) ||
+                            Objects.nonNull(validation.getMinItems()) ||
+                            Objects.nonNull(validation.getMaxItems()) ||
+                            Boolean.TRUE.equals(validation.isEmail())
+                    );
+                    return isValidationDefined;
+                });
+    }
+
+    /**
+     * Extracts the names of the fields that have the "required" attribute set to true.
+     * 
+     * @param fields The list of fields to extract the required fields from.
+     * @return A list of field names that are required.
+     */
+    public static List<String> extractRequiredFields(final List<FieldDefinition> fields) {
+        
+        return extractRequiredFieldNames(fields, field -> true);
+    }
+
+    /**
+     * Extracts the names of the fields that have the "required" attribute set to true, excluding the ID field.
+     * This method is used when generating the create endpoint of a REST service.
+     * 
+     * @param fields The list of fields to extract the required fields from.
+     * @return A list of field names that are required for creating a resource.
+     */
+    public static List<String> extractRequiredFieldsForCreate(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return extractRequiredFieldNames(fields, field -> !field.equals(id));
+    }
+
+    /**
+     * Extracts the names of the fields that have the "required" attribute set to true, excluding the ID field and relation fields.
+     * This method is used when generating the update endpoint of a REST service.
+     * 
+     * @param fields The list of fields to extract the required fields from.
+     * @return A list of field names that are required for updating a resource.
+     */
+    public static List<String> extractRequiredFieldsForUpdate(final List<FieldDefinition> fields) {
+        
+        final FieldDefinition id = extractIdField(fields);
+        
+        return extractRequiredFieldNames(fields, field -> !field.equals(id) && Objects.isNull(field.getRelation()));
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that are required and
+     * pass the given additional filter.
+     * 
+     * @param fields           The list of fields to extract required field names from.
+     * @param additionalFilter An additional filter to apply to the fields.
+     * @return A list of names of fields that are required and pass the given additional filter.
+     */
+    private static List<String> extractRequiredFieldNames(final List<FieldDefinition> fields, final Predicate<FieldDefinition> additionalFilter) {
+
+        return fields.stream()
+                .filter(additionalFilter)
+                .filter(field ->
+                        Objects.nonNull(field) && Objects.nonNull(field.getValidation()) && Boolean.TRUE.equals(field.getValidation().getRequired())
+                )
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
     }
 
     /**

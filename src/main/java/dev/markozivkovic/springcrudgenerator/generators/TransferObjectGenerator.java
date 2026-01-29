@@ -211,7 +211,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         }
         sb.append(imports);
 
-        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields())) {
+        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields()) || FieldUtils.hasAnyFieldValidation(modelDefinition.getFields())) {
             sb.append(TransferObjectImports.computeValidationImport(modelDefinition));
         }
 
@@ -248,7 +248,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         final String imports = TransferObjectImports.getBaseImport(modelDefinition);
         sb.append(imports);
 
-        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields())) {
+        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields()) || FieldUtils.hasAnyFieldValidation(modelDefinition.getFields())) {
             sb.append(TransferObjectImports.computeValidationImport(modelDefinition));
         }
 

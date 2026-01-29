@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
+import dev.markozivkovic.springcrudgenerator.enums.BasicType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectTarget;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectType;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
@@ -157,6 +159,19 @@ public class TransferObjectImports {
         ImportCommon.addIf(FieldUtils.isAnyFieldNonNullable(fields), imports, ImportConstants.Jakarta.NOT_NULL);
         ImportCommon.addIf(FieldUtils.hasAnyFieldLengthValidation(fields), imports, ImportConstants.Jakarta.SIZE);
 
+        modelDefinition.getFields().forEach(field -> {
+            
+            if (Objects.isNull(field.getValidation())) return;
+
+            final boolean basicType = BasicType.isBasicType(field.getType());
+            final boolean isCollection = SpecialType.isCollectionType(field.getType());
+
+            ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().isRequired()), imports, ImportConstants.Jakarta.NOT_NULL);
+            
+            if (basicType) computeBasicTypeValidationImport(field, imports);
+            if (isCollection) computeCollectionValidationImport(field, imports);
+        });
+
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
                 .sorted()
@@ -168,6 +183,58 @@ public class TransferObjectImports {
         }
         
         return sb.toString();
+    }
+
+    /**
+     * Computes the necessary imports for the given field definition, including imports for the size constraint.
+     *
+     * @param field the field definition containing validation information used to determine necessary imports.
+     * @param imports the set of imports to add to.
+     */
+    private static void computeCollectionValidationImport(final FieldDefinition field, final Set<String> imports) {
+        
+        ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().getNotEmpty()), imports, ImportConstants.Jakarta.NOT_EMPTY);
+        ImportCommon.addIf(Objects.nonNull(field.getValidation().getMinItems()), imports, ImportConstants.Jakarta.SIZE);
+        ImportCommon.addIf(Objects.nonNull(field.getValidation().getMaxItems()), imports, ImportConstants.Jakarta.SIZE);
+    }
+
+    /**
+     * Computes the necessary imports for the given field definition, including imports for the size constraint and
+     * other basic type constraints.
+     *
+     * @param field the field definition containing validation information used to determine necessary imports.
+     * @param imports the set of imports to add to.
+     * @return the set of imports with the necessary imports added.
+     */
+    private static Set<String> computeBasicTypeValidationImport(final FieldDefinition field, final Set<String> imports) {
+
+        final BasicType basicFieldType = BasicType.fromString(field.getType().trim());
+        
+        switch (basicFieldType) {
+            case STRING:
+                ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().isNotBlank()), imports, ImportConstants.Jakarta.NOT_BLANK);
+                ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().isNotEmpty()), imports, ImportConstants.Jakarta.NOT_EMPTY);
+                ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().isEmail()), imports, ImportConstants.Jakarta.EMAIL);
+                ImportCommon.addIf(Objects.nonNull(field.getValidation().getMinLength()), imports, ImportConstants.Jakarta.SIZE);
+                ImportCommon.addIf(Objects.nonNull(field.getValidation().getMaxLength()), imports, ImportConstants.Jakarta.SIZE);
+                break;
+            case INTEGER:
+            case LONG:
+            case BIG_INTEGER:
+                ImportCommon.addIf(Objects.nonNull(field.getValidation().getMin()), imports, ImportConstants.Jakarta.MIN);
+                ImportCommon.addIf(Objects.nonNull(field.getValidation().getMax()), imports, ImportConstants.Jakarta.MAX);
+                break;
+            case DOUBLE:
+            case FLOAT:
+            case BIG_DECIMAL:
+                ImportCommon.addIf(Objects.nonNull(field.getValidation().getMin()), imports, ImportConstants.Jakarta.DECIMAL_MIN);
+                ImportCommon.addIf(Objects.nonNull(field.getValidation().getMax()), imports, ImportConstants.Jakarta.DECIMAL_MAX);
+                break;
+            default:
+                break;
+
+        }
+        return imports;
     }
 
     /**

@@ -70,6 +70,13 @@ public final class ImportConstants {
         public static final String MANY_TO_ONE = "jakarta.persistence.ManyToOne";
         public static final String VERSION = "jakarta.persistence.Version";
         public static final String NOT_NULL = "jakarta.validation.constraints.NotNull";
+        public static final String NOT_BLANK = "jakarta.validation.constraints.NotBlank";
+        public static final String NOT_EMPTY = "jakarta.validation.constraints.NotEmpty";
+        public static final String MIN = "jakarta.validation.constraints.Min";
+        public static final String MAX = "jakarta.validation.constraints.Max";
+        public static final String DECIMAL_MIN = "jakarta.validation.constraints.DecimalMin";
+        public static final String DECIMAL_MAX = "jakarta.validation.constraints.DecimalMax";
+        public static final String EMAIL = "jakarta.validation.constraints.Email";
         public static final String SIZE = "jakarta.validation.constraints.Size";
     }
 

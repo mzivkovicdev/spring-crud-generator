@@ -8,17 +8,23 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 
 class FieldUtilsTest {
 
@@ -105,6 +111,21 @@ class FieldUtilsTest {
             field.setId(new IdDefinition());
         }
         return field;
+    }
+
+    private static FieldDefinition fieldWithValidation(ValidationDefinition validation) {
+        final FieldDefinition f = new FieldDefinition();
+        f.setName("field");
+        f.setType("String");
+        f.setValidation(validation);
+        return f;
+    }
+
+    private static FieldDefinition fieldWithNameAndValidation(final String name, final ValidationDefinition validation) {
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName(name);
+        fieldDefinition.setValidation(validation);
+        return fieldDefinition;
     }
 
     @Test
@@ -2283,6 +2304,25 @@ class FieldUtilsTest {
     }
 
     @Test
+    void generateInputArgsWithoutFinalCreateInputTO_shouldReturnNameAndValidationAnnotations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+        nameField.setValidation(new ValidationDefinition().setMinLength(1).setMaxLength(100));
+
+        final List<FieldDefinition> fields = List.of(idField, nameField);
+        final List<ModelDefinition> entities = List.of();
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities);
+
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).endsWith("@Size(min = 1, max = 100) String name"));
+    }
+
+    @Test
     @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates '<type> <name>Id' for ManyToOne/OneToOne relations")
     void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSingleId_forToOneRelations() {
 
@@ -2393,6 +2433,21 @@ class FieldUtilsTest {
     }
 
     @Test
+    void generateInputArgsWithoutFinalCreateInputTO_shouldReturnNameWithValidationAnnotations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setValidation(new ValidationDefinition().setMinLength(1).setMaxLength(100));
+
+        final List<FieldDefinition> fields = List.of(idField, nameField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).endsWith("@Size(min = 1, max = 100) String name"));
+    }
+
+    @Test
     @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates '<Relation>InputTO <name>' for ManyToOne/OneToOne relations")
     void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSingleInputTO_forToOneRelations() {
 
@@ -2474,6 +2529,28 @@ class FieldUtilsTest {
     }
 
     @Test
+    void generateInputArgsWithoutFinalUpdateInputTO_shouldReturnNameAndValidationAnnotations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+        nameField.setValidation(new ValidationDefinition().setMinLength(1).setMaxLength(100));
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+        );
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, ownerField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("@Size(min = 1, max = 100) String name", result.get(0));
+    }
+
+    @Test
     @DisplayName("generateInputArgsWithoutFinalUpdateInputTO uses '<resolvedType>TO name' for JSON fields")
     void generateInputArgsWithoutFinalUpdateInputTO_shouldUseTOType_forJsonFields() {
 
@@ -2512,6 +2589,35 @@ class FieldUtilsTest {
 
         assertEquals(1, result.size());
         assertEquals("@NotNull @Size(max = 100) String name", result.get(0));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO includes validation annotations for name field")
+    void generateInputArgsWithoutFinalUpdateInputTO_includeValidationField() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
+        nameField.setRelation(null);
+        nameField.setValidation(
+            new ValidationDefinition()
+                    .setEmail(true)
+                    .setMinLength(1)
+                    .setMaxLength(100)
+        );
+
+        final ColumnDefinition column = new ColumnDefinition();
+        column.setNullable(false);
+        column.setLength(100);
+        nameField.setColumn(column);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
+
+        assertEquals(1, result.size());
+        assertEquals("@NotNull @Size(min = 1, max = 100) @Email String name", result.get(0));
     }
 
     @Test
@@ -3168,6 +3274,159 @@ class FieldUtilsTest {
         final boolean result = FieldUtils.hasAnyColumnValidation(fields);
 
         assertTrue(result);
+    }
+
+    @Test
+    void hasAnyFieldValidation_shouldReturnFalse_forEmptyList() {
+        assertFalse(FieldUtils.hasAnyFieldValidation(List.of()));
+    }
+
+    @Test
+    void hasAnyFieldValidation_shouldReturnFalse_whenAllFieldsHaveNullValidation() {
+        
+        final List<FieldDefinition> fields = List.of(
+                fieldWithValidation(null),
+                fieldWithValidation(null)
+        );
+
+        assertFalse(FieldUtils.hasAnyFieldValidation(fields));
+    }
+
+    @Test
+    void hasAnyFieldValidation_shouldReturnFalse_whenValidationObjectExistsButAllFlagsNullOrFalse() {
+        final ValidationDefinition v = new ValidationDefinition();
+        v.setRequired(false);
+        v.setNotBlank(false);
+        v.setNotEmpty(false);
+        v.setEmail(false);
+
+        final List<FieldDefinition> fields = List.of(fieldWithValidation(v));
+
+        assertFalse(FieldUtils.hasAnyFieldValidation(fields));
+    }
+
+    private static Stream<Consumer<ValidationDefinition>> anySingleValidationEnabled() {
+        return Stream.of(
+                v -> v.setRequired(true),
+                v -> v.setNotBlank(true),
+                v -> v.setNotEmpty(true),
+                v -> v.setMinLength(1),
+                v -> v.setMaxLength(10),
+                v -> v.setMin(BigDecimal.ONE),
+                v -> v.setMax(new BigDecimal("999")),
+                v -> v.setMinItems(1),
+                v -> v.setMaxItems(5),
+                v -> v.setEmail(true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("anySingleValidationEnabled")
+    void hasAnyFieldValidation_shouldReturnTrue_whenAnyValidationIsDefined(final Consumer<ValidationDefinition> enable) {
+        final ValidationDefinition v = new ValidationDefinition();
+        enable.accept(v);
+
+        List<FieldDefinition> fields = List.of(fieldWithValidation(v));
+
+        assertTrue(FieldUtils.hasAnyFieldValidation(fields));
+    }
+
+    @Test
+    void hasAnyFieldValidation_shouldReturnTrue_whenOnlyOneFieldAmongManyHasValidation() {
+        
+        final FieldDefinition noVal1 = fieldWithValidation(null);
+        final FieldDefinition noVal2 = fieldWithValidation(null);
+
+        final ValidationDefinition v = new ValidationDefinition();
+        v.setMaxLength(250);
+        final FieldDefinition withVal = fieldWithValidation(v);
+
+        final List<FieldDefinition> fields = List.of(noVal1, noVal2, withVal);
+
+        assertTrue(FieldUtils.hasAnyFieldValidation(fields));
+    }
+
+    @Test
+    @DisplayName("extractRequiredFields: returns only names of fields where validation.required = true")
+    void extractRequiredFields_shouldReturnOnlyRequiredFieldNames() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final ValidationDefinition notRequiredValidation = new ValidationDefinition();
+        notRequiredValidation.setRequired(false);
+
+        final FieldDefinition requiredField = fieldWithNameAndValidation("name", requiredValidation);
+        final FieldDefinition notRequiredField = fieldWithNameAndValidation("description", notRequiredValidation);
+        final FieldDefinition nullValidationField = fieldWithNameAndValidation("code", null);
+
+        final List<String> result = FieldUtils.extractRequiredFields(List.of(requiredField, notRequiredField, nullValidationField));
+
+        assertEquals(List.of("name"), result);
+    }
+
+    @Test
+    @DisplayName("extractRequiredFieldsForCreate: excludes ID field even if required=true")
+    void extractRequiredFieldsForCreate_shouldExcludeIdField() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final FieldDefinition idField = fieldWithNameAndValidation("id", requiredValidation);
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition requiredField = fieldWithNameAndValidation("name", requiredValidation);
+
+        final List<String> result = FieldUtils.extractRequiredFieldsForCreate(List.of(idField, requiredField));
+
+        assertEquals(List.of("name"), result);
+    }
+
+    @Test
+    @DisplayName("extractRequiredFieldsForUpdate: excludes ID field and relation fields")
+    void extractRequiredFieldsForUpdate_shouldExcludeIdAndRelationFields() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final FieldDefinition idField = fieldWithNameAndValidation("id", requiredValidation);
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition relationField = fieldWithNameAndValidation("owner", requiredValidation);
+        relationField.setRelation(new RelationDefinition());
+
+        final FieldDefinition normalRequiredField = fieldWithNameAndValidation("name", requiredValidation);
+
+        final List<String> result = FieldUtils.extractRequiredFieldsForUpdate(List.of(idField, relationField, normalRequiredField));
+
+        assertEquals(List.of("name"), result);
+    }
+
+    @Test
+    @DisplayName("extractRequiredFieldsForUpdate: includes required non-relation fields, excludes non-required")
+    void extractRequiredFieldsForUpdate_shouldIncludeOnlyRequiredNonRelationNonId() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final ValidationDefinition notRequiredValidation = new ValidationDefinition();
+        notRequiredValidation.setRequired(false);
+
+        final FieldDefinition idField = fieldWithNameAndValidation("id", requiredValidation);
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition requiredField = fieldWithNameAndValidation("name", requiredValidation);
+
+        final FieldDefinition notRequiredField = fieldWithNameAndValidation("description", notRequiredValidation);
+
+        final FieldDefinition requiredRelationField = fieldWithNameAndValidation("group", requiredValidation);
+        requiredRelationField.setRelation(new RelationDefinition());
+
+        final List<String> result = FieldUtils.extractRequiredFieldsForUpdate(
+                List.of(idField, requiredField, notRequiredField, requiredRelationField)
+        );
+
+        assertEquals(List.of("name"), result);
     }
 
     @Test

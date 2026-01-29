@@ -296,7 +296,12 @@ class SwaggerDocumentationGeneratorTest {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(userEntity.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRequiredFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRequiredFieldsForCreate(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRequiredFieldsForUpdate(anyList())).thenReturn(List.of());
             swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
+            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class), eq(SwaggerSchemaModeEnum.INPUT))).thenReturn(new HashMap<>());
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("User")).thenReturn("UserCreate");
