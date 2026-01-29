@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -18,8 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
+import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 
 class SwaggerUtilsTest {
 
@@ -476,6 +479,192 @@ class SwaggerUtilsTest {
             assertEquals("payload", property.get("name"));
             assertEquals("./payload.yaml", property.get("$ref"));
         }
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: column.nullable should be applied to property as nullable")
+    void toSwaggerProperty_appliesNullableFromColumn() {
+
+        final ColumnDefinition columnDefinition = new ColumnDefinition();
+        columnDefinition.setNullable(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("description");
+        fieldDefinition.setType("String");
+        fieldDefinition.setColumn(columnDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(true, property.get("nullable"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: validation.required=true forces nullable=false (overwrites column nullable if present)")
+    void toSwaggerProperty_requiredTrue_forcesNullableFalse() {
+
+        final ColumnDefinition columnDefinition = new ColumnDefinition();
+        columnDefinition.setNullable(true);
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setRequired(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("name");
+        fieldDefinition.setType("String");
+        fieldDefinition.setColumn(columnDefinition);
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(false, property.get("nullable"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: String minLength/maxLength -> minLength/maxLength")
+    void toSwaggerProperty_stringMinMaxLength_appliesMinMaxLength() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMinLength(2);
+        validationDefinition.setMaxLength(10);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("code");
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(2, property.get("minLength"));
+        assertEquals(10, property.get("maxLength"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: String maxLength falls back to column.length if validation.maxLength is null")
+    void toSwaggerProperty_stringMaxLength_fallsBackToColumnLength() {
+
+        final ColumnDefinition columnDefinition = new ColumnDefinition();
+        columnDefinition.setLength(255);
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMaxLength(null);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("title");
+        fieldDefinition.setType("String");
+        fieldDefinition.setColumn(columnDefinition);
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(255, property.get("maxLength"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: String notEmpty/notBlank implies minLength >= 1 when minLength not set")
+    void toSwaggerProperty_stringNotEmpty_setsMinLengthOne() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setNotEmpty(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("name");
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(1, property.get("minLength"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: String email=true -> format=email")
+    void toSwaggerProperty_stringEmail_setsFormatEmail() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setEmail(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("email");
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals("email", property.get("format"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: Integer min/max -> minimum/maximum as long")
+    void toSwaggerProperty_integerMinMax_setsMinimumMaximumLong() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMin(new BigDecimal("1"));
+        validationDefinition.setMax(new BigDecimal("99"));
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("age");
+        fieldDefinition.setType("Integer");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(1L, property.get("minimum"));
+        assertEquals(99L, property.get("maximum"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: BigDecimal min/max -> minimum/maximum as BigDecimal")
+    void toSwaggerProperty_bigDecimalMinMax_setsMinimumMaximumBigDecimal() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMin(new BigDecimal("5.5"));
+        validationDefinition.setMax(new BigDecimal("10.25"));
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("amount");
+        fieldDefinition.setType("BigDecimal");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(new BigDecimal("5.5"), property.get("minimum"));
+        assertEquals(new BigDecimal("10.25"), property.get("maximum"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: collection minItems/maxItems -> minItems/maxItems")
+    void toSwaggerProperty_collectionMinMaxItems_setsMinItemsMaxItems() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setMinItems(2);
+        validationDefinition.setMaxItems(5);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("tags");
+        fieldDefinition.setType("List<String>");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(2, property.get("minItems"));
+        assertEquals(5, property.get("maxItems"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: collection notEmpty=true sets minItems=1 if minItems missing or < 1")
+    void toSwaggerProperty_collectionNotEmpty_setsMinItemsOne() {
+        
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setNotEmpty(true);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("tags");
+        fieldDefinition.setType("List<String>");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(1, property.get("minItems"));
     }
 
     @Test
