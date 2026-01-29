@@ -281,6 +281,53 @@ Where Details is another entity-like schema definition (often used as an embedde
 
 ---
 
+## Validation
+
+Validation rules are defined per-field using the validation block.
+
+### Validation schema
+```yaml
+  - name: email
+    type: String
+    column:
+      nullable: false
+      unique: true
+    validation:
+      required: true
+      notBlank: true
+      email: true
+      minLength: 5
+      maxLength: 255
+  - name: tags
+    type: Set<String>
+    validation:
+      minItems: 1
+      maxItems: 10
+```
+
+| Property    | Type    | Applies to          | Description                                    |
+| ----------- | ------- | ------------------- | ---------------------------------------------- |
+| `required`  | boolean | all                 | Field must be present (non-null)               |
+| `notBlank`  | boolean | String              | String must contain non-whitespace characters  |
+| `notEmpty`  | boolean | String, collections | Must not be empty (`""` / `[]`)                |
+| `minLength` | integer | String              | Minimum string length                          |
+| `maxLength` | integer | String              | Maximum string length                          |
+| `min`       | decimal | numbers             | Minimum numeric value                          |
+| `max`       | decimal | numbers             | Maximum numeric value                          |
+| `minItems`  | integer | collections         | Minimum number of elements (`List<>`, `Set<>`) |
+| `maxItems`  | integer | collections         | Maximum number of elements (`List<>`, `Set<>`) |
+| `email`     | boolean | String              | Must be a valid e-mail address                 |
+
+> min / max map well to numeric validations (e.g. BigDecimal, Integer, Long, Double).
+> minItems / maxItems apply to List<BasicType> and Set<BasicType>.
+
+### Validation rules
+
+- `required` is about nullability. `notBlank` / `notEmpty` are about content (and non-null for the respective type).
+- If a validation field is used on an unsupported type, it will be ignored.
+
+---
+
 ## Ignoring an entity
 
 To skip generation for a specific entity:
