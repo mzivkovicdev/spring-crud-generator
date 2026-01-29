@@ -91,21 +91,24 @@ public final class FieldValidationResolver {
             case INTEGER:
             case LONG:
             case BIG_INTEGER:
-                if (Objects.nonNull(field.getValidation().getMin())) 
-                    out.add(String.format(AnnotationConstants.MIN_ANNOTATION, field.getValidation().getMin().longValue()));
-                
-                if (Objects.nonNull(field.getValidation().getMax())) 
-                    out.add(String.format(AnnotationConstants.MAX_ANNOTATION, field.getValidation().getMax().longValue()));
+                if (Objects.nonNull(field.getValidation())) {
+                    if (Objects.nonNull(field.getValidation().getMin())) 
+                        out.add(String.format(AnnotationConstants.MIN_ANNOTATION, field.getValidation().getMin().longValue()));
+                    
+                    if (Objects.nonNull(field.getValidation().getMax())) 
+                        out.add(String.format(AnnotationConstants.MAX_ANNOTATION, field.getValidation().getMax().longValue()));
+                }
                 break;
             case DOUBLE:
             case FLOAT:
             case BIG_DECIMAL:
-                if (Objects.nonNull(field.getValidation().getMin())) 
-                    out.add(String.format(AnnotationConstants.DECIMAL_MIN_ANNOTATION, field.getValidation().getMin()));
-                
-                if (Objects.nonNull(field.getValidation().getMax())) 
-                    out.add(String.format(AnnotationConstants.DECIMAL_MAX_ANNOTATION, field.getValidation().getMax()));
-                
+                if (Objects.nonNull(field.getValidation())) {
+                    if (Objects.nonNull(field.getValidation().getMin())) 
+                        out.add(String.format(AnnotationConstants.DECIMAL_MIN_ANNOTATION, field.getValidation().getMin()));
+                    
+                    if (Objects.nonNull(field.getValidation().getMax())) 
+                        out.add(String.format(AnnotationConstants.DECIMAL_MAX_ANNOTATION, field.getValidation().getMax()));
+                }
                 break;
             default:
                 break;
