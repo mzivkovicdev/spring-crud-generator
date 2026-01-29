@@ -34,6 +34,7 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
+import dev.markozivkovic.springcrudgenerator.utils.RegexUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 
 public class SpecificationValidator {
@@ -165,7 +166,33 @@ public class SpecificationValidator {
             validateFieldType(model, field, modelNames);
             validateEnumValues(model, field);
             validateJsonType(model, field, modelNames);
+            validateRegexPattern(model, field);
         });
+    }
+
+    /**
+     * Validates the regex pattern for a field in a model definition.
+     * If the regex pattern is not null or empty, it checks if the pattern is valid.
+     * If the pattern is invalid, it throws an IllegalArgumentException.
+     * 
+     * @param model the model definition that contains the field
+     * @param field the field definition with the regex pattern to validate
+     */
+    private static void validateRegexPattern(final ModelDefinition model, final FieldDefinition field) {
+
+        if (Objects.nonNull(field.getValidation()) && Objects.nonNull(field.getValidation().getPattern())) {
+            
+            if (StringUtils.isNotBlank(field.getValidation().getPattern()) &&
+                    !RegexUtils.isValidRegex(field.getValidation().getPattern())) {
+
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Regex pattern %s in field %s in model %s is invalid",
+                        field.getValidation().getPattern(), field.getName(), model.getName()
+                    )
+                );
+            }
+        }
     }
 
     /**

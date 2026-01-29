@@ -43,4 +43,5 @@ public class AnnotationConstants {
     public static final String MAX_ANNOTATION = "@Max(%d)";
     public static final String DECIMAL_MIN_ANNOTATION = "@DecimalMin(\"%s\")";
     public static final String DECIMAL_MAX_ANNOTATION = "@DecimalMax(\"%s\")";
+    public static final String PATTERN_ANNOTATION = "@Pattern(regexp = \"%s\")";
 }
