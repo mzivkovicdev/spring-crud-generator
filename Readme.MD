@@ -176,11 +176,11 @@ Incremental generation is enabled by default:
 
 The README is intentionally short. Full documentation lives in **`/docs`**:
 
-- **Getting started:** `docs/getting-started.md`
-- **Configuration reference:** `docs/configuration.md`
-- **Packages configuration:** `docs/packages.md`
-- **Entity & field schema:** `docs/entities.md`
-- **Migrations & incremental generation:** `docs/migrations.md`, `docs/incremental-generation.md`
+- **Getting started:** [`docs/getting-started.md`](./docs/getting-started.md)
+- **Configuration reference:** [`docs/configuration.md`](./docs/configuration.md)
+- **Packages configuration:** [`docs/packages.md`](./docs/packages.md)
+- **Entity & field schema:** [`docs/entities.md`](./docs/entities.md)
+- **Migrations & incremental generation:** [`docs/migrations.md`](./docs/migrations.md), [`docs/incremental-generation.md`](./docs/incremental-generation.md)
 
 ---
 
