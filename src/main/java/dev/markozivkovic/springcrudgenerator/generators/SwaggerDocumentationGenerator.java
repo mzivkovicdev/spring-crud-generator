@@ -164,6 +164,14 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         };
         modelContext.put("title", title);
 
+        final List<String> requiredFields = switch(mode) {
+            case DEFAULT -> FieldUtils.extractRequiredFields(e.getFields());
+            case CREATE_MODEL -> FieldUtils.extractRequiredFieldsForCreate(e.getFields());
+            case UPDATE_MODEL -> FieldUtils.extractRequiredFieldsForUpdate(e.getFields());
+            case JSON_MODEL -> FieldUtils.extractRequiredFields(e.getFields());
+        };
+        modelContext.put("required", requiredFields);
+
         if (SwaggerObjectModeEnum.DEFAULT.equals(mode) && Objects.nonNull(e.getAudit()) && Boolean.TRUE.equals(e.getAudit().getEnabled())) {
 
             final String auditType = AuditUtils.resolveAuditType(e.getAudit().getType());
