@@ -18,11 +18,26 @@ properties:
     <#if p.nullable??>
     nullable: ${p.nullable?c}
     </#if><#t>
-    <#if p.maxLength??>
+    <#if !p.items?? && p.minimum??>
+    minimum: ${p.minimum?c}
+    </#if><#t>
+    <#if !p.items?? && p.maximum??>
+    maximum: ${p.maximum?c}
+    </#if><#t>
+    <#if !p.items?? && p.minLength??>
+    minLength: ${p.minLength?c}
+    </#if><#t>
+    <#if !p.items?? && p.maxLength??>
     maxLength: ${p.maxLength?c}
     </#if><#t>
     <#if p.items?? && p.uniqueItems??>
     uniqueItems: ${p.uniqueItems?c}
+    </#if><#t>
+    <#if p.items?? && p.minItems??>
+    minItems: ${p.minItems?c}
+    </#if><#t>
+    <#if p.items?? && p.maxItems??>
+    maxItems: ${p.maxItems?c}
     </#if><#t>
     <#if p.items??>
     items:
