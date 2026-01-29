@@ -121,6 +121,12 @@ class FieldUtilsTest {
         return f;
     }
 
+    private static FieldDefinition fieldWithNameAndValidation(final String name, final ValidationDefinition validation) {
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName(name);
+        fieldDefinition.setValidation(validation);
+        return fieldDefinition;
+    }
 
     @Test
     @DisplayName("isCascadeTypeDefined returns false when list has no relations")
@@ -3338,6 +3344,89 @@ class FieldUtilsTest {
         final List<FieldDefinition> fields = List.of(noVal1, noVal2, withVal);
 
         assertTrue(FieldUtils.hasAnyFieldValidation(fields));
+    }
+
+    @Test
+    @DisplayName("extractRequiredFields: returns only names of fields where validation.required = true")
+    void extractRequiredFields_shouldReturnOnlyRequiredFieldNames() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final ValidationDefinition notRequiredValidation = new ValidationDefinition();
+        notRequiredValidation.setRequired(false);
+
+        final FieldDefinition requiredField = fieldWithNameAndValidation("name", requiredValidation);
+        final FieldDefinition notRequiredField = fieldWithNameAndValidation("description", notRequiredValidation);
+        final FieldDefinition nullValidationField = fieldWithNameAndValidation("code", null);
+
+        final List<String> result = FieldUtils.extractRequiredFields(List.of(requiredField, notRequiredField, nullValidationField));
+
+        assertEquals(List.of("name"), result);
+    }
+
+    @Test
+    @DisplayName("extractRequiredFieldsForCreate: excludes ID field even if required=true")
+    void extractRequiredFieldsForCreate_shouldExcludeIdField() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final FieldDefinition idField = fieldWithNameAndValidation("id", requiredValidation);
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition requiredField = fieldWithNameAndValidation("name", requiredValidation);
+
+        final List<String> result = FieldUtils.extractRequiredFieldsForCreate(List.of(idField, requiredField));
+
+        assertEquals(List.of("name"), result);
+    }
+
+    @Test
+    @DisplayName("extractRequiredFieldsForUpdate: excludes ID field and relation fields")
+    void extractRequiredFieldsForUpdate_shouldExcludeIdAndRelationFields() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final FieldDefinition idField = fieldWithNameAndValidation("id", requiredValidation);
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition relationField = fieldWithNameAndValidation("owner", requiredValidation);
+        relationField.setRelation(new RelationDefinition());
+
+        final FieldDefinition normalRequiredField = fieldWithNameAndValidation("name", requiredValidation);
+
+        final List<String> result = FieldUtils.extractRequiredFieldsForUpdate(List.of(idField, relationField, normalRequiredField));
+
+        assertEquals(List.of("name"), result);
+    }
+
+    @Test
+    @DisplayName("extractRequiredFieldsForUpdate: includes required non-relation fields, excludes non-required")
+    void extractRequiredFieldsForUpdate_shouldIncludeOnlyRequiredNonRelationNonId() {
+
+        final ValidationDefinition requiredValidation = new ValidationDefinition();
+        requiredValidation.setRequired(true);
+
+        final ValidationDefinition notRequiredValidation = new ValidationDefinition();
+        notRequiredValidation.setRequired(false);
+
+        final FieldDefinition idField = fieldWithNameAndValidation("id", requiredValidation);
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition requiredField = fieldWithNameAndValidation("name", requiredValidation);
+
+        final FieldDefinition notRequiredField = fieldWithNameAndValidation("description", notRequiredValidation);
+
+        final FieldDefinition requiredRelationField = fieldWithNameAndValidation("group", requiredValidation);
+        requiredRelationField.setRelation(new RelationDefinition());
+
+        final List<String> result = FieldUtils.extractRequiredFieldsForUpdate(
+                List.of(idField, requiredField, notRequiredField, requiredRelationField)
+        );
+
+        assertEquals(List.of("name"), result);
     }
 
     @Test

@@ -19,6 +19,7 @@ package dev.markozivkovic.springcrudgenerator.utils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1262,6 +1263,64 @@ public class FieldUtils {
                     );
                     return isValidationDefined;
                 });
+    }
+
+    /**
+     * Extracts the names of the fields that have the "required" attribute set to true.
+     * 
+     * @param fields The list of fields to extract the required fields from.
+     * @return A list of field names that are required.
+     */
+    public static List<String> extractRequiredFields(final List<FieldDefinition> fields) {
+        
+        return extractRequiredFieldNames(fields, field -> true);
+    }
+
+    /**
+     * Extracts the names of the fields that have the "required" attribute set to true, excluding the ID field.
+     * This method is used when generating the create endpoint of a REST service.
+     * 
+     * @param fields The list of fields to extract the required fields from.
+     * @return A list of field names that are required for creating a resource.
+     */
+    public static List<String> extractRequiredFieldsForCreate(final List<FieldDefinition> fields) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return extractRequiredFieldNames(fields, field -> !field.equals(id));
+    }
+
+    /**
+     * Extracts the names of the fields that have the "required" attribute set to true, excluding the ID field and relation fields.
+     * This method is used when generating the update endpoint of a REST service.
+     * 
+     * @param fields The list of fields to extract the required fields from.
+     * @return A list of field names that are required for updating a resource.
+     */
+    public static List<String> extractRequiredFieldsForUpdate(final List<FieldDefinition> fields) {
+        
+        final FieldDefinition id = extractIdField(fields);
+        
+        return extractRequiredFieldNames(fields, field -> !field.equals(id) && Objects.isNull(field.getRelation()));
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that are required and
+     * pass the given additional filter.
+     * 
+     * @param fields           The list of fields to extract required field names from.
+     * @param additionalFilter An additional filter to apply to the fields.
+     * @return A list of names of fields that are required and pass the given additional filter.
+     */
+    private static List<String> extractRequiredFieldNames(final List<FieldDefinition> fields, final Predicate<FieldDefinition> additionalFilter) {
+
+        return fields.stream()
+                .filter(additionalFilter)
+                .filter(field ->
+                        Objects.nonNull(field) && Objects.nonNull(field.getValidation()) && Boolean.TRUE.equals(field.getValidation().getRequired())
+                )
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
     }
 
     /**

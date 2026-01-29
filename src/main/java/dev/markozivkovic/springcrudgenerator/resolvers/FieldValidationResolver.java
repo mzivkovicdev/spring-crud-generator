@@ -36,7 +36,7 @@ public final class FieldValidationResolver {
         if (Objects.nonNull(field.getColumn()) && Boolean.FALSE.equals(field.getColumn().getNullable()))
             out.add(AnnotationConstants.NOT_NULL_ANNOTATION);
 
-        if (basicType ) resolveBasicTypeValidations(field, out);
+        if (basicType) resolveBasicTypeValidations(field, out);
         if (isCollection) resolveCollectionValidations(field, out);
 
         return out;
