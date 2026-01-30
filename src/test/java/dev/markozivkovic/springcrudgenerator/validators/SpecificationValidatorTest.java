@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,13 +23,14 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 
 class SpecificationValidatorTest {
 
     private CrudSpecification buildValidSpecification() {
-        CrudSpecification spec = new CrudSpecification();
+        final CrudSpecification spec = new CrudSpecification();
 
-        CrudConfiguration config = new CrudConfiguration();
+        final CrudConfiguration config = new CrudConfiguration();
         config.setJavaVersion(17);
         config.setDocker(null);
         config.setCache(null);
@@ -44,7 +46,16 @@ class SpecificationValidatorTest {
         idField.setType("Long");
         idField.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
 
-        user.setFields(List.of(idField));
+        final FieldDefinition nameField = new FieldDefinition();
+        nameField.setName("name");
+        nameField.setType("String");
+        nameField.setId(null);
+        nameField.setValidation(new ValidationDefinition().setPattern("^[A-Za-z]+$"));
+        
+        final List<FieldDefinition> fieldDefinitions = new ArrayList<>();
+        fieldDefinitions.add(idField);
+        fieldDefinitions.add(nameField);
+        user.setFields(fieldDefinitions);
 
         spec.setEntities(List.of(user));
 
@@ -114,6 +125,27 @@ class SpecificationValidatorTest {
         spec.getConfiguration().setJavaVersion(null);
 
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    void validate_invalidRegexPattern_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final FieldDefinition invalidField = new FieldDefinition();
+        invalidField.setName("description");
+        invalidField.setType("String");
+        invalidField.setId(null);
+        invalidField.setValidation(new ValidationDefinition().setPattern("[abc"));
+        spec.getEntities().stream()
+                .findAny()
+                .orElseThrow()
+                .getFields()
+                .add(invalidField);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec));
+        
+        assertTrue(ex.getMessage().contains("Regex pattern"));
     }
 
     @Test

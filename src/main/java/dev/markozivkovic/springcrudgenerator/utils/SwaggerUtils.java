@@ -315,6 +315,7 @@ public class SwaggerUtils {
                         if (!(existingMinLength instanceof Integer) || ((Integer) existingMinLength) < 1) { validationSchema.put("minLength", 1); }
                     }
                     if (Boolean.TRUE.equals(validationDefinition.getEmail())) { validationSchema.put("format", "email"); }
+                    if (Objects.nonNull(validationDefinition.getPattern())) { validationSchema.put("pattern", validationDefinition.getPattern()); }
                 }
                 break;
             case INTEGER:

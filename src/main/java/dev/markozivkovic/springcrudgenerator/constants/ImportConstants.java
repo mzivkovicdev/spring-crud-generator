@@ -78,6 +78,7 @@ public final class ImportConstants {
         public static final String DECIMAL_MAX = "jakarta.validation.constraints.DecimalMax";
         public static final String EMAIL = "jakarta.validation.constraints.Email";
         public static final String SIZE = "jakarta.validation.constraints.Size";
+        public static final String PATTERN = "jakarta.validation.constraints.Pattern";
     }
 
     public static final class INSTANCIO {

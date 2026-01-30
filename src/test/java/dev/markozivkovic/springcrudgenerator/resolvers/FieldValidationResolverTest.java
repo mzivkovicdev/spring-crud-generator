@@ -123,6 +123,20 @@ class FieldValidationResolverTest {
     }
 
     @Test
+    void resolveValidationForField_stringAddsPattern() {
+        
+        final ValidationDefinition validation = new ValidationDefinition();;
+        final String pattern = "^[a-zA-Z0-9_]+$";
+        validation.setPattern(pattern);
+
+        final FieldDefinition field = field("String", validation, null);
+
+        final List<String> result = FieldValidationResolver.resolveValidationForField(field);
+
+        assertEquals(List.of(String.format(AnnotationConstants.PATTERN_ANNOTATION, pattern)), result);
+    }
+
+    @Test
     void resolveValidationForField_integerAddsMinAndMax() {
         
         final ValidationDefinition validation = new ValidationDefinition();;

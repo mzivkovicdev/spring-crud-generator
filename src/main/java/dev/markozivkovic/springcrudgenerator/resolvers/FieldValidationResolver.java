@@ -86,6 +86,8 @@ public final class FieldValidationResolver {
                     if (Boolean.TRUE.equals(field.getValidation().getNotBlank())) out.add(AnnotationConstants.NOT_BLANK_ANNOTATION);
                     if (Boolean.TRUE.equals(field.getValidation().getNotEmpty())) out.add(AnnotationConstants.NOT_EMPTY_ANNOTATION);
                     if (Boolean.TRUE.equals(field.getValidation().getEmail())) out.add(AnnotationConstants.EMAIL_ANNOTATION);
+                    if (Objects.nonNull(field.getValidation().getPattern()))
+                        out.add(String.format(AnnotationConstants.PATTERN_ANNOTATION, field.getValidation().getPattern()));
                 }
                 break;
             case INTEGER:

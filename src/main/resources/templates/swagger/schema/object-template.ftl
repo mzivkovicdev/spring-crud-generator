@@ -18,6 +18,9 @@ properties:
     <#if p.nullable??>
     nullable: ${p.nullable?c}
     </#if><#t>
+    <#if !p.items?? && p.pattern??>
+    pattern: ${p.pattern}
+    </#if><#t>
     <#if !p.items?? && p.minimum??>
     minimum: ${p.minimum?c}
     </#if><#t>

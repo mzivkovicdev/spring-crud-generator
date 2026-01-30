@@ -217,6 +217,7 @@ public class TransferObjectImports {
                 ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().isEmail()), imports, ImportConstants.Jakarta.EMAIL);
                 ImportCommon.addIf(Objects.nonNull(field.getValidation().getMinLength()), imports, ImportConstants.Jakarta.SIZE);
                 ImportCommon.addIf(Objects.nonNull(field.getValidation().getMaxLength()), imports, ImportConstants.Jakarta.SIZE);
+                ImportCommon.addIf(Objects.nonNull(field.getValidation().getPattern()), imports, ImportConstants.Jakarta.PATTERN);
                 break;
             case INTEGER:
             case LONG:

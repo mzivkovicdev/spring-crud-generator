@@ -298,6 +298,11 @@ Validation rules are defined per-field using the validation block.
       email: true
       minLength: 5
       maxLength: 255
+  - name: description
+    type: String
+    validation:
+      required: true
+      pattern: "^[A-Za-z]+$"
   - name: tags
     type: Set<String>
     validation:
@@ -305,26 +310,29 @@ Validation rules are defined per-field using the validation block.
       maxItems: 10
 ```
 
-| Property    | Type    | Applies to          | Description                                    |
-| ----------- | ------- | ------------------- | ---------------------------------------------- |
-| `required`  | boolean | all                 | Field must be present (non-null)               |
-| `notBlank`  | boolean | String              | String must contain non-whitespace characters  |
-| `notEmpty`  | boolean | String, collections | Must not be empty (`""` / `[]`)                |
-| `minLength` | integer | String              | Minimum string length                          |
-| `maxLength` | integer | String              | Maximum string length                          |
-| `min`       | decimal | numbers             | Minimum numeric value                          |
-| `max`       | decimal | numbers             | Maximum numeric value                          |
-| `minItems`  | integer | collections         | Minimum number of elements (`List<>`, `Set<>`) |
-| `maxItems`  | integer | collections         | Maximum number of elements (`List<>`, `Set<>`) |
-| `email`     | boolean | String              | Must be a valid e-mail address                 |
+| Property    | Type    | Applies to          | Description                                                |
+| ----------- | ------- | ------------------- | -----------------------------------------------------------|
+| `required`  | boolean | all                 | Field must be present (non-null)                           |
+| `notBlank`  | boolean | String              | String must contain non-whitespace characters              |
+| `notEmpty`  | boolean | String, collections | Must not be empty (`""` / `[]`)                            |
+| `minLength` | integer | String              | Minimum string length                                      |
+| `maxLength` | integer | String              | Maximum string length                                      |
+| `min`       | decimal | numbers             | Minimum numeric value                                      |
+| `max`       | decimal | numbers             | Maximum numeric value                                      |
+| `minItems`  | integer | collections         | Minimum number of elements (`List<>`, `Set<>`)             |
+| `maxItems`  | integer | collections         | Maximum number of elements (`List<>`, `Set<>`)             |
+| `email`     | boolean | String              | Must be a valid e-mail address                             |
+| `pattern`   | string  | String              | Must match a valid Java regex pattern (e.g. `^[A-Za-z]+$`) |
 
-> min / max map well to numeric validations (e.g. BigDecimal, Integer, Long, Double).
-> minItems / maxItems apply to List<BasicType> and Set<BasicType>.
+> `min` / `max` map well to numeric validations (e.g. BigDecimal, Integer, Long, Double).  
+> `minItems` / `maxItems` apply to `List<BasicType>` and `Set<BasicType>`.  
+> `pattern` uses Java regex syntax (`java.util.regex.Pattern`).  
 
 ### Validation rules
 
 - `required` is about nullability. `notBlank` / `notEmpty` are about content (and non-null for the respective type).
 - If a validation field is used on an unsupported type, it will be ignored.
+- If `pattern` is provided, it must be a valid Java regex (`Pattern.compile(pattern)` must succeed). If not, the generator will fail fast with a clear error message.
 
 ---
 

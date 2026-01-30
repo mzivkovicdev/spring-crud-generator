@@ -347,7 +347,7 @@ class TransferObjectImportsTest {
     void computeValidationImport_onlyNotNull() {
 
         final ModelDefinition modelDefinition = new ModelDefinition();
-        modelDefinition.setFields(List.of(new FieldDefinition())); // validation null -> loop preskače
+        modelDefinition.setFields(List.of(new FieldDefinition()));
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
@@ -366,7 +366,7 @@ class TransferObjectImportsTest {
     void computeValidationImport_onlySize() {
 
         final ModelDefinition modelDefinition = new ModelDefinition();
-        modelDefinition.setFields(List.of(new FieldDefinition())); // validation null -> loop preskače
+        modelDefinition.setFields(List.of(new FieldDefinition()));
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
@@ -385,7 +385,7 @@ class TransferObjectImportsTest {
     void computeValidationImport_notNullAndSize() {
 
         final ModelDefinition modelDefinition = new ModelDefinition();
-        modelDefinition.setFields(List.of(new FieldDefinition())); // validation null -> loop preskače
+        modelDefinition.setFields(List.of(new FieldDefinition()));
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
@@ -492,6 +492,30 @@ class TransferObjectImportsTest {
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.NOT_BLANK));
+        }
+    }
+
+    @Test
+    @DisplayName("computeValidationImport: String has Pattern validation adds Pattern import")
+    void computeValidationImport_stringPattern_addsPattern() {
+
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setPattern("test");
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final ModelDefinition modelDefinition = new ModelDefinition();
+        modelDefinition.setFields(List.of(fieldDefinition));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+
+            final String result = TransferObjectImports.computeValidationImport(modelDefinition);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.PATTERN));
         }
     }
 
@@ -726,7 +750,7 @@ class TransferObjectImportsTest {
         modelDefinition.setFields(List.of(fieldDefinition));
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
-            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true); // dodaje NotNull
+            fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
