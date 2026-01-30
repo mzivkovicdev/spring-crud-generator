@@ -577,6 +577,24 @@ class SwaggerUtilsTest {
     }
 
     @Test
+    @DisplayName("toSwaggerProperty: String pattern -> pattern")
+    void toSwaggerProperty_stringPattern_appliesPattern() {
+
+        final String pattern = "^[a-zA-Z0-9_]+$";
+        final ValidationDefinition validationDefinition = new ValidationDefinition();
+        validationDefinition.setPattern(pattern);
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("code");
+        fieldDefinition.setType("String");
+        fieldDefinition.setValidation(validationDefinition);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals(pattern, property.get("pattern"));
+    }
+
+    @Test
     @DisplayName("toSwaggerProperty: String email=true -> format=email")
     void toSwaggerProperty_stringEmail_setsFormatEmail() {
 
