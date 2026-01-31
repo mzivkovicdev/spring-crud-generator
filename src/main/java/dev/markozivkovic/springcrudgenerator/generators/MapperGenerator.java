@@ -24,10 +24,12 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.MapperTemplateContexts;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -104,6 +106,10 @@ public class MapperGenerator implements CodeGenerator {
         
         final Map<String, Object> context = MapperTemplateContexts.computeMapperContext(
                 modelDefinition, packagePath, swagger, isGraphQl, packageConfiguration
+        );
+        context.put(
+                TemplateContextConstants.OPEN_IN_VIEW_ENABLED,
+                AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties())
         );
         
         final String mapperTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("mapper/mapper-template.ftl", context);
