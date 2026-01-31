@@ -5,16 +5,47 @@ import java.time.ZoneOffset;
 </#if><#t>
 import java.util.List;
 
+<#if !openInViewEnabled>
+import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
+<#if !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+import org.mapstruct.Mapping;
+</#if><#t>
+import org.mapstruct.Named;
+<#else>
+import org.mapstruct.Mapper;
+</#if><#t>
 
 ${projectImports}
 @Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 
+    <#if !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+    <#list lazyFields as lazyField>
+    @Mapping(target = "${lazyField}", source = "${lazyField}", qualifiedByName = "simple")
+    </#list>
+    </#if><#t>
     ${transferObjectName} map${modelName}To${transferObjectName}(final ${modelName} model);
 
+    <#if !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+    <#list lazyFields as lazyField>
+    @Mapping(target = "${lazyField}", qualifiedByName = "simple")
+    </#list>
+    </#if><#t>
     List<${transferObjectName}> map${modelName}To${transferObjectName}(final List<${modelName}> model);
+    
+    <#if !openInViewEnabled>
+    @Named("simple")
+    <#list lazyFields as lazyField>
+    @Mapping(target = "${lazyField}", source = "${lazyField}", ignore = true)
+    </#list>
+    ${transferObjectName} map${modelName}To${transferObjectName}Simple(final ${modelName} model);
 
+    @Named("simpleList")
+    @IterableMapping(qualifiedByName = "simple")
+    List<${transferObjectName}> map${modelName}To${transferObjectName}Simple(final List<${modelName}> model);
+
+    </#if><#t>
     ${modelName} map${transferObjectName}To${modelName}(final ${transferObjectName} transferObject);
 
     List<${modelName}> map${transferObjectName}To${modelName}(final List<${transferObjectName}> transferObject);
