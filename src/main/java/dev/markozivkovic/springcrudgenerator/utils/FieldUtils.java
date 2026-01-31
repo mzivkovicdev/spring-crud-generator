@@ -48,6 +48,7 @@ public class FieldUtils {
     private static final String ONE_TO_MANY = "OneToMany";
     private static final String MANY_TO_ONE = "ManyToOne";
     private static final String MANY_TO_MANY = "ManyToMany";
+    private static final String LAZY_FETCH_TYPE = "LAZY";
 
     private static final Pattern jsonPattern = Pattern.compile("^JSONB?<(.+)>$");
     private static final Pattern collectionPattern = Pattern.compile("^(List|Set)<\\s*(.+?)\\s*>$");
@@ -1351,6 +1352,48 @@ public class FieldUtils {
                     final ColumnDefinition column = field.getColumn();
                     return Objects.nonNull(column) && Objects.nonNull(column.getLength());
                 });
+    }
+
+    /**
+     * Extracts the fields that have a relation with a fetch type of 'LAZY'.
+     * 
+     * @param fields The list of fields to extract the lazy fetch fields from.
+     * @return A list of fields that have a relation with a fetch type of 'LAZY'.
+     */
+    public static List<FieldDefinition> extractLazyFetchFields(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .filter(field -> Objects.nonNull(field.getRelation().getFetch()))
+                .filter(field -> field.getRelation().getFetch().equals(LAZY_FETCH_TYPE))
+                .toList();
+    }
+
+    /**
+     * Checks if any of the fields in the given list have a relation with a fetch type of 'LAZY'.
+     * 
+     * @param fields The list of fields to check for lazy fetch relations.
+     * @return True if any of the fields have a relation with a fetch type of 'LAZY', false otherwise.
+     */
+    public static boolean hasLazyFetchField(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> Objects.nonNull(field.getRelation()))
+                .filter(field -> Objects.nonNull(field.getRelation().getFetch()))
+                .anyMatch(field -> field.getRelation().getFetch().equals(LAZY_FETCH_TYPE));
+    }
+
+    /**
+     * Extracts the names of the fields that have a relation with a fetch type of 'LAZY'.
+     * 
+     * @param fields The list of fields to extract the lazy fetch fields from.
+     * @return A list of field names that have a relation with a fetch type of 'LAZY'.
+     */
+    public static List<String> extractLazyFetchFieldNames(final List<FieldDefinition> fields) {
+        
+        return extractLazyFetchFields(fields).stream()
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
     }
     
 }

@@ -71,7 +71,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.GENERATORS = Stream.of(
             Map.entry(ENUM, new EnumGenerator(packageConfiguration)),
             Map.entry(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entities, packageConfiguration)),
-            Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator(packageConfiguration)),
+            Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator(crudConfiguration, packageConfiguration)),
             Map.entry(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entities, packageConfiguration)),
             Map.entry(BUSINESS_SERVICE, new BusinessServiceGenerator(entities, packageConfiguration)),
             Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entities, packageConfiguration)),

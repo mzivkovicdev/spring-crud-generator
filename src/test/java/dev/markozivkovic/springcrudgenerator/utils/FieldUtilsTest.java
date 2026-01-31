@@ -3505,4 +3505,95 @@ class FieldUtilsTest {
         assertTrue(result);
     }
 
+    @Test
+    @DisplayName("extractLazyFetchFields: empty list -> empty result")
+    void extractLazyFetchFields_emptyList() {
+        assertTrue(FieldUtils.extractLazyFetchFields(List.of()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("extractLazyFetchFields: fields without relation or with fetch=null are ignored")
+    void extractLazyFetchFields_ignoresNoRelationAndNullFetch() {
+        final FieldDefinition noRelation = fieldWithoutRelation();
+        final FieldDefinition relationNullFetch = fieldWithRelation("MANY_TO_ONE", null, null);
+        final FieldDefinition eager = fieldWithRelation("MANY_TO_ONE", null, "EAGER");
+
+        final List<FieldDefinition> result = FieldUtils.extractLazyFetchFields(List.of(noRelation, relationNullFetch, eager));
+
+        assertTrue(result.isEmpty(), "Expected no LAZY fields to be returned");
+    }
+
+    @Test
+    @DisplayName("extractLazyFetchFields: returns only fields with relation.fetch == 'LAZY'")
+    void extractLazyFetchFields_returnsOnlyLazy() {
+        final FieldDefinition eager1 = fieldWithRelation("MANY_TO_ONE", null, "EAGER");
+        final FieldDefinition lazy1 = fieldWithRelation("ONE_TO_MANY", null, "LAZY");
+        final FieldDefinition lazy2 = fieldWithRelation("MANY_TO_MANY", null, "LAZY");
+        final FieldDefinition relationNullFetch = fieldWithRelation("MANY_TO_ONE", null, null);
+
+        final List<FieldDefinition> input = List.of(eager1, lazy1, lazy2, relationNullFetch);
+
+        final List<FieldDefinition> result = FieldUtils.extractLazyFetchFields(input);
+
+        assertEquals(2, result.size());
+        assertTrue(result.contains(lazy1));
+        assertTrue(result.contains(lazy2));
+        assertFalse(result.contains(eager1));
+        assertFalse(result.contains(relationNullFetch));
+    }
+
+    @Test
+    @DisplayName("hasLazyFetchField: empty list -> false")
+    void hasLazyFetchField_emptyList() {
+        assertFalse(FieldUtils.hasLazyFetchField(List.of()));
+    }
+
+    @Test
+    @DisplayName("hasLazyFetchField: no relation / null fetch / non-LAZY fetch -> false")
+    void hasLazyFetchField_noLazyPresent() {
+        final FieldDefinition noRelation = fieldWithoutRelation();
+        final FieldDefinition relationNullFetch = fieldWithRelation("MANY_TO_ONE", null, null);
+        final FieldDefinition eager = fieldWithRelation("ONE_TO_ONE", null, "EAGER");
+
+        assertFalse(FieldUtils.hasLazyFetchField(List.of(noRelation, relationNullFetch, eager)));
+    }
+
+    @Test
+    @DisplayName("hasLazyFetchField: at least one LAZY fetch -> true")
+    void hasLazyFetchField_lazyPresent() {
+        final FieldDefinition eager = fieldWithRelation("ONE_TO_ONE", null, "EAGER");
+        final FieldDefinition lazy = fieldWithRelation("MANY_TO_ONE", null, "LAZY");
+
+        assertTrue(FieldUtils.hasLazyFetchField(List.of(eager, lazy)));
+    }
+
+    @Test
+    @DisplayName("extractLazyFetchFieldNames: returns only names of fields with LAZY fetch")
+    void extractLazyFetchFieldNames_returnsOnlyLazyNames() {
+        final FieldDefinition f1 = fieldWithNameAndRelation("users", "MANY_TO_MANY", null, "LAZY");
+        final FieldDefinition f2 = fieldWithNameAndRelation("tags", "ONE_TO_MANY", null, "EAGER");
+        final FieldDefinition f3 = fieldWithNameAndRelation("orders", "ONE_TO_MANY", null, "LAZY");
+        final FieldDefinition f4 = fieldWithNameAndRelation("profile", "ONE_TO_ONE", null, null);
+        final FieldDefinition f5 = fieldWithoutRelation();
+
+        final List<String> names = FieldUtils.extractLazyFetchFieldNames(List.of(f1, f2, f3, f4, f5));
+
+        assertEquals(2, names.size());
+        assertTrue(names.contains("users"));
+        assertTrue(names.contains("orders"));
+        assertFalse(names.contains("tags"));
+        assertFalse(names.contains("profile"));
+    }
+
+    @Test
+    @DisplayName("extractLazyFetchFieldNames: preserves encounter order (stream order)")
+    void extractLazyFetchFieldNames_preservesOrder() {
+        final FieldDefinition first = fieldWithNameAndRelation("a", "MANY_TO_ONE", null, "LAZY");
+        final FieldDefinition second = fieldWithNameAndRelation("b", "ONE_TO_MANY", null, "LAZY");
+
+        final List<String> names = FieldUtils.extractLazyFetchFieldNames(List.of(first, second));
+
+        assertEquals(List.of("a", "b"), names);
+    }
+
 }

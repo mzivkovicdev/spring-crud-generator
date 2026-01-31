@@ -25,10 +25,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.JpaRepositoryTemplateContext;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -39,9 +41,11 @@ public class JpaRepositoryGenerator implements CodeGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaRepositoryGenerator.class);
 
+    private final CrudConfiguration crudConfiguration;
     private final PackageConfiguration packageConfiguration;
 
-    public JpaRepositoryGenerator(final PackageConfiguration packageConfiguration) {
+    public JpaRepositoryGenerator(final CrudConfiguration crudConfiguration, final PackageConfiguration packageConfiguration) {
+        this.crudConfiguration = crudConfiguration;
         this.packageConfiguration = packageConfiguration;
     }
 
@@ -68,6 +72,7 @@ public class JpaRepositoryGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String className = String.format("%sRepository", ModelNameUtils.stripSuffix(modelDefinition.getName()));
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final boolean openInViewEnabled = AdditionalPropertiesUtils.isOpenInViewEnabled(this.crudConfiguration.getAdditionalProperties());
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeRepositoryPackage(packagePath, packageConfiguration)));
@@ -77,16 +82,14 @@ public class JpaRepositoryGenerator implements CodeGenerator {
                     .append(System.lineSeparator());
         }
 
-        final Map<String, Object> context = JpaRepositoryTemplateContext.computeJpaInterfaceContext(modelDefinition);
+        final Map<String, Object> context = JpaRepositoryTemplateContext.computeJpaInterfaceContext(
+                modelDefinition, openInViewEnabled, packagePath, packageConfiguration
+        );
         final String jpaInterface = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "repository/repository-interface-template.ftl", context
         );
 
-        sb.append(String.format(IMPORT, ImportConstants.SpringData.JPA_REPOSITORY))
-                .append(System.lineSeparator())
-                .append(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())))
-                .append(System.lineSeparator())
-                .append(jpaInterface);
+        sb.append(jpaInterface);
 
         FileWriterUtils.writeToFile(outputDir, PackageUtils.computeRepositorySubPackage(packageConfiguration), className, sb.toString());
         

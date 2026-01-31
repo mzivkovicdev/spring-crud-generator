@@ -66,6 +66,12 @@ public final class TemplateContextConstants {
     public static final String GENERATE_JAVA_DOC = "generateJavaDoc";
     public static final String INPUT_FIELDS = "inputFields";
     public static final String FIELD_NAMES_WITHOUT_ID = "fieldNamesWithoutId";
+    public static final String ENTITY_GRAPH_NAME = "entityGraphName";
+    public static final String OPEN_IN_VIEW_ENABLED = "openInViewEnabled";
+    public static final String BASE_IMPORTS = "baseImports";
+    public static final String PROJECT_IMPORTS = "projectImports";
+    public static final String LAZY_FIELDS = "lazyFields";
+    public static final String HAS_LAZY_FIELDS = "hasLazyFields";
     
     public static final String IS_RELATION = "isRelation";
     public static final String IS_JSON_FIELD = "isJsonField";

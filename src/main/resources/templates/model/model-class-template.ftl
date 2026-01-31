@@ -1,3 +1,20 @@
+<#if tableName??>
+@Entity
+@Table(name = "${tableName}")
+<#if auditEnabled?? && auditEnabled>
+@EntityListeners(AuditingEntityListener.class)
+</#if><#t>
+<#if !openInView && lazyFields?? && lazyFields?has_content>
+@NamedEntityGraph(
+    name = "${entityGraphName}",
+    attributeNodes = {
+        <#list lazyFields as lazyField>
+        @NamedAttributeNode("${lazyField}")<#if lazyField_has_next>,</#if>
+        </#list>
+    }
+)
+</#if><#t>
+</#if><#t>
 public class ${className} {
 
 ${fields}

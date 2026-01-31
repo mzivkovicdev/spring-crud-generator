@@ -30,5 +30,6 @@ public class AdditionalConfigurationConstants {
     public static final String OPT_LOCK_BACKOFF_DELAY_MS = "optimisticLocking.backoff.delayMs";
     public static final String OPT_LOCK_BACKOFF_MAX_DELAY_MS = "optimisticLocking.backoff.maxDelayMs";
     public static final String OPT_LOCK_BACKOFF_MULTIPLIER = "optimisticLocking.backoff.multiplier";
+    public static final String JPA_OPEN_IN_VIEW = "spring.jpa.open-in-view";
 
 }

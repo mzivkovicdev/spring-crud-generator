@@ -2,6 +2,8 @@ package dev.markozivkovic.springcrudgenerator.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -168,6 +170,47 @@ class ModelNameUtilsTest {
     @DisplayName("computeInputTOModelName strips known suffixes and appends InputTO")
     void computeInputTOModelName_shouldStripSuffixAndAppendInputTO(final String input, final String expected) {
         assertEquals(expected, ModelNameUtils.computeInputTOModelName(input));
+    }
+
+    @Test
+    @DisplayName("computeEntityGraphName: strips known suffix and appends .with + capitalized field name")
+    void computeEntityGraphName_stripsSuffix_andAppendsSingleField() {
+
+        final String result = ModelNameUtils.computeEntityGraphName("OrderTable", List.of("users"));
+
+        assertEquals("Order.withUsers", result);
+    }
+
+    @Test
+    @DisplayName("computeEntityGraphName: supports other suffixes (Entity) and preserves model base")
+    void computeEntityGraphName_stripsEntitySuffix() {
+        
+        final String result = ModelNameUtils.computeEntityGraphName("UserEntity", List.of("tags"));
+        assertEquals("User.withTags", result);
+    }
+
+    @Test
+    @DisplayName("computeEntityGraphName: concatenates multiple lazy fields in order with capitalization")
+    void computeEntityGraphName_multipleFields_concatenatesInOrder() {
+        
+        final String result = ModelNameUtils.computeEntityGraphName("OrderTable", List.of("users", "items", "auditLogs"));
+        assertEquals("Order.withUsersItemsAuditLogs", result);
+    }
+
+    @Test
+    @DisplayName("computeEntityGraphName: does not strip when suffix is not matched")
+    void computeEntityGraphName_noSuffixMatch_keepsOriginalModelName() {
+        
+        final String result = ModelNameUtils.computeEntityGraphName("Order", List.of("users"));
+        assertEquals("Order.withUsers", result);
+    }
+
+    @Test
+    @DisplayName("computeEntityGraphName: strips longest matching suffix by first match order (current suffix list order)")
+    void computeEntityGraphName_suffixOrder_matters() {
+        
+        final String result = ModelNameUtils.computeEntityGraphName("CustomerJpaEntity", List.of("accounts"));
+        assertEquals("Customer.withAccounts", result);
     }
 
     @Test

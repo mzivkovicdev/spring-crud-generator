@@ -17,6 +17,7 @@
 package dev.markozivkovic.springcrudgenerator.utils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ModelNameUtils {
 
@@ -121,6 +122,23 @@ public class ModelNameUtils {
      */
     public static String computeInputTOModelName(final String modelName) {
         return String.format("%sInputTO", stripSuffix(modelName));
+    }
+
+    /**
+     * Computes the name of the entity graph for a model definition.
+     * This method formats the entity graph name by concatenating the model name with the lazy field names.
+     * 
+     * @param modelName      the model name to compute the entity graph name from
+     * @param lazyFieldNames the names of the lazy fields
+     * @return the computed entity graph name
+     */
+    public static String computeEntityGraphName(final String modelName, final List<String> lazyFieldNames) {
+        
+        final String fields = lazyFieldNames.stream()
+                .map(field -> StringUtils.capitalize(field))
+                .collect(Collectors.joining());
+
+        return String.format("%s.with%s", stripSuffix(modelName), fields);
     }
 
     /**

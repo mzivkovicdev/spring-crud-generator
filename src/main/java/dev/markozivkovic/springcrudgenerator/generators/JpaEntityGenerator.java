@@ -16,10 +16,6 @@
 
 package dev.markozivkovic.springcrudgenerator.generators;
 
-import static dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants.AUDITING_ENTITY_LISTENER_CLASS;
-import static dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants.ENTITY_ANNOTATION;
-import static dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants.ENTITY_LISTENERS_ANNOTATION;
-import static dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants.TABLE_ANNOTATION;
 import static dev.markozivkovic.springcrudgenerator.constants.ImportConstants.PACKAGE;
 
 import java.util.List;
@@ -34,15 +30,17 @@ import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants.Genera
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.ModelImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
+import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
-import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
-import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.templates.JpaEntityTemplateContext;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
+import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 
@@ -175,13 +173,14 @@ public class JpaEntityGenerator implements CodeGenerator {
         final String tableName = model.getStorageName();
         final boolean optimisticLocking = (Objects.nonNull(configuration) && Objects.nonNull(configuration.isOptimisticLocking())) ?
                 configuration.isOptimisticLocking() : false;
+        final boolean openInViewEnabled = AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties());
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(PACKAGE, PackageUtils.computeEntityPackage(packagePath, packageConfiguration)));
         sb.append(ModelImports.getBaseImport(model, true, true));
                 
-        sb.append(ModelImports.computeJakartaImports(model, optimisticLocking, importSequenceIfAutoStrategy))
+        sb.append(ModelImports.computeJakartaImports(model, optimisticLocking, importSequenceIfAutoStrategy, openInViewEnabled))
                 .append(System.lineSeparator());
 
         final String enumAndHelperEntitiesImports = ModelImports.computeEnumsAndHelperEntitiesImport(model, outputDir, packageConfiguration);
@@ -189,16 +188,6 @@ public class JpaEntityGenerator implements CodeGenerator {
         if (StringUtils.isNotBlank(enumAndHelperEntitiesImports)) {
             sb.append(enumAndHelperEntitiesImports)
                 .append(System.lineSeparator());
-        }
-
-        sb.append(ENTITY_ANNOTATION)
-                .append(System.lineSeparator())
-                .append(String.format(TABLE_ANNOTATION, tableName))
-                .append(System.lineSeparator());
-
-        if (Objects.nonNull(model.getAudit()) && model.getAudit().isEnabled()) {
-            sb.append(String.format(ENTITY_LISTENERS_ANNOTATION, AUDITING_ENTITY_LISTENER_CLASS))
-                    .append(System.lineSeparator());
         }
 
         final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(model);
@@ -212,16 +201,22 @@ public class JpaEntityGenerator implements CodeGenerator {
         final String equals = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/equals-template.ftl", classContext);
         final String hashCode = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/hashcode-template.ftl", classContext);
         final String toString = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/tostring-template.ftl", classContext);
+        final List<String> lazyFieldNames = FieldUtils.extractLazyFetchFieldNames(model.getFields());
 
-        final Map<String, Object> classTemplateContext = Map.of(
-                "fields", fieldsTemplate,
-                "defaultConstructor", defaultConstructor,
-                "constructor", constructor,
-                "gettersAndSetters", gettersAndSetters,
-                "hashCode", equals,
-                "equals", hashCode,
-                "toString", toString,
-                "className", className
+        final Map<String, Object> classTemplateContext = Map.ofEntries(
+                Map.entry("tableName", tableName),
+                Map.entry("auditEnabled", Objects.nonNull(model.getAudit()) && model.getAudit().isEnabled()),
+                Map.entry("openInView", openInViewEnabled),
+                Map.entry("lazyFields",lazyFieldNames),
+                Map.entry("entityGraphName", ModelNameUtils.computeEntityGraphName(model.getName(), lazyFieldNames)),
+                Map.entry("fields", fieldsTemplate),
+                Map.entry("defaultConstructor", defaultConstructor),
+                Map.entry("constructor", constructor),
+                Map.entry("gettersAndSetters", gettersAndSetters),
+                Map.entry("hashCode", equals),
+                Map.entry("equals", hashCode),
+                Map.entry("toString", toString),
+                Map.entry("className", className)
         );
 
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));
