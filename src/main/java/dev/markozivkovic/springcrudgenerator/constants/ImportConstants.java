@@ -47,6 +47,8 @@ public final class ImportConstants {
     public static final class Jakarta {
         private Jakarta() {}
         public static final String ENTITY = "jakarta.persistence.Entity";
+        public static final String NAMED_ENTITY_GRAPH = "jakarta.persistence.NamedEntityGraph";
+        public static final String NAMED_ATTRIBUTE_NODE = "jakarta.persistence.NamedAttributeNode";
         public static final String ENTITY_LISTENERS = "jakarta.persistence.EntityListeners";
         public static final String TABLE = "jakarta.persistence.Table";
         public static final String ID = "jakarta.persistence.Id";

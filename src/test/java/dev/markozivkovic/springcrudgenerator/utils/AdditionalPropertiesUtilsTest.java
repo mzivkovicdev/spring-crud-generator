@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
@@ -224,5 +225,100 @@ class AdditionalPropertiesUtilsTest {
         assertTrue(ex.getMessage().contains("Property " + AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER));
         assertTrue(ex.getMessage().contains("must be a number"));
     }
-    
+
+    @Test
+    @DisplayName("returns false when additionalProperties is null")
+    void shouldReturnFalseWhenAdditionalPropertiesIsNull() {
+        
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(null);
+        
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("returns false when additionalProperties is empty")
+    void shouldReturnFalseWhenAdditionalPropertiesIsEmpty() {
+        
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(Map.of());
+        
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("returns false when key is missing")
+    void shouldReturnFalseWhenKeyIsMissing() {
+        
+        final Map<String, Object> props = new HashMap<>();
+        props.put("some.other.key", Boolean.TRUE);
+
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(props);
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("returns true when property value is Boolean.TRUE")
+    void shouldReturnTrueWhenValueIsBooleanTrue() {
+        
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW, Boolean.TRUE);
+
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(props);
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("returns false when property value is Boolean.FALSE")
+    void shouldReturnFalseWhenValueIsBooleanFalse() {
+        
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW, Boolean.FALSE);
+
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(props);
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("returns false when property value is null")
+    void shouldReturnFalseWhenValueIsNull() {
+        
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW, null);
+
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(props);
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("returns false when property value is a String 'true' (only Boolean.TRUE is accepted)")
+    void shouldReturnFalseWhenValueIsStringTrue() {
+        
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW, "true");
+
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(props);
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("returns false when property value is a String 'false'")
+    void shouldReturnFalseWhenValueIsStringFalse() {
+        
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW, "false");
+
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(props);
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("returns false when property value is an unrelated object")
+    void shouldReturnFalseWhenValueIsOtherType() {
+        
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW, 1);
+
+        final boolean result = AdditionalPropertiesUtils.isOpenInViewEnabled(props);
+        assertFalse(result);
+    }
+
 }
