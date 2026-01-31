@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,11 +19,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.JpaRepositoryTemplateContext;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -31,7 +35,7 @@ import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
 class JpaRepositoryGeneratorTest {
 
-    private ModelDefinition newModel(final String name, final  List<FieldDefinition> fields) {
+    private ModelDefinition newModel(final String name, final List<FieldDefinition> fields) {
         final ModelDefinition m = mock(ModelDefinition.class);
         when(m.getName()).thenReturn(name);
         when(m.getFields()).thenReturn(fields);
@@ -40,29 +44,32 @@ class JpaRepositoryGeneratorTest {
 
     @Test
     void generate_shouldSkipWhenModelHasNoIdField() {
-        
-        final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
-        final JpaRepositoryGenerator generator = new JpaRepositoryGenerator(pkgConfig);
 
+        final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
+        final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
+
+        final JpaRepositoryGenerator generator = new JpaRepositoryGenerator(crudConfig, pkgConfig);
         final ModelDefinition model = newModel("UserEntity", Collections.emptyList());
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<JpaRepositoryTemplateContext> ctx = mockStatic(JpaRepositoryTemplateContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> props = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields()))
-                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(false);
 
             generator.generate(model, "out");
 
             fieldUtils.verify(() -> FieldUtils.isAnyFieldId(model.getFields()));
             fieldUtils.verifyNoMoreInteractions();
+
             pkg.verifyNoInteractions();
             nameUtils.verifyNoInteractions();
             ctx.verifyNoInteractions();
+            props.verifyNoInteractions();
             tpl.verifyNoInteractions();
             writer.verifyNoInteractions();
         }
@@ -72,10 +79,14 @@ class JpaRepositoryGeneratorTest {
     void generate_shouldGenerateRepositoryWithoutUuidImportWhenIdIsNotUuid() {
 
         final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
-        final JpaRepositoryGenerator generator = new JpaRepositoryGenerator(pkgConfig);
+        final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
+        when(crudConfig.getAdditionalProperties()).thenReturn(null);
 
-        final FieldDefinition idField = mock(FieldDefinition.class);
-        final ModelDefinition model = newModel("UserEntity", List.of(idField));
+        final JpaRepositoryGenerator generator = new JpaRepositoryGenerator(crudConfig, pkgConfig);
+
+        final FieldDefinition idField = new FieldDefinition();
+        final List<FieldDefinition> fields = List.of(idField);
+        final ModelDefinition model = newModel("UserEntity", fields);
 
         final AtomicReference<String> writtenClassName = new AtomicReference<>();
         final AtomicReference<String> writtenContent = new AtomicReference<>();
@@ -84,36 +95,26 @@ class JpaRepositoryGeneratorTest {
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<JpaRepositoryTemplateContext> ctx = mockStatic(JpaRepositoryTemplateContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> props = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields()))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
-                    .thenReturn(idField);
-            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
-                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField)).thenReturn(false);
 
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                    .thenReturn("User");
-
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
-                    .thenReturn("com.example.app");
-            pkg.when(() -> PackageUtils.computeRepositoryPackage("com.example.app", pkgConfig))
-                    .thenReturn("com.example.app.repository");
-            pkg.when(() -> PackageUtils.computeRepositorySubPackage(pkgConfig))
-                    .thenReturn("repository");
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.example.app", pkgConfig))
-                    .thenReturn("com.example.app.entity");
-            pkg.when(() -> PackageUtils.join("com.example.app.entity", "UserEntity"))
-                    .thenReturn("com.example.app.entity.UserEntity");
-
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeRepositoryPackage("com.example.app", pkgConfig)).thenReturn("com.example.app.repository");
+            pkg.when(() -> PackageUtils.computeRepositorySubPackage(pkgConfig)).thenReturn("repository");
+            props.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(true);
             final Map<String, Object> repoCtx = Map.of("key", "value");
-            ctx.when(() -> JpaRepositoryTemplateContext.computeJpaInterfaceContext(model))
+            ctx.when(() -> JpaRepositoryTemplateContext.computeJpaInterfaceContext(model, true, "com.example.app", pkgConfig))
                     .thenReturn(repoCtx);
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("repository/repository-interface-template.ftl"), eq(repoCtx)))
-                    .thenReturn("// REPO BODY");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("repository/repository-interface-template.ftl"), eq(repoCtx)
+            )).thenReturn("// REPO BODY");
 
             writer.when(() -> FileWriterUtils.writeToFile(eq("out"), eq("repository"), anyString(), anyString()))
                 .thenAnswer(inv -> {
@@ -125,32 +126,27 @@ class JpaRepositoryGeneratorTest {
             generator.generate(model, "out");
         }
 
-        assertEquals("UserRepository", writtenClassName.get(), "Repository class name should be based on stripped model name");
+        assertEquals("UserRepository", writtenClassName.get());
 
         final String content = writtenContent.get();
-
         assertNotNull(content);
-        assertFalse(content.contains(ImportConstants.Java.UUID),
-                "Content should NOT contain UUID import when id is not UUID");
-
-        assertTrue(content.contains(ImportConstants.SpringData.JPA_REPOSITORY),
-                "Content should contain JpaRepository import");
-
-        assertTrue(content.contains("com.example.app.entity.UserEntity"),
-                "Content should contain entity import");
-        
-        assertTrue(content.contains("// REPO BODY"),
-                "Content should contain repository body from template");
+        assertFalse(content.contains("import " + ImportConstants.Java.UUID));
+        assertTrue(content.contains("package com.example.app.repository"));
+        assertTrue(content.contains("// REPO BODY"));
     }
 
     @Test
     void generate_shouldGenerateRepositoryWithUuidImportWhenIdIsUuid() {
 
         final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
-        final JpaRepositoryGenerator generator = new JpaRepositoryGenerator(pkgConfig);
+        final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
+        when(crudConfig.getAdditionalProperties()).thenReturn(null);
 
-        final FieldDefinition idField = mock(FieldDefinition.class);
-        final ModelDefinition model = newModel("OrderEntity", List.of(idField));
+        final JpaRepositoryGenerator generator = new JpaRepositoryGenerator(crudConfig, pkgConfig);
+
+        final FieldDefinition idField = new FieldDefinition();
+        final List<FieldDefinition> fields = List.of(idField);
+        final ModelDefinition model = newModel("OrderEntity", fields);
 
         final AtomicReference<String> writtenClassName = new AtomicReference<>();
         final AtomicReference<String> writtenContent = new AtomicReference<>();
@@ -159,45 +155,29 @@ class JpaRepositoryGeneratorTest {
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<JpaRepositoryTemplateContext> ctx = mockStatic(JpaRepositoryTemplateContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> props = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields()))
-                    .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
-                    .thenReturn(idField);
-            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
-                    .thenReturn(true);
-
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("OrderEntity"))
-                    .thenReturn("Order");
-
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
-                    .thenReturn("com.example.app");
-            pkg.when(() -> PackageUtils.computeRepositoryPackage("com.example.app", pkgConfig))
-                    .thenReturn("com.example.app.repository");
-            pkg.when(() -> PackageUtils.computeRepositorySubPackage(pkgConfig))
-                    .thenReturn("repository");
-            pkg.when(() -> PackageUtils.computeEntityPackage("com.example.app", pkgConfig))
-                    .thenReturn("com.example.app.entity");
-            pkg.when(() -> PackageUtils.join("com.example.app.entity", "OrderEntity"))
-                    .thenReturn("com.example.app.entity.OrderEntity");
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField)).thenReturn(true);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("OrderEntity")).thenReturn("Order");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeRepositoryPackage("com.example.app", pkgConfig)).thenReturn("com.example.app.repository");
+            pkg.when(() -> PackageUtils.computeRepositorySubPackage(pkgConfig)).thenReturn("repository");
+            props.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(true);
 
             final Map<String, Object> repoCtx = Map.of("key", "value");
-            ctx.when(() -> JpaRepositoryTemplateContext.computeJpaInterfaceContext(model))
+            ctx.when(() -> JpaRepositoryTemplateContext.computeJpaInterfaceContext(model, true, "com.example.app", pkgConfig))
                     .thenReturn(repoCtx);
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("repository/repository-interface-template.ftl"),
-                    eq(repoCtx)
+                    eq("repository/repository-interface-template.ftl"), eq(repoCtx)
             )).thenReturn("// ORDER REPO BODY");
 
-            writer.when(() -> FileWriterUtils.writeToFile(
-                    eq("out"),
-                    eq("repository"),
-                    anyString(),
-                    anyString()
-            )).thenAnswer(inv -> {
+            writer.when(() -> FileWriterUtils.writeToFile(eq("out"), eq("repository"), anyString(), anyString()))
+            .thenAnswer(inv -> {
                 writtenClassName.set(inv.getArgument(2, String.class));
                 writtenContent.set(inv.getArgument(3, String.class));
                 return null;
@@ -210,17 +190,59 @@ class JpaRepositoryGeneratorTest {
 
         final String content = writtenContent.get();
         assertNotNull(content);
+        assertTrue(content.contains("import " + ImportConstants.Java.UUID));
 
-        assertTrue(content.contains(ImportConstants.Java.UUID),
-                "Content should contain UUID import when id field is UUID");
+        assertTrue(content.contains("package com.example.app.repository"));
+        assertTrue(content.contains("// ORDER REPO BODY"));
+    }
 
-        assertTrue(content.contains(ImportConstants.SpringData.JPA_REPOSITORY),
-                "Content should contain JpaRepository import");
+    @Test
+    void generate_shouldPassOpenInViewFlagToTemplateContextBuilder() {
 
-        assertTrue(content.contains("com.example.app.entity.OrderEntity"),
-                "Content should contain entity import");
+        final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
 
-        assertTrue(content.contains("// ORDER REPO BODY"),
-                "Content should contain body from template");
+        final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
+        final Map<String, Object> additionalProps = new HashMap<>();
+        additionalProps.put(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW, Boolean.FALSE);
+        when(crudConfig.getAdditionalProperties()).thenReturn(additionalProps);
+
+        final JpaRepositoryGenerator generator = new JpaRepositoryGenerator(crudConfig, pkgConfig);
+
+        final FieldDefinition idField = new FieldDefinition();
+        final List<FieldDefinition> fields = List.of(idField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<JpaRepositoryTemplateContext> ctx = mockStatic(JpaRepositoryTemplateContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> props = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField)).thenReturn(false);
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeRepositoryPackage("com.example.app", pkgConfig)).thenReturn("com.example.app.repository");
+            pkg.when(() -> PackageUtils.computeRepositorySubPackage(pkgConfig)).thenReturn("repository");
+            props.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(additionalProps)).thenReturn(false);
+
+            final Map<String, Object> repoCtx = Map.of("ctx", "ok");
+            ctx.when(() -> JpaRepositoryTemplateContext.computeJpaInterfaceContext(model, false, "com.example.app", pkgConfig))
+                    .thenReturn(repoCtx);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("repository/repository-interface-template.ftl"), eq(repoCtx)
+            )).thenReturn("// BODY");
+            writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            generator.generate(model, "out");
+
+            ctx.verify(() -> JpaRepositoryTemplateContext.computeJpaInterfaceContext(model, false, "com.example.app", pkgConfig));
+        }
     }
 }
