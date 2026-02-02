@@ -1363,9 +1363,10 @@ public class FieldUtils {
     public static List<FieldDefinition> extractLazyFetchFields(final List<FieldDefinition> fields) {
 
         return fields.stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> Objects.nonNull(field.getRelation().getFetch()))
-                .filter(field -> field.getRelation().getFetch().equals(LAZY_FETCH_TYPE))
+                .filter(field ->
+                        (Objects.nonNull(field.getRelation()) && LAZY_FETCH_TYPE.equals(field.getRelation().getFetch())) ||
+                        SpecialType.isCollectionType(field.getType())
+                )
                 .toList();
     }
 
@@ -1378,9 +1379,10 @@ public class FieldUtils {
     public static boolean hasLazyFetchField(final List<FieldDefinition> fields) {
 
         return fields.stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> Objects.nonNull(field.getRelation().getFetch()))
-                .anyMatch(field -> field.getRelation().getFetch().equals(LAZY_FETCH_TYPE));
+                .anyMatch(field ->
+                        (Objects.nonNull(field.getRelation()) && LAZY_FETCH_TYPE.equals(field.getRelation().getFetch())) ||
+                        SpecialType.isCollectionType(field.getType())
+                );
     }
 
     /**

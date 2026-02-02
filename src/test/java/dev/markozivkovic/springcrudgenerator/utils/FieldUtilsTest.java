@@ -3543,6 +3543,22 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("extractLazyFetchFields: returns collection fields")
+    void extractLazyFetchFields_collectionType() {
+
+        final FieldDefinition field1 = fieldWithNameAndType("name", "List<String>");
+        final FieldDefinition field2 = fieldWithRelation("MANY_TO_ONE", null, "EAGER");
+
+        final List<FieldDefinition> input = List.of(field1, field2);
+
+        final List<FieldDefinition> result = FieldUtils.extractLazyFetchFields(input);
+
+        assertEquals(1, result.size());
+        assertTrue(result.contains(field1));
+        assertFalse(result.contains(field2));
+    }
+
+    @Test
     @DisplayName("hasLazyFetchField: empty list -> false")
     void hasLazyFetchField_emptyList() {
         assertFalse(FieldUtils.hasLazyFetchField(List.of()));
@@ -3565,6 +3581,18 @@ class FieldUtilsTest {
         final FieldDefinition lazy = fieldWithRelation("MANY_TO_ONE", null, "LAZY");
 
         assertTrue(FieldUtils.hasLazyFetchField(List.of(eager, lazy)));
+    }
+
+    @Test
+    @DisplayName("hasLazyFetchField: returns true for collection fields")
+    void hasLazyFetchField_collectionType() {
+
+        final FieldDefinition field1 = fieldWithNameAndType("name", "List<String>");
+        final FieldDefinition field2 = fieldWithRelation("MANY_TO_ONE", null, "EAGER");
+
+        final List<FieldDefinition> input = List.of(field1, field2);
+
+        assertTrue(FieldUtils.hasLazyFetchField(input));
     }
 
     @Test
@@ -3594,6 +3622,20 @@ class FieldUtilsTest {
         final List<String> names = FieldUtils.extractLazyFetchFieldNames(List.of(first, second));
 
         assertEquals(List.of("a", "b"), names);
+    }
+
+    @Test
+    void extractLazyFetchFieldNames_collectionField() {
+
+        final FieldDefinition field1 = fieldWithNameAndType("name", "List<String>");
+        final FieldDefinition field2 = fieldWithRelation("MANY_TO_ONE", null, "EAGER");
+
+        final List<FieldDefinition> input = List.of(field1, field2);
+
+        final List<String> result = FieldUtils.extractLazyFetchFieldNames(input);
+
+        assertEquals(1, result.size());
+        assertTrue(result.contains("name"));
     }
 
 }
