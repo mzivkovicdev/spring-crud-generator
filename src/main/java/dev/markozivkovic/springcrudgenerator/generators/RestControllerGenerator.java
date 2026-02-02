@@ -160,6 +160,9 @@ public class RestControllerGenerator implements CodeGenerator {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeGetAllEndpointContext(modelDefinition);
         context.put("swagger", swagger);
+        context.put(
+            TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties())
+        );
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-all-resources.ftl", context);
     }

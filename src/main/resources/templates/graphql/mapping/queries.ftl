@@ -21,6 +21,10 @@
             pageObject.getTotalElements(),
             pageObject.getSize(),
             pageObject.getNumber(),
+            <#if openInViewEnabled?? && !openInViewEnabled>
+            ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}Simple(pageObject.getContent())
+            <#else>
             ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(pageObject.getContent())
+            </#if>
         );
     }

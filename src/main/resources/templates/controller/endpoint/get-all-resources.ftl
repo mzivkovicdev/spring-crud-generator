@@ -17,7 +17,11 @@
                 pageObject.getTotalElements(),
                 pageObject.getSize(),
                 pageObject.getNumber(),
+                <#if openInViewEnabled?? && !openInViewEnabled>
+                ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}Simple(pageObject.getContent())
+                <#else>
                 ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(pageObject.getContent())
+                </#if>
             )
         );
         <#else>
@@ -29,9 +33,15 @@
                 .number(pageObject.getNumber())
                 .content(
                     ${mapperClass}.map${transferObjectClass}To${openApiModel}(
+                        <#if openInViewEnabled?? && !openInViewEnabled>
+                        ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}Simple(
+                            pageObject.getContent()
+                        )
+                        <#else>
                         ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
                             pageObject.getContent()
                         )
+                        </#if>
                     )
                 )
         );
