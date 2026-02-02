@@ -25,5 +25,26 @@ public final class RegexUtils {
             return false;
         }
     }
+
+    /**
+     * Returns a normalized version of the given regex pattern.
+     * The pattern is normalized by:
+     * - replacing all backslashes with double backslashes
+     * - replacing all double quotes with escaped double quotes
+     * - replacing all percent signs with double percent signs
+     * 
+     * @param pattern the regex pattern to normalize
+     * @return the normalized regex pattern
+     */
+    public static String normalizeRegexPattern(final String pattern) {
+
+        if (StringUtils.isBlank(pattern)) {
+            return "";
+        }
+
+        return pattern.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("%", "%%'");
+    }
     
 }

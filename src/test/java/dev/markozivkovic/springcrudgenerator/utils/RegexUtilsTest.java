@@ -1,10 +1,16 @@
 package dev.markozivkovic.springcrudgenerator.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class RegexUtilsTest {
 
@@ -53,4 +59,28 @@ class RegexUtilsTest {
         assertTrue(RegexUtils.isValidRegex("^$"));
         assertTrue(RegexUtils.isValidRegex("|"));
     }
+
+    @ParameterizedTest
+    @MethodSource("cases")
+    void normalizeRegexPattern_shouldNormalizeCorrectly(final String input, final String expected) {
+        
+        assertEquals(expected, RegexUtils.normalizeRegexPattern(input));
+    }
+
+    private static Stream<Arguments> cases() {
+        return Stream.of(
+            Arguments.of(null, ""),
+            Arguments.of("", ""),
+            Arguments.of("   \t\n", ""),
+            Arguments.of("abc", "abc"),
+            Arguments.of("\\d", "\\\\d"),
+            Arguments.of("a\\b\\c", "a\\\\b\\\\c"),
+            Arguments.of("\"quoted\"", "\\\"quoted\\\""),
+            Arguments.of("%", "%%'"),
+            Arguments.of("a%b%c", "a%%'b%%'c"),
+            Arguments.of("\\d\"%", "\\\\d\\\"%%'"),
+            Arguments.of("\\\\d", "\\\\\\\\d")
+        );
+    }
+
 }
