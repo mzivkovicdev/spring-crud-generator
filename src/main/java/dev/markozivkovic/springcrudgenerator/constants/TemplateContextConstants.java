@@ -71,6 +71,8 @@ public final class TemplateContextConstants {
     public static final String BASE_IMPORTS = "baseImports";
     public static final String PROJECT_IMPORTS = "projectImports";
     public static final String LAZY_FIELDS = "lazyFields";
+    public static final String EAGER_FIELDS = "eagerFields";
+    public static final String BASE_COLLECTION_FIELDS = "baseCollectionFields";
     public static final String HAS_LAZY_FIELDS = "hasLazyFields";
     
     public static final String IS_RELATION = "isRelation";

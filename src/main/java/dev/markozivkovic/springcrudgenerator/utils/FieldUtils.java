@@ -49,6 +49,10 @@ public class FieldUtils {
     private static final String MANY_TO_ONE = "ManyToOne";
     private static final String MANY_TO_MANY = "ManyToMany";
     private static final String LAZY_FETCH_TYPE = "LAZY";
+    private static final String EAGER_FETCH_TYPE = "EAGER";
+
+    private static final List<String> DEFAULT_LAZY_TYPES = List.of(ONE_TO_MANY, MANY_TO_MANY);
+    private static final List<String> DEFAULT_EAGER_TYPES = List.of(ONE_TO_ONE, MANY_TO_ONE);
 
     private static final Pattern jsonPattern = Pattern.compile("^JSONB?<(.+)>$");
     private static final Pattern collectionPattern = Pattern.compile("^(List|Set)<\\s*(.+?)\\s*>$");
@@ -1363,11 +1367,59 @@ public class FieldUtils {
     public static List<FieldDefinition> extractLazyFetchFields(final List<FieldDefinition> fields) {
 
         return fields.stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> Objects.nonNull(field.getRelation().getFetch()))
-                .filter(field -> field.getRelation().getFetch().equals(LAZY_FETCH_TYPE))
+                .filter(field -> isLazyRelationField(field) || SpecialType.isCollectionType(field.getType()))
                 .toList();
     }
+
+    /**
+     * Determines if the given field has a relation with a fetch type of 'LAZY'.
+     *
+     * A field is considered to have a lazy relation if it has a relation and either:
+     * - the relation has a fetch type of 'LAZY' or
+     * - the relation has no fetch type defined and its type is one of the default lazy types.
+     *
+     * @param field The field to check for a lazy relation.
+     * @return True if the field has a lazy relation, false otherwise.
+     */
+    private static boolean isLazyRelationField(final FieldDefinition field) {
+        
+        return Objects.nonNull(field.getRelation()) && (
+            LAZY_FETCH_TYPE.equals(field.getRelation().getFetch()) ||
+            (Objects.isNull(field.getRelation().getFetch()) && DEFAULT_LAZY_TYPES.contains(field.getRelation().getType().trim()))
+        );
+    }
+
+    /**
+     * Determines if the given field has a relation with a fetch type of 'EAGER'.
+     *
+     * A field is considered to have an eager relation if it has a relation and either:
+     * - the relation has a fetch type of 'EAGER' or
+     * - the relation has no fetch type defined and its type is one of the default eager types.
+     *
+     * @param field The field to check for an eager relation.
+     * @return True if the field has an eager relation, false otherwise.
+     */
+    private static boolean isEagerRelationField(final FieldDefinition field) {
+        
+        return Objects.nonNull(field.getRelation()) && (
+            EAGER_FETCH_TYPE.equals(field.getRelation().getFetch()) ||
+            (Objects.isNull(field.getRelation().getFetch()) && DEFAULT_EAGER_TYPES.contains(field.getRelation().getType().trim()))
+        );
+    }
+
+    /**
+     * Extracts the fields that have a relation with a fetch type of 'EAGER'.
+     *
+     * @param fields The list of fields to extract the eager fetch fields from.
+     * @return A list of fields that have a relation with a fetch type of 'EAGER'.
+     */
+    public static List<FieldDefinition> extractEagerFetchFields(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .filter(field -> isEagerRelationField(field))
+                .toList();
+    }
+
 
     /**
      * Checks if any of the fields in the given list have a relation with a fetch type of 'LAZY'.
@@ -1378,9 +1430,7 @@ public class FieldUtils {
     public static boolean hasLazyFetchField(final List<FieldDefinition> fields) {
 
         return fields.stream()
-                .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> Objects.nonNull(field.getRelation().getFetch()))
-                .anyMatch(field -> field.getRelation().getFetch().equals(LAZY_FETCH_TYPE));
+                .anyMatch(field -> isLazyRelationField(field) || SpecialType.isCollectionType(field.getType()));
     }
 
     /**
@@ -1394,6 +1444,34 @@ public class FieldUtils {
         return extractLazyFetchFields(fields).stream()
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts the names of the fields that have a relation with a fetch type of 'EAGER'.
+     * 
+     * @param fields The list of fields to extract the eager fetch fields from.
+     * @return A list of field names that have a relation with a fetch type of 'EAGER'.
+     */
+    public static List<String> extractEagerFetchFieldNames(final List<FieldDefinition> fields) {
+        
+        return extractEagerFetchFields(fields).stream()
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Extracts the names of the fields from the given list that are of a collection type.
+     * 
+     * @param fields The list of fields to extract the collection field names from.
+     * @return A list of names of fields that are of a collection type.
+     */
+    public static List<String> extractBaseCollectionFieldNames(final List<FieldDefinition> fields) {
+        
+        return fields.stream()
+                .filter(field -> SpecialType.isCollectionType(field.getType()))
+                .map(FieldDefinition::getName)
+                .toList();
     }
     
 }
