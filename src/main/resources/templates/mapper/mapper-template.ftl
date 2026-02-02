@@ -27,7 +27,7 @@ public interface ${mapperName} {
     </#if><#t>
     ${transferObjectName} map${modelName}To${transferObjectName}(final ${modelName} model);
 
-    <#if !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+    <#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
     <#list lazyFields as lazyField>
     @Mapping(target = "${lazyField}", qualifiedByName = "simple")
     </#list>

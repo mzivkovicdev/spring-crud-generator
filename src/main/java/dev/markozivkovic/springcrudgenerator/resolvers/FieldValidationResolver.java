@@ -8,6 +8,7 @@ import dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants;
 import dev.markozivkovic.springcrudgenerator.enums.BasicType;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
+import dev.markozivkovic.springcrudgenerator.utils.RegexUtils;
 
 public final class FieldValidationResolver {
     
@@ -86,8 +87,10 @@ public final class FieldValidationResolver {
                     if (Boolean.TRUE.equals(field.getValidation().getNotBlank())) out.add(AnnotationConstants.NOT_BLANK_ANNOTATION);
                     if (Boolean.TRUE.equals(field.getValidation().getNotEmpty())) out.add(AnnotationConstants.NOT_EMPTY_ANNOTATION);
                     if (Boolean.TRUE.equals(field.getValidation().getEmail())) out.add(AnnotationConstants.EMAIL_ANNOTATION);
-                    if (Objects.nonNull(field.getValidation().getPattern()))
-                        out.add(String.format(AnnotationConstants.PATTERN_ANNOTATION, field.getValidation().getPattern()));
+                    if (Objects.nonNull(field.getValidation().getPattern())) {
+                        final String normalizedPattern = RegexUtils.normalizeRegexPattern(field.getValidation().getPattern());
+                        out.add(String.format(AnnotationConstants.PATTERN_ANNOTATION, normalizedPattern));
+                    }
                 }
                 break;
             case INTEGER:

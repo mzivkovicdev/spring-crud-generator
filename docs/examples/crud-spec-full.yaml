@@ -36,6 +36,7 @@ configuration:
     optimisticLocking.backoff.delayMs: 100
     optimisticLocking.backoff.multiplier: 2.0
     optimisticLocking.backoff.maxDelayMs: 1000
+    spring.jpa.open-in-view: false
 packages:
   annotations: annotation
   businessservices: businessservice
@@ -68,11 +69,20 @@ entities:
           updateable: true
           unique: true
           length: 10000
+        validation:
+          required: true
+          notBlank: true
+          minLength: 10
+          maxLength: 10000
       - name: price
         description: "The price of the product"
-        type: String
+        type: Integer
         column:
           nullable: false
+        validation:
+          required: true
+          min: 1
+          max: 100
       - name: users
         type: UserEntity
         relation:
@@ -80,11 +90,17 @@ entities:
           fetch: LAZY
           cascade: MERGE
           joinColumn: product_id
+        validation:
+          required: true
+          minItems: 1
+          maxItems: 10
       - name: uuid
         description: "The unique identifier for the product"
         type: UUID
         column:
           nullable: false
+        validation:
+          required: true
       - name: birthDate
         description: "The date and time the product was created"
         type: LocalDate
@@ -111,10 +127,16 @@ entities:
           joinColumn: product_id
           fetch: EAGER
           cascade: MERGE
+        validation:
+          required: true
       - name: quantity
         type: Integer
         column:
           nullable: false
+        validation:
+          required: true
+          min: 1
+          max: 100
       - name: users
         type: UserEntity
         relation:
@@ -125,6 +147,10 @@ entities:
             name: order_user_table
             joinColumn: order_id
             inverseJoinColumn: user_id
+        validation:
+          required: true
+          minItems: 1
+          maxItems: 5
   - name: UserEntity
     storageName: user_table
     description: "Represents a user"
@@ -137,14 +163,22 @@ entities:
         type: String
       - name: email
         type: String
+        validation:
+          required: true
+          email: true
       - name: password
         type: String
+        validation:
+          required: true
+          pattern: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"
       - name: details
         type: JSON<Details>
       - type: List<String>
         name: roles
       - type: List<String>
         name: permissions
+        validation:
+          notEmpty: true
   - name: Details
     description: "Represents a user details"
     fields:
