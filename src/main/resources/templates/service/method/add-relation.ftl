@@ -2,7 +2,6 @@
 <#assign modelName = model.modelName>
 <#assign idType = model.idType>
 <#assign idField = model.idField>
-<#assign strippedModelName = model.strippedModelName>
 <#list relations as rel>
     
     <#assign javadocFields = rel.javadocFields>
@@ -17,7 +16,7 @@
      */</#if>
     ${transactionalAnnotation}
     <#if cache>
-    @CachePut(value = "${strippedModelName}", key = "#${idField}")
+    @CachePut(value = "${model.modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}, final ${rel.relationClassName} ${rel.elementParam}) {
 

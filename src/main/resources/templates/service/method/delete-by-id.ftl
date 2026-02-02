@@ -6,7 +6,7 @@
     */</#if>
     ${transactionalAnnotation}
     <#if cache>
-    @CacheEvict(value = "${strippedModelName}", key = "#${idField}")
+    @CacheEvict(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public void deleteById(final ${idType} ${idField}) {
 
