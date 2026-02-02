@@ -5,10 +5,10 @@ import java.time.ZoneOffset;
 </#if><#t>
 import java.util.List;
 
-<#if !openInViewEnabled>
+<#if openInViewEnabled?? && !openInViewEnabled>
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
-<#if !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+<#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
 import org.mapstruct.Mapping;
 </#if><#t>
 import org.mapstruct.Named;
@@ -20,7 +20,7 @@ ${projectImports}
 @Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 
-    <#if !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+    <#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
     <#list lazyFields as lazyField>
     @Mapping(target = "${lazyField}", source = "${lazyField}", qualifiedByName = "simple")
     </#list>
@@ -34,7 +34,7 @@ public interface ${mapperName} {
     </#if><#t>
     List<${transferObjectName}> map${modelName}To${transferObjectName}(final List<${modelName}> model);
     
-    <#if !openInViewEnabled>
+    <#if openInViewEnabled?? && !openInViewEnabled>
     @Named("simple")
     <#list lazyFields as lazyField>
     @Mapping(target = "${lazyField}", source = "${lazyField}", ignore = true)
