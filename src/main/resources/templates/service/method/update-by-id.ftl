@@ -9,7 +9,7 @@
      */</#if>
     ${transactionalAnnotation}
     <#if cache>
-    @CachePut(value = "${strippedModelName}", key = "#${idField}")
+    @CachePut(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} updateById(<#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>) {
 

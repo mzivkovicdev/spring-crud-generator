@@ -5,7 +5,7 @@
      * @return Found ${modelName} {@link ${modelName}}
      */</#if>
     <#if cache>
-    @Cacheable(value = "${strippedModelName}", key = "#${idField}")
+    @Cacheable(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} getById(final ${idType} ${idField}) {
 
