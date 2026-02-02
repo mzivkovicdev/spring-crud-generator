@@ -62,6 +62,8 @@ public class MapperTemplateContexts {
         context.put(TemplateContextConstants.TRANSFER_OBJECT_NAME, transferObjectName);
         context.put(TemplateContextConstants.SWAGGER, swagger);
         context.put(TemplateContextConstants.LAZY_FIELDS, FieldUtils.extractLazyFetchFieldNames(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.EAGER_FIELDS, FieldUtils.extractEagerFetchFieldNames(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.BASE_COLLECTION_FIELDS, FieldUtils.extractBaseCollectionFieldNames(modelDefinition.getFields()));
         if (swagger) {
             context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(modelDefinition.getName()));
         }

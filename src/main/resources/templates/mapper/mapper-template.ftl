@@ -22,14 +22,18 @@ public interface ${mapperName} {
 
     <#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
     <#list lazyFields as lazyField>
+    <#if baseCollectionFields?? && !baseCollectionFields?seq_contains(lazyField)>
     @Mapping(target = "${lazyField}", source = "${lazyField}", qualifiedByName = "simple")
+    </#if><#t>
     </#list>
     </#if><#t>
     ${transferObjectName} map${modelName}To${transferObjectName}(final ${modelName} model);
 
     <#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
     <#list lazyFields as lazyField>
+    <#if baseCollectionFields?? && !baseCollectionFields?seq_contains(lazyField)>
     @Mapping(target = "${lazyField}", qualifiedByName = "simple")
+    </#if><#t>
     </#list>
     </#if><#t>
     List<${transferObjectName}> map${modelName}To${transferObjectName}(final List<${modelName}> model);
@@ -38,6 +42,9 @@ public interface ${mapperName} {
     @Named("simple")
     <#list lazyFields as lazyField>
     @Mapping(target = "${lazyField}", source = "${lazyField}", ignore = true)
+    </#list>
+    <#list eagerFields as eagerField>
+    @Mapping(target = "${eagerField}", qualifiedByName = "simple")
     </#list>
     ${transferObjectName} map${modelName}To${transferObjectName}Simple(final ${modelName} model);
 
