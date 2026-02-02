@@ -62,7 +62,42 @@ class ${className} {
             verify${transferObjectName}(result, ${modelNameUncapFirst});
         });
     }
+    <#if openInViewEnabled?? && hasLazyFields?? && !openInViewEnabled && hasLazyFields>
+    @Test
+    void map${modelName}To${transferObjectName}Simple() {
 
+        final ${modelName} ${modelNameUncapFirst} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
+
+        final ${transferObjectName} result = this.${strippedModelName?uncap_first}Mapper.map${modelName}To${transferObjectName}Simple(${modelNameUncapFirst});
+
+        verify${transferObjectName}(result, ${modelNameUncapFirst});
+    }
+
+    @Test
+    void map${modelName}To${transferObjectName}Simple_list() {
+
+        <#if dataGenerator == "PODAM">
+        final List<${modelName}> ${modelNameUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(List.class, ${modelName}.class);
+        <#else>
+        final List<${modelName}> ${modelNameUncapFirst}s = ${generatorFieldName}.${multipleObjectsMethodName}(${modelName}.class)
+                .size(10)
+                .create();
+        </#if>
+
+        final List<${transferObjectName}> results = this.${strippedModelName?uncap_first}Mapper.map${modelName}To${transferObjectName}Simple(${modelNameUncapFirst}s);
+
+        results.forEach(result -> {
+
+            final ${modelName} ${modelNameUncapFirst} = ${modelName?uncap_first}s.stream()
+                    .filter(obj -> obj.get${idField?cap_first}().equals(result.${idField?uncap_first}()))
+                    .findFirst()
+                    .orElseThrow();
+            
+            verify${transferObjectName}(result, ${modelNameUncapFirst});
+        });
+    }
+    
+    </#if>
     @Test
     void map${transferObjectName}To${modelName}() {
 

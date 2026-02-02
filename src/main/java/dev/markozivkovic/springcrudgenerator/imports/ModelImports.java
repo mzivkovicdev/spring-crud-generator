@@ -114,7 +114,8 @@ public class ModelImports {
      * @param importSequence    whether to include the sequence generator
      * @return A string containing the necessary import statements for the base jakarta persistence annotations.
      */
-    public static String computeJakartaImports(final ModelDefinition modelDefinition, final Boolean optimisticLocking, final Boolean importSequence) {
+    public static String computeJakartaImports(final ModelDefinition modelDefinition, final Boolean optimisticLocking,
+                final Boolean importSequence, final Boolean openInViewEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
         final List<FieldDefinition> fields = modelDefinition.getFields();
@@ -138,6 +139,7 @@ public class ModelImports {
                 .anyMatch(field -> Objects.nonNull(field.getColumn()));
         final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
         final boolean isAnyFieldSimpleCollection = FieldUtils.isAnyFieldSimpleCollection(fields);
+        final boolean hasLazyFields = FieldUtils.hasLazyFetchField(fields) && !openInViewEnabled;
         
         ImportCommon.addIf(!relations.isEmpty() || isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.JOIN_COLUMN);
         ImportCommon.addIf(relations.contains(RelationTypesConstants.MANY_TO_MANY), imports, ImportConstants.Jakarta.JOIN_TABLE);
@@ -153,6 +155,8 @@ public class ModelImports {
         ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.ELEMENT_COLLECTION);
         ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.COLLECTION_TABLE);
         ImportCommon.addIf(FieldUtils.isAnyFieldSimpleListType(fields), imports, ImportConstants.Jakarta.ORDER_COLUMN);
+        ImportCommon.addIf(hasLazyFields, imports, ImportConstants.Jakarta.NAMED_ATTRIBUTE_NODE);
+        ImportCommon.addIf(hasLazyFields, imports, ImportConstants.Jakarta.NAMED_ENTITY_GRAPH);
 
         final String jakartaImports = imports.stream()
                   .map(imp -> String.format(IMPORT, imp))

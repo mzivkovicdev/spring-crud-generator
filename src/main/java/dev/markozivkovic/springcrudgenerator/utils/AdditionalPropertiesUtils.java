@@ -150,5 +150,20 @@ public class AdditionalPropertiesUtils {
                 "Property %s must be a number, but was: %s", key, value
         ));
     }
+
+    /**
+     * Checks if the given map of additional properties contains the 'spring.jpa.open-in-view' key and its value is true.
+     * 
+     * @param additionalProperties the map of additional properties to check
+     * @return true if the 'spring.jpa.open-in-view' key is present and its value is true, false otherwise
+     */
+    public static boolean isOpenInViewEnabled(final Map<String, Object> additionalProperties) {
+        
+        return Boolean.TRUE.equals(
+                Optional.ofNullable(additionalProperties)
+                        .map(properties -> properties.get(AdditionalConfigurationConstants.JPA_OPEN_IN_VIEW))
+                        .orElse(false)
+        );
+    }
     
 }

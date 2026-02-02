@@ -23,7 +23,9 @@ import java.util.UUID;
 
 ${testImports}
 ${projectImports}
+<#if !swagger>
 import tools.jackson.core.type.TypeReference;
+</#if><#t>
 import tools.jackson.databind.json.JsonMapper;<#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
@@ -139,7 +141,11 @@ class ${className} {
                     .findFirst()
                     .orElseThrow();
 
+            <#if openInViewEnabled?? && !openInViewEnabled>
+            verify${strippedModelName}Simple(result, ${modelName?uncap_first});
+            <#else>
             verify${strippedModelName}(result, ${modelName?uncap_first});
+            </#if>
         });
 
         verify(this.${serviceField}).getAll(pageNumber, pageSize);
@@ -192,4 +198,20 @@ class ${className} {
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
 
+    <#if openInViewEnabled?? && !openInViewEnabled>
+    private void verify${strippedModelName}Simple(final <#if swagger>${openApiModel}<#else>${transferObjectClass?cap_first}</#if> result, final ${modelName} ${modelName?uncap_first}) {
+        
+        assertThat(result).isNotNull();
+        <#if swagger>
+        final ${openApiModel} mapped${modelName?cap_first} = ${mapperField}.map${transferObjectClass}To${openApiModel}(
+                ${mapperField}.map${modelName?cap_first}To${transferObjectClass}Simple(${modelName?uncap_first})
+        );
+        <#else>
+        final ${transferObjectClass} mapped${modelName?cap_first} = ${mapperField}.map${modelName?cap_first}To${transferObjectClass}Simple(
+                ${modelName?uncap_first}
+        );
+        </#if>
+        assertThat(result).isEqualTo(mapped${modelName?cap_first});
+    }
+    </#if><#t>
 }

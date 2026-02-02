@@ -61,6 +61,7 @@ public class MapperTemplateContexts {
         context.put(TemplateContextConstants.MAPPER_NAME, mapperName);
         context.put(TemplateContextConstants.TRANSFER_OBJECT_NAME, transferObjectName);
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put(TemplateContextConstants.LAZY_FIELDS, FieldUtils.extractLazyFetchFieldNames(modelDefinition.getFields()));
         if (swagger) {
             context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(modelDefinition.getName()));
         }
@@ -79,7 +80,7 @@ public class MapperTemplateContexts {
             context.put(TemplateContextConstants.AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
         }
 
-        context.put("projectImports", MapperImports.computeMapperImports(packagePath, modelDefinition, packageConfiguration, swagger, isGraphQl));
+        context.put(TemplateContextConstants.PROJECT_IMPORTS, MapperImports.computeMapperImports(packagePath, modelDefinition, packageConfiguration, swagger, isGraphQl));
 
         return context;
     }

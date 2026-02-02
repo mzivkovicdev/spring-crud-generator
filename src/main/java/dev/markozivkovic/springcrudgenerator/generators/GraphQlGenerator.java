@@ -34,6 +34,7 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.templates.GraphQlTemplateContext;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -178,6 +179,9 @@ public class GraphQlGenerator implements CodeGenerator {
     private String generateQueryMappings(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = GraphQlTemplateContext.computeQueryMappingGraphQL(modelDefinition);
+        context.put(
+            TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties())
+        );
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/mapping/queries.ftl", context
