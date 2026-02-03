@@ -461,6 +461,7 @@ class GraphQlTemplateContextTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
         when(idField.getType()).thenReturn("Long");
+        when(idField.getResolvedType()).thenReturn("Long");
 
         final ColumnDefinition column = new ColumnDefinition();
         column.setLength(12);
@@ -468,6 +469,9 @@ class GraphQlTemplateContextTest {
         final FieldDefinition nameField = mock(FieldDefinition.class);
         when(nameField.getName()).thenReturn("name");
         when(nameField.getColumn()).thenReturn(column);
+        when(nameField.getValidation()).thenReturn(null);
+        when(nameField.getResolvedType()).thenReturn("String");
+
         when(modelDefinition.getFields()).thenReturn(List.of(idField, nameField));
 
         final CrudConfiguration configuration = mock(CrudConfiguration.class);
@@ -482,10 +486,10 @@ class GraphQlTemplateContextTest {
         final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
 
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
-            final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
-            final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
 
@@ -508,7 +512,12 @@ class GraphQlTemplateContextTest {
                     anyString(), eq(modelDefinition), eq(packageConfiguration), anyBoolean()
             )).thenReturn("import x;");
 
-            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig)).thenReturn(Map.of("generatorFieldName", "Instancio"));
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig))
+                    .thenReturn(Map.of(
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one",
+                            "dataGenerator", "INSTANCIO"
+                    ));
 
             final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
                     modelDefinition, configuration, packageConfiguration, List.of(), "out", "testOut"
@@ -519,13 +528,15 @@ class GraphQlTemplateContextTest {
             assertEquals("ProductResolverMutationTest", ctx.get(TemplateContextConstants.CLASS_NAME));
 
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> fieldsWithLength =
-                    (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
+            final List<Map<String, Object>> fieldsWithLength = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
 
             assertNotNull(fieldsWithLength);
             assertEquals(1, fieldsWithLength.size());
             assertEquals("name", fieldsWithLength.get(0).get(TemplateContextConstants.FIELD));
             assertEquals(12, fieldsWithLength.get(0).get(TemplateContextConstants.LENGTH));
+            assertTrue(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
+            assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+            assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
         }
     }
 
@@ -538,11 +549,13 @@ class GraphQlTemplateContextTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
         when(idField.getType()).thenReturn("Long");
+        when(idField.getResolvedType()).thenReturn("Long");
 
         final FieldDefinition nameField = mock(FieldDefinition.class);
         when(nameField.getName()).thenReturn("name");
         when(nameField.getColumn()).thenReturn(null);
-
+        when(nameField.getValidation()).thenReturn(null);
+        when(nameField.getResolvedType()).thenReturn("String");
         when(modelDefinition.getFields()).thenReturn(List.of(idField, nameField));
 
         final CrudConfiguration configuration = mock(CrudConfiguration.class);
@@ -556,10 +569,10 @@ class GraphQlTemplateContextTest {
         final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
 
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
-            final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
-            final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
 
@@ -582,13 +595,21 @@ class GraphQlTemplateContextTest {
                     anyString(), eq(modelDefinition), eq(packageConfiguration), anyBoolean()
             )).thenReturn("import x;");
 
-            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig)).thenReturn(Map.of("generatorFieldName", "Instancio"));
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig))
+                    .thenReturn(Map.of(
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one",
+                            "dataGenerator", "INSTANCIO"
+                    ));
 
             final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
                     modelDefinition, configuration, packageConfiguration, List.of(), "out", "testOut"
             );
 
             assertFalse(ctx.containsKey(TemplateContextConstants.FIELDS_WITH_LENGTH));
+            assertFalse(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
+            assertFalse(ctx.containsKey(TemplateContextConstants.HAS_GENERATE_STRING));
+            assertFalse(ctx.containsKey(TemplateContextConstants.HAS_GENERATE_LIST));
         }
     }
 
@@ -600,11 +621,14 @@ class GraphQlTemplateContextTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
         when(idField.getType()).thenReturn("Long");
+        when(idField.getResolvedType()).thenReturn("Long");
 
         final FieldDefinition relationField = mock(FieldDefinition.class);
         when(relationField.getName()).thenReturn("products");
         when(relationField.getType()).thenReturn("ProductEntity");
         when(relationField.getRelation()).thenReturn(relDef);
+        when(relationField.getColumn()).thenReturn(null);
+        when(relationField.getValidation()).thenReturn(null);
 
         final ModelDefinition modelDefinition = mock(ModelDefinition.class);
         when(modelDefinition.getName()).thenReturn("CategoryEntity");
@@ -613,6 +637,7 @@ class GraphQlTemplateContextTest {
         final FieldDefinition relIdField = mock(FieldDefinition.class);
         when(relIdField.getName()).thenReturn("id");
         when(relIdField.getType()).thenReturn("Long");
+        when(relIdField.getResolvedType()).thenReturn("Long");
 
         final ModelDefinition relationModel = mock(ModelDefinition.class);
         when(relationModel.getName()).thenReturn("ProductEntity");
@@ -629,10 +654,10 @@ class GraphQlTemplateContextTest {
         final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
 
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
-            final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
-            final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("CategoryEntity")).thenReturn("Category");
 
@@ -659,7 +684,11 @@ class GraphQlTemplateContextTest {
             )).thenReturn("import x;");
 
             dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig))
-                    .thenReturn(Map.of("generatorFieldName", "Instancio"));
+                    .thenReturn(Map.of(
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one",
+                            "dataGenerator", "INSTANCIO"
+                    ));
 
             final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
                     modelDefinition, configuration, packageConfiguration, List.of(relationModel), "out", "testOut"

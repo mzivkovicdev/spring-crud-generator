@@ -27,6 +27,7 @@ import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ResolverImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorResponse;
+import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextBuilder;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -217,6 +218,11 @@ public class GraphQlTemplateContext {
         context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration, isGlobalExceptionHandlerEnabled));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        ValidationContextBuilder.contribute(
+            modelDefinition, context,
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME)),
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ))
+        );
         
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
         relationFields.forEach(field -> {

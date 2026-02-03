@@ -70,7 +70,7 @@ class ${strippedModelName}ResolverMutationTest {
     void create${strippedModelName}() {
 
         final ${modelName} saved = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
-        <#if fieldsWithLength??>
+        <#if validationOverrides??>
         final ${createInputTO} input = generate${createInputTO}();
         <#else>
         final ${createInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${createInputTO}.class);
@@ -105,7 +105,7 @@ class ${strippedModelName}ResolverMutationTest {
         assertThat(result).isNotNull();
         assertThat(result.${idField?uncap_first}()).isEqualTo(saved.get${idField?cap_first}());
     }
-    <#if fieldsWithLength??>
+    <#if validationOverrides??>
 
     @Test
     void create${strippedModelName}_validationFails() {
@@ -153,7 +153,7 @@ class ${strippedModelName}ResolverMutationTest {
 
         final ${modelName} updated = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField?uncap_first} = updated.get${idField?cap_first}();
-        <#if fieldsWithLength??>
+        <#if validationOverrides??>
         final ${updateInputTO} input = generate${updateInputTO}();
         <#else>
         final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
@@ -190,7 +190,7 @@ class ${strippedModelName}ResolverMutationTest {
         assertThat(result).isNotNull();
         assertThat(result.${idField?uncap_first}()).isEqualTo(updated.get${idField?cap_first}());
     }
-    <#if fieldsWithLength??>
+    <#if validationOverrides??>
 
     @Test
     void update${strippedModelName}_validationFails() {
@@ -419,14 +419,14 @@ class ${strippedModelName}ResolverMutationTest {
     }</#if>
     </#list>
     </#if>
-    <#if fieldsWithLength??>
+    <#if validationOverrides??>
 
     private static ${createInputTO} generate${createInputTO}() {
         final ${createInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${createInputTO}.class);
         return new ${createInputTO}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.validValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
@@ -436,38 +436,38 @@ class ${strippedModelName}ResolverMutationTest {
         return new ${createInputTO}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.invalidValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
 
     private static ${updateInputTO} generate${updateInputTO}() {
-        <#assign needInput = (fieldsWithLength?default([])?size != fieldNamesWithoutRelations?default([])?size)>
+        <#assign needInput = (validationOverrides?default([])?size != fieldNamesWithoutRelations?default([])?size)>
         <#if needInput>
         final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
         </#if>
         return new ${updateInputTO}(
             <#list fieldNamesWithoutRelations as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched><#if needInput>input.${fieldName}()<#else>null</#if></#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.validValue}<#assign matched = true><#break></#if></#list><#if !matched><#if needInput>input.${fieldName}()<#else>null</#if></#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
 
     private static ${updateInputTO} generateInvalid${updateInputTO}() {
-        <#assign needInput = (fieldsWithLength?default([])?size != fieldNamesWithoutRelations?default([])?size)>
+        <#assign needInput = (validationOverrides?default([])?size != fieldNamesWithoutRelations?default([])?size)>
         <#if needInput>
         final ${updateInputTO} input = ${generatorFieldName}.${singleObjectMethodName}(${updateInputTO}.class);
         </#if>
         return new ${updateInputTO}(
             <#list fieldNamesWithoutRelations as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched><#if needInput>input.${fieldName}()<#else>null</#if></#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.invalidValue}<#assign matched = true><#break></#if></#list><#if !matched><#if needInput>input.${fieldName}()<#else>null</#if></#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
     </#if>
-    <#if fieldsWithLength?? && dataGenerator == "PODAM">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "PODAM">
 
     private static String generateString(final int n) {
         final PodamFactory p = new PodamFactoryImpl();
@@ -484,7 +484,7 @@ class ${strippedModelName}ResolverMutationTest {
         return p.manufacturePojo(String.class);
     }
     </#if><#t>
-    <#if fieldsWithLength?? && dataGenerator == "INSTANCIO">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "INSTANCIO">
 
     private static String generateString(final int n) {
         return Instancio.gen().string()
@@ -492,4 +492,18 @@ class ${strippedModelName}ResolverMutationTest {
                 .get();
     }
     </#if><#t>
+
+    <#if validationOverrides?? && hasGenerateList?? && hasGenerateList>
+    private static <T> java.util.List<T> generateList(final int n, final java.util.function.Supplier<T> supplier) {
+        if (n <= 0) {
+            return java.util.List.of();
+        }
+        final java.util.ArrayList<T> list = new java.util.ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            list.add(supplier.get());
+        }
+        return list;
+    }
+    
+    </#if>
 }

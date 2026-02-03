@@ -193,7 +193,7 @@ public class RestControllerTemplateContext {
         ValidationContextBuilder.contribute(
             modelDefinition, context,
             String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME)),
-            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ).toString())
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ))
         );
 
         return context;
