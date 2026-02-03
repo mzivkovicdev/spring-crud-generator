@@ -135,6 +135,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("swagger", swagger);
         context.put(TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties()));
         context.put(TemplateContextConstants.HAS_LAZY_FIELDS, FieldUtils.hasLazyFetchField(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.BASE_COLLECTION_FIELDS, FieldUtils.extractBaseCollectionFieldNames(modelDefinition.getFields()));
         if (swagger) {
             context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(modelDefinition.getName()));
         }

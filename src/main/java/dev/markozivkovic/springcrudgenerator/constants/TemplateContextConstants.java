@@ -28,7 +28,6 @@ public final class TemplateContextConstants {
     public static final String NAME = "name";
     public static final String FIELD = "field";
     public static final String LENGTH = "length";
-    public static final String INVALID_LENGTH = "invalidLength";
     public static final String VALID_VALUE = "validValue";
     public static final String INVALID_VALUE = "invalidValue";
     public static final String VALIDATION_OVERRIDES = "validationOverrides";
