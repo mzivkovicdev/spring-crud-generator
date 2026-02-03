@@ -25,7 +25,7 @@ class ValidationContextBuilderTest {
 
     @Test
     void contribute_string_required_generatesInvalidNull() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(true);
@@ -53,12 +53,8 @@ class ValidationContextBuilderTest {
 
         assertTrue(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
 
-        final Object raw = ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
-        assertNotNull(raw);
-        assertTrue(raw instanceof List);
-
         @SuppressWarnings("unchecked")
-        final List<Map<String, Object>> overrides = (List<Map<String, Object>>) raw;
+        final List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
 
         assertEquals(1, overrides.size());
         final Map<String, Object> o = overrides.get(0);
@@ -66,11 +62,13 @@ class ValidationContextBuilderTest {
         assertEquals("name", o.get(TemplateContextConstants.FIELD));
         assertEquals("generateString(1)", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("null", o.get(TemplateContextConstants.INVALID_VALUE));
+        assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_string_notBlank_generatesWhitespaceInvalid() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(null);
@@ -98,16 +96,19 @@ class ValidationContextBuilderTest {
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
+
         final Map<String, Object> o = overrides.get(0);
 
         assertEquals("code", o.get(TemplateContextConstants.FIELD));
         assertEquals("generateString(1)", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("\"   \"", o.get(TemplateContextConstants.INVALID_VALUE));
+        assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_string_notEmpty_generatesEmptyInvalid() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(null);
@@ -135,16 +136,20 @@ class ValidationContextBuilderTest {
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
+
         final Map<String, Object> o = overrides.get(0);
 
         assertEquals("desc", o.get(TemplateContextConstants.FIELD));
         assertEquals("generateString(1)", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("\"\"", o.get(TemplateContextConstants.INVALID_VALUE));
+
+        assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_string_email_generatesValidEmailAndInvalidNotEmail() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(null);
@@ -178,11 +183,13 @@ class ValidationContextBuilderTest {
         assertEquals("email", o.get(TemplateContextConstants.FIELD));
         assertEquals("\"a@b.co\"", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("\"not-an-email\"", o.get(TemplateContextConstants.INVALID_VALUE));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_string_onlyColumnLength_generatesOverride() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ColumnDefinition col = mock(ColumnDefinition.class);
         when(col.getLength()).thenReturn(3);
@@ -200,16 +207,19 @@ class ValidationContextBuilderTest {
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
+
         final Map<String, Object> o = overrides.get(0);
 
         assertEquals("title", o.get(TemplateContextConstants.FIELD));
         assertEquals("generateString(1)", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("generateString(4)", o.get(TemplateContextConstants.INVALID_VALUE));
+        assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_integer_minMax_generatesValidMin_invalidMaxPlusOne() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(null);
@@ -242,11 +252,13 @@ class ValidationContextBuilderTest {
         assertEquals("age", o.get(TemplateContextConstants.FIELD));
         assertEquals("2", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("6", o.get(TemplateContextConstants.INVALID_VALUE));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_bigDecimal_maxOnly_generatesNewBigDecimalExpressions() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(null);
@@ -271,8 +283,6 @@ class ValidationContextBuilderTest {
         final Map<String, Object> ctx = new HashMap<>();
         ValidationContextBuilder.contribute(model, ctx, "gen", "one");
 
-        assertTrue(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
-
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
 
@@ -282,11 +292,13 @@ class ValidationContextBuilderTest {
         assertEquals("price", o.get(TemplateContextConstants.FIELD));
         assertEquals("new " + ImportConstants.Java.BIG_DECIMAL + "(\"2.5\")", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("new " + ImportConstants.Java.BIG_DECIMAL + "(\"3.5\")", o.get(TemplateContextConstants.INVALID_VALUE));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_listOfString_required_generatesGenerateList_valid_andEmptyList_invalid() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(true);
@@ -320,11 +332,14 @@ class ValidationContextBuilderTest {
         assertEquals("tags", o.get(TemplateContextConstants.FIELD));
         assertEquals("generateList(1, () -> \"a\")", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals(ImportConstants.Java.LIST + ".of()", o.get(TemplateContextConstants.INVALID_VALUE));
+
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_setOfInteger_minMaxItems_wrapsHashSet() {
-        
+
         final ModelDefinition model = mock(ModelDefinition.class);
         final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(null);
@@ -358,13 +373,16 @@ class ValidationContextBuilderTest {
         assertEquals("ids", o.get(TemplateContextConstants.FIELD));
         assertEquals("new java.util.HashSet<>(generateList(2, () -> 1))", o.get(TemplateContextConstants.VALID_VALUE));
         assertEquals("new java.util.HashSet<>(generateList(4, () -> 1))", o.get(TemplateContextConstants.INVALID_VALUE));
+
+        assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 
     @Test
     void contribute_customType_evenIfValidationExists_doesNotGenerateOverride() {
-        ModelDefinition model = mock(ModelDefinition.class);
+        final ModelDefinition model = mock(ModelDefinition.class);
 
-        ValidationDefinition v = mock(ValidationDefinition.class);
+        final ValidationDefinition v = mock(ValidationDefinition.class);
         when(v.getRequired()).thenReturn(true);
         when(v.getNotBlank()).thenReturn(null);
         when(v.getNotEmpty()).thenReturn(null);
@@ -377,7 +395,7 @@ class ValidationContextBuilderTest {
         when(v.getPattern()).thenReturn(null);
         when(v.getEmail()).thenReturn(null);
 
-        FieldDefinition f = mock(FieldDefinition.class);
+        final FieldDefinition f = mock(FieldDefinition.class);
         when(f.getName()).thenReturn("obj");
         when(f.getResolvedType()).thenReturn("com.acme.CustomType");
         when(f.getValidation()).thenReturn(v);
@@ -385,9 +403,11 @@ class ValidationContextBuilderTest {
 
         when(model.getFields()).thenReturn(List.of(f));
 
-        Map<String, Object> ctx = new HashMap<>();
+        final Map<String, Object> ctx = new HashMap<>();
         ValidationContextBuilder.contribute(model, ctx, "gen", "one");
 
         assertFalse(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
+        assertFalse(ctx.containsKey(TemplateContextConstants.HAS_GENERATE_STRING));
+        assertFalse(ctx.containsKey(TemplateContextConstants.HAS_GENERATE_LIST));
     }
 }

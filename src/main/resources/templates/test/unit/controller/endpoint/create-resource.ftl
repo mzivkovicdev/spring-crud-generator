@@ -183,7 +183,7 @@ class ${className} {
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
 
-    <#if validationOverrides??>
+    <#if validationOverrides?? && hasGenerateList?? && hasGenerateList>
     private static <T> java.util.List<T> generateList(final int n, final java.util.function.Supplier<T> supplier) {
         if (n <= 0) {
             return java.util.List.of();
@@ -233,7 +233,7 @@ class ${className} {
     }
 
     </#if><#t>
-    <#if validationOverrides?? && dataGenerator == "PODAM">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "PODAM">
     private static String generateString(final int n) {
         final PodamFactory p = new PodamFactoryImpl();
         p.getStrategy().addOrReplaceTypeManufacturer(String.class, (strategy, attributeMetadata, genericTypesArgumentsMap) -> {
@@ -249,7 +249,7 @@ class ${className} {
         return p.manufacturePojo(String.class);
     }
     </#if><#t>
-    <#if validationOverrides?? && dataGenerator == "INSTANCIO">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "INSTANCIO">
     private static String generateString(final int n) {
         return Instancio.gen().string()
                 .length(n)

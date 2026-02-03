@@ -17,8 +17,11 @@ import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 
 public final class ValidationContextBuilder {
 
+    private static final String GENERATE_STRING = "generateString";
     private static final String GENERATE_STRING_METHOD = "generateString(%s)";
-    private static final String GENERATE_LIST = "generateList(%s, %s)";
+
+    private static final String GENERATE_LIST = "generateList";
+    private static final String GENERATE_LIST_METHOD = "generateList(%s, %s)";
 
     private ValidationContextBuilder() {}
 
@@ -91,6 +94,18 @@ public final class ValidationContextBuilder {
 
         if (!ContainerUtils.isEmpty(overrides)) {
             context.put(TemplateContextConstants.VALIDATION_OVERRIDES, overrides);
+            
+            final boolean hasGenerateString = overrides.stream().anyMatch(override -> 
+                String.format("%s", override.get(TemplateContextConstants.VALID_VALUE)).contains(GENERATE_STRING) ||
+                String.format("%s", override.get(TemplateContextConstants.INVALID_VALUE)).contains(GENERATE_STRING)
+            );
+            context.put(TemplateContextConstants.HAS_GENERATE_STRING, hasGenerateString);
+
+            final boolean hasGenerateList = overrides.stream().anyMatch(override -> 
+                String.format("%s", override.get(TemplateContextConstants.VALID_VALUE)).contains(GENERATE_LIST) ||
+                String.format("%s", override.get(TemplateContextConstants.INVALID_VALUE)).contains(GENERATE_LIST)
+            );
+            context.put(TemplateContextConstants.HAS_GENERATE_LIST, hasGenerateList);
         }
     }
 
@@ -422,7 +437,7 @@ public final class ValidationContextBuilder {
             return String.format("%s.of()", collectionTypeImport);
         }
 
-        final String base = String.format(GENERATE_LIST, size, supplier);
+        final String base = String.format(GENERATE_LIST_METHOD, size, supplier);
 
         if (SpecialType.isSetType(collectionType)) {
             return "new java.util.HashSet<>(" + base + ")";
