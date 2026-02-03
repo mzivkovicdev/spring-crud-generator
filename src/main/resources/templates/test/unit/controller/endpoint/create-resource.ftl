@@ -203,14 +203,7 @@ class ${className} {
         return new ${createTransferObjectClass}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (validationOverrides?default([])) as ov>
-                    <#if ov.field == fieldName>
-                        ${ov.validValue}
-                        <#assign matched = true>
-                        <#break>
-                    </#if>
-                </#list>
-                <#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.validValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
@@ -220,14 +213,7 @@ class ${className} {
         return new ${createTransferObjectClass}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (validationOverrides?default([])) as ov>
-                    <#if ov.field == fieldName>
-                        ${ov.invalidValue}
-                        <#assign matched = true>
-                        <#break>
-                    </#if>
-                </#list>
-                <#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.invalidValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
