@@ -1,8 +1,10 @@
 package dev.markozivkovic.springcrudgenerator.generators.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -12,12 +14,14 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.MapperImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.GraphQLDefinition;
@@ -26,6 +30,7 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.DataGeneratorTemplateContext;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -85,7 +90,6 @@ class MapperUnitTestGeneratorTest {
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
             unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
-
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(model, entities)).thenReturn(true);
 
             gen.generate(model, "src/main/java/");
@@ -102,10 +106,11 @@ class MapperUnitTestGeneratorTest {
         final CrudConfiguration.TestConfiguration tests = mock(CrudConfiguration.TestConfiguration.class);
         when(cfg.getTests()).thenReturn(tests);
         when(tests.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+
         when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
         when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
         when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
-        
+
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(cfg.getGraphql()).thenReturn(graphQlDef);
         when(graphQlDef.getEnabled()).thenReturn(false);
@@ -121,7 +126,6 @@ class MapperUnitTestGeneratorTest {
         try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
             unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
@@ -133,34 +137,33 @@ class MapperUnitTestGeneratorTest {
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("src/main/java/"))
                     .thenReturn("com.example.app");
 
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                    .thenReturn("User");
-
             final IllegalArgumentException ex = assertThrows(
                     IllegalArgumentException.class,
                     () -> gen.generate(user, "src/main/java/")
             );
 
             assertTrue(ex.getMessage().contains("JSON model not found: AddressEntity"));
-
             writer.verifyNoInteractions();
         }
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void generate_shouldGenerateRestMapperTestsAndHelperWhenSwaggerEnabled() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final CrudConfiguration.TestConfiguration tests = mock(CrudConfiguration.TestConfiguration.class);
         when(cfg.getTests()).thenReturn(tests);
         when(tests.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+
         when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
         when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
         when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
-        
+
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(cfg.getGraphql()).thenReturn(graphQlDef);
         when(graphQlDef.getEnabled()).thenReturn(false);
+        when(cfg.getAdditionalProperties()).thenReturn(mock(Map.class));
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
 
@@ -185,6 +188,7 @@ class MapperUnitTestGeneratorTest {
 
         try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addPropsUtils = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<MapperImports> mapperImports = mockStatic(MapperImports.class);
@@ -198,20 +202,14 @@ class MapperUnitTestGeneratorTest {
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
             fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(idField);
-
-            fieldUtils.when(() -> FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(anyList()))
-                    .thenReturn(List.of("name"));
-            fieldUtils.when(() -> FieldUtils.extractNamesOfEnumFields(anyList()))
-                    .thenReturn(List.of());
-
-            fieldUtils.when(() -> FieldUtils.extractEnumFields(address.getFields()))
-                    .thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractFieldNames(address.getFields()))
-                    .thenReturn(List.of("addrId"));
-
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("src/main/java/"))
-                    .thenReturn("com.example.app");
-
+            fieldUtils.when(() -> FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNamesOfEnumFields(anyList())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractEnumFields(address.getFields())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractFieldNames(address.getFields())).thenReturn(List.of("addrId"));
+            addPropsUtils.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasLazyFetchField(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractBaseCollectionFieldNames(anyList())).thenReturn(List.of("roles"));
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("src/main/java/")).thenReturn("com.example.app");
             pkg.when(() -> PackageUtils.computeRestMapperPackage(anyString(), eq(pkgCfg)))
                     .thenReturn("com.example.app.mapper.rest");
             pkg.when(() -> PackageUtils.computeRestMappersSubPackage(eq(pkgCfg)))
@@ -257,19 +255,23 @@ class MapperUnitTestGeneratorTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void generate_shouldGenerateRestAndGraphQlMapperTests_whenGraphQlEnabled() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final CrudConfiguration.TestConfiguration tests = mock(CrudConfiguration.TestConfiguration.class);
         when(cfg.getTests()).thenReturn(tests);
         when(tests.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+
         when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
         when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
         when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
-        
+
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(cfg.getGraphql()).thenReturn(graphQlDef);
         when(graphQlDef.getEnabled()).thenReturn(true);
+
+        when(cfg.getAdditionalProperties()).thenReturn(mock(Map.class));
 
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
 
@@ -293,6 +295,7 @@ class MapperUnitTestGeneratorTest {
 
         try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addPropsUtils = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<MapperImports> mapperImports = mockStatic(MapperImports.class);
@@ -307,7 +310,6 @@ class MapperUnitTestGeneratorTest {
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(user, entities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
-
             fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(idField);
 
             fieldUtils.when(() -> FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(anyList()))
@@ -319,6 +321,9 @@ class MapperUnitTestGeneratorTest {
                     .thenReturn(List.of());
             fieldUtils.when(() -> FieldUtils.extractFieldNames(address.getFields()))
                     .thenReturn(List.of("addrId"));
+            addPropsUtils.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasLazyFetchField(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractBaseCollectionFieldNames(anyList())).thenReturn(List.of());
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("src/main/java/"))
                     .thenReturn("com.example.app");
@@ -333,15 +338,10 @@ class MapperUnitTestGeneratorTest {
             pkg.when(() -> PackageUtils.computeHelperRestMappersSubPackage(eq(pkgCfg)))
                     .thenReturn("mapper/rest/helper");
 
-            pkg.when(() -> PackageUtils.computeGraphQlMapperPackage(anyString(), eq(pkgCfg)))
-                   .thenReturn("com.example.app.mapper.graphql");
-            pkg.when(() -> PackageUtils.computeGraphQlMappersSubPackage(eq(pkgCfg)))
-                   .thenReturn("mapper/graphql");
-
-            pkg.when(() -> PackageUtils.computeHelperGraphQlMapperPackage(anyString(), eq(pkgCfg)))
-                   .thenReturn("com.example.app.mapper.graphql.helper");
-            pkg.when(() -> PackageUtils.computeHelperGraphQlMappersSubPackage(eq(pkgCfg)))
-                   .thenReturn("mapper/graphql/helper");
+            pkg.when(() -> PackageUtils.computeGraphQlMapperPackage(anyString(), eq(pkgCfg))).thenReturn("com.example.app.mapper.graphql");
+            pkg.when(() -> PackageUtils.computeGraphQlMappersSubPackage(eq(pkgCfg))).thenReturn("mapper/graphql");
+            pkg.when(() -> PackageUtils.computeHelperGraphQlMapperPackage(anyString(), eq(pkgCfg))).thenReturn("com.example.app.mapper.graphql.helper");
+            pkg.when(() -> PackageUtils.computeHelperGraphQlMappersSubPackage(eq(pkgCfg))).thenReturn("mapper/graphql/helper");
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
@@ -377,6 +377,116 @@ class MapperUnitTestGeneratorTest {
             assertTrue(written.contains("AddressRestMapperTest"));
             assertTrue(written.contains("UserGraphQlMapperTest"));
             assertTrue(written.contains("AddressGraphQlMapperTest"));
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void generate_shouldPassNewTemplateKeys_openInView_lazy_and_baseCollectionFields_intoMapperContext() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final CrudConfiguration.TestConfiguration tests = mock(CrudConfiguration.TestConfiguration.class);
+        when(cfg.getTests()).thenReturn(tests);
+        when(tests.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+
+        when(cfg.getOpenApi()).thenReturn(mock(CrudConfiguration.OpenApiDefinition.class));
+        when(cfg.getOpenApi().getApiSpec()).thenReturn(true);
+        when(cfg.getOpenApi().getGenerateResources()).thenReturn(true);
+
+        final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
+        when(cfg.getGraphql()).thenReturn(graphQlDef);
+        when(graphQlDef.getEnabled()).thenReturn(false);
+
+        when(cfg.getAdditionalProperties()).thenReturn(mock(Map.class));
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+
+        final FieldDefinition jsonField = mock(FieldDefinition.class);
+
+        final ModelDefinition user = newModel("UserEntity", List.of(idField, jsonField));
+
+        final FieldDefinition addrAnyField = mock(FieldDefinition.class);
+        when(addrAnyField.getName()).thenReturn("addrId");
+        final ModelDefinition address = newModel("AddressEntity", List.of(addrAnyField));
+
+        final List<ModelDefinition> entities = List.of(user, address);
+        final MapperUnitTestGenerator gen = new MapperUnitTestGenerator(cfg, entities, pkgCfg);
+
+        final List<Map<String, Object>> capturedContexts = new ArrayList<>();
+
+        try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addPropsUtils = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<MapperImports> mapperImports = mockStatic(MapperImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(user, entities)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractEnumFields(address.getFields())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractFieldNames(address.getFields())).thenReturn(List.of("addrId"));
+            fieldUtils.when(() -> FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(anyList())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractNamesOfEnumFields(anyList())).thenReturn(List.of());
+            addPropsUtils.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.hasLazyFetchField(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractBaseCollectionFieldNames(anyList())).thenReturn(List.of("roles", "tags"));
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(anyString())).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage(anyString(), eq(pkgCfg))).thenReturn("x");
+            pkg.when(() -> PackageUtils.computeRestMappersSubPackage(eq(pkgCfg))).thenReturn("y");
+            pkg.when(() -> PackageUtils.computeHelperRestMapperPackage(anyString(), eq(pkgCfg))).thenReturn("xh");
+            pkg.when(() -> PackageUtils.computeHelperRestMappersSubPackage(eq(pkgCfg))).thenReturn("yh");
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName(anyString())).thenReturn("X");
+
+            mapperImports.when(() -> MapperImports.computeTestMapperImports(anyString(), any(), any(), anyBoolean(), anyBoolean()))
+                    .thenReturn("//");
+            mapperImports.when(() -> MapperImports.computeTestHelperMapperImports(anyString(), any(), any(), any(), anyBoolean(), anyBoolean()))
+                    .thenReturn("//");
+
+            dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/mapper/mapper-test-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        final Map<String, Object> ctx = (Map<String, Object>) inv.getArgument(1);
+                        capturedContexts.add(new HashMap<>(ctx));
+                        return "//";
+                    });
+
+            gen.generate(user, "src/main/java/");
+
+            assertTrue(capturedContexts.size() >= 2);
+
+            final Map<String, Object> mainCtx = capturedContexts.stream()
+                    .filter(m -> m.containsKey(TemplateContextConstants.BASE_COLLECTION_FIELDS))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertEquals(true, mainCtx.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED));
+            assertEquals(true, mainCtx.get(TemplateContextConstants.HAS_LAZY_FIELDS));
+
+            final List<String> baseCollectionFields = (List<String>) mainCtx.get(TemplateContextConstants.BASE_COLLECTION_FIELDS);
+
+            assertEquals(List.of("roles", "tags"), baseCollectionFields);
+
+            final Map<String, Object> helperCtx = capturedContexts.stream()
+                    .filter(m -> Boolean.TRUE.equals(m.get("generateAllHelperMethods")))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertEquals(true, helperCtx.get("generateAllHelperMethods"));
         }
     }
 }
