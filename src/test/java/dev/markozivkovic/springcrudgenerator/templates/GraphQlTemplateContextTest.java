@@ -528,12 +528,12 @@ class GraphQlTemplateContextTest {
             assertEquals("ProductResolverMutationTest", ctx.get(TemplateContextConstants.CLASS_NAME));
 
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> fieldsWithLength = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
+            final List<Map<String, Object>> validationOverrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
 
-            assertNotNull(fieldsWithLength);
-            assertEquals(1, fieldsWithLength.size());
-            assertEquals("name", fieldsWithLength.get(0).get(TemplateContextConstants.FIELD));
-            assertEquals(12, fieldsWithLength.get(0).get(TemplateContextConstants.LENGTH));
+            assertEquals(1, validationOverrides.size());
+            assertEquals("name", validationOverrides.get(0).get(TemplateContextConstants.FIELD));
+            assertEquals("generateString(1)", validationOverrides.get(0).get(TemplateContextConstants.VALID_VALUE));
+            assertEquals("generateString(13)", validationOverrides.get(0).get(TemplateContextConstants.INVALID_VALUE));
             assertTrue(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
             assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
             assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
