@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -348,21 +349,11 @@ class RestControllerTemplateContextTest {
             assertEquals(true, productsCtx.get(TemplateContextConstants.IS_COLLECTION));
             assertEquals("Long", productsCtx.get(TemplateContextConstants.RELATION_ID_TYPE));
             assertEquals("id", productsCtx.get(TemplateContextConstants.RELATION_ID_FIELD));
-
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> fieldsWithLength = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
-
-            assertNotNull(fieldsWithLength);
-            final Map<String, Object> lenEntry = fieldsWithLength.stream()
-                .filter(m -> "name".equals(m.get(TemplateContextConstants.FIELD)))
-                .findFirst()
-                .orElseThrow();
-            assertEquals(3, lenEntry.get(TemplateContextConstants.LENGTH));
         }
     }
 
     @Test
-    void computeUpdateByIdTestEndpointContext_populatesExpectedKeys_andFieldsWithLength() {
+    void computeUpdateByIdTestEndpointContext_populatesExpectedKeys_andValidationOverridesFromColumnLength() {
 
         final ModelDefinition product = mock(ModelDefinition.class);
         when(product.getName()).thenReturn("Product");
@@ -370,10 +361,15 @@ class RestControllerTemplateContextTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
         when(idField.getType()).thenReturn("Long");
+        when(idField.getResolvedType()).thenReturn("Long");
+        when(idField.getValidation()).thenReturn(null);
+        when(idField.getColumn()).thenReturn(null);
 
         final FieldDefinition nameField = mock(FieldDefinition.class);
         when(nameField.getName()).thenReturn("name");
         when(nameField.getType()).thenReturn("String");
+        when(nameField.getResolvedType()).thenReturn("String");
+        when(nameField.getValidation()).thenReturn(null);
 
         final ColumnDefinition nameCol = mock(ColumnDefinition.class);
         when(nameCol.getLength()).thenReturn(20);
@@ -392,12 +388,12 @@ class RestControllerTemplateContextTest {
         when(crudCfg.getSpringBootVersion()).thenReturn("4.0.1.RELEASE");
 
         try (final MockedStatic<AdditionalPropertiesUtils> apu = mockStatic(AdditionalPropertiesUtils.class);
-             final MockedStatic<UnitTestUtils> utu = mockStatic(UnitTestUtils.class);
-             final MockedStatic<FieldUtils> fu = mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> mnu = mockStatic(ModelNameUtils.class);
-             final MockedStatic<RestControllerImports> rci = mockStatic(RestControllerImports.class);
-             final MockedStatic<DataGeneratorTemplateContext> dgtc = mockStatic(DataGeneratorTemplateContext.class);
-             final MockedStatic<ContainerUtils> cu = mockStatic(ContainerUtils.class)) {
+            final MockedStatic<UnitTestUtils> utu = mockStatic(UnitTestUtils.class);
+            final MockedStatic<FieldUtils> fu = mockStatic(FieldUtils.class);
+            final MockedStatic<ModelNameUtils> mnu = mockStatic(ModelNameUtils.class);
+            final MockedStatic<RestControllerImports> rci = mockStatic(RestControllerImports.class);
+            final MockedStatic<DataGeneratorTemplateContext> dgtc = mockStatic(DataGeneratorTemplateContext.class);
+            final MockedStatic<ContainerUtils> cu = mockStatic(ContainerUtils.class)) {
 
             apu.when(() -> AdditionalPropertiesUtils.resolveBasePath(crudCfg)).thenReturn("/api");
 
@@ -416,13 +412,22 @@ class RestControllerTemplateContextTest {
 
             utu.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("invalid-id");
             utu.when(() -> UnitTestUtils.isInstancioEnabled(crudCfg)).thenReturn(false);
+
             fu.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForController(fields, true)).thenReturn(List.of("name"));
             fu.when(() -> FieldUtils.extractNonIdNonRelationFieldNames(fields)).thenReturn(List.of("name"));
-            rci.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, "4.0.1.RELEASE")).thenReturn("import x;");
+
+            rci.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, "4.0.1.RELEASE"))
+                    .thenReturn("import x;");
+
             rci.when(() -> RestControllerImports.computeUpdateEndpointTestProjectImports(
                     eq(product), anyString(), eq(true), eq(pkgCfg), eq(true)
             )).thenReturn("import y;");
-            dgtc.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorCfg)).thenReturn(Map.of("dataGenerator", "PODAM"));
+
+            final Map<String, Object> generatorCtx = new HashMap<>();
+            generatorCtx.put("dataGenerator", "PODAM");
+            generatorCtx.put(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen");
+            generatorCtx.put(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one");
+            dgtc.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorCfg)).thenReturn(generatorCtx);
 
             cu.when(() -> ContainerUtils.isEmpty(any(Collection.class))).thenAnswer(inv -> {
                 final Object arg = inv.getArgument(0);
@@ -456,17 +461,19 @@ class RestControllerTemplateContextTest {
             assertEquals(List.of("payload"), jsonFields);
 
             assertEquals("PODAM", ctx.get("dataGenerator"));
+            assertTrue(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
 
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> fieldsWithLength = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.FIELDS_WITH_LENGTH);
+            final List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
+            assertNotNull(overrides);
 
-            assertNotNull(fieldsWithLength);
-            final Map<String, Object> lenEntry = fieldsWithLength.stream()
+            final Map<String, Object> nameOverride = overrides.stream()
                     .filter(m -> "name".equals(m.get(TemplateContextConstants.FIELD)))
                     .findFirst()
                     .orElseThrow();
 
-            assertEquals(20, lenEntry.get(TemplateContextConstants.LENGTH));
+            assertEquals("generateString(1)", nameOverride.get(TemplateContextConstants.VALID_VALUE));
+            assertEquals("generateString(21)", nameOverride.get(TemplateContextConstants.INVALID_VALUE));
         }
     }
 

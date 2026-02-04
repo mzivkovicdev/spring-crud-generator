@@ -70,7 +70,7 @@ class ${className} {
 
         final ${transferObjectName} result = this.${strippedModelName?uncap_first}Mapper.map${modelName}To${transferObjectName}Simple(${modelNameUncapFirst});
 
-        verify${transferObjectName}(result, ${modelNameUncapFirst});
+        verify${transferObjectName}Simple(result, ${modelNameUncapFirst});
     }
 
     @Test
@@ -93,7 +93,7 @@ class ${className} {
                     .findFirst()
                     .orElseThrow();
             
-            verify${transferObjectName}(result, ${modelNameUncapFirst});
+            verify${transferObjectName}Simple(result, ${modelNameUncapFirst});
         });
     }
     
@@ -225,6 +225,21 @@ class ${className} {
         </#list>
     }
 
+    <#if openInViewEnabled?? && hasLazyFields?? && !openInViewEnabled && hasLazyFields>
+    private void verify${transferObjectName}Simple(final ${transferObjectName} result, final ${modelName} ${modelNameUncapFirst}) {
+
+        assertThat(result).isNotNull();
+        <#list fieldNames as field>
+        <#if !(baseCollectionFields?default([])?seq_contains(field))>
+        assertThat(result.${field?uncap_first}()).isEqualTo(${modelName?uncap_first}.get${field?cap_first}());
+        </#if>
+        </#list>
+        <#list enumFields as field>
+        assertThat(result.${field?uncap_first}()).isEqualTo(${modelName?uncap_first}.get${field?cap_first}());
+        </#list>
+    }
+
+    </#if>
     private void verify${modelName}(final ${modelName} result, final ${transferObjectName} ${transferObjectUncapFirst}) {
 
         assertThat(result).isNotNull();

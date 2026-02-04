@@ -38,6 +38,7 @@ import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorResponse;
 import dev.markozivkovic.springcrudgenerator.templates.DataGeneratorTemplateContext;
 import dev.markozivkovic.springcrudgenerator.templates.RestControllerTemplateContext;
+import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextBuilder;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
@@ -287,6 +288,11 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
         context.put("fieldNames", FieldUtils.extractFieldNamesWithoudId(modelDefinition.getFields()));
+        ValidationContextBuilder.contribute(
+            modelDefinition, context,
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME)),
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ).toString())
+        );
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(

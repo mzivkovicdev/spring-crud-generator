@@ -20,6 +20,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.RestControllerImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorResponse;
@@ -42,7 +43,7 @@ import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGenerat
 class RestControllerUnitTestGeneratorTest {
 
     private CrudConfiguration cfgWithTestsEnabled(boolean swaggerEnabled) {
-        
+
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final TestConfiguration testsCfg = mock(TestConfiguration.class);
         final String springBootVersion = "3.0.0";
@@ -155,7 +156,11 @@ class RestControllerUnitTestGeneratorTest {
                     eq(model), eq(cfg), eq(pkgCfg), anyBoolean(), anyBoolean(), anyString(), anyString(), anyString()
             )).thenReturn(new HashMap<>());
 
-            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
+                    .thenReturn(Map.of(
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one"
+                    ));
 
             imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false, cfg.getSpringBootVersion()))
                     .thenReturn("// GET IMPORTS");
@@ -163,10 +168,12 @@ class RestControllerUnitTestGeneratorTest {
                     .thenReturn("// UPDATE IMPORTS");
             imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false, cfg.getSpringBootVersion()))
                     .thenReturn("// DELETE IMPORTS");
+
             imports.when(() -> RestControllerImports.computeControllerTestProjectImports(any(), anyString(), anyBoolean(), any(), any(), anyBoolean()))
                     .thenReturn("// CONTROLLER TEST IMPORTS");
             imports.when(() -> RestControllerImports.computeCreateEndpointTestProjectImports(any(), anyString(), anyBoolean(), any(), anyBoolean()))
                     .thenReturn("// CREATE IMPORTS");
+
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap()))
                     .thenReturn("//generated");
 
@@ -178,6 +185,7 @@ class RestControllerUnitTestGeneratorTest {
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignDeleteByIdMockMvcTest"), anyString()));
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignUpdateByIdMockMvcTest"), anyString()));
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignCreateMockMvcTest"), anyString()));
+
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), startsWith("CampaignAdd"), anyString()), never());
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), startsWith("CampaignRemove"), anyString()), never());
         }
@@ -231,6 +239,7 @@ class RestControllerUnitTestGeneratorTest {
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields())).thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(rel));
             fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(model)).thenReturn(List.of("owners"));
+
             fieldUtils.when(() -> FieldUtils.extractIdField(related.getFields())).thenReturn(relatedId);
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(model.getFields())).thenReturn(List.of());
@@ -252,7 +261,11 @@ class RestControllerUnitTestGeneratorTest {
                     eq(model), eq(cfg), eq(pkgCfg), anyBoolean(), anyBoolean(), anyString(), anyString(), anyString()
             )).thenReturn(new HashMap<>());
 
-            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
+                    .thenReturn(Map.of(
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one"
+                    ));
 
             imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false, cfg.getSpringBootVersion()))
                     .thenReturn("// GET IMPORTS");
@@ -272,7 +285,6 @@ class RestControllerUnitTestGeneratorTest {
                     .thenReturn("// ADD TEST IMPORTS");
             imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false, cfg.getSpringBootVersion()))
                     .thenReturn("// DELETE TEST IMPORTS");
-
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap()))
                     .thenReturn("//generated");
 
@@ -340,7 +352,11 @@ class RestControllerUnitTestGeneratorTest {
                     eq(model), eq(cfg), eq(pkgCfg), anyBoolean(), anyBoolean(), anyString(), anyString(), anyString()
             )).thenReturn(new HashMap<>());
 
-            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
+                    .thenReturn(Map.of(
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one"
+                    ));
 
             imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false, cfg.getSpringBootVersion())).thenReturn("//");
             imports.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, cfg.getSpringBootVersion())).thenReturn("//");

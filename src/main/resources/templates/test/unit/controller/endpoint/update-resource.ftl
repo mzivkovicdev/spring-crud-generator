@@ -75,13 +75,13 @@ class ${className} {
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#if fieldsWithLength??>
-        <#list fieldsWithLength as fieldWithLength>
-        body.${fieldWithLength.field}(generateString(${fieldWithLength.length}));
+        <#if validationOverrides??>
+        <#list validationOverrides as ov>
+        body.${ov.field}(${ov.validValue});
         </#list>
         </#if><#t>
         <#else>
-        <#if fieldsWithLength??>
+        <#if validationOverrides??>
         final ${updateTransferObjectClass} body = generate${updateTransferObjectClass}();
         <#else>
         final ${updateTransferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${updateTransferObjectClass}.class);
@@ -120,7 +120,7 @@ class ${className} {
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
-    <#if fieldsWithLength??>
+    <#if validationOverrides??>
 
     @Test
     void ${uncapModelName}sIdPut_validationFails() throws Exception {
@@ -129,11 +129,9 @@ class ${className} {
         final ${idType} ${idField?uncap_first} = ${modelName?uncap_first}.get${idField?cap_first}();
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#if fieldsWithLength??>
-        <#list fieldsWithLength as fieldWithLength>
-        body.${fieldWithLength.field}(generateString(${fieldWithLength.length + 10}));
-        </#list>
-        </#if><#t>
+        <#list validationOverrides as ov>
+        body.${ov.field}(${ov.invalidValue});
+        </#list><#t>
         <#else>
         final ${updateTransferObjectClass} body = generateInvalid${updateTransferObjectClass}();
         </#if>
@@ -170,36 +168,36 @@ class ${className} {
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
 
-    <#if fieldsWithLength?? && !swagger>
+    <#if validationOverrides?? && !swagger>
 
     private static ${updateTransferObjectClass} generate${updateTransferObjectClass}() {
-        <#assign needInput = (fieldsWithLength?default([])?size != fieldNames?default([])?size)>
+        <#assign needInput = (validationOverrides?default([])?size != fieldNames?default([])?size)>
         <#if needInput>
         final ${updateTransferObjectClass} input = ${generatorFieldName}.${singleObjectMethodName}(${updateTransferObjectClass}.class);
         </#if>
         return new ${updateTransferObjectClass}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.validValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
 
     private static ${updateTransferObjectClass} generateInvalid${updateTransferObjectClass}() {
-        <#assign needInput = (fieldsWithLength?default([])?size != fieldNames?default([])?size)>
+        <#assign needInput = (validationOverrides?default([])?size != fieldNames?default([])?size)>
         <#if needInput>
         final ${updateTransferObjectClass} input = ${generatorFieldName}.${singleObjectMethodName}(${updateTransferObjectClass}.class);
         </#if>
         return new ${updateTransferObjectClass}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.invalidValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
 
     </#if><#t>
-    <#if fieldsWithLength?? && dataGenerator == "PODAM">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "PODAM">
     private static String generateString(final int n) {
         final PodamFactory p = new PodamFactoryImpl();
         p.getStrategy().addOrReplaceTypeManufacturer(String.class, (strategy, attributeMetadata, genericTypesArgumentsMap) -> {
@@ -215,11 +213,25 @@ class ${className} {
         return p.manufacturePojo(String.class);
     }
     </#if><#t>
-    <#if fieldsWithLength?? && dataGenerator == "INSTANCIO">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "INSTANCIO">
     private static String generateString(final int n) {
         return Instancio.gen().string()
                 .length(n)
                 .get();
     }
     </#if><#t>
+    <#if validationOverrides?? && hasGenerateList?? && hasGenerateList>
+
+    private static <T> java.util.List<T> generateList(final int n, final java.util.function.Supplier<T> supplier) {
+        if (n <= 0) {
+            return java.util.List.of();
+        }
+        final java.util.ArrayList<T> list = new java.util.ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            list.add(supplier.get());
+        }
+        return list;
+    }
+    
+    </#if>
 }

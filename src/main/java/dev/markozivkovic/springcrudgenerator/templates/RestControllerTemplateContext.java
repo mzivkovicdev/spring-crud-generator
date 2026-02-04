@@ -29,8 +29,8 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextBuilder;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
-import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
@@ -133,7 +133,6 @@ public class RestControllerTemplateContext {
 
         final Map<String, Object> context = computeCreateEndpointContext(modelDefinition, entities);
         
-        computeFieldsWithLength(modelDefinition, context);
         return context;
     }
 
@@ -191,30 +190,13 @@ public class RestControllerTemplateContext {
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
         context.put("fieldNames", FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
 
-        computeFieldsWithLength(modelDefinition, context);
+        ValidationContextBuilder.contribute(
+            modelDefinition, context,
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME)),
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ))
+        );
 
         return context;
-    }
-
-    /**
-     * Computes a list of fields with length for a given model definition and adds it to the context map
-     * 
-     * @param modelDefinition the model definition
-     * @param context the context map
-     */
-    private static void computeFieldsWithLength(final ModelDefinition modelDefinition, final Map<String, Object> context) {
-        
-        final List<Map<String, Object>> fieldsWithLength = modelDefinition.getFields().stream()
-                .filter(field -> Objects.nonNull(field.getColumn()) && Objects.nonNull(field.getColumn().getLength()))
-                .map(field -> Map.<String, Object>of(
-                    TemplateContextConstants.FIELD, field.getName(),
-                    TemplateContextConstants.LENGTH, field.getColumn().getLength()
-                ))
-                .toList();
-
-        if (!ContainerUtils.isEmpty(fieldsWithLength)) {
-            context.put(TemplateContextConstants.FIELDS_WITH_LENGTH, fieldsWithLength);
-        }
     }
 
     /**

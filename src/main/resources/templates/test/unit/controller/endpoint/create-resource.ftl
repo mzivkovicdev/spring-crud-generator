@@ -78,13 +78,13 @@ class ${className} {
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#if fieldsWithLength??>
-        <#list fieldsWithLength as fieldWithLength>
-        body.${fieldWithLength.field}(generateString(${fieldWithLength.length}));
+        <#if validationOverrides??>
+        <#list validationOverrides as ov>
+        body.${ov.field}(${ov.validValue});
         </#list>
-        </#if><#t>
+        </#if>
         <#else>
-        <#if fieldsWithLength??>
+        <#if validationOverrides??>
         final ${createTransferObjectClass} body = generate${createTransferObjectClass}();
         <#else>
         final ${createTransferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${createTransferObjectClass}.class);
@@ -137,18 +137,18 @@ class ${className} {
                 </#if>
         );
     }
-    <#if fieldsWithLength??>
+    <#if validationOverrides??>
 
     @Test
     void ${uncapModelName}sPost_validationFails() throws Exception {
 
         <#if swagger>
         final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#if fieldsWithLength??>
-        <#list fieldsWithLength as fieldWithLength>
-        body.${fieldWithLength.field}(generateString(${fieldWithLength.length + 10}));
+        <#if validationOverrides??>
+        <#list validationOverrides as ov>
+        body.${ov.field}(${ov.invalidValue});
         </#list>
-        </#if><#t>
+        </#if>
         <#else>
         final ${createTransferObjectClass} body = generateInvalid${createTransferObjectClass}();
         </#if><#t>
@@ -182,14 +182,28 @@ class ${className} {
         </#if>
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
-    <#if fieldsWithLength?? && !swagger>
+
+    <#if validationOverrides?? && hasGenerateList?? && hasGenerateList>
+    private static <T> java.util.List<T> generateList(final int n, final java.util.function.Supplier<T> supplier) {
+        if (n <= 0) {
+            return java.util.List.of();
+        }
+        final java.util.ArrayList<T> list = new java.util.ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            list.add(supplier.get());
+        }
+        return list;
+    }
+    
+    </#if>
+    <#if validationOverrides?? && !swagger>
 
     private static ${createTransferObjectClass} generate${createTransferObjectClass}() {
         final ${createTransferObjectClass} input = ${generatorFieldName}.${singleObjectMethodName}(${createTransferObjectClass}.class);
         return new ${createTransferObjectClass}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.validValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
@@ -199,13 +213,13 @@ class ${className} {
         return new ${createTransferObjectClass}(
             <#list fieldNames as fieldName>
                 <#assign matched = false>
-                <#list (fieldsWithLength?default([])) as fwl><#if fwl.field == fieldName>generateString(${fwl.length + 10})<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
+                <#list (validationOverrides?default([])) as ov><#if ov.field == fieldName>${ov.invalidValue}<#assign matched = true><#break></#if></#list><#if !matched>input.${fieldName}()</#if><#if fieldName_has_next>,</#if>
             </#list>
         );
     }
 
     </#if><#t>
-    <#if fieldsWithLength?? && dataGenerator == "PODAM">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "PODAM">
     private static String generateString(final int n) {
         final PodamFactory p = new PodamFactoryImpl();
         p.getStrategy().addOrReplaceTypeManufacturer(String.class, (strategy, attributeMetadata, genericTypesArgumentsMap) -> {
@@ -221,7 +235,7 @@ class ${className} {
         return p.manufacturePojo(String.class);
     }
     </#if><#t>
-    <#if fieldsWithLength?? && dataGenerator == "INSTANCIO">
+    <#if validationOverrides?? && hasGenerateString?? && hasGenerateString && dataGenerator == "INSTANCIO">
     private static String generateString(final int n) {
         return Instancio.gen().string()
                 .length(n)
