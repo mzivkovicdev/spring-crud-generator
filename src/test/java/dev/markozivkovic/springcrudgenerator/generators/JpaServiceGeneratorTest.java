@@ -147,8 +147,6 @@ class JpaServiceGeneratorTest {
                     .thenReturn(Collections.emptyMap());
             svcCtx.when(() -> ServiceTemplateContext.createGetAllByIdsMethodContext(model))
                     .thenReturn(new HashMap<>());
-            svcCtx.when(() -> ServiceTemplateContext.createGetReferenceByIdMethodContext(model))
-                    .thenReturn(new HashMap<>());
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
                     eq("service/method/get-by-id.ftl"), anyMap()
@@ -269,8 +267,6 @@ class JpaServiceGeneratorTest {
                     .thenReturn(new HashMap<>());
             svcCtx.when(() -> ServiceTemplateContext.createGetAllByIdsMethodContext(model))
                     .thenReturn(new HashMap<>());
-            svcCtx.when(() -> ServiceTemplateContext.createGetReferenceByIdMethodContext(model))
-                    .thenReturn(new HashMap<>());
             svcCtx.when(() -> ServiceTemplateContext.createServiceClassContext(model))
                     .thenReturn(new HashMap<>());
 
@@ -303,9 +299,6 @@ class JpaServiceGeneratorTest {
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
                     eq("service/method/get-all-by-ids.ftl"), anyMap()
             )).thenReturn("GET_ALL_BY_IDS_METHOD");
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("service/method/get-reference-by-id.ftl"), anyMap()
-            )).thenReturn("GET_REF_BY_ID_METHOD");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
                     eq("service/service-class-template.ftl"), anyMap()

@@ -100,7 +100,6 @@ public class JpaServiceGenerator implements CodeGenerator {
      *     <li>addRelation: adds a relation to a model instance</li>
      *     <li>removeRelation: removes a relation from a model instance</li>
      *     <li>getAllByIds: retrieves all model instances by their IDs</li>
-     *     <li>getReferenceById: retrieves a reference to a model instance by its ID</li>
      * </ul>
      * 
      * @param modelDefinition the model definition containing the class name and field definitions
@@ -117,7 +116,6 @@ public class JpaServiceGenerator implements CodeGenerator {
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
         context.put("getAllByIds", getAllByIdsMethod(modelDefinition));
-        context.put("getReferenceById", getReferenceByIdMethod(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/service-class-template.ftl", context);
     }
@@ -138,25 +136,6 @@ public class JpaServiceGenerator implements CodeGenerator {
         final Map<String, Object> context = ServiceTemplateContext.createGetAllByIdsMethodContext(modelDefinition);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-all-by-ids.ftl", context);
-    }
-
-    /**
-     * Generates the getReferenceById method as a string for the given model definition.
-     * 
-     * @param modelDefinition The model definition for which the getReferenceById method
-     *                        is to be generated.
-     * @return A string representation of the getReferenceById method, or null if the context
-     *         is empty.
-     */
-    private String getReferenceByIdMethod(ModelDefinition modelDefinition) {
-
-        if (!FieldUtils.hasRelation(modelDefinition, entities)) {
-            return null;
-        }
-
-        final Map<String, Object> context = ServiceTemplateContext.createGetReferenceByIdMethodContext(modelDefinition);
-        
-        return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-reference-by-id.ftl", context);
     }
 
     /**
