@@ -90,6 +90,9 @@ public class CacheConfiguration {
     ObjectMapper redisObjectMapper() {
 
         return JsonMapper.builder()
+                .changeDefaultVisibility(v -> v.withFieldVisibility(
+                    com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY
+                ))
                 .addModule(new HibernateLazyNullModule())
                 .build();
     }
