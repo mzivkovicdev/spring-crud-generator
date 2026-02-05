@@ -1,4 +1,5 @@
 <#setting number_format="computer">
+<#assign redisSerializer = isSpringBoot3?then("Jackson2JsonRedisSerializer", "JacksonJsonRedisSerializer")>
 <#if type == "REDIS" && expiration??>
 import java.time.Duration;
 import java.util.Map;
@@ -30,14 +31,23 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
+<#if isSpringBoot3>
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+<#else>
 import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
+</#if>
 import org.springframework.data.redis.serializer.RedisSerializer;
 
 ${modelImports}
 </#if><#t>
 <#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
+<#if !isSpringBoot3>
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
+<#else>
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+</#if>
 
 </#if>
 @Configuration
@@ -69,9 +79,9 @@ public class CacheConfiguration {
             final Class<?> type = e.getValue();
 
             <#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
-            final RedisSerializer<?> serializer = new JacksonJsonRedisSerializer<>(redisObjectMapper, type);
+            final RedisSerializer<?> serializer = new ${redisSerializer}<>(redisObjectMapper, type);
             <#else>
-            final RedisSerializer<?> serializer = new JacksonJsonRedisSerializer<>(type);
+            final RedisSerializer<?> serializer = new ${redisSerializer}<>(type);
             </#if>
             final RedisCacheConfiguration cfg = config.serializeValuesWith(
                 SerializationPair.fromSerializer((RedisSerializer<Object>) serializer)
@@ -86,6 +96,22 @@ public class CacheConfiguration {
     }
 
     <#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
+    <#if isSpringBoot3>
+    @Bean
+    ObjectMapper redisObjectMapper() {
+        
+        final ObjectMapper objectMapper = JsonMapper.builder()
+                .addModule(new HibernateLazyNullModule())
+                .build();
+
+        objectMapper.setVisibility(
+            com.fasterxml.jackson.annotation.PropertyAccessor.FIELD,
+            com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY
+        );
+
+        return objectMapper;
+    }
+    <#else>
     @Bean
     ObjectMapper redisObjectMapper() {
 
@@ -96,6 +122,7 @@ public class CacheConfiguration {
                 .addModule(new HibernateLazyNullModule())
                 .build();
     }
+    </#if>
     </#if>
     </#if><#t>
     <#if type == "CAFFEINE">

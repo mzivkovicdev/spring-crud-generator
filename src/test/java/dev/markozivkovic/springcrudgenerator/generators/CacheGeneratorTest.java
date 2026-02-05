@@ -30,6 +30,7 @@ import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 
 class CacheGeneratorTest {
 
@@ -146,6 +147,7 @@ class CacheGeneratorTest {
         when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.CAFFEINE);
         when(cc.cacheConfig.getMaxSize()).thenReturn(100L);
         when(cc.cacheConfig.getExpiration()).thenReturn(3600);
+        when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
 
         final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
 
@@ -161,9 +163,11 @@ class CacheGeneratorTest {
              final MockedStatic<ConfigurationImports> imports = mockStatic(ConfigurationImports.class);
              final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION)).thenReturn(false);
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
             pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", packageConfiguration)).thenReturn("com.example.app.config");
@@ -187,7 +191,8 @@ class CacheGeneratorTest {
                                 && Objects.equals(map.get("expiration"), 3600)
                                 && Objects.equals(map.get("modelImports"), "// IMPORTS")
                                 && Objects.equals(map.get("entities"), List.of("Product"))
-                                && Objects.equals(map.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED), true);
+                                && Objects.equals(map.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED), true)
+                                && Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
                     })
             ));
 
@@ -198,7 +203,10 @@ class CacheGeneratorTest {
 
             tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
                     eq("configuration/hibernate-lazy-null-module.ftl"),
-                    argThat(map -> map instanceof Map && ((Map<?, ?>) map).isEmpty())
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
+                    })
             ));
 
             writer.verify(() -> FileWriterUtils.writeToFile(
@@ -218,6 +226,7 @@ class CacheGeneratorTest {
         when(cc.cacheConfig.getType()).thenReturn(null);
         when(cc.cacheConfig.getMaxSize()).thenReturn(null);
         when(cc.cacheConfig.getExpiration()).thenReturn(null);
+        when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
 
         final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
 
@@ -230,9 +239,11 @@ class CacheGeneratorTest {
              final MockedStatic<ConfigurationImports> imports = mockStatic(ConfigurationImports.class);
              final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION)).thenReturn(false);
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
             pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", packageConfiguration)).thenReturn("com.example.app.config");
@@ -256,7 +267,16 @@ class CacheGeneratorTest {
                                 && !map.containsKey("expiration")
                                 && Objects.equals(map.get("modelImports"), "// IMPORTS")
                                 && Objects.equals(map.get("entities"), List.of("Product"))
-                                && Objects.equals(map.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED), false);
+                                && Objects.equals(map.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED), false)
+                                && Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
+                    })
+            ));
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("configuration/hibernate-lazy-null-module.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
                     })
             ));
 
@@ -272,6 +292,7 @@ class CacheGeneratorTest {
 
         final CrudAndCache cc = prepareCrudWithCache();
         when(cc.cacheConfig.getEnabled()).thenReturn(true);
+        when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
 
         final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
 
@@ -288,9 +309,12 @@ class CacheGeneratorTest {
              final MockedStatic<ConfigurationImports> imports = mockStatic(ConfigurationImports.class);
              final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION)).thenReturn(false);
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
+
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
             pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", packageConfiguration)).thenReturn("com.example.app.config");
             pkg.when(() -> PackageUtils.computeConfigurationSubPackage(packageConfiguration)).thenReturn("config");

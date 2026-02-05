@@ -108,4 +108,6 @@ public final class TemplateContextConstants {
     public static final String DATA_GENERATOR_FIELD_NAME = "generatorFieldName";
     public static final String DATA_GENERATOR_SINGLE_OBJ = "singleObjectMethodName";
     public static final String DATA_GENERATOR_LIST_METHOD = "multipleObjectsMethodName";
+
+    public static final String IS_SPRING_BOOT_3 = "isSpringBoot3";
 }
