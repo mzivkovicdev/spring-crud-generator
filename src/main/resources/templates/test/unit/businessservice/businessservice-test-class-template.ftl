@@ -16,7 +16,7 @@ class ${className} {
     private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
 
     <#list serviceClasses as serviceClass>
-    @MockitoBean
+    <#if isSpringBoot3>@MockBean<#else>@MockitoBean</#if>
     private ${serviceClass?cap_first} ${serviceClass?uncap_first};
 
     </#list>

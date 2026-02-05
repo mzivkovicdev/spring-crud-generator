@@ -465,10 +465,10 @@ class BusinessServiceImportsTest {
     }
 
     @Test
-    @DisplayName("computeTestBusinessServiceImports: should include Instancio import when enabled")
-    void computeTestBusinessServiceImports_withInstancio() {
+    @DisplayName("computeTestBusinessServiceImports: Instancio enabled + Spring Boot 4 → includes Instancio and @MockitoBean")
+    void computeTestBusinessServiceImports_withInstancio_springBoot4() {
 
-        final String result = BusinessServiceImports.computeTestBusinessServiceImports(true);
+        final String result = BusinessServiceImports.computeTestBusinessServiceImports(true, false);
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO), "Instancio import expected");
         assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH));
@@ -476,14 +476,15 @@ class BusinessServiceImportsTest {
         assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
         assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
+        assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
     }
 
     @Test
-    @DisplayName("computeTestBusinessServiceImports: should NOT include Instancio import when disabled")
-    void computeTestBusinessServiceImports_withoutInstancio() {
+    @DisplayName("computeTestBusinessServiceImports: Instancio disabled + Spring Boot 4 → no Instancio, uses @MockitoBean")
+    void computeTestBusinessServiceImports_withoutInstancio_springBoot4() {
 
-        final String result = BusinessServiceImports.computeTestBusinessServiceImports(false);
+        final String result = BusinessServiceImports.computeTestBusinessServiceImports(false, false);
 
         assertFalse(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO),
                 "Instancio import should not be present");
@@ -492,6 +493,40 @@ class BusinessServiceImportsTest {
         assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
         assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
+        assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
+    }
+
+    @Test
+    @DisplayName("computeTestBusinessServiceImports: Instancio enabled + Spring Boot 3 → includes Instancio and @MockBean")
+    void computeTestBusinessServiceImports_withInstancio_springBoot3() {
+
+        final String result = BusinessServiceImports.computeTestBusinessServiceImports(true, true);
+
+        assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO), "Instancio import expected");
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.BEFORE_EACH));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
+        assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
+    }
+
+    @Test
+    @DisplayName("computeTestBusinessServiceImports: Instancio disabled + Spring Boot 3 → no Instancio, uses @MockBean")
+    void computeTestBusinessServiceImports_withoutInstancio_springBoot3() {
+
+        final String result = BusinessServiceImports.computeTestBusinessServiceImports(false, true);
+
+        assertFalse(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO),
+                "Instancio import should not be present");
+        assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.BEFORE_EACH));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
+        assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
+        assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
     }
     
