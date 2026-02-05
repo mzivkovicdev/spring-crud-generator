@@ -20,7 +20,7 @@
     ${transactionalAnnotation}
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}, final ${rel.relationIdType} ${relationField}Id) {
 
-        final ${rel.relationClassName} entity = this.${relationServiceClass}.getReferenceById(${relationField}Id);
+        final ${rel.relationClassName} entity = this.${relationServiceClass}.getById(${relationField}Id);
 
         LOGGER.info("Adding ${rel.relationClassName} with ID {} to ${modelName} with ID {}", ${relationField}Id, ${idField});
 

@@ -26,6 +26,9 @@ public interface ${mapperName} {
     @Mapping(target = "${lazyField}", source = "${lazyField}", qualifiedByName = "simple")
     </#if><#t>
     </#list>
+    <#list eagerFields as eagerField>
+    @Mapping(target = "${eagerField}", qualifiedByName = "simple")
+    </#list>
     </#if><#t>
     ${transferObjectName} map${modelName}To${transferObjectName}(final ${modelName} model);
 
@@ -34,6 +37,9 @@ public interface ${mapperName} {
     <#if baseCollectionFields?? && !baseCollectionFields?seq_contains(lazyField)>
     @Mapping(target = "${lazyField}", qualifiedByName = "simple")
     </#if><#t>
+    </#list>
+    <#list eagerFields as eagerField>
+    @Mapping(target = "${eagerField}", qualifiedByName = "simple")
     </#list>
     </#if><#t>
     List<${transferObjectName}> map${modelName}To${transferObjectName}(final List<${modelName}> model);

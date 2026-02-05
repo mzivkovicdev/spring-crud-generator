@@ -37,7 +37,7 @@ class ${className} {
     <#if createMethod?? && createMethod?has_content>${createMethod}</#if>
     <#if updateMethod?? && updateMethod?has_content>${updateMethod}</#if>
     <#if deleteMethod?? && deleteMethod?has_content>${deleteMethod}</#if>
-    <#if addRelationMethod?? && addRelationMethod?has_content>${addRelationMethod}</#if><#if removeRelationMethod?? && removeRelationMethod?has_content>${removeRelationMethod}</#if><#if getAllByIds?? && getAllByIds?has_content>${getAllByIds}</#if><#if getReferenceById?? && getReferenceById?has_content>${getReferenceById}</#if>
+    <#if addRelationMethod?? && addRelationMethod?has_content>${addRelationMethod}</#if><#if removeRelationMethod?? && removeRelationMethod?has_content>${removeRelationMethod}</#if><#if getAllByIds?? && getAllByIds?has_content>${getAllByIds}</#if>
 
     private void verify${strippedModelName?cap_first}(final ${modelName} result, final ${modelName} ${modelName?uncap_first}) {
 

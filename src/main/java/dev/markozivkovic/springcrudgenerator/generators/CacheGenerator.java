@@ -28,12 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.ConfigurationImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
@@ -91,6 +93,9 @@ public class CacheGenerator implements ProjectArtifactGenerator {
 
         context.put("modelImports", modelImports);
         context.put("entities", entityNames);
+        context.put(
+            TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.crudConfiguration.getAdditionalProperties())
+        );
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
@@ -102,7 +107,30 @@ public class CacheGenerator implements ProjectArtifactGenerator {
             outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "CacheConfiguration.java", sb.toString()
         );
 
+        this.generateHibernateLazyNullModule(outputDir, packagePath);
+
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION);
+    }
+
+    /**
+     * Generates a HibernateLazyNullModule Java class file.
+     *
+     * The HibernateLazyNullModule is a custom Jackson module that is used to serialize and deserialize Hibernate lazy proxies and collections.
+     *
+     * @param outputDir The directory where the generated file should be written.
+     * @param packagePath The package path where the generated file should be written.
+     */
+    private void generateHibernateLazyNullModule(final String outputDir, final String packagePath) {
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "configuration/hibernate-lazy-null-module.ftl", Map.of()
+                ));
+        
+        FileWriterUtils.writeToFile(
+            outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "HibernateLazyNullModule.java", sb.toString()
+        );
     }
 
 }

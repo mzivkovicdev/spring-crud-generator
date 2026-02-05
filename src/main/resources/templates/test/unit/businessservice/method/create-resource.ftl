@@ -31,7 +31,7 @@
         <#if rel.isCollection?? && rel.isCollection>
         when(this.${relationServiceClass}.getAllByIds(${relationField}Ids)).thenReturn(${rel.relationClassName?uncap_first}s);
         <#else>
-        when(this.${relationServiceClass}.getReferenceById(${relationField}Id)).thenReturn(${rel.relationClassName?uncap_first});
+        when(this.${relationServiceClass}.getById(${relationField}Id)).thenReturn(${rel.relationClassName?uncap_first});
         </#if>
         </#list>
         when(this.${serviceClass?uncap_first}.create(${fieldNames})).thenReturn(${modelName?uncap_first});
@@ -45,7 +45,7 @@
         <#if rel.isCollection?? && rel.isCollection>
         verify(this.${relationServiceClass}).getAllByIds(${relationField}Ids);
         <#else>
-        verify(this.${relationServiceClass}).getReferenceById(${relationField}Id);
+        verify(this.${relationServiceClass}).getById(${relationField}Id);
         </#if>
         </#list>
         verify(this.${serviceClass?uncap_first}).create(${fieldNames});

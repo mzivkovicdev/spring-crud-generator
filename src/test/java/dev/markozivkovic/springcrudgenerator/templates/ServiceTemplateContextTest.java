@@ -105,35 +105,6 @@ class ServiceTemplateContextTest {
     }
 
     @Test
-    void createGetReferenceByIdMethodContext_shouldMirrorGetAllByIdsContextLogic() {
-        final FieldDefinition idField = mock(FieldDefinition.class);
-        when(idField.getType()).thenReturn("Long");
-        when(idField.getName()).thenReturn("id");
-        when(idField.getDescription()).thenReturn("Ref id");
-
-        final ModelDefinition model = newModel("ProductEntity", List.of(idField));
-
-        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
-
-            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
-                      .thenReturn(idField);
-
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity"))
-                     .thenReturn("Product");
-
-            final Map<String, Object> ctx = ServiceTemplateContext.createGetReferenceByIdMethodContext(model);
-
-            assertEquals("ProductEntity", ctx.get(TemplateContextConstants.MODEL_NAME));
-            assertEquals("Long", ctx.get(TemplateContextConstants.ID_TYPE));
-            assertEquals("id", ctx.get(TemplateContextConstants.ID_FIELD));
-            assertEquals("product", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
-            assertEquals("Ref id", ctx.get(TemplateContextConstants.ID_DESCRIPTION));
-            assertEquals(true, ctx.get(TemplateContextConstants.GENERATE_JAVA_DOC));
-        }
-    }
-
-    @Test
     void computeGetAllContext_shouldSetModelStrippedNameAndId() {
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getType()).thenReturn("Long");

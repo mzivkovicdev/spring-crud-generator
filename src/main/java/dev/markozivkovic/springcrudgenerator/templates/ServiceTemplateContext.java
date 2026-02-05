@@ -73,27 +73,6 @@ public class ServiceTemplateContext {
     }
 
     /**
-     * Creates a template context for the getReferenceById method of a model.
-     * 
-     * @param modelDefinition the model definition containing the field details
-     * @return a template context for the getReferenceById method
-     */
-    public static Map<String, Object> createGetReferenceByIdMethodContext(final ModelDefinition modelDefinition) {
-
-        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
-        final Map<String, Object> context = new HashMap<>();
-
-        context.put(TemplateContextConstants.MODEL_NAME, modelDefinition.getName());
-        context.put(TemplateContextConstants.ID_TYPE, idField.getType());
-        context.put(TemplateContextConstants.ID_FIELD, idField.getName());
-        context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
-        context.put(TemplateContextConstants.ID_DESCRIPTION, idField.getDescription());
-        context.put(TemplateContextConstants.GENERATE_JAVA_DOC, StringUtils.isNotBlank(idField.getDescription()));
-        
-        return context;
-    }
-
-    /**
      * Creates a template context for the getAll method of a model.
      * 
      * @param modelDefinition the model definition

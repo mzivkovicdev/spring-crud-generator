@@ -15,7 +15,7 @@
         final List<${relationClassName}> ${rel.relationClassName?uncap_first}s = this.${relationServiceClass}.getAllByIds(${relationField}Ids);
         <#else>
         final ${relationClassName} ${rel.relationClassName?uncap_first} = ${relationField}Id != null ?
-                this.${relationServiceClass}.getReferenceById(${relationField}Id) :
+                this.${relationServiceClass}.getById(${relationField}Id) :
                 null;
         </#if>
         </#list>

@@ -123,32 +123,12 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         context.put("addRelationMethod", this.addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", this.removeRelationMethod(modelDefinition));
         context.put("getAllByIds", this.getAllByIdsMethod(modelDefinition));
-        context.put("getReferenceById", this.getReferenceByIdMethod(modelDefinition));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/service/service-test-class-template.ftl",
                 context
         );
-    }
-
-    /**
-     * Generates the getReferenceById method as a string for the given model definition.
-     * 
-     * @param modelDefinition the model definition containing the class name and field definitions
-     * @return a string representation of the getReferenceById method, or null if the model has no relations
-     */
-    private String getReferenceByIdMethod(final ModelDefinition modelDefinition) {
-        
-        if (!FieldUtils.hasRelation(modelDefinition, entities)) {
-            return null;
-        }
-
-        final Map<String, Object> context = ServiceTemplateContext.createGetReferenceByIdMethodContext(modelDefinition);
-        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
-        
-        return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/get-reference-by-id.ftl", context);
     }
 
     /**
