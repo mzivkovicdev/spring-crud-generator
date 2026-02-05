@@ -33,6 +33,7 @@ import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextB
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
@@ -160,6 +161,7 @@ public class RestControllerTemplateContext {
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(configuration.getSpringBootVersion());
 
         final String className = String.format("%sUpdateByIdMockMvcTest", modelWithoutSuffix);
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
@@ -189,6 +191,7 @@ public class RestControllerTemplateContext {
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
         context.put("fieldNames", FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
 
         ValidationContextBuilder.contribute(
             modelDefinition, context,

@@ -208,7 +208,11 @@ public class RestControllerImports {
         
         addOAuth2WebMvcTestImports(imports, springBootVersion);
 
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
         imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
@@ -237,7 +241,12 @@ public class RestControllerImports {
 
         addOAuth2WebMvcTestImports(imports, springBootVersion);
 
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
+
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
 
@@ -265,7 +274,12 @@ public class RestControllerImports {
         
         addOAuth2WebMvcTestImports(imports, springBootVersion);
 
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
+
         imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
@@ -295,7 +309,12 @@ public class RestControllerImports {
 
         addOAuth2WebMvcTestImports(imports, springBootVersion);
 
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
+
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));

@@ -194,7 +194,7 @@ public final class ImportConstants {
         private SpringBootAutoConfigure() {}
         public static final class SpringBoot3 {
             public static final String OAUTH2_CLIENT_AUTO_CONFIGURATION =
-                    "org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration";
+                    "org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration";
             public static final String OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION =
                     "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration";
         }

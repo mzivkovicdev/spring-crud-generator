@@ -644,7 +644,7 @@ class RestControllerImportsTest {
     @Test
     @DisplayName("computeAddRelationEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, but all base imports present")
     void computeAddRelationEndpointTestImports_instancioDisabled_springBoot3() {
-        
+
         final String result = RestControllerImports.computeAddRelationEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -657,7 +657,7 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringHttp.MEDIA_TYPE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
@@ -667,7 +667,7 @@ class RestControllerImportsTest {
     @Test
     @DisplayName("computeAddRelationEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, but all base imports present")
     void computeAddRelationEndpointTestImports_instancioDisabled_springBoot4() {
-        
+
         final String result = RestControllerImports.computeAddRelationEndpointTestImports(false, "4");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -687,21 +687,33 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringTest.RESULT_ACTIONS + ";"));
     }
 
-
     @Test
     @DisplayName("computeAddRelationEndpointTestImports: Instancio enabled → Instancio import added")
     void computeAddRelationEndpointTestImports_instancioEnabled() {
-        
-        final String result = RestControllerImports.computeAddRelationEndpointTestImports(true, null);
+
+        final String result = RestControllerImports.computeAddRelationEndpointTestImports(true, "4");
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
     }
 
     @Test
+    @DisplayName("computeAddRelationEndpointTestImports: Boot 3 uses @MockBean, Boot 4 uses @MockitoBean")
+    void computeAddRelationEndpointTestImports_mockAnnotationDependsOnBootVersion() {
+
+        final String boot3 = RestControllerImports.computeAddRelationEndpointTestImports(false, "3");
+        assertTrue(boot3.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
+        assertFalse(boot3.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+
+        final String boot4 = RestControllerImports.computeAddRelationEndpointTestImports(false, "4");
+        assertTrue(boot4.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertFalse(boot4.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
+    }
+
+    @Test
     @DisplayName("computeDeleteEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, base imports present")
     void computeDeleteEndpointTestImports_instancioDisabled_springBoot3() {
-        
+
         final String result = RestControllerImports.computeDeleteEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -713,7 +725,7 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
     }
@@ -721,7 +733,7 @@ class RestControllerImportsTest {
     @Test
     @DisplayName("computeDeleteEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, base imports present")
     void computeDeleteEndpointTestImports_instancioDisabled_springBoot4() {
-        
+
         final String result = RestControllerImports.computeDeleteEndpointTestImports(false, "4");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -738,21 +750,33 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
     }
 
-
     @Test
     @DisplayName("computeDeleteEndpointTestImports: Instancio enabled → Instancio import added")
     void computeDeleteEndpointTestImports_instancioEnabled() {
-        
-        final String result = RestControllerImports.computeDeleteEndpointTestImports(true, null);
+
+        final String result = RestControllerImports.computeDeleteEndpointTestImports(true, "4");
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
     }
 
     @Test
+    @DisplayName("computeDeleteEndpointTestImports: Boot 3 uses @MockBean, Boot 4 uses @MockitoBean")
+    void computeDeleteEndpointTestImports_mockAnnotationDependsOnBootVersion() {
+
+        final String boot3 = RestControllerImports.computeDeleteEndpointTestImports(false, "3");
+        assertTrue(boot3.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
+        assertFalse(boot3.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+
+        final String boot4 = RestControllerImports.computeDeleteEndpointTestImports(false, "4");
+        assertTrue(boot4.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertFalse(boot4.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
+    }
+
+    @Test
     @DisplayName("computeUpdateEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, base imports present")
     void computeUpdateEndpointTestImports_instancioDisabled_springBoot3() {
-        
+
         final String result = RestControllerImports.computeUpdateEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -765,7 +789,7 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringHttp.MEDIA_TYPE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKMVC + ";"));
@@ -775,7 +799,7 @@ class RestControllerImportsTest {
     @Test
     @DisplayName("computeUpdateEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, base imports present")
     void computeUpdateEndpointTestImports_instancioDisabled_springBoot4() {
-        
+
         final String result = RestControllerImports.computeUpdateEndpointTestImports(false, "4");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -795,21 +819,33 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringTest.RESULT_ACTIONS + ";"));
     }
 
-
     @Test
     @DisplayName("computeUpdateEndpointTestImports: Instancio enabled → Instancio import added")
     void computeUpdateEndpointTestImports_instancioEnabled() {
-        
-        final String result = RestControllerImports.computeUpdateEndpointTestImports(true, null);
+
+        final String result = RestControllerImports.computeUpdateEndpointTestImports(true, "4");
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
     }
 
     @Test
+    @DisplayName("computeUpdateEndpointTestImports: Boot 3 uses @MockBean, Boot 4 uses @MockitoBean")
+    void computeUpdateEndpointTestImports_mockAnnotationDependsOnBootVersion() {
+
+        final String boot3 = RestControllerImports.computeUpdateEndpointTestImports(false, "3");
+        assertTrue(boot3.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
+        assertFalse(boot3.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+
+        final String boot4 = RestControllerImports.computeUpdateEndpointTestImports(false, "4");
+        assertTrue(boot4.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertFalse(boot4.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
+    }
+
+    @Test
     @DisplayName("computeGetEndpointTestImports: Instancio disabled, Spring Boot 3 → no Instancio import, base imports present")
     void computeGetEndpointTestImports_instancioDisabled_springBoot3() {
-        
+
         final String result = RestControllerImports.computeGetEndpointTestImports(false, "3");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -821,7 +857,7 @@ class RestControllerImportsTest {
         assertTrue(result.contains("import " + ImportConstants.SpringBootAutoConfigure.SpringBoot3.OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.AUTO_CONFIGURE_MOCK_MVC + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringBootTest.SpringBoot3.WEB_MVC_TEST + ";"));
-        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL + ";"));
         assertTrue(result.contains("import " + ImportConstants.SpringTest.CONTEXT_CONFIGURATION + ";"));
@@ -832,7 +868,7 @@ class RestControllerImportsTest {
     @Test
     @DisplayName("computeGetEndpointTestImports: Instancio disabled, Spring Boot 4 → no Instancio import, base imports present")
     void computeGetEndpointTestImports_instancioDisabled_springBoot4() {
-        
+
         final String result = RestControllerImports.computeGetEndpointTestImports(false, "4");
 
         assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
@@ -855,11 +891,24 @@ class RestControllerImportsTest {
     @Test
     @DisplayName("computeGetEndpointTestImports: Instancio enabled → Instancio import added")
     void computeGetEndpointTestImports_instancioEnabled() {
-        
-        final String result = RestControllerImports.computeGetEndpointTestImports(true, null);
+
+        final String result = RestControllerImports.computeGetEndpointTestImports(true, "4");
 
         assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO + ";"),
                 "Instancio import should be present when enabled");
+    }
+
+    @Test
+    @DisplayName("computeGetEndpointTestImports: Boot 3 uses @MockBean, Boot 4 uses @MockitoBean")
+    void computeGetEndpointTestImports_mockAnnotationDependsOnBootVersion() {
+
+        final String boot3 = RestControllerImports.computeGetEndpointTestImports(false, "3");
+        assertTrue(boot3.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
+        assertFalse(boot3.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+
+        final String boot4 = RestControllerImports.computeGetEndpointTestImports(false, "4");
+        assertTrue(boot4.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN + ";"));
+        assertFalse(boot4.contains("import " + ImportConstants.SpringTest.MOCK_BEAN + ";"));
     }
 
     @Test
