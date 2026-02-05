@@ -122,7 +122,13 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
         imports.add(String.format(IMPORT, ImportConstants.SpringCore.PARAMETERIZED_TYPE_REFERENCE));
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
+        
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
         addGraphQlTestAndOAuth2Imports(imports, springBootVersion);
@@ -151,7 +157,13 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
         imports.add(String.format(IMPORT, ImportConstants.SpringContext.IMPORT));
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
+
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.TEST_PROPERTY_SORUCE));
         imports.add(String.format(IMPORT, ImportConstants.GraphQLTest.GRAPH_QL_TESTER));
         addGraphQlTestAndOAuth2Imports(imports, springBootVersion);

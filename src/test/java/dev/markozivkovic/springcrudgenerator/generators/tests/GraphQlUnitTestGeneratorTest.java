@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ class GraphQlUnitTestGeneratorTest {
     }
 
     @Test
-    @DisplayName("generate: graphQl disabled -> no file writes")
+    @DisplayName("generate: unit tests disabled -> no file writes")
     void generate_shouldReturn_whenUnitTestsDisabled() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
@@ -223,7 +224,7 @@ class GraphQlUnitTestGeneratorTest {
 
             gqlCtx.verify(() -> GraphQlTemplateContext.computeMutationUnitTestContext(
                     eq(user), eq(cfg), eq(pkgCfg), anyList(), eq(outputDir), eq(testOutputDir)
-            ));
+            ), times(1));
         }
     }
 
@@ -232,6 +233,7 @@ class GraphQlUnitTestGeneratorTest {
     void generate_shouldGenerateQueryAndMutationTests_whenConfigAlreadyGenerated_globalHandlerDisabled() {
 
         final String outputDir = "src/main/java";
+        final String testOutputDir = "src/test/java";
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
 
@@ -286,10 +288,9 @@ class GraphQlUnitTestGeneratorTest {
 
             dgCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
             resolverImports.when(() -> ResolverImports.computeQueryResolverTestImports(anyBoolean(), anyString())).thenReturn("");
-            resolverImports.when(() -> ResolverImports.computeProjectImportsForQueryUnitTests(anyString(), any(), any(), anyBoolean()))
-                    .thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeProjectImportsForQueryUnitTests(anyString(), any(), any(), anyBoolean())).thenReturn("");
             gqlCtx.when(() -> GraphQlTemplateContext.computeMutationUnitTestContext(
-                    eq(user), eq(cfg), eq(pkgCfg), anyList(), eq(outputDir), anyString()
+                    eq(user), eq(cfg), eq(pkgCfg), anyList(), eq(outputDir), eq(testOutputDir)
             )).thenReturn(Map.of());
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("// TEMPLATE");
