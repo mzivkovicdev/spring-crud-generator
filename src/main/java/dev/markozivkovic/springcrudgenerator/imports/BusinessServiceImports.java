@@ -174,6 +174,7 @@ public class BusinessServiceImports {
      * Computes the necessary import statements for the generated test business service.
      *
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param isSpringBoot3      whether Spring Boot 3 is used
      * @return A string containing the necessary import statements for the generated test business service.
      */
     public static String computeTestBusinessServiceImports(final boolean isInstancioEnabled, final boolean isSpringBoot3) {
