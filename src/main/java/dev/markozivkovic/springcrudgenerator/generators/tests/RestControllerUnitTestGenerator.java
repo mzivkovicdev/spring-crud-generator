@@ -45,6 +45,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
@@ -117,6 +118,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
 
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
 
         relationFields.forEach(relationField -> {
 
@@ -158,6 +160,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 context.put("swagger", swagger);
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
                 context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+                context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
 
                 sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -192,6 +195,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
 
         relationFields.forEach(relationField -> {
 
@@ -235,6 +239,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 ));
                 context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
                 context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+                context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
 
                 sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
                 sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -271,6 +276,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final Map<String, Object> context = RestControllerTemplateContext.computeCreateTestEndpointContext(modelDefinition, entities);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
 
         context.put("basePath", basePath);
         context.put("controllerClassName", controllerClassName);
@@ -288,6 +294,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
         context.put("fieldNames", FieldUtils.extractFieldNamesWithoudId(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
         ValidationContextBuilder.contribute(
             modelDefinition, context,
             String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME)),
@@ -354,6 +361,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
@@ -373,6 +381,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         ));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
 
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
@@ -404,6 +413,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
@@ -424,6 +434,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
                 modelDefinition, outputDir, swagger, RestEndpointOperation.GET, packageConfiguration, isGlobalExceptionHandlerEnabled
         ));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put(
                 TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties())

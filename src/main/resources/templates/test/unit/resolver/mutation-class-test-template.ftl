@@ -10,6 +10,7 @@
 <#assign updateInputTO = strippedModelName?cap_first + "UpdateTO">
 <#assign createInputGraphQL = strippedModelName?cap_first + "CreateInput">
 <#assign updateInputGraphQL = strippedModelName?cap_first + "UpdateInput">
+<#assign mockitoAnnotation = isSpringBoot3?then("@MockBean", "@MockitoBean")>
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -19,8 +20,13 @@ import java.util.Map;
 
 ${testImports}
 ${projectImports}
+<#if isSpringBoot3>
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+<#else>
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
+</#if>
 <#if dataGenerator == "PODAM">import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;
 </#if><#t>
@@ -47,16 +53,16 @@ class ${strippedModelName}ResolverMutationTest {
     private final ${jsonFieldMapperClass} ${jsonFieldMapper?uncap_first} = Mappers.getMapper(${jsonFieldMapperClass}.class);
     </#list>
 
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${serviceClass} ${serviceField};
 
     <#if hasRelations>
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${businessServiceClass} ${businessServiceField};
     </#if>
 
     @Autowired
-    private JsonMapper mapper;
+    private <#if isSpringBoot3>ObjectMapper<#else>JsonMapper</#if> mapper;
 
     @Autowired
     private GraphQlTester graphQlTester;

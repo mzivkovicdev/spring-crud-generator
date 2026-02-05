@@ -183,6 +183,7 @@ public final class ImportConstants {
         private SpringTest() {}
         public static final String CONTEXT_CONFIGURATION = "org.springframework.test.context.ContextConfiguration";
         public static final String MOCKITO_BEAN = "org.springframework.test.context.bean.override.mockito.MockitoBean";
+        public static final String MOCK_BEAN = "org.springframework.boot.test.mock.mockito.MockBean";
         public static final String MOCKMVC = "org.springframework.test.web.servlet.MockMvc";
         public static final String RESULT_ACTIONS = "org.springframework.test.web.servlet.ResultActions";
         public static final String TEST_PROPERTY_SORUCE = "org.springframework.test.context.TestPropertySource";
@@ -193,7 +194,7 @@ public final class ImportConstants {
         private SpringBootAutoConfigure() {}
         public static final class SpringBoot3 {
             public static final String OAUTH2_CLIENT_AUTO_CONFIGURATION =
-                    "org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration";
+                    "org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration";
             public static final String OAUTH2_RESOURCE_SERVER_AUTO_CONFIGURATION =
                     "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration";
         }

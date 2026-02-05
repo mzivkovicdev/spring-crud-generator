@@ -25,6 +25,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.generators.CodeGenerator;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
@@ -39,6 +40,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -99,7 +101,10 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
 
         final String baseImports = ServiceImports.getTestBaseImport(modelDefinition);
         final String projectImports = ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE_TEST, packageConfiguration);
-        final String testImports = ServiceImports.computeTestServiceImports(modelDefinition, entities, UnitTestUtils.isInstancioEnabled(configuration));
+        final boolean isSpringBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
+        final String testImports = ServiceImports.computeTestServiceImports(
+            modelDefinition, entities, UnitTestUtils.isInstancioEnabled(configuration), isSpringBoot3
+        );
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
@@ -124,6 +129,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         context.put("removeRelationMethod", this.removeRelationMethod(modelDefinition));
         context.put("getAllByIds", this.getAllByIdsMethod(modelDefinition));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/service/service-test-class-template.ftl",

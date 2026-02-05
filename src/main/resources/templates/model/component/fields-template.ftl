@@ -2,7 +2,8 @@
 <#list fields as field>
     <#if field.id?has_content>
     @Id
-    <#if field.id.strategy == "SEQUENCE" || (field.id.strategy == "AUTO" && (db == "MSSQL" || db == "POSTGRESQL" || db == "MYSQL"))>
+    <#assign defaultSequence = (field.id.strategy == "AUTO" && (db == "MSSQL" || db == "POSTGRESQL" || db == "MYSQL")) />
+    <#if field.id.strategy == "SEQUENCE" || defaultSequence>
     @SequenceGenerator(
         name = "${strippedModelName}_gen",
         sequenceName = "${field.id.generatorName! (storageName + "_id_seq")}",
@@ -20,7 +21,7 @@
         initialValue = ${field.id.initialValue!1}
     )
     </#if><#t>
-    @GeneratedValue(strategy = GenerationType.${field.id.strategy}<#if field.id.strategy == "SEQUENCE" || field.id.strategy == "TABLE">, generator = "${strippedModelName}_gen"</#if>)
+    @GeneratedValue(strategy = GenerationType.${field.id.strategy}<#if defaultSequence || field.id.strategy == "SEQUENCE" || field.id.strategy == "TABLE">, generator = "${strippedModelName}_gen"</#if>)
     </#if><#t>
     <#if field.type?lower_case == "enum">
     @Enumerated(EnumType.STRING)

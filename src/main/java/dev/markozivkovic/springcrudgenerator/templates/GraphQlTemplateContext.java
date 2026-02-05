@@ -34,6 +34,7 @@ import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextB
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
@@ -195,6 +196,7 @@ public class GraphQlTemplateContext {
         final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(configuration.getErrorResponse()) ||
                         Objects.isNull(configuration.getErrorResponse()));
         final List<String> collectionRelationFields = FieldUtils.extractCollectionRelationNames(modelDefinition);
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(configuration.getSpringBootVersion());
 
         final List<Map<String, Object>> relations = new ArrayList<>();
         context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, modelWithoutSuffix);
@@ -217,6 +219,7 @@ public class GraphQlTemplateContext {
         context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration, isGlobalExceptionHandlerEnabled));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
         ValidationContextBuilder.contribute(
             modelDefinition, context,
             String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME)),

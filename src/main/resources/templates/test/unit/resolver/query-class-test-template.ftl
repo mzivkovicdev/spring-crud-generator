@@ -5,6 +5,7 @@
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
 <#assign resolverClassName = strippedModelName?cap_first + "Resolver">
+<#assign mockitoAnnotation = isSpringBoot3?then("@MockBean", "@MockitoBean")>
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
@@ -36,11 +37,11 @@ class ${className} {
     private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
     
     </#if><#t>
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${serviceClass} ${serviceField};
 
     <#if hasRelations>
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${businessServiceClass?cap_first} ${businessServiceField};
     </#if>
 

@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -30,6 +31,7 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextBuilder;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -39,6 +41,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfig
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -489,6 +492,8 @@ class GraphQlTemplateContextTest {
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+             final MockedStatic<SpringBootVersionUtils> sbvu = mockStatic(SpringBootVersionUtils.class);
+             final MockedStatic<ValidationContextBuilder> vcb = mockStatic(ValidationContextBuilder.class);
              final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
@@ -518,6 +523,23 @@ class GraphQlTemplateContextTest {
                             TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one",
                             "dataGenerator", "INSTANCIO"
                     ));
+            sbvu.when(() -> SpringBootVersionUtils.isSpringBoot3("3.3.0")).thenReturn(true);
+            vcb.when(() -> ValidationContextBuilder.contribute(eq(modelDefinition), anyMap(), anyString(), anyString()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+
+                        ctx.put(TemplateContextConstants.VALIDATION_OVERRIDES, List.of(
+                                Map.of(
+                                        TemplateContextConstants.FIELD, "name",
+                                        TemplateContextConstants.VALID_VALUE, "generateString(1)",
+                                        TemplateContextConstants.INVALID_VALUE, "generateString(13)"
+                                )
+                        ));
+                        ctx.put(TemplateContextConstants.HAS_GENERATE_STRING, true);
+                        ctx.put(TemplateContextConstants.HAS_GENERATE_LIST, false);
+                        return null;
+                    });
 
             final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
                     modelDefinition, configuration, packageConfiguration, List.of(), "out", "testOut"
@@ -537,6 +559,7 @@ class GraphQlTemplateContextTest {
             assertTrue(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
             assertEquals(true, ctx.get(TemplateContextConstants.HAS_GENERATE_STRING));
             assertEquals(false, ctx.get(TemplateContextConstants.HAS_GENERATE_LIST));
+            assertEquals(true, ctx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
         }
     }
 
@@ -572,7 +595,8 @@ class GraphQlTemplateContextTest {
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
-             final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+             final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<SpringBootVersionUtils> sbvu = mockStatic(SpringBootVersionUtils.class)) {
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
 
@@ -601,6 +625,7 @@ class GraphQlTemplateContextTest {
                             TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one",
                             "dataGenerator", "INSTANCIO"
                     ));
+            sbvu.when(() -> SpringBootVersionUtils.isSpringBoot3("3.3.0")).thenReturn(true);
 
             final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
                     modelDefinition, configuration, packageConfiguration, List.of(), "out", "testOut"
@@ -657,6 +682,7 @@ class GraphQlTemplateContextTest {
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
+             final MockedStatic<SpringBootVersionUtils> sbvu = mockStatic(SpringBootVersionUtils.class);
              final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class)) {
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("CategoryEntity")).thenReturn("Category");
@@ -689,6 +715,7 @@ class GraphQlTemplateContextTest {
                             TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one",
                             "dataGenerator", "INSTANCIO"
                     ));
+            sbvu.when(() -> SpringBootVersionUtils.isSpringBoot3("3.3.0")).thenReturn(true);
 
             final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationUnitTestContext(
                     modelDefinition, configuration, packageConfiguration, List.of(relationModel), "out", "testOut"

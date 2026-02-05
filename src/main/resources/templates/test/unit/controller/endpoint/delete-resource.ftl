@@ -3,6 +3,7 @@
 <#assign serviceField = strippedModelName?uncap_first + "Service">
 <#assign businessServiceClass = strippedModelName?cap_first + "BusinessService">
 <#assign businessServiceField = strippedModelName?uncap_first + "BusinessService">
+<#assign mockitoAnnotation = isSpringBoot3?then("@MockBean", "@MockitoBean")>
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -31,11 +32,11 @@ class ${className} {
     private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
     
     </#if><#t>
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${serviceClass?cap_first} ${serviceField};
 
     <#if hasRelations>
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${businessServiceClass?cap_first} ${businessServiceField};
     
     </#if><#t>

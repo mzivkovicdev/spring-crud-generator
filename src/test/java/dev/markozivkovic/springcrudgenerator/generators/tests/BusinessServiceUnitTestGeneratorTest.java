@@ -2,6 +2,7 @@ package dev.markozivkovic.springcrudgenerator.generators.tests;
 
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -14,6 +15,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports.BusinessServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -30,6 +32,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -61,7 +64,8 @@ class BusinessServiceUnitTestGeneratorTest {
              final MockedStatic<BusinessServiceTemplateContext> bsCtx = mockStatic(BusinessServiceTemplateContext.class);
              final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
                      .thenReturn(false);
@@ -77,6 +81,7 @@ class BusinessServiceUnitTestGeneratorTest {
             dgCtx.verifyNoInteractions();
             tpl.verifyNoInteractions();
             writer.verifyNoInteractions();
+            sbv.verifyNoInteractions();
         }
     }
 
@@ -93,7 +98,8 @@ class BusinessServiceUnitTestGeneratorTest {
 
         try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
                      .thenReturn(true);
@@ -105,6 +111,7 @@ class BusinessServiceUnitTestGeneratorTest {
             unitUtils.verify(() -> UnitTestUtils.isUnitTestsEnabled(cfg));
             fieldUtils.verify(() -> FieldUtils.isAnyFieldId(model.getFields()));
             writer.verifyNoInteractions();
+            sbv.verifyNoInteractions();
         }
     }
 
@@ -121,7 +128,8 @@ class BusinessServiceUnitTestGeneratorTest {
 
         try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
                      .thenReturn(true);
@@ -135,6 +143,7 @@ class BusinessServiceUnitTestGeneratorTest {
             fieldUtils.verify(() -> FieldUtils.isAnyFieldId(model.getFields()));
             fieldUtils.verify(() -> FieldUtils.extractRelationTypes(model.getFields()));
             writer.verifyNoInteractions();
+            sbv.verifyNoInteractions();
         }
     }
 
@@ -142,6 +151,8 @@ class BusinessServiceUnitTestGeneratorTest {
     void generate_shouldGenerateBusinessServiceUnitTestAndWriteFile() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.getSpringBootVersion()).thenReturn("3.1.0");
+
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final List<ModelDefinition> allEntities = List.of();
         final BusinessServiceUnitTestGenerator gen =
@@ -194,7 +205,8 @@ class BusinessServiceUnitTestGeneratorTest {
              final MockedStatic<BusinessServiceTemplateContext> bsTemplateCtx = mockStatic(BusinessServiceTemplateContext.class);
              final MockedStatic<DataGeneratorTemplateContext> dgTemplateCtx = mockStatic(DataGeneratorTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg))
                      .thenReturn(true);
@@ -219,14 +231,14 @@ class BusinessServiceUnitTestGeneratorTest {
             bsImports.when(() -> BusinessServiceImports.computeModelsEnumsAndServiceImports(
                     eq(model), eq(outputDir), eq(BusinessServiceImportScope.BUSINESS_SERVICE_TEST), eq(pkgCfg)))
                      .thenReturn(projectImports);
-            bsImports.when(() -> BusinessServiceImports.computeTestBusinessServiceImports(
-                    UnitTestUtils.isInstancioEnabled(cfg)))
-                     .thenReturn(testImports);
 
             unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.PODAM))
                      .thenReturn(dgConfig);
             unitUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg))
                      .thenReturn(true);
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
+            bsImports.when(() -> BusinessServiceImports.computeTestBusinessServiceImports(true, true))
+                     .thenReturn(testImports);
 
             bsTemplateCtx.when(() -> BusinessServiceTemplateContext.computeBusinessServiceContext(model))
                          .thenReturn(bsCtxMap);
@@ -267,6 +279,14 @@ class BusinessServiceUnitTestGeneratorTest {
                     eq(bsSubPackage),
                     eq("UserBusinessServiceTest"),
                     anyString()
+            ));
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("test/unit/businessservice/businessservice-test-class-template.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return Boolean.TRUE.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3));
+                    })
             ));
         }
     }

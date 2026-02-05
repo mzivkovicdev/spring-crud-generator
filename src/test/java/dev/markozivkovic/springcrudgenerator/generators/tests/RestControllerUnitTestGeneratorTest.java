@@ -54,6 +54,7 @@ class RestControllerUnitTestGeneratorTest {
         when(cfg.getOpenApi().getGenerateResources()).thenReturn(swaggerEnabled);
         when(cfg.getSpringBootVersion()).thenReturn(springBootVersion);
         when(cfg.getErrorResponse()).thenReturn(ErrorResponse.NONE);
+        when(cfg.getAdditionalProperties()).thenReturn(Map.of());
 
         return cfg;
     }
@@ -149,6 +150,7 @@ class RestControllerUnitTestGeneratorTest {
             pkgUtils.when(() -> PackageUtils.computeControllerPackage(anyString(), any())).thenReturn("com.acme.controller");
             pkgUtils.when(() -> PackageUtils.computeControllerSubPackage(any())).thenReturn("controller");
             addProps.when(() -> AdditionalPropertiesUtils.resolveBasePath(cfg)).thenReturn("/api");
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
 
             templateCtx.when(() -> RestControllerTemplateContext.computeCreateTestEndpointContext(eq(model), eq(List.of())))
                     .thenReturn(new HashMap<>());
@@ -254,6 +256,8 @@ class RestControllerUnitTestGeneratorTest {
             pkgUtils.when(() -> PackageUtils.computeControllerSubPackage(any())).thenReturn("controller");
 
             addProps.when(() -> AdditionalPropertiesUtils.resolveBasePath(cfg)).thenReturn("/api");
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
+
 
             templateCtx.when(() -> RestControllerTemplateContext.computeCreateTestEndpointContext(eq(model), eq(List.of(related))))
                     .thenReturn(new HashMap<>());

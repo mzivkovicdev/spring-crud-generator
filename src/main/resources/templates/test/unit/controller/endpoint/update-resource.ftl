@@ -10,6 +10,7 @@
 <#assign mapperField = strippedModelName?uncap_first + "RestMapper">
 <#assign requestModelName = strippedModelName?cap_first + "UpdatePayload">
 <#assign responseModelName = strippedModelName?cap_first + "Payload">
+<#assign mockitoAnnotation = isSpringBoot3?then("@MockBean", "@MockitoBean")>
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
@@ -24,7 +25,7 @@ import java.util.UUID;
 
 ${testImports}
 ${projectImports}
-import tools.jackson.databind.json.JsonMapper;<#if dataGenerator == "PODAM">
+<#if isSpringBoot3>import com.fasterxml.jackson.databind.ObjectMapper;<#else>import tools.jackson.databind.json.JsonMapper;</#if><#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
@@ -48,16 +49,16 @@ class ${className} {
     private final ${jsonFieldMapperClass} ${jsonFieldMapper?uncap_first} = Mappers.getMapper(${jsonFieldMapperClass}.class);
     </#list>
 
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${serviceClass?cap_first} ${serviceField};
 
     <#if hasRelations>
-    @MockitoBean
+    ${mockitoAnnotation}
     private ${businessServiceClass?cap_first} ${businessServiceField};
     
     </#if><#t>
     @Autowired
-    private JsonMapper mapper;
+    private <#if isSpringBoot3>ObjectMapper<#else>JsonMapper</#if> mapper;
 
     @Autowired
     private MockMvc mockMvc;

@@ -14,10 +14,12 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;</#if>
 
 @ExtendWith(SpringExtension.class)
 class ${className} {
-    <#if dataGenerator == "PODAM">
-    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();</#if>
     
-    @MockitoBean
+    <#if dataGenerator == "PODAM">
+    private static final PodamFactory PODAM_FACTORY = new PodamFactoryImpl();
+    
+    </#if><#t>
+    <#if isSpringBoot3>@MockBean<#else>@MockitoBean</#if>
     private ${strippedModelName?cap_first}Repository ${strippedModelName?uncap_first}Repository;
 
     private ${strippedModelName?cap_first}Service ${strippedModelName?uncap_first}Service;

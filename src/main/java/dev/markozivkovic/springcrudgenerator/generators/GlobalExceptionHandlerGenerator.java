@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ExceptionImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -36,6 +37,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 
 public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator {
     
@@ -166,7 +168,8 @@ public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator
                 "exception/rest-exception-handler-template.ftl", Map.of(
                     HAS_RELATIONS, hasRelations,
                     PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
-                    IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
+                    IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED),
+                    TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.crudConfiguration.getSpringBootVersion())
                 )
         );
 

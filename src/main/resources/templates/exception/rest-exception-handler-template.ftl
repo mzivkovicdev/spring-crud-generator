@@ -14,7 +14,11 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+<#if isSpringBoot3>
+import org.springframework.web.servlet.NoHandlerFoundException;
+<#else>
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+</#if>
 
 ${projectImports}
 @RestControllerAdvice
@@ -118,6 +122,16 @@ public class GlobalRestExceptionHandler {
         );
     }
 
+    <#if isSpringBoot3>
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<HttpResponse> noResourceFoundError(final NoHandlerFoundException e) {
+        
+        return new ResponseEntity<>(
+                new HttpResponse(e.getMessage()<#if isDetailed>, HttpStatus.NOT_FOUND</#if>),
+                HttpStatus.NOT_FOUND
+        );
+    }
+    <#else>
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<HttpResponse> noResourceFoundError(final NoResourceFoundException e) {
         
@@ -126,6 +140,7 @@ public class GlobalRestExceptionHandler {
                 HttpStatus.NOT_FOUND
         );
     }
+    </#if>
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<HttpResponse> missingServletRequestParameterError(final MissingServletRequestParameterException e) {

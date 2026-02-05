@@ -174,20 +174,26 @@ public class BusinessServiceImports {
      * Computes the necessary import statements for the generated test business service.
      *
      * @param isInstancioEnabled whether Instancio is enabled
+     * @param isSpringBoot3      whether Spring Boot 3 is used
      * @return A string containing the necessary import statements for the generated test business service.
      */
-    public static String computeTestBusinessServiceImports(final boolean isInstancioEnabled) {
+    public static String computeTestBusinessServiceImports(final boolean isInstancioEnabled, final boolean isSpringBoot3) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
         if (isInstancioEnabled) {
             imports.add(String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
         }
+
+        if (isSpringBoot3) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
         imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
         return imports.stream()

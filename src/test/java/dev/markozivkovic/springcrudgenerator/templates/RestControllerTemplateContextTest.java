@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -31,12 +32,14 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextBuilder;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -393,7 +396,9 @@ class RestControllerTemplateContextTest {
             final MockedStatic<ModelNameUtils> mnu = mockStatic(ModelNameUtils.class);
             final MockedStatic<RestControllerImports> rci = mockStatic(RestControllerImports.class);
             final MockedStatic<DataGeneratorTemplateContext> dgtc = mockStatic(DataGeneratorTemplateContext.class);
-            final MockedStatic<ContainerUtils> cu = mockStatic(ContainerUtils.class)) {
+            final MockedStatic<ContainerUtils> cu = mockStatic(ContainerUtils.class);
+            final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class);
+            final MockedStatic<ValidationContextBuilder> vcb = mockStatic(ValidationContextBuilder.class)) {
 
             apu.when(() -> AdditionalPropertiesUtils.resolveBasePath(crudCfg)).thenReturn("/api");
 
@@ -435,6 +440,34 @@ class RestControllerTemplateContextTest {
                 return arg == null;
             });
 
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("4.0.1.RELEASE")).thenReturn(false);
+
+            vcb.when(() -> ValidationContextBuilder.contribute(any(), anyMap(), anyString(), anyString()))
+            .thenAnswer(inv -> {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
+
+                if (overrides == null) {
+                    overrides = new ArrayList<>();
+                    ctx.put(TemplateContextConstants.VALIDATION_OVERRIDES, overrides);
+                }
+
+                final boolean exists = overrides.stream()
+                        .anyMatch(m -> "name".equals(m.get(TemplateContextConstants.FIELD)));
+
+                if (!exists) {
+                    final Map<String, Object> nameOverride = new HashMap<>();
+                    nameOverride.put(TemplateContextConstants.FIELD, "name");
+                    nameOverride.put(TemplateContextConstants.VALID_VALUE, "generateString(1)");
+                    nameOverride.put(TemplateContextConstants.INVALID_VALUE, "generateString(21)");
+                    overrides.add(nameOverride);
+                }
+                return null;
+            });
+
             final Map<String, Object> ctx = RestControllerTemplateContext.computeUpdateByIdTestEndpointContext(
                     product, crudCfg, pkgCfg, true, true, "/out", "/testOut", "com/demo"
             );
@@ -464,7 +497,8 @@ class RestControllerTemplateContextTest {
             assertTrue(ctx.containsKey(TemplateContextConstants.VALIDATION_OVERRIDES));
 
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> overrides = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
+            final List<Map<String, Object>> overrides =
+                    (List<Map<String, Object>>) ctx.get(TemplateContextConstants.VALIDATION_OVERRIDES);
             assertNotNull(overrides);
 
             final Map<String, Object> nameOverride = overrides.stream()
@@ -474,6 +508,93 @@ class RestControllerTemplateContextTest {
 
             assertEquals("generateString(1)", nameOverride.get(TemplateContextConstants.VALID_VALUE));
             assertEquals("generateString(21)", nameOverride.get(TemplateContextConstants.INVALID_VALUE));
+        }
+    }
+
+    @Test
+    void computeUpdateByIdTestEndpointContext_setsIsSpringBoot3Flag_trueWhenBoot3() {
+
+        final ModelDefinition product = mock(ModelDefinition.class);
+        when(product.getName()).thenReturn("Product");
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+        when(idField.getResolvedType()).thenReturn("Long");
+        when(idField.getValidation()).thenReturn(null);
+        when(idField.getColumn()).thenReturn(null);
+
+        final FieldDefinition nameField = mock(FieldDefinition.class);
+        when(nameField.getName()).thenReturn("name");
+        when(nameField.getType()).thenReturn("String");
+        when(nameField.getResolvedType()).thenReturn("String");
+        when(nameField.getValidation()).thenReturn(null);
+
+        final ColumnDefinition nameCol = mock(ColumnDefinition.class);
+        when(nameCol.getLength()).thenReturn(20);
+        when(nameField.getColumn()).thenReturn(nameCol);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField);
+        when(product.getFields()).thenReturn(fields);
+
+        final CrudConfiguration crudCfg = mock(CrudConfiguration.class);
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(crudCfg.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+        when(crudCfg.getSpringBootVersion()).thenReturn("3.1.0");
+
+        try (final MockedStatic<AdditionalPropertiesUtils> apu = mockStatic(AdditionalPropertiesUtils.class);
+            final MockedStatic<UnitTestUtils> utu = mockStatic(UnitTestUtils.class);
+            final MockedStatic<FieldUtils> fu = mockStatic(FieldUtils.class);
+            final MockedStatic<ModelNameUtils> mnu = mockStatic(ModelNameUtils.class);
+            final MockedStatic<RestControllerImports> rci = mockStatic(RestControllerImports.class);
+            final MockedStatic<DataGeneratorTemplateContext> dgtc = mockStatic(DataGeneratorTemplateContext.class);
+            final MockedStatic<ContainerUtils> cu = mockStatic(ContainerUtils.class);
+            final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class);
+            final MockedStatic<ValidationContextBuilder> vcb = mockStatic(ValidationContextBuilder.class)) {
+
+            apu.when(() -> AdditionalPropertiesUtils.resolveBasePath(crudCfg)).thenReturn("/api");
+
+            final TestDataGeneratorConfig generatorCfg = mock(TestDataGeneratorConfig.class);
+            utu.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.PODAM)).thenReturn(generatorCfg);
+            fu.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            mnu.when(() -> ModelNameUtils.stripSuffix("Product")).thenReturn("Product");
+            fu.when(() -> FieldUtils.isIdFieldUUID(idField)).thenReturn(false);
+            fu.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of());
+            fu.when(() -> FieldUtils.extractJsonFields(fields)).thenReturn(List.of());
+            utu.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("invalid-id");
+            utu.when(() -> UnitTestUtils.isInstancioEnabled(crudCfg)).thenReturn(false);
+            fu.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForController(fields, true)).thenReturn(List.of("name"));
+            fu.when(() -> FieldUtils.extractNonIdNonRelationFieldNames(fields)).thenReturn(List.of("name"));
+            rci.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, "3.1.0"))
+                    .thenReturn("import x;");
+            rci.when(() -> RestControllerImports.computeUpdateEndpointTestProjectImports(
+                    eq(product), anyString(), eq(true), eq(pkgCfg), eq(true)
+            )).thenReturn("import y;");
+
+            dgtc.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorCfg))
+                    .thenReturn(Map.of(
+                            "dataGenerator", "PODAM",
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one"
+                    ));
+
+            cu.when(() -> ContainerUtils.isEmpty(any(Collection.class))).thenAnswer(inv -> {
+                final Object arg = inv.getArgument(0);
+                if (arg instanceof Collection<?> c) return c.isEmpty();
+                return arg == null;
+            });
+
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
+            vcb.when(() -> ValidationContextBuilder.contribute(any(), anyMap(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeUpdateByIdTestEndpointContext(
+                    product, crudCfg, pkgCfg, true, true, "/out", "/testOut", "com/demo"
+            );
+
+            assertEquals(true, ctx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
         }
     }
 

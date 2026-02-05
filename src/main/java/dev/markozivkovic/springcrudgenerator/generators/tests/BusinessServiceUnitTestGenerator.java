@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.generators.CodeGenerator;
 import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports.BusinessServiceImportScope;
@@ -41,6 +42,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -105,11 +107,12 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sBusinessServiceTest", modelWithoutSuffix);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final boolean isSpringBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
 
         final Map<String, Object> context = new HashMap<>();
         context.put("baseImport", BusinessServiceImports.getTestBaseImport(modelDefinition));
         context.put("projectImports", BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST, packageConfiguration));
-        context.put("testImports", BusinessServiceImports.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration)));
+        context.put("testImports", BusinessServiceImports.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration), isSpringBoot3));
         context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
         context.put("className", className);
         context.put("modelName", modelDefinition.getName());
@@ -118,6 +121,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/businessservice-test-class-template.ftl", context
