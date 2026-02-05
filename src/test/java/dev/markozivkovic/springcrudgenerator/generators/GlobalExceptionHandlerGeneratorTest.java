@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.invocation.InvocationOnMock;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ExceptionImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorResponse;
@@ -32,6 +33,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 
 class GlobalExceptionHandlerGeneratorTest {
 
@@ -43,7 +45,7 @@ class GlobalExceptionHandlerGeneratorTest {
 
     @Test
     void generate_shouldSkipWhenErrorResponseNone() {
-        
+
         final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
         when(crudConfig.getErrorResponse()).thenReturn(ErrorResponse.NONE);
 
@@ -57,7 +59,8 @@ class GlobalExceptionHandlerGeneratorTest {
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<ExceptionImports> exImports = mockStatic(ExceptionImports.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             generator.generate("out");
 
@@ -66,15 +69,17 @@ class GlobalExceptionHandlerGeneratorTest {
             exImports.verifyNoInteractions();
             tpl.verifyNoInteractions();
             writer.verifyNoInteractions();
+            sbv.verifyNoInteractions();
         }
     }
 
     @Test
     void generate_shouldGenerateHttpResponseRestAndGraphQlHandlersDetailedWithRelations() {
-        
+
         final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
         when(crudConfig.getErrorResponse()).thenReturn(ErrorResponse.DETAILED);
-        
+        when(crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
+
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(crudConfig.getGraphql()).thenReturn(graphQlDef);
         when(graphQlDef.getEnabled()).thenReturn(true);
@@ -109,10 +114,11 @@ class GlobalExceptionHandlerGeneratorTest {
                      mockStatic(FileWriterUtils.class, invocation -> {
                          writerInvocations.add(invocation);
                          return null;
-                     })) {
+                     });
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList()))
-                    .thenReturn(List.of("REL"));
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList())).thenReturn(List.of("REL"));
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
                     .thenReturn("com.example.app");
@@ -167,6 +173,7 @@ class GlobalExceptionHandlerGeneratorTest {
         assertEquals(true, restCtx.get("hasRelations"));
         assertEquals("REST_IMPORTS", restCtx.get("projectImports"));
         assertEquals(true, restCtx.get("isDetailed"));
+        assertEquals(true, restCtx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
 
         final Map<String, Object> graphQlCtx = graphQlCtxRef.get();
         assertNotNull(graphQlCtx);
@@ -193,9 +200,10 @@ class GlobalExceptionHandlerGeneratorTest {
 
     @Test
     void generate_shouldGenerateMinimalHttpResponseAndRestHandlerWithoutGraphQlAndRelations() {
-        
+
         final CrudConfiguration crudConfig = mock(CrudConfiguration.class);
         when(crudConfig.getErrorResponse()).thenReturn(ErrorResponse.MINIMAL);
+        when(crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
 
         final GraphQLDefinition graphQlDef = mock(GraphQLDefinition.class);
         when(crudConfig.getGraphql()).thenReturn(graphQlDef);
@@ -227,10 +235,11 @@ class GlobalExceptionHandlerGeneratorTest {
                      mockStatic(FileWriterUtils.class, invocation -> {
                          writerInvocations.add(invocation);
                          return null;
-                     })) {
+                     });
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList()))
-                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList())).thenReturn(Collections.emptyList());
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
                     .thenReturn("com.example.app");
@@ -272,6 +281,7 @@ class GlobalExceptionHandlerGeneratorTest {
         assertEquals(false, restCtx.get("hasRelations"));
         assertEquals("REST_IMPORTS_NO_REL", restCtx.get("projectImports"));
         assertEquals(false, restCtx.get("isDetailed"));
+        assertEquals(true, restCtx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
 
         final boolean usedGraphQlTemplate = templateInvocations.stream()
                 .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
