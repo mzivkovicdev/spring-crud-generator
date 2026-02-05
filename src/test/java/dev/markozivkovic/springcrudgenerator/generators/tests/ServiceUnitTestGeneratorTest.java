@@ -3,16 +3,19 @@ package dev.markozivkovic.springcrudgenerator.generators.tests;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -27,13 +30,14 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 class ServiceUnitTestGeneratorTest {
 
     private CrudConfiguration cfgWithTestsEnabled() {
-        
+
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final TestConfiguration testsCfg = mock(TestConfiguration.class);
         when(cfg.getTests()).thenReturn(testsCfg);
@@ -44,7 +48,7 @@ class ServiceUnitTestGeneratorTest {
 
     @Test
     void generate_shouldDoNothing_whenUnitTestsDisabled() {
-        
+
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final ModelDefinition model = mock(ModelDefinition.class);
@@ -65,11 +69,11 @@ class ServiceUnitTestGeneratorTest {
 
     @Test
     void generate_shouldDoNothing_whenModelHasNoIdField() {
-        
+
         final CrudConfiguration cfg = cfgWithTestsEnabled();
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final ModelDefinition model = mock(ModelDefinition.class);
-        
+
         when(model.getName()).thenReturn("CampaignModel");
         when(model.getFields()).thenReturn(List.of());
 
@@ -90,8 +94,10 @@ class ServiceUnitTestGeneratorTest {
 
     @Test
     void generate_shouldWriteServiceTestFile_whenUnitTestsEnabled_andIdExists() {
-        
+
         final CrudConfiguration cfg = cfgWithTestsEnabled();
+        when(cfg.getSpringBootVersion()).thenReturn("3.1.0");
+
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
         final FieldDefinition idField = mock(FieldDefinition.class);
 
@@ -111,11 +117,13 @@ class ServiceUnitTestGeneratorTest {
              final MockedStatic<ServiceImports> imports = mockStatic(ServiceImports.class);
              final MockedStatic<DataGeneratorTemplateContext> dataCtx = mockStatic(DataGeneratorTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> ftl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             unitTestUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
             unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(false);
             unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields())).thenReturn(idField);
@@ -136,7 +144,7 @@ class ServiceUnitTestGeneratorTest {
             imports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
                     eq(model), eq("/project/src/main/java/com/acme"), eq(ServiceImportScope.SERVICE_TEST), eq(pkgCfg)
             )).thenReturn("import project;");
-            imports.when(() -> ServiceImports.computeTestServiceImports(eq(model), eq(List.of()), eq(false)))
+            imports.when(() -> ServiceImports.computeTestServiceImports(eq(model), eq(List.of()), eq(false), eq(true)))
                     .thenReturn("import test;");
 
             dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
@@ -152,6 +160,13 @@ class ServiceUnitTestGeneratorTest {
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("service"), eq("CampaignServiceTest"), anyString()));
 
             ftl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/service-test-class-template.ftl"), anyMap()));
+            ftl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("test/unit/service/service-test-class-template.ftl"),
+                    argThat(ctx -> {
+                        Map<String, Object> map = (Map<String, Object>) ctx;
+                        return Boolean.TRUE.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3));
+                    })
+            ));
         }
     }
 }

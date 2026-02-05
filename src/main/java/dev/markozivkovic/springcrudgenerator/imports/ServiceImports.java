@@ -168,10 +168,11 @@ public class ServiceImports {
      * @param modelDefinition     the model definition containing the class name, table name, and field definitions
      * @param entities            the list of all model definitions
      * @param isInstancioEnabled  whether Instancio is enabled
+     * @param isSpringBoot3       whether Spring Boot 3 is enabled
      * @return A string containing the necessary import statements for the generated test service.
      */
     public static String computeTestServiceImports(final ModelDefinition modelDefinition, final List<ModelDefinition> entities, 
-            final boolean isInstancioEnabled) {
+            final boolean isInstancioEnabled, final boolean isSpringBoot3) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -179,7 +180,11 @@ public class ServiceImports {
         imports.add(String.format(IMPORT, ImportConstants.JUnit.BEFORE_EACH));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
         imports.add(String.format(IMPORT, ImportConstants.JUnit.EXTEND_WITH));
-        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        if (isSpringBoot3) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));

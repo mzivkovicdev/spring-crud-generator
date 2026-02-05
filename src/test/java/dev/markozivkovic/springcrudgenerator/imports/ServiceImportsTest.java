@@ -429,9 +429,9 @@ class ServiceImportsTest {
     }
 
     @Test
-    @DisplayName("computeTestServiceImports: Instancio disabled → only base imports")
-    void computeTestServiceImports_noInstancio() {
-        
+    @DisplayName("computeTestServiceImports: Instancio disabled + Spring Boot 4 → uses @MockitoBean")
+    void computeTestServiceImports_noInstancio_springBoot4() {
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
 
@@ -443,6 +443,7 @@ class ServiceImportsTest {
             final String result = ServiceImports.computeTestServiceImports(
                     model,
                     Collections.emptyList(),
+                    false,
                     false
             );
 
@@ -451,19 +452,19 @@ class ServiceImportsTest {
             assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
             assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
             assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
+            assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_REQUEST));
             assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
-
-            assertFalse(result.contains(ImportConstants.INSTANCIO.INSTANCIO));
+            assertFalse(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO));
         }
     }
 
     @Test
-    @DisplayName("computeTestServiceImports: Instancio enabled")
-    void computeTestServiceImports_instancioEnabled() {
-        
+    @DisplayName("computeTestServiceImports: Instancio enabled + Spring Boot 4 → includes Instancio and uses @MockitoBean")
+    void computeTestServiceImports_instancioEnabled_springBoot4() {
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(List.of(Mockito.mock(FieldDefinition.class)));
 
@@ -475,7 +476,8 @@ class ServiceImportsTest {
             final String result = ServiceImports.computeTestServiceImports(
                     model,
                     Collections.emptyList(),
-                    true
+                    true,
+                    false
             );
 
             assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH));
@@ -483,15 +485,81 @@ class ServiceImportsTest {
             assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
             assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
             assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
+            assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_REQUEST));
             assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
-
             assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO));
         }
     }
 
+    @Test
+    @DisplayName("computeTestServiceImports: Instancio disabled + Spring Boot 3 → uses @MockBean")
+    void computeTestServiceImports_noInstancio_springBoot3() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(anyList()))
+                    .thenReturn(false);
+
+            final String result = ServiceImports.computeTestServiceImports(
+                    model,
+                    Collections.emptyList(),
+                    false,
+                    true
+            );
+
+            assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH));
+            assertTrue(result.contains("import " + ImportConstants.JUnit.BEFORE_EACH));
+            assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
+            assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
+            assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
+            assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_REQUEST));
+            assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
+            assertFalse(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO));
+        }
+    }
+
+    @Test
+    @DisplayName("computeTestServiceImports: Instancio enabled + Spring Boot 3 → includes Instancio and uses @MockBean")
+    void computeTestServiceImports_instancioEnabled_springBoot3() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        Mockito.when(model.getFields()).thenReturn(List.of(Mockito.mock(FieldDefinition.class)));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(anyList()))
+                    .thenReturn(true);
+
+            final String result = ServiceImports.computeTestServiceImports(
+                    model,
+                    Collections.emptyList(),
+                    true,
+                    true
+            );
+
+            assertTrue(result.contains("import " + ImportConstants.JUnit.AFTER_EACH));
+            assertTrue(result.contains("import " + ImportConstants.JUnit.BEFORE_EACH));
+            assertTrue(result.contains("import " + ImportConstants.JUnit.TEST));
+            assertTrue(result.contains("import " + ImportConstants.JUnit.EXTEND_WITH));
+            assertTrue(result.contains("import " + ImportConstants.SpringTest.MOCK_BEAN));
+            assertFalse(result.contains("import " + ImportConstants.SpringTest.MOCKITO_BEAN));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_IMPL));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE_REQUEST));
+            assertTrue(result.contains("import " + ImportConstants.SpringTest.SPRING_EXTENSION));
+            assertTrue(result.contains("import " + ImportConstants.INSTANCIO.INSTANCIO));
+        }
+    }
+    
     @Test
     @DisplayName("getTestBaseImport: non-UUID id field → Optional + List, no UUID")
     void getTestBaseImport_nonUuidIdField() {
