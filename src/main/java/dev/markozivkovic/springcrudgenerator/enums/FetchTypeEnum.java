@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package dev.markozivkovic.springcrudgenerator.constants;
+package dev.markozivkovic.springcrudgenerator.enums;
 
-/**
- * Keys for relation types used in the code generation process.
- */
-public class RelationTypesConstants {
+public enum FetchTypeEnum {
     
-    private RelationTypesConstants() {}
+    EAGER("EAGER"),
+    LAZY("LAZY");
 
-    public static final String ONE_TO_ONE = "OneToOne";
-    public static final String ONE_TO_MANY = "OneToMany";
-    public static final String MANY_TO_ONE = "ManyToOne";
-    public static final String MANY_TO_MANY = "ManyToMany";
+    private final String key;
+
+    FetchTypeEnum(final String key) {
+        this.key = key;
+    }
+
+    public String getKey() {
+        return this.key;
+    }
 
 }

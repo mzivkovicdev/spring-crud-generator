@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
@@ -53,8 +53,8 @@ public class ImportCommon {
 
         final List<FieldDefinition> simpleCollectionFields = FieldUtils.extractSimpleCollectionFields(modelDefinition.getFields());
         if (!ContainerUtils.isEmpty(simpleCollectionFields)) {
-            final boolean isAnyFieldList = simpleCollectionFields.stream().anyMatch(field -> SpecialType.isListType(field.getType()));
-            final boolean isAnyFieldSet = simpleCollectionFields.stream().anyMatch(field -> SpecialType.isSetType(field.getType()));
+            final boolean isAnyFieldList = simpleCollectionFields.stream().anyMatch(field -> SpecialTypeEnum.isListType(field.getType()));
+            final boolean isAnyFieldSet = simpleCollectionFields.stream().anyMatch(field -> SpecialTypeEnum.isSetType(field.getType()));
             addIf(isAnyFieldList, imports, ImportConstants.Java.LIST);
             addIf(isAnyFieldSet, imports, ImportConstants.Java.SET);
         }

@@ -17,7 +17,6 @@
 package dev.markozivkovic.springcrudgenerator.generators;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,16 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
-import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.enums.SwaggerObjectModeEnum;
-import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.templates.SwaggerTemplateContext;
-import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -126,59 +122,9 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
     private void generateObjects(final ModelDefinition e, final String pathToSwaggerDocs,
                 final SwaggerObjectModeEnum mode) {
 
-        final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
-
-        final Map<String, Object> modelContext = new HashMap<>();
-        modelContext.put("schemaName", e.getName());
-
-        if (StringUtils.isNotBlank(e.getDescription())) {
-            modelContext.put("description", e.getDescription());
-        }
-
-        final List<Map<String, Object>> properties;
-        if (!SwaggerObjectModeEnum.JSON_MODEL.equals(mode)) {
-            final FieldDefinition idField = FieldUtils.extractIdField(e.getFields());
-            properties = e.getFields().stream()
-                    .filter(field -> SwaggerObjectModeEnum.DEFAULT.equals(mode) || !field.equals(idField))
-                    .filter(field -> !SwaggerObjectModeEnum.UPDATE_MODEL.equals(mode) || Objects.isNull(field.getRelation()))
-                    .map(field -> {
-                        if (SwaggerObjectModeEnum.CREATE_MODEL.equals(mode)) {
-                            return SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
-                        }
-                        return SwaggerUtils.toSwaggerProperty(field);
-                    })
-                    .collect(Collectors.toList());
-        } else {
-            properties = e.getFields().stream()
-                    .map(field -> SwaggerUtils.toSwaggerProperty(field))
-                    .collect(Collectors.toList());
-        }
-
-        modelContext.put("properties", properties);
-
-        final String title = switch (mode) {
-            case CREATE_MODEL -> ModelNameUtils.computeOpenApiCreateModelName(strippedModelName);
-            case UPDATE_MODEL -> ModelNameUtils.computeOpenApiUpdateModelName(strippedModelName);
-            case DEFAULT -> ModelNameUtils.computeOpenApiModelName(strippedModelName);
-            case JSON_MODEL -> ModelNameUtils.computeOpenApiModelName(strippedModelName);
-        };
-        modelContext.put("title", title);
-
-        final List<String> requiredFields = switch(mode) {
-            case DEFAULT -> FieldUtils.extractRequiredFields(e.getFields());
-            case CREATE_MODEL -> FieldUtils.extractRequiredFieldsForCreate(e.getFields());
-            case UPDATE_MODEL -> FieldUtils.extractRequiredFieldsForUpdate(e.getFields());
-            case JSON_MODEL -> FieldUtils.extractRequiredFields(e.getFields());
-        };
-        modelContext.put("required", requiredFields);
-
-        if (SwaggerObjectModeEnum.DEFAULT.equals(mode) && Objects.nonNull(e.getAudit()) && Boolean.TRUE.equals(e.getAudit().getEnabled())) {
-
-            final String auditType = AuditUtils.resolveAuditType(e.getAudit().getType());
-            modelContext.put(TemplateContextConstants.AUDIT_ENABLED, true);
-            modelContext.put(TemplateContextConstants.AUDIT_TYPE, SwaggerUtils.resolve(auditType, List.of()));
-        }
-
+        final Map<String, Object> modelContext = SwaggerTemplateContext.computeObjectContext(e, mode);
+        final String title = String.format("%s", modelContext.get("title"));
+        
         final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
             "swagger/schema/object-template.ftl", modelContext
         );
@@ -315,19 +261,8 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
      */
     private void generateRelationInputModels(final ModelDefinition relationModel, final String pathToSwaggerDocs) {
 
+        final Map<String, Object> model = SwaggerTemplateContext.computeRelationInputModelContext(relationModel);
         final String strippedModelName = ModelNameUtils.stripSuffix(relationModel.getName());
-        final Map<String, Object> model = new HashMap<>();
-        model.put("schemaName", relationModel.getName());
-        model.put("title", String.format("%sInput", strippedModelName));
-        if (StringUtils.isNotBlank(relationModel.getDescription())) {
-            model.put("description", relationModel.getDescription());
-        }
-
-        final FieldDefinition idField = FieldUtils.extractIdField(relationModel.getFields());
-        final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
-        idProperty.put("name", idField.getName());
-
-        model.put("properties", List.of(idProperty));
 
         final String swaggerObject = FreeMarkerTemplateProcessorUtils.processTemplate(
             "swagger/schema/object-template.ftl", model

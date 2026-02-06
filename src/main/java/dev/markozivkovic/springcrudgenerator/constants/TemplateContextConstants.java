@@ -110,4 +110,9 @@ public final class TemplateContextConstants {
     public static final String DATA_GENERATOR_LIST_METHOD = "multipleObjectsMethodName";
 
     public static final String IS_SPRING_BOOT_3 = "isSpringBoot3";
+    public static final String SCHEMA_NAME = "schemaName";
+    public static final String DESCRIPTION = "description";
+    public static final String PROPERTIES = "properties";
+    public static final String TITLE = "title";
+    public static final String REQUIRED = "required";
 }

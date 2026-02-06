@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
-import dev.markozivkovic.springcrudgenerator.enums.BasicType;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectTarget;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectType;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
@@ -163,8 +163,8 @@ public class TransferObjectImports {
             
             if (Objects.isNull(field.getValidation())) return;
 
-            final boolean basicType = BasicType.isBasicType(field.getType());
-            final boolean isCollection = SpecialType.isCollectionType(field.getType());
+            final boolean basicType = BasicTypeEnum.isBasicType(field.getType());
+            final boolean isCollection = SpecialTypeEnum.isCollectionType(field.getType());
 
             ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().isRequired()), imports, ImportConstants.Jakarta.NOT_NULL);
             
@@ -208,7 +208,7 @@ public class TransferObjectImports {
      */
     private static Set<String> computeBasicTypeValidationImport(final FieldDefinition field, final Set<String> imports) {
 
-        final BasicType basicFieldType = BasicType.fromString(field.getType().trim());
+        final BasicTypeEnum basicFieldType = BasicTypeEnum.fromString(field.getType().trim());
         
         switch (basicFieldType) {
             case STRING:

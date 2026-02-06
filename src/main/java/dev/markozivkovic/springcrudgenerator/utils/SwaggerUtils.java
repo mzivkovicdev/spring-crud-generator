@@ -25,8 +25,8 @@ import java.util.Objects;
 
 import org.apache.maven.api.annotations.Nullable;
 
-import dev.markozivkovic.springcrudgenerator.enums.BasicType;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -198,7 +198,7 @@ public class SwaggerUtils {
                 schema = ref(FieldUtils.extractJsonFieldName(fieldDefinition));
             } else if (isSimpleCollectionType) {
                 schema = arrayOfSimpleType(
-                        FieldUtils.extractSimpleCollectionType(fieldDefinition), fieldDefinition.getValues(), SpecialType.isSetType(fieldDefinition.getType())
+                        FieldUtils.extractSimpleCollectionType(fieldDefinition), fieldDefinition.getValues(), SpecialTypeEnum.isSetType(fieldDefinition.getType())
                 );
             } else {
                 schema = resolve(type, fieldDefinition.getValues());
@@ -224,8 +224,8 @@ public class SwaggerUtils {
 
         final Map<String, Object> validationSchema = new LinkedHashMap<>();
 
-        final boolean basicType = BasicType.isBasicType(fieldDefinition.getType());
-        final boolean isCollection = SpecialType.isCollectionType(fieldDefinition.getType());
+        final boolean basicType = BasicTypeEnum.isBasicType(fieldDefinition.getType());
+        final boolean isCollection = SpecialTypeEnum.isCollectionType(fieldDefinition.getType());
 
         if (Objects.nonNull(fieldDefinition.getColumn()) && Objects.nonNull(fieldDefinition.getColumn().getNullable())) {
             validationSchema.put("nullable", fieldDefinition.getColumn().getNullable());
@@ -292,7 +292,7 @@ public class SwaggerUtils {
      */
     private static Map<String, Object> applyBasicTypeSwaggerValidation(final FieldDefinition fieldDefinition) {
 
-        final BasicType basicFieldType = BasicType.fromString(fieldDefinition.getType().trim());
+        final BasicTypeEnum basicFieldType = BasicTypeEnum.fromString(fieldDefinition.getType().trim());
         final ValidationDefinition validationDefinition = fieldDefinition.getValidation();
         final ColumnDefinition columnDefinition = fieldDefinition.getColumn();
         final Map<String, Object> validationSchema = new LinkedHashMap<>();

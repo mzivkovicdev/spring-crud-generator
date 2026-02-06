@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Enum representing special types used in code generation.
  */
-public enum SpecialType {
+public enum SpecialTypeEnum {
     
     ENUM("Enum"),
     JSON("JSON"),
@@ -33,7 +33,7 @@ public enum SpecialType {
 
     private final String key;
 
-    SpecialType(final String key) {
+    SpecialTypeEnum(final String key) {
         this.key = key;
     }
 
@@ -76,8 +76,8 @@ public enum SpecialType {
     public static boolean isCollectionType(final String type) {
 
         return Objects.nonNull(type) &&
-                (type.toUpperCase(Locale.ROOT).startsWith(SpecialType.LIST.getKey().toUpperCase(Locale.ROOT) + "<") ||
-                type.toUpperCase(Locale.ROOT).startsWith(SpecialType.SET.getKey().toUpperCase(Locale.ROOT) + "<")) &&
+                (type.toUpperCase(Locale.ROOT).startsWith(SpecialTypeEnum.LIST.getKey().toUpperCase(Locale.ROOT) + "<") ||
+                type.toUpperCase(Locale.ROOT).startsWith(SpecialTypeEnum.SET.getKey().toUpperCase(Locale.ROOT) + "<")) &&
                 type.endsWith(">");
     }
 
@@ -91,7 +91,7 @@ public enum SpecialType {
     public static boolean isListType(final String type) {
         
         return Objects.nonNull(type) &&
-                type.toUpperCase(Locale.ROOT).startsWith(SpecialType.LIST.getKey().toUpperCase(Locale.ROOT) + "<") &&
+                type.toUpperCase(Locale.ROOT).startsWith(SpecialTypeEnum.LIST.getKey().toUpperCase(Locale.ROOT) + "<") &&
                 type.endsWith(">");
     }
 
@@ -105,7 +105,7 @@ public enum SpecialType {
     public static boolean isSetType(final String type) {
 
         return Objects.nonNull(type) &&
-                type.toUpperCase(Locale.ROOT).startsWith(SpecialType.SET.getKey().toUpperCase(Locale.ROOT) + "<") &&
+                type.toUpperCase(Locale.ROOT).startsWith(SpecialTypeEnum.SET.getKey().toUpperCase(Locale.ROOT) + "<") &&
                 type.endsWith(">");
     }
 
@@ -117,7 +117,7 @@ public enum SpecialType {
     public static String getSupportedValues() {
 
         return Stream.of(values())
-                .map(SpecialType::getKey)
+                .map(SpecialTypeEnum::getKey)
                 .collect(Collectors.joining(", "));
     }
 }

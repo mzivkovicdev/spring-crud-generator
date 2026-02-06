@@ -30,16 +30,15 @@ import org.mockito.MockedStatic;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
-import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.SwaggerObjectModeEnum;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
+import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
-import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.templates.SwaggerTemplateContext;
-import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -97,7 +96,8 @@ class SwaggerDocumentationGeneratorTest {
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class)) {
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class)) {
 
             generator.generate("out");
 
@@ -105,16 +105,16 @@ class SwaggerDocumentationGeneratorTest {
             fieldUtils.verifyNoInteractions();
             writer.verifyNoInteractions();
             tpl.verifyNoInteractions();
+            swaggerCtx.verifyNoInteractions();
         }
     }
 
     @Test
-    void generate_shouldSkipWhenApiSpecOrGenerateResourcesFalse() {
+    void generate_shouldSkipWhenApiSpecFalse() {
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(false);
-        when(openApi.getGenerateResources()).thenReturn(false);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
@@ -124,7 +124,8 @@ class SwaggerDocumentationGeneratorTest {
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class)) {
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class)) {
 
             generator.generate("out");
 
@@ -132,6 +133,7 @@ class SwaggerDocumentationGeneratorTest {
             fieldUtils.verifyNoInteractions();
             writer.verifyNoInteractions();
             tpl.verifyNoInteractions();
+            swaggerCtx.verifyNoInteractions();
         }
     }
 
@@ -141,7 +143,6 @@ class SwaggerDocumentationGeneratorTest {
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         final List<ModelDefinition> entities = List.of();
@@ -151,7 +152,8 @@ class SwaggerDocumentationGeneratorTest {
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class)) {
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(true);
 
@@ -160,6 +162,8 @@ class SwaggerDocumentationGeneratorTest {
             fieldUtils.verifyNoInteractions();
             writer.verifyNoInteractions();
             tpl.verifyNoInteractions();
+            swaggerCtx.verifyNoInteractions();
+            ctx.verify(() -> GeneratorContext.markGenerated(anyString()), never());
         }
     }
 
@@ -170,7 +174,6 @@ class SwaggerDocumentationGeneratorTest {
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
@@ -202,13 +205,13 @@ class SwaggerDocumentationGeneratorTest {
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(userEntity.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(addressEntity.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields())).thenReturn(userIdField);
             fieldUtils.when(() -> FieldUtils.extractIdField(addressEntity.getFields())).thenReturn(addrIdField);
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
             swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
-
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
@@ -217,7 +220,20 @@ class SwaggerDocumentationGeneratorTest {
             nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("User")).thenReturn("UserUpdate");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Address")).thenReturn("AddressCreate");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("Address")).thenReturn("AddressUpdate");
-
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of("title", "User", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "UserCreate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "UserUpdate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(addressEntity), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of("title", "Address", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(addressEntity), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "AddressCreate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(addressEntity), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "AddressUpdate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationInputModelContext(eq(addressEntity)))
+                    .thenReturn(new HashMap<>(Map.of("title", "AddressInput", "properties", List.of())));
             swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
             swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), eq(entities)))
                     .thenReturn(new HashMap<>());
@@ -225,8 +241,8 @@ class SwaggerDocumentationGeneratorTest {
                     .thenReturn(new HashMap<>());
             swaggerCtx.when(() -> SwaggerTemplateContext.computeBaseContext(any(ModelDefinition.class)))
                     .thenReturn(new HashMap<>());
-
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap())).thenReturn("OBJECT_SCHEMA");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap()))
+                    .thenReturn("OBJECT_SCHEMA");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/endpoint/create-endpoint.ftl"), anyMap())).thenReturn("CREATE_EP");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/endpoint/get-all-endpoint.ftl"), anyMap())).thenReturn("GET_ALL_EP");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/endpoint/get-by-id-endpoint.ftl"), anyMap())).thenReturn("GET_BY_ID_EP");
@@ -235,10 +251,10 @@ class SwaggerDocumentationGeneratorTest {
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/endpoint/relation-endpoint.ftl"), anyMap())).thenReturn("REL_EP");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/swagger-template.ftl"), anyMap()))
-                .thenAnswer(inv -> {
-                    swaggerTemplateCalls.add("CALLED");
-                    return "SWAGGER_DOC";
-                });
+                    .thenAnswer(inv -> {
+                        swaggerTemplateCalls.add("CALLED");
+                        return "SWAGGER_DOC";
+                    });
 
             writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString()))
                     .thenAnswer(inv -> {
@@ -257,7 +273,7 @@ class SwaggerDocumentationGeneratorTest {
             assertTrue(writtenFiles.contains("userUpdate.yaml"), "Expected userUpdate.yaml update schema");
             assertTrue(writtenFiles.contains("addressCreate.yaml"), "Expected addressCreate.yaml create schema");
             assertTrue(writtenFiles.contains("addressUpdate.yaml"), "Expected addressUpdate.yaml update schema");
-            assertEquals(2, swaggerTemplateCalls.size());
+            assertEquals(2, swaggerTemplateCalls.size(), "Expected swagger-template.ftl to be generated per entity");
 
             ctx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER));
         }
@@ -270,14 +286,11 @@ class SwaggerDocumentationGeneratorTest {
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
-
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
 
         final FieldDefinition userIdField = mock(FieldDefinition.class);
         final FieldDefinition userRelationField = mock(FieldDefinition.class);
-
         final RelationDefinition relation = mock(RelationDefinition.class);
         when(userRelationField.getRelation()).thenReturn(relation);
         when(userRelationField.getType()).thenReturn("AddressEntity");
@@ -287,31 +300,39 @@ class SwaggerDocumentationGeneratorTest {
 
         final SwaggerDocumentationGenerator generator = new SwaggerDocumentationGenerator(cfg, projectMetadata, entities);
 
+        final List<String> writtenFiles = new ArrayList<>();
+
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
-             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(userEntity.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractRequiredFields(anyList())).thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractRequiredFieldsForCreate(anyList())).thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractRequiredFieldsForUpdate(anyList())).thenReturn(List.of());
-            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
-            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class), eq(SwaggerSchemaModeEnum.INPUT))).thenReturn(new HashMap<>());
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
-            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
-            nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("User")).thenReturn("UserCreate");
-            nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("User")).thenReturn("UserUpdate");
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap())).thenReturn("OBJECT_SCHEMA");
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of("title", "User", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "UserCreate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "UserUpdate", "properties", List.of())));
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap()))
+                    .thenReturn("OBJECT_SCHEMA");
+            writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString()))
+                    .thenAnswer(inv -> {
+                        writtenFiles.add(inv.getArgument(2, String.class));
+                        return null;
+                    });
 
             assertThrows(IllegalArgumentException.class, () -> generator.generate("out"));
-
             tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/swagger-template.ftl"), anyMap()), never());
             ctx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER), never());
+            assertTrue(writtenFiles.contains("user.yaml"), "Expected default schema to be written before throwing");
+            assertTrue(writtenFiles.contains("userCreate.yaml"), "Expected create schema to be written before throwing");
+            assertTrue(writtenFiles.contains("userUpdate.yaml"), "Expected update schema to be written before throwing");
+            swaggerCtx.verify(() -> SwaggerTemplateContext.computeRelationInputModelContext(any()), never());
         }
     }
 
@@ -322,7 +343,6 @@ class SwaggerDocumentationGeneratorTest {
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
@@ -339,26 +359,35 @@ class SwaggerDocumentationGeneratorTest {
                 new SwaggerDocumentationGenerator(cfg, projectMetadata, List.of(entity));
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
-            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-            final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
-            final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class);
-            final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
-            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(entity.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(entity.getFields())).thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
             swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
-            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class), eq(SwaggerSchemaModeEnum.INPUT))).thenReturn(new HashMap<>());
             nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("Product")).thenReturn("ProductDTO");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Product")).thenReturn("ProductCreateDTO");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("Product")).thenReturn("ProductUpdateDTO");
-            auditUtils.when(() -> AuditUtils.resolveAuditType(AuditTypeEnum.INSTANT)).thenReturn("INSTANT");
-            swaggerUtils.when(() -> SwaggerUtils.resolve(eq("INSTANT"), eq(List.of()))).thenReturn(Map.of("type", "string", "format", "date-time"));
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of(
+                            "title", "ProductDTO",
+                            TemplateContextConstants.AUDIT_ENABLED, true,
+                            TemplateContextConstants.AUDIT_TYPE, "INSTANT",
+                            "properties", List.of()
+                    )));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "ProductCreateDTO", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "ProductUpdateDTO", "properties", List.of())));
+
             swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
             swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), anyList())).thenReturn(new HashMap<>());
             swaggerCtx.when(() -> SwaggerTemplateContext.computeContextWithId(any(ModelDefinition.class))).thenReturn(new HashMap<>());
@@ -396,7 +425,6 @@ class SwaggerDocumentationGeneratorTest {
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
@@ -419,10 +447,12 @@ class SwaggerDocumentationGeneratorTest {
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(entityA.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(jsonModel.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(entityA.getFields())).thenReturn(idA);
@@ -434,10 +464,22 @@ class SwaggerDocumentationGeneratorTest {
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("A")).thenReturn("A");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("A")).thenReturn("ACreate");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("A")).thenReturn("AUpdate");
-            nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("JsonModel")).thenReturn("JsonModelCreate");
-            nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("JsonModel")).thenReturn("JsonModelUpdate");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("JsonModel")).thenReturn("JsonModel");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("JsonModel")).thenReturn("JsonModel");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("JsonModel")).thenReturn("JsonModelCreate");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("JsonModel")).thenReturn("JsonModelUpdate");
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entityA), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of("title", "A", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entityA), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "ACreate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entityA), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "AUpdate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(jsonModel), eq(SwaggerObjectModeEnum.JSON_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "JsonModel", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), anyList())).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeContextWithId(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeBaseContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap())).thenReturn("OBJECT_SCHEMA");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/swagger-template.ftl"), anyMap())).thenReturn("SWAGGER_DOC");
@@ -455,15 +497,15 @@ class SwaggerDocumentationGeneratorTest {
         assertTrue(writtenFiles.contains("jsonModel.yaml") || writtenFiles.contains("jsonmodel.yaml"),
                 "Expected JSON model schema file to be generated (name depends on your uncapitalize logic)");
     }
+
     @Test
-    @DisplayName("generateObjects with CREATE_MODEL mode should exclude ID field and use INPUT mode")
+    @DisplayName("generateObjects with CREATE_MODEL mode should exclude ID field (orchestrated via context)")
     void generateObjects_createMode_shouldExcludeIdAndUseInputMode() {
-        
+
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
@@ -476,34 +518,47 @@ class SwaggerDocumentationGeneratorTest {
         final SwaggerDocumentationGenerator generator = new SwaggerDocumentationGenerator(cfg, projectMetadata, List.of(entity));
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
-            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-            final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
-            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(entity.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(entity.getFields())).thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
-            
-            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(eq(nameField), any())).thenReturn(Map.of("name", "name"));
+
             swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
-            
+
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("User")).thenReturn("UserCreate");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("User")).thenReturn("UserUpdate");
 
+            final List<Map<String, Object>> createProps = List.of(Map.of("name", "name"));
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of("title", "User", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "UserCreate", "properties", createProps)));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "UserUpdate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), anyList())).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeContextWithId(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeBaseContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap()))
                     .thenAnswer(inv -> {
                         @SuppressWarnings("unchecked")
                         final Map<String, Object> modelCtx = inv.getArgument(1, Map.class);
-                        
+
                         if ("UserCreate".equals(modelCtx.get("title"))) {
                             @SuppressWarnings("unchecked")
                             final List<Map<String, Object>> props = (List<Map<String, Object>>) modelCtx.get("properties");
-                            assertEquals(1, props.size(), "CREATE mode should exclude ID field");
+                            assertEquals(1, props.size(), "CREATE mode should exclude ID field (represented by context)");
                         }
                         return "OBJECT_SCHEMA";
                     });
@@ -513,19 +568,18 @@ class SwaggerDocumentationGeneratorTest {
 
             generator.generate("out");
 
-            swaggerUtils.verify(() -> SwaggerUtils.toSwaggerProperty(eq(nameField), any()));
+            swaggerCtx.verify(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.CREATE_MODEL)));
         }
     }
 
     @Test
     @DisplayName("generate should create schema names list with all model variations")
     void generate_shouldCreateSchemaNamesList() {
-        
+
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
@@ -546,23 +600,21 @@ class SwaggerDocumentationGeneratorTest {
         final SwaggerDocumentationGenerator generator = new SwaggerDocumentationGenerator(cfg, projectMetadata, entities);
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
-            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
-            final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
-            final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
-            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
-            
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(userEntity.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(addressEntity.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields())).thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.extractIdField(addressEntity.getFields())).thenReturn(addrId);
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
-            
             swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
-            
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("User")).thenReturn("User");
@@ -571,7 +623,32 @@ class SwaggerDocumentationGeneratorTest {
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("Address")).thenReturn("Address");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Address")).thenReturn("AddressCreate");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("Address")).thenReturn("AddressUpdate");
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), any()))
+                    .thenAnswer(inv -> {
+                        final SwaggerObjectModeEnum mode = inv.getArgument(1, SwaggerObjectModeEnum.class);
+                        final String title = switch (mode) {
+                            case DEFAULT -> "User";
+                            case CREATE_MODEL -> "UserCreate";
+                            case UPDATE_MODEL -> "UserUpdate";
+                            default -> "X";
+                        };
+                        return new HashMap<>(Map.of("title", title, "properties", List.of()));
+                    });
 
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(addressEntity), any()))
+                    .thenAnswer(inv -> {
+                        final SwaggerObjectModeEnum mode = inv.getArgument(1, SwaggerObjectModeEnum.class);
+                        final String title = switch (mode) {
+                            case DEFAULT -> "Address";
+                            case CREATE_MODEL -> "AddressCreate";
+                            case UPDATE_MODEL -> "AddressUpdate";
+                            default -> "X";
+                        };
+                        return new HashMap<>(Map.of("title", title, "properties", List.of()));
+                    });
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationInputModelContext(eq(addressEntity)))
+                    .thenReturn(new HashMap<>(Map.of("title", "AddressInput", "properties", List.of(Map.of("name", "addressId")))));
             swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
             swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), eq(entities)))
                     .thenReturn(new HashMap<>());
@@ -585,18 +662,16 @@ class SwaggerDocumentationGeneratorTest {
                     .thenAnswer(inv -> {
                         @SuppressWarnings("unchecked")
                         final Map<String, Object> context = inv.getArgument(1, Map.class);
-                        
                         @SuppressWarnings("unchecked")
                         final List<String> schemaNames = (List<String>) context.get("schemaNames");
-                        
                         assertNotNull(schemaNames);
                         assertTrue(schemaNames.contains("user"), "Should contain main model name");
                         assertTrue(schemaNames.contains("userCreate"), "Should contain create model name");
                         assertTrue(schemaNames.contains("userUpdate"), "Should contain update model name");
                         assertTrue(schemaNames.contains("addressInput"), "Should contain relation input model name");
-                        
                         return "SWAGGER_DOC";
                     });
+
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("X");
 
             generator.generate("out");
@@ -604,7 +679,7 @@ class SwaggerDocumentationGeneratorTest {
     }
 
     @Test
-    @DisplayName("generate should set relation input schema property name to relation model id field name")
+    @DisplayName("generate should set relation input schema property name to relation model id field name (via context)")
     void generate_shouldUseRelationIdFieldNameInRelationInputSchema() {
 
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
@@ -648,13 +723,41 @@ class SwaggerDocumentationGeneratorTest {
             fieldUtils.when(() -> FieldUtils.extractIdField(addressEntity.getFields())).thenReturn(addressIdField);
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
             swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
-            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class), eq(SwaggerSchemaModeEnum.INPUT))).thenReturn(new HashMap<>());
-
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName(anyString())).thenAnswer(inv -> inv.getArgument(0));
             nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName(anyString())).thenAnswer(inv -> inv.getArgument(0) + "Create");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName(anyString())).thenAnswer(inv -> inv.getArgument(0) + "Update");
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(userEntity), any()))
+                    .thenAnswer(inv -> {
+                        final SwaggerObjectModeEnum mode = inv.getArgument(1, SwaggerObjectModeEnum.class);
+                        final String title = switch (mode) {
+                            case DEFAULT -> "User";
+                            case CREATE_MODEL -> "UserCreate";
+                            case UPDATE_MODEL -> "UserUpdate";
+                            default -> "X";
+                        };
+                        return new HashMap<>(Map.of("title", title, "properties", List.of()));
+                    });
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(addressEntity), any()))
+                    .thenAnswer(inv -> {
+                        final SwaggerObjectModeEnum mode = inv.getArgument(1, SwaggerObjectModeEnum.class);
+                        final String title = switch (mode) {
+                            case DEFAULT -> "Address";
+                            case CREATE_MODEL -> "AddressCreate";
+                            case UPDATE_MODEL -> "AddressUpdate";
+                            default -> "X";
+                        };
+                        return new HashMap<>(Map.of("title", title, "properties", List.of()));
+                    });
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationInputModelContext(eq(addressEntity)))
+                    .thenReturn(new HashMap<>(Map.of(
+                            "title", "AddressInput",
+                            "properties", List.of(Map.of("name", "addressId"))
+                    )));
 
             swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
             swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), eq(entities))).thenReturn(new HashMap<>());
@@ -670,13 +773,15 @@ class SwaggerDocumentationGeneratorTest {
                             final List<Map<String, Object>> props = (List<Map<String, Object>>) modelCtx.get("properties");
                             assertEquals(1, props.size());
                             final Map<String, Object> idProp = props.get(0);
-                            assertEquals("addressId", idProp.get("name"), "Expected relation input property name to match id field name");
+                            assertEquals("addressId", idProp.get("name"),
+                                    "Expected relation input property name to match id field name");
                         }
                         return "OBJECT_SCHEMA";
                     });
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/swagger-template.ftl"), anyMap())).thenReturn("SWAGGER_DOC");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(startsWith("swagger/endpoint/"), anyMap())).thenReturn("EP");
+
             generator.generate("out");
         }
     }
@@ -684,12 +789,11 @@ class SwaggerDocumentationGeneratorTest {
     @Test
     @DisplayName("generate should skip entities without ID field")
     void generate_shouldSkipEntitiesWithoutId() {
-        
+
         final CrudConfiguration cfg = mock(CrudConfiguration.class);
         final CrudConfiguration.OpenApiDefinition openApi = mock(CrudConfiguration.OpenApiDefinition.class);
         when(cfg.getOpenApi()).thenReturn(openApi);
         when(openApi.getApiSpec()).thenReturn(true);
-        when(openApi.getGenerateResources()).thenReturn(true);
 
         final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
         when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
@@ -704,8 +808,10 @@ class SwaggerDocumentationGeneratorTest {
         final List<String> writtenFiles = new ArrayList<>();
 
         try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
-            final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(entityWithoutId.getFields())).thenReturn(false);
@@ -722,6 +828,8 @@ class SwaggerDocumentationGeneratorTest {
             assertTrue(writtenFiles.isEmpty(), "Should not generate any files for entities without ID");
             
             ctx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER));
+            tpl.verifyNoInteractions();
+            swaggerCtx.verifyNoInteractions();
         }
     }
 }
