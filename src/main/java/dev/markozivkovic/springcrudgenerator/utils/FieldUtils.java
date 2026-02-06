@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.markozivkovic.springcrudgenerator.enums.FetchTypeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -45,13 +46,6 @@ public class FieldUtils {
     private static final String LOCAL_DATE = "LocalDate";
     private static final String LOCAL_DATE_TIME = "LocalDateTime";
     private static final String ENUM = "Enum";
-    private static final String ONE_TO_ONE = "OneToOne";
-    private static final String ONE_TO_MANY = "OneToMany";
-    private static final String MANY_TO_ONE = "ManyToOne";
-    private static final String MANY_TO_MANY = "ManyToMany";
-
-    private static final List<String> DEFAULT_LAZY_TYPES = List.of(ONE_TO_MANY, MANY_TO_MANY);
-    private static final List<String> DEFAULT_EAGER_TYPES = List.of(ONE_TO_ONE, MANY_TO_ONE);
 
     private static final Pattern jsonPattern = Pattern.compile("^JSONB?<(.+)>$");
     private static final Pattern collectionPattern = Pattern.compile("^(List|Set)<\\s*(.+?)\\s*>$");
@@ -89,7 +83,7 @@ public class FieldUtils {
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link FieldUtils#ONE_TO_ONE}.
+     * Determines if any of the given fields have a relation of type {@link RelationTypeEnum#ONE_TO_ONE}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a one-to-one relation, false otherwise.
@@ -98,11 +92,11 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> ONE_TO_ONE.equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.ONE_TO_ONE.getKey().equalsIgnoreCase(relation));
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link FieldUtils#ONE_TO_MANY}.
+     * Determines if any of the given fields have a relation of type {@link RelationTypeEnum#ONE_TO_MANY}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a one-to-many relation, false otherwise.
@@ -111,11 +105,11 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> ONE_TO_MANY.equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.ONE_TO_MANY.getKey().equalsIgnoreCase(relation));
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link FieldUtils#MANY_TO_ONE}.
+     * Determines if any of the given fields have a relation of type {@link RelationTypeEnum#MANY_TO_ONE}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a many-to-one relation, false otherwise.
@@ -124,11 +118,11 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> MANY_TO_ONE.equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.MANY_TO_ONE.getKey().equalsIgnoreCase(relation));
     }
 
     /**
-     * Determines if any of the given fields have a relation of type {@link FieldUtils#MANY_TO_MANY}.
+     * Determines if any of the given fields have a relation of type {@link RelationTypeEnum#MANY_TO_MANY}.
      *
      * @param fields The list of fields to check.
      * @return true if any of the fields have a many-to-many relation, false otherwise.
@@ -137,7 +131,7 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> MANY_TO_MANY.equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.MANY_TO_MANY.getKey().equalsIgnoreCase(relation));
     }
 
     /**
@@ -163,7 +157,7 @@ public class FieldUtils {
      */
     public static List<FieldDefinition> extractManyToManyRelations(final List<FieldDefinition> fields) {
         
-        return extractRelationsByType(fields, MANY_TO_MANY);
+        return extractRelationsByType(fields, RelationTypeEnum.MANY_TO_MANY);
     }
 
     /**
@@ -174,21 +168,21 @@ public class FieldUtils {
      */
     public static List<FieldDefinition> extractOneToManyRelations(final List<FieldDefinition> fields) {
         
-        return extractRelationsByType(fields, ONE_TO_MANY);
+        return extractRelationsByType(fields, RelationTypeEnum.ONE_TO_MANY);
     }
 
     /**
      * Extracts all fields from the given list that have a relation of type {@code type}.
      *
      * @param fields The list of fields to extract relations from.
-     * @param type The type of relation to extract.
+     * @param type   The type of relation to extract.
      * @return A list of fields that have a relation of type {@code type}.
      */
-    private static List<FieldDefinition> extractRelationsByType(final List<FieldDefinition> fields, final String type) {
+    private static List<FieldDefinition> extractRelationsByType(final List<FieldDefinition> fields, final RelationTypeEnum type) {
         
         return fields.stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> type.equalsIgnoreCase(field.getRelation().getType()))
+                .filter(field -> type.getKey().equalsIgnoreCase(field.getRelation().getType()))
                 .collect(Collectors.toList());
     }
 
@@ -565,7 +559,8 @@ public class FieldUtils {
 
                     if (Objects.nonNull(field.getRelation())) {
                         final String inputArg;
-                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
                             inputArg = String.format("input.%sIds()", field.getName());
                         } else {
                             inputArg = String.format("input.%sId()", field.getName());
@@ -668,8 +663,8 @@ public class FieldUtils {
         return fields.stream()
                 .map(field -> {
                     if (field.getRelation() != null) {
-                        if (field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) ||
-                                field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY)) {
+                        if (field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.MANY_TO_MANY.getKey())) {
                             return null;
                         }
                     }
@@ -693,7 +688,9 @@ public class FieldUtils {
         
         return modelDefinition.getFields().stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) || field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY))
+                .filter(field -> field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                        field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.MANY_TO_MANY.getKey())
+                )
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
     }
@@ -711,7 +708,9 @@ public class FieldUtils {
         return entities.stream()
                 .flatMap(entity -> entity.getFields().stream())
                 .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> field.getRelation().getType().equalsIgnoreCase(ONE_TO_MANY) || field.getRelation().getType().equalsIgnoreCase(MANY_TO_MANY))
+                .filter(field -> field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                        field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.MANY_TO_MANY.getKey())
+                )
                 .anyMatch(field -> field.getType().equals(modelDefinition.getName()));
     }
 
@@ -753,7 +752,8 @@ public class FieldUtils {
                                 field.getType()
                         );
                         final String arg;
-                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                        if (field.getRelation().getType().equals(RelationTypeEnum.MANY_TO_MANY.getKey()) ||
+                                field.getRelation().getType().equals(RelationTypeEnum.ONE_TO_MANY.getKey())) {
                             arg = String.format("%ss", name);
                         } else {
                             arg = String.format("%s", name);
@@ -796,7 +796,8 @@ public class FieldUtils {
                         final String modelName = StringUtils.uncapitalize(
                                 ModelNameUtils.stripSuffix(modelDefinition.getName())
                         );
-                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                        if (field.getRelation().getType().equals(RelationTypeEnum.MANY_TO_MANY.getKey()) ||
+                                field.getRelation().getType().equals(RelationTypeEnum.ONE_TO_MANY.getKey())) {
                             return String.format("final List<%s> %s", relationId.getType(), String.format("%sIds", modelName));
                         } else {
                             return String.format("final %s %s", relationId.getType(), String.format("%sId", modelName));
@@ -834,7 +835,8 @@ public class FieldUtils {
                         final String modelName = StringUtils.uncapitalize(
                                 ModelNameUtils.stripSuffix(modelDefinition.getName())
                         );
-                        if (field.getRelation().getType().equals(MANY_TO_MANY) || field.getRelation().getType().equals(ONE_TO_MANY)) {
+                        if (field.getRelation().getType().equals(RelationTypeEnum.MANY_TO_MANY.getKey()) ||
+                                field.getRelation().getType().equals(RelationTypeEnum.ONE_TO_MANY.getKey())) {
                             return String.format("%s", String.format("%sIds", modelName));
                         } else {
                             return String.format("%s", String.format("%sId", modelName));
@@ -861,8 +863,8 @@ public class FieldUtils {
                 .filter(field -> !field.getName().equals(id.getName()))
                 .map(field -> {
                     if (Objects.nonNull(field.getRelation()) &&
-                        (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || 
-                        Objects.equals(field.getRelation().getType(), MANY_TO_MANY)
+                        (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) || 
+                        Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())
                     )) {
                         return String.format("final List<%s> %s", field.getResolvedType(), field.getName());
                     }
@@ -911,7 +913,8 @@ public class FieldUtils {
                                 .findFirst()
                                 .orElseThrow();
                         final FieldDefinition relationId = extractIdField(modelDefinition.getFields());
-                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
                             inputArg = String.format("List<%s> %sIds", relationId.getType(), field.getName());
                         } else {
                             inputArg = String.format("%s %sId", relationId.getType(), field.getName());
@@ -951,7 +954,8 @@ public class FieldUtils {
                     if (Objects.nonNull(field.getRelation())) {
                         final String inputArg;
                         final String relationType = String.format("%sInputTO", ModelNameUtils.stripSuffix(field.getType()));
-                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
                             inputArg = String.format("List<%s> %s", relationType, field.getName());
                         } else {
                             inputArg = String.format("%s %s", relationType, field.getName());
@@ -985,7 +989,8 @@ public class FieldUtils {
 
                     if (Objects.nonNull(field.getRelation())) {
                         final String inputArg;
-                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
                             inputArg = String.format("%sIds", field.getName());
                         } else {
                             inputArg = String.format("%sId", field.getName());
@@ -1042,7 +1047,8 @@ public class FieldUtils {
 
                     if (Objects.nonNull(field.getRelation())) {
                         final String inputArg;
-                        if (Objects.equals(field.getRelation().getType(), ONE_TO_MANY) || Objects.equals(field.getRelation().getType(), MANY_TO_MANY)) {
+                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
                             inputArg = String.format(
                                 "%sList<%sTO> %s", annotations, ModelNameUtils.stripSuffix(field.getType()), field.getName()
                             );
@@ -1384,7 +1390,7 @@ public class FieldUtils {
         
         return Objects.nonNull(field.getRelation()) && (
             FetchTypeEnum.LAZY.getKey().equals(field.getRelation().getFetch()) ||
-            (Objects.isNull(field.getRelation().getFetch()) && DEFAULT_LAZY_TYPES.contains(field.getRelation().getType().trim()))
+            (Objects.isNull(field.getRelation().getFetch()) && RelationTypeEnum.getDefaultLazyTypes().contains(field.getRelation().getType().trim()))
         );
     }
 
@@ -1402,7 +1408,7 @@ public class FieldUtils {
         
         return Objects.nonNull(field.getRelation()) && (
             FetchTypeEnum.EAGER.getKey().equals(field.getRelation().getFetch()) ||
-            (Objects.isNull(field.getRelation().getFetch()) && DEFAULT_EAGER_TYPES.contains(field.getRelation().getType().trim()))
+            (Objects.isNull(field.getRelation().getFetch()) && RelationTypeEnum.getDefaultEagerTypes().contains(field.getRelation().getType().trim()))
         );
     }
 
@@ -1418,7 +1424,6 @@ public class FieldUtils {
                 .filter(field -> isEagerRelationField(field))
                 .toList();
     }
-
 
     /**
      * Checks if any of the fields in the given list have a relation with a fetch type of 'LAZY'.
@@ -1457,7 +1462,6 @@ public class FieldUtils {
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Extracts the names of the fields from the given list that are of a collection type.
