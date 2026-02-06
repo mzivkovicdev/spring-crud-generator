@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.markozivkovic.springcrudgenerator.enums.FetchTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -48,8 +49,6 @@ public class FieldUtils {
     private static final String ONE_TO_MANY = "OneToMany";
     private static final String MANY_TO_ONE = "ManyToOne";
     private static final String MANY_TO_MANY = "ManyToMany";
-    private static final String LAZY_FETCH_TYPE = "LAZY";
-    private static final String EAGER_FETCH_TYPE = "EAGER";
 
     private static final List<String> DEFAULT_LAZY_TYPES = List.of(ONE_TO_MANY, MANY_TO_MANY);
     private static final List<String> DEFAULT_EAGER_TYPES = List.of(ONE_TO_ONE, MANY_TO_ONE);
@@ -1384,7 +1383,7 @@ public class FieldUtils {
     private static boolean isLazyRelationField(final FieldDefinition field) {
         
         return Objects.nonNull(field.getRelation()) && (
-            LAZY_FETCH_TYPE.equals(field.getRelation().getFetch()) ||
+            FetchTypeEnum.LAZY.getKey().equals(field.getRelation().getFetch()) ||
             (Objects.isNull(field.getRelation().getFetch()) && DEFAULT_LAZY_TYPES.contains(field.getRelation().getType().trim()))
         );
     }
@@ -1402,7 +1401,7 @@ public class FieldUtils {
     private static boolean isEagerRelationField(final FieldDefinition field) {
         
         return Objects.nonNull(field.getRelation()) && (
-            EAGER_FETCH_TYPE.equals(field.getRelation().getFetch()) ||
+            FetchTypeEnum.EAGER.getKey().equals(field.getRelation().getFetch()) ||
             (Objects.isNull(field.getRelation().getFetch()) && DEFAULT_EAGER_TYPES.contains(field.getRelation().getType().trim()))
         );
     }
