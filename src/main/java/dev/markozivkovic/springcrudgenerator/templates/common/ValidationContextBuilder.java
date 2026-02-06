@@ -24,7 +24,7 @@ import java.util.Objects;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
-import dev.markozivkovic.springcrudgenerator.enums.BasicType;
+import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
@@ -70,11 +70,11 @@ public final class ValidationContextBuilder {
             final Integer columnLength = Objects.nonNull(field.getColumn()) ? field.getColumn().getLength() : null;
             final boolean hasAnyValidation = isValidationDefined(validation);
             final boolean hasColumnLength = columnLength != null;
-            final boolean isBasicType = BasicType.isBasicType(type);
+            final boolean isBasicType = BasicTypeEnum.isBasicType(type);
     
             if (!hasAnyValidation && !hasColumnLength) return;
     
-            if (isBasicType && BasicType.STRING.equals(BasicType.fromString(type))) {
+            if (isBasicType && BasicTypeEnum.STRING.equals(BasicTypeEnum.fromString(type))) {
                 final StringOverride override = buildStringOverride(field, validation, columnLength);
                 if (Objects.nonNull(override)) {
                     overrides.add(Map.of(
@@ -353,7 +353,7 @@ public final class ValidationContextBuilder {
         String validExpr;
         String invalidExpr;
 
-        if (BasicType.isBasicType(type) && BasicType.BIG_DECIMAL.equals(BasicType.fromString(type))) {
+        if (BasicTypeEnum.isBasicType(type) && BasicTypeEnum.BIG_DECIMAL.equals(BasicTypeEnum.fromString(type))) {
             final BigDecimal valid = (min != null) ? min : (max != null ? max : BigDecimal.ONE);
             validExpr = bigDecimalExpr(valid);
 
@@ -478,9 +478,9 @@ public final class ValidationContextBuilder {
         if (elementType == null) {
             return "() -> \"a\"";
         }
-        final boolean isBasicType = BasicType.isBasicType(elementType);
+        final boolean isBasicType = BasicTypeEnum.isBasicType(elementType);
         
-        if (isBasicType && BasicType.STRING.equals(BasicType.fromString(elementType)))
+        if (isBasicType && BasicTypeEnum.STRING.equals(BasicTypeEnum.fromString(elementType)))
             return "() -> \"a\"";
         
         if (isNumeric(elementType)) return "() -> 1";
@@ -555,11 +555,11 @@ public final class ValidationContextBuilder {
      */
     private static boolean isNumeric(final String type) {
         
-        if (!BasicType.isBasicType(type)) {
+        if (!BasicTypeEnum.isBasicType(type)) {
             return false;
         }
         
-        final BasicType basicType = BasicType.fromString(type);
+        final BasicTypeEnum basicType = BasicTypeEnum.fromString(type);
         
         return switch (basicType) {
             case INTEGER, LONG, DOUBLE, FLOAT, BIG_DECIMAL, BIG_INTEGER, SHORT -> true;

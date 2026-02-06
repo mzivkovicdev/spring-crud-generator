@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public enum BasicType {
+public enum BasicTypeEnum {
     
     STRING(String.class.getSimpleName()),
     CHARACTER(Character.class.getSimpleName()),
@@ -49,10 +49,10 @@ public enum BasicType {
 
     private final String key;
     private static final Set<String> ALL_KEYS = Stream.of(values())
-            .map(BasicType::getKey)
+            .map(BasicTypeEnum::getKey)
             .collect(Collectors.toUnmodifiableSet());
 
-    BasicType(final String key) {
+    BasicTypeEnum(final String key) {
         this.key = key;
     }
 
@@ -77,7 +77,7 @@ public enum BasicType {
      * @return the BasicType object corresponding converted
      * @throws IllegalArgumentException if the given string does not represent one of the supported basic types
      */
-    public static BasicType fromString(final String type) {
+    public static BasicTypeEnum fromString(final String type) {
         return Stream.of(values())
                 .filter(v -> v.getKey().equals(type.trim()))
                 .findFirst()
@@ -99,7 +99,7 @@ public enum BasicType {
     public static String getSupportedValues() {
 
         return Stream.of(values())
-                .map(BasicType::getKey)
+                .map(BasicTypeEnum::getKey)
                 .collect(Collectors.joining(", "));
     }
 

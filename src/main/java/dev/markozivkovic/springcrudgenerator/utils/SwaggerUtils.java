@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import org.apache.maven.api.annotations.Nullable;
 
-import dev.markozivkovic.springcrudgenerator.enums.BasicType;
+import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
@@ -224,7 +224,7 @@ public class SwaggerUtils {
 
         final Map<String, Object> validationSchema = new LinkedHashMap<>();
 
-        final boolean basicType = BasicType.isBasicType(fieldDefinition.getType());
+        final boolean basicType = BasicTypeEnum.isBasicType(fieldDefinition.getType());
         final boolean isCollection = SpecialTypeEnum.isCollectionType(fieldDefinition.getType());
 
         if (Objects.nonNull(fieldDefinition.getColumn()) && Objects.nonNull(fieldDefinition.getColumn().getNullable())) {
@@ -292,7 +292,7 @@ public class SwaggerUtils {
      */
     private static Map<String, Object> applyBasicTypeSwaggerValidation(final FieldDefinition fieldDefinition) {
 
-        final BasicType basicFieldType = BasicType.fromString(fieldDefinition.getType().trim());
+        final BasicTypeEnum basicFieldType = BasicTypeEnum.fromString(fieldDefinition.getType().trim());
         final ValidationDefinition validationDefinition = fieldDefinition.getValidation();
         final ColumnDefinition columnDefinition = fieldDefinition.getColumn();
         final Map<String, Object> validationSchema = new LinkedHashMap<>();

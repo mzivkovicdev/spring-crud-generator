@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dev.markozivkovic.springcrudgenerator.enums.BasicType;
+import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
@@ -269,14 +269,14 @@ public class SpecificationValidator {
             );
         }
 
-        final boolean isBasicType = BasicType.isBasicType(inner);
+        final boolean isBasicType = BasicTypeEnum.isBasicType(inner);
         final boolean innerModel = modelNames.contains(inner);
 
         if (!isBasicType && !innerModel) {
             throw new IllegalArgumentException(
                 String.format(
                     "Inner type %s of JSON field %s.%s is invalid. It must be a basic type [%s] or reference to another model.",
-                    inner, model.getName(), field.getName(), BasicType.getSupportedValues()
+                    inner, model.getName(), field.getName(), BasicTypeEnum.getSupportedValues()
                 )
             );
         }
@@ -324,20 +324,20 @@ public class SpecificationValidator {
         }
         
         final String type = field.getType();
-        final boolean isBasicType = BasicType.isBasicType(type);
+        final boolean isBasicType = BasicTypeEnum.isBasicType(type);
         final boolean isEnumType = SpecialTypeEnum.isEnumType(type);
         final boolean isJsonType = SpecialTypeEnum.isJsonType(type);
         final boolean isCollectionType = SpecialTypeEnum.isCollectionType(type);
 
         if (isCollectionType) {
             final String innerType = FieldUtils.extractSimpleCollectionType(field);
-            final boolean innerIsBasicType = BasicType.isBasicType(innerType);
+            final boolean innerIsBasicType = BasicTypeEnum.isBasicType(innerType);
             
             if (!innerIsBasicType) {
                 throw new IllegalArgumentException(
                     String.format(
                         "Inner type %s of collection field %s in model %s is invalid. It must be a basic type [%s].",
-                        innerType, field.getName(), model.getName(), BasicType.getSupportedValues()
+                        innerType, field.getName(), model.getName(), BasicTypeEnum.getSupportedValues()
                     )
                 );
             }
@@ -349,7 +349,7 @@ public class SpecificationValidator {
             throw new IllegalArgumentException(
                 String.format(
                     "Field type %s for field %s in model %s is invalid. It must be a basic type [%s], special type [%s] or reference to another model %s.",
-                    type, field.getName(), model.getName(), BasicType.getSupportedValues(), SpecialTypeEnum.getSupportedValues(), modelNames
+                    type, field.getName(), model.getName(), BasicTypeEnum.getSupportedValues(), SpecialTypeEnum.getSupportedValues(), modelNames
                 )
             );
         }

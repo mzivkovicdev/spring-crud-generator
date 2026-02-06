@@ -13,50 +13,50 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class BasicTypeTest {
+class BasicTypeEnumTest {
 
-    private static Stream<BasicType> allBasicTypes() {
-        return Stream.of(BasicType.values());
+    private static Stream<BasicTypeEnum> allBasicTypes() {
+        return Stream.of(BasicTypeEnum.values());
     }
 
     @Test
     void getKey_shouldReturnCorrectKey() {
-        assertEquals("String", BasicType.STRING.getKey());
-        assertEquals("Integer", BasicType.INTEGER.getKey());
+        assertEquals("String", BasicTypeEnum.STRING.getKey());
+        assertEquals("Integer", BasicTypeEnum.INTEGER.getKey());
     }
 
     @Test
     void isBasicType_shouldReturnFalseForBasicTypesIgnoringCase() {
-        assertFalse(BasicType.isBasicType("string"));
-        assertFalse(BasicType.isBasicType("StRiNg"));
-        assertFalse(BasicType.isBasicType("INTEGER"));
+        assertFalse(BasicTypeEnum.isBasicType("string"));
+        assertFalse(BasicTypeEnum.isBasicType("StRiNg"));
+        assertFalse(BasicTypeEnum.isBasicType("INTEGER"));
     }
 
     @Test
     void isBasicType_shouldReturnFalseForInvalidTypes() {
-        assertFalse(BasicType.isBasicType("unknown"));
-        assertFalse(BasicType.isBasicType(""));
-        assertFalse(BasicType.isBasicType("Object"));
+        assertFalse(BasicTypeEnum.isBasicType("unknown"));
+        assertFalse(BasicTypeEnum.isBasicType(""));
+        assertFalse(BasicTypeEnum.isBasicType("Object"));
     }
 
     @Test
     void isBasicType_shouldReturnFalseForNull() {
-        assertFalse(BasicType.isBasicType(null));
+        assertFalse(BasicTypeEnum.isBasicType(null));
     }
 
     @ParameterizedTest
     @MethodSource("allBasicTypes")
-    void fromString_shouldReturnMatchingEnum_forExactKey(BasicType expected) {
-        final BasicType actual = BasicType.fromString(expected.getKey());
+    void fromString_shouldReturnMatchingEnum_forExactKey(BasicTypeEnum expected) {
+        final BasicTypeEnum actual = BasicTypeEnum.fromString(expected.getKey());
         assertSame(expected, actual);
     }
 
     @ParameterizedTest
     @MethodSource("allBasicTypes")
-    void fromString_shouldTrimInput_andReturnMatchingEnum(BasicType expected) {
+    void fromString_shouldTrimInput_andReturnMatchingEnum(BasicTypeEnum expected) {
         
         final String input = "   " + expected.getKey() + "   ";
-        final BasicType actual = BasicType.fromString(input);
+        final BasicTypeEnum actual = BasicTypeEnum.fromString(input);
         assertSame(expected, actual);
     }
 
@@ -66,12 +66,12 @@ class BasicTypeTest {
         final String input = "unknown type";
         final IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> BasicType.fromString(input)
+                () -> BasicTypeEnum.fromString(input)
         );
 
         assertTrue(ex.getMessage().contains("Unsupported basic type: " + input), "Exception message should contain the unsupported type.");
         assertTrue(ex.getMessage().contains("Supported basic types are: "), "Exception message should mention supported basic types.");
-        assertTrue(ex.getMessage().contains(BasicType.getSupportedValues()), "Exception message should include supported values list.");
+        assertTrue(ex.getMessage().contains(BasicTypeEnum.getSupportedValues()), "Exception message should include supported values list.");
     }
 
     @Test
@@ -81,7 +81,7 @@ class BasicTypeTest {
 
         final IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> BasicType.fromString(input)
+                () -> BasicTypeEnum.fromString(input)
         );
 
         assertTrue(ex.getMessage().contains("Unsupported basic type: " + input));
@@ -89,11 +89,11 @@ class BasicTypeTest {
 
     @Test
     void getSupportedValues_shouldReturnCommaSeparatedKeys() {
-        final String expected = Stream.of(BasicType.values())
-                .map(BasicType::getKey)
+        final String expected = Stream.of(BasicTypeEnum.values())
+                .map(BasicTypeEnum::getKey)
                 .collect(Collectors.joining(", "));
 
-        assertEquals(expected, BasicType.getSupportedValues());
+        assertEquals(expected, BasicTypeEnum.getSupportedValues());
     }
 
 }
