@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.constants.RelationTypesConstants;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
@@ -60,12 +60,12 @@ public class ModelImports {
         if (FieldUtils.isAnyFieldSimpleCollection(fields)) {
             final List<FieldDefinition> simpleCollectionFields = FieldUtils.extractSimpleCollectionFields(modelDefinition.getFields());
             simpleCollectionFields.forEach(field -> {
-                if (SpecialType.isListType(field.getType())) {
+                if (SpecialTypeEnum.isListType(field.getType())) {
                     imports.add(ImportConstants.Java.LIST);
                     imports.add(ImportConstants.Java.ARRAY_LIST);
                 }
 
-                if (SpecialType.isSetType(field.getType())) {
+                if (SpecialTypeEnum.isSetType(field.getType())) {
                     imports.add(ImportConstants.Java.SET);
                     imports.add(ImportConstants.Java.HASH_SET);
                 }

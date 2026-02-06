@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.markozivkovic.springcrudgenerator.constants.RelationTypesConstants;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
@@ -627,7 +627,7 @@ public class FlywayUtils {
 
         for (final FieldDefinition field : model.getFields()) {
 
-            if (isCollectionRelation(field) || SpecialType.isCollectionType(field.getType())) {
+            if (isCollectionRelation(field) || SpecialTypeEnum.isCollectionType(field.getType())) {
                 continue;
             }
 
@@ -837,12 +837,12 @@ public class FlywayUtils {
 
         model.getFields().forEach(field -> {
 
-            if (!SpecialType.isCollectionType(field.getType())) {
+            if (!SpecialTypeEnum.isCollectionType(field.getType())) {
                 return;
             }
 
-            final boolean isList = SpecialType.isListType(field.getType());
-            final boolean isSet = SpecialType.isSetType(field.getType());
+            final boolean isList = SpecialTypeEnum.isListType(field.getType());
+            final boolean isSet = SpecialTypeEnum.isSetType(field.getType());
             final String tableName = ownerTable + "_" + ModelNameUtils.toSnakeCase(StringUtils.uncapitalize(field.getName()));
             final String valueColumn = ModelNameUtils.toSnakeCase(StringUtils.uncapitalize(field.getName()));
             final String valueSqlType = columnSqlType(

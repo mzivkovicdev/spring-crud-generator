@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants;
 import dev.markozivkovic.springcrudgenerator.enums.BasicType;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.RegexUtils;
 
@@ -27,7 +27,7 @@ public final class FieldValidationResolver {
         }
 
         final boolean basicType = BasicType.isBasicType(field.getType());
-        final boolean isCollection = SpecialType.isCollectionType(field.getType());
+        final boolean isCollection = SpecialTypeEnum.isCollectionType(field.getType());
 
         final List<String> out = new ArrayList<>();
 

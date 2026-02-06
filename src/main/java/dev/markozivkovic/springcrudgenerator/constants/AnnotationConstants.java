@@ -25,7 +25,6 @@ public class AnnotationConstants {
 
     }
 
-    public static final String ID_ANNOTATION = "@Id";
     public static final String TRANSACTIONAL_ANNOTATION = "@Transactional";
 
     public static final String NOT_NULL_ANNOTATION = "@NotNull";

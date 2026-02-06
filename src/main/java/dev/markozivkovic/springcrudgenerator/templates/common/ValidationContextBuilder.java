@@ -25,7 +25,7 @@ import java.util.Objects;
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.enums.BasicType;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
@@ -96,7 +96,7 @@ public final class ValidationContextBuilder {
                 return;
             }
     
-            if (SpecialType.isCollectionType(type)) {
+            if (SpecialTypeEnum.isCollectionType(type)) {
                 final CollectionOverride override = buildCollectionOverride(type, validation, generatorFieldName, singleObjectMethodName);
                 if (Objects.nonNull(override)) {
                     overrides.add(Map.of(
@@ -448,14 +448,14 @@ public final class ValidationContextBuilder {
      */
     private static String buildCollectionExpr(final String collectionType, final Integer size, final String supplier) {
         if (size <= 0) {
-            final String collectionTypeImport = SpecialType.isSetType(collectionType) ?
+            final String collectionTypeImport = SpecialTypeEnum.isSetType(collectionType) ?
                     ImportConstants.Java.SET : ImportConstants.Java.LIST;
             return String.format("%s.of()", collectionTypeImport);
         }
 
         final String base = String.format(GENERATE_LIST_METHOD, size, supplier);
 
-        if (SpecialType.isSetType(collectionType)) {
+        if (SpecialTypeEnum.isSetType(collectionType)) {
             return "new java.util.HashSet<>(" + base + ")";
         }
         return base;

@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.enums.BasicType;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -255,7 +255,7 @@ public class SpecificationValidator {
      */
     private static void validateJsonType(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames) {
         
-        if (!SpecialType.isJsonType(field.getType())) return;
+        if (!SpecialTypeEnum.isJsonType(field.getType())) return;
 
         final String inner;
         try {
@@ -293,7 +293,7 @@ public class SpecificationValidator {
      */
     private static void validateEnumValues(final ModelDefinition model, final FieldDefinition field) {
 
-        if (SpecialType.isEnumType(field.getType())) {
+        if (SpecialTypeEnum.isEnumType(field.getType())) {
             if (ContainerUtils.isEmpty(field.getValues())) {
                 throw new IllegalArgumentException(
                     String.format(
@@ -325,9 +325,9 @@ public class SpecificationValidator {
         
         final String type = field.getType();
         final boolean isBasicType = BasicType.isBasicType(type);
-        final boolean isEnumType = SpecialType.isEnumType(type);
-        final boolean isJsonType = SpecialType.isJsonType(type);
-        final boolean isCollectionType = SpecialType.isCollectionType(type);
+        final boolean isEnumType = SpecialTypeEnum.isEnumType(type);
+        final boolean isJsonType = SpecialTypeEnum.isJsonType(type);
+        final boolean isCollectionType = SpecialTypeEnum.isCollectionType(type);
 
         if (isCollectionType) {
             final String innerType = FieldUtils.extractSimpleCollectionType(field);
@@ -349,7 +349,7 @@ public class SpecificationValidator {
             throw new IllegalArgumentException(
                 String.format(
                     "Field type %s for field %s in model %s is invalid. It must be a basic type [%s], special type [%s] or reference to another model %s.",
-                    type, field.getName(), model.getName(), BasicType.getSupportedValues(), SpecialType.getSupportedValues(), modelNames
+                    type, field.getName(), model.getName(), BasicType.getSupportedValues(), SpecialTypeEnum.getSupportedValues(), modelNames
                 )
             );
         }

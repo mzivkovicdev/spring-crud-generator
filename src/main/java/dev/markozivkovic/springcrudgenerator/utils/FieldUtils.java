@@ -28,7 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
@@ -261,7 +261,7 @@ public class FieldUtils {
     public static boolean isAnyFieldSimpleListType(final List<FieldDefinition> fields) {
         
         return fields.stream().filter(field -> isSimpleCollectionField(field))
-                .anyMatch(field -> SpecialType.isListType(field.getType()));
+                .anyMatch(field -> SpecialTypeEnum.isListType(field.getType()));
     }
 
     /**
@@ -1367,7 +1367,7 @@ public class FieldUtils {
     public static List<FieldDefinition> extractLazyFetchFields(final List<FieldDefinition> fields) {
 
         return fields.stream()
-                .filter(field -> isLazyRelationField(field) || SpecialType.isCollectionType(field.getType()))
+                .filter(field -> isLazyRelationField(field) || SpecialTypeEnum.isCollectionType(field.getType()))
                 .toList();
     }
 
@@ -1430,7 +1430,7 @@ public class FieldUtils {
     public static boolean hasLazyFetchField(final List<FieldDefinition> fields) {
 
         return fields.stream()
-                .anyMatch(field -> isLazyRelationField(field) || SpecialType.isCollectionType(field.getType()));
+                .anyMatch(field -> isLazyRelationField(field) || SpecialTypeEnum.isCollectionType(field.getType()));
     }
 
     /**
@@ -1469,7 +1469,7 @@ public class FieldUtils {
     public static List<String> extractBaseCollectionFieldNames(final List<FieldDefinition> fields) {
         
         return fields.stream()
-                .filter(field -> SpecialType.isCollectionType(field.getType()))
+                .filter(field -> SpecialTypeEnum.isCollectionType(field.getType()))
                 .map(FieldDefinition::getName)
                 .toList();
     }

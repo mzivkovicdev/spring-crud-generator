@@ -17,7 +17,7 @@ import org.mockito.Mockito;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.constants.RelationTypesConstants;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
@@ -97,17 +97,17 @@ class ModelImportsTest {
         model.setAudit(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-            final MockedStatic<SpecialType> specialType = Mockito.mockStatic(SpecialType.class);
+            final MockedStatic<SpecialTypeEnum> specialType = Mockito.mockStatic(SpecialTypeEnum.class);
             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractSimpleCollectionFields(anyList()))
                     .thenReturn(List.of(listField, setField));
 
-            specialType.when(() -> SpecialType.isListType("List<String>")).thenReturn(true);
-            specialType.when(() -> SpecialType.isSetType("List<String>")).thenReturn(false);
-            specialType.when(() -> SpecialType.isListType("Set<UUID>")).thenReturn(false);
-            specialType.when(() -> SpecialType.isSetType("Set<UUID>")).thenReturn(true);
+            specialType.when(() -> SpecialTypeEnum.isListType("List<String>")).thenReturn(true);
+            specialType.when(() -> SpecialTypeEnum.isSetType("List<String>")).thenReturn(false);
+            specialType.when(() -> SpecialTypeEnum.isListType("Set<UUID>")).thenReturn(false);
+            specialType.when(() -> SpecialTypeEnum.isSetType("Set<UUID>")).thenReturn(true);
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);

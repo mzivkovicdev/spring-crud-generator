@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.enums.BasicType;
-import dev.markozivkovic.springcrudgenerator.enums.SpecialType;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectTarget;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectType;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
@@ -164,7 +164,7 @@ public class TransferObjectImports {
             if (Objects.isNull(field.getValidation())) return;
 
             final boolean basicType = BasicType.isBasicType(field.getType());
-            final boolean isCollection = SpecialType.isCollectionType(field.getType());
+            final boolean isCollection = SpecialTypeEnum.isCollectionType(field.getType());
 
             ImportCommon.addIf(Boolean.TRUE.equals(field.getValidation().isRequired()), imports, ImportConstants.Jakarta.NOT_NULL);
             
