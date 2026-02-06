@@ -23,10 +23,14 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SwaggerObjectModeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SwaggerUtils;
 
 public class SwaggerTemplateContext {
@@ -117,6 +121,96 @@ public class SwaggerTemplateContext {
 
         context.put(TemplateContextConstants.RELATIONS, relationEndpoints);
         return context;
+    }
+
+    /**
+     * Computes the context for a given model definition, given a Swagger object mode.
+     * 
+     * @param e the model definition
+     * @param mode the Swagger object mode
+     * @return a map containing the context for the given model definition
+     */
+    public static Map<String, Object> computeObjectContext(final ModelDefinition e, final SwaggerObjectModeEnum mode) {
+
+        final Map<String, Object> modelContext = new HashMap<>();
+        final String strippedModelName = ModelNameUtils.stripSuffix(e.getName());
+
+        modelContext.put(TemplateContextConstants.SCHEMA_NAME, e.getName());
+        if (StringUtils.isNotBlank(e.getDescription())) {
+            modelContext.put(TemplateContextConstants.DESCRIPTION, e.getDescription());
+        }
+
+        final List<Map<String, Object>> properties;
+        if (!SwaggerObjectModeEnum.JSON_MODEL.equals(mode)) {
+            final FieldDefinition idField = FieldUtils.extractIdField(e.getFields());
+            properties = e.getFields().stream()
+                    .filter(field -> SwaggerObjectModeEnum.DEFAULT.equals(mode) || !field.equals(idField))
+                    .filter(field -> !SwaggerObjectModeEnum.UPDATE_MODEL.equals(mode) || Objects.isNull(field.getRelation()))
+                    .map(field -> {
+                        if (SwaggerObjectModeEnum.CREATE_MODEL.equals(mode)) {
+                            return SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
+                        }
+                        return SwaggerUtils.toSwaggerProperty(field);
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            properties = e.getFields().stream()
+                    .map(field -> SwaggerUtils.toSwaggerProperty(field))
+                    .collect(Collectors.toList());
+        }
+
+        modelContext.put(TemplateContextConstants.PROPERTIES, properties);
+
+        final String title = switch (mode) {
+                case CREATE_MODEL -> ModelNameUtils.computeOpenApiCreateModelName(strippedModelName);
+                case UPDATE_MODEL -> ModelNameUtils.computeOpenApiUpdateModelName(strippedModelName);
+                case DEFAULT -> ModelNameUtils.computeOpenApiModelName(strippedModelName);
+                case JSON_MODEL -> ModelNameUtils.computeOpenApiModelName(strippedModelName);
+        };
+        modelContext.put(TemplateContextConstants.TITLE, title);
+
+        final List<String> requiredFields = switch(mode) {
+                case DEFAULT -> FieldUtils.extractRequiredFields(e.getFields());
+                case CREATE_MODEL -> FieldUtils.extractRequiredFieldsForCreate(e.getFields());
+                case UPDATE_MODEL -> FieldUtils.extractRequiredFieldsForUpdate(e.getFields());
+                case JSON_MODEL -> FieldUtils.extractRequiredFields(e.getFields());
+        };
+        modelContext.put(TemplateContextConstants.REQUIRED, requiredFields);
+
+        if (SwaggerObjectModeEnum.DEFAULT.equals(mode) && Objects.nonNull(e.getAudit()) && Boolean.TRUE.equals(e.getAudit().getEnabled())) {
+
+            final String auditType = AuditUtils.resolveAuditType(e.getAudit().getType());
+            modelContext.put(TemplateContextConstants.AUDIT_ENABLED, true);
+            modelContext.put(TemplateContextConstants.AUDIT_TYPE, SwaggerUtils.resolve(auditType, List.of()));
+        }
+
+        return modelContext;
+    }
+
+    /**
+     * Computes a Swagger template context for a relation input model of a model definition.
+     * The generated context contains the model name, title, description, and properties.
+     * 
+     * @param relationModel the model definition of the relation
+     * @return a Swagger template context for the relation input model
+     */
+    public static Map<String, Object> computeRelationInputModelContext(final ModelDefinition relationModel) {
+
+        final String strippedModelName = ModelNameUtils.stripSuffix(relationModel.getName());
+        final Map<String, Object> model = new HashMap<>();
+        model.put(TemplateContextConstants.SCHEMA_NAME, relationModel.getName());
+        model.put(TemplateContextConstants.TITLE, String.format("%sInput", strippedModelName));
+        if (StringUtils.isNotBlank(relationModel.getDescription())) {
+            model.put(TemplateContextConstants.DESCRIPTION, relationModel.getDescription());
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(relationModel.getFields());
+        final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
+        idProperty.put(TemplateContextConstants.NAME, idField.getName());
+
+        model.put(TemplateContextConstants.PROPERTIES, List.of(idProperty));
+        
+        return model;
     }
     
 }
