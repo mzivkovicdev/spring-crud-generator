@@ -16,7 +16,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
-import dev.markozivkovic.springcrudgenerator.constants.RelationTypesConstants;
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
@@ -265,7 +265,7 @@ class ModelImportsTest {
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
-            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(List.of(RelationTypesConstants.MANY_TO_ONE));
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(List.of(RelationTypeEnum.MANY_TO_ONE.getKey()));
             fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(new FieldDefinition().setId(new IdDefinition()));
             fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(fields)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyFieldJson(fields)).thenReturn(false);

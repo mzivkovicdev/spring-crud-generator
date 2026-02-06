@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dev.markozivkovic.springcrudgenerator.constants.RelationTypesConstants;
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -392,7 +392,7 @@ public class FlywayUtils {
         if (Objects.isNull(f.getRelation()))
             return false;
         final String t = f.getRelation().getType();
-        return RelationTypesConstants.ONE_TO_ONE.equals(t) || RelationTypesConstants.MANY_TO_ONE.equals(t);
+        return RelationTypeEnum.ONE_TO_ONE.getKey().equals(t) || RelationTypeEnum.MANY_TO_ONE.getKey().equals(t);
     }
 
     /**
@@ -404,8 +404,8 @@ public class FlywayUtils {
      */
     private static boolean isCollectionRelation(final FieldDefinition f) {
         return f.getRelation() != null &&
-            (RelationTypesConstants.ONE_TO_MANY.equals(f.getRelation().getType())
-                    || RelationTypesConstants.MANY_TO_MANY.equals(f.getRelation().getType()));
+            (RelationTypeEnum.ONE_TO_MANY.getKey().equals(f.getRelation().getType())
+                    || RelationTypeEnum.MANY_TO_MANY.getKey().equals(f.getRelation().getType()));
     }
 
     /**
@@ -602,7 +602,7 @@ public class FlywayUtils {
      * @return true if the field definition has a one-to-many relation, false otherwise
      */
     private static boolean isOneToMany(final FieldDefinition f) {
-        return f.getRelation() != null && RelationTypesConstants.ONE_TO_MANY.equals(f.getRelation().getType());
+        return f.getRelation() != null && RelationTypeEnum.ONE_TO_MANY.getKey().equals(f.getRelation().getType());
     }
     
     /**
@@ -883,7 +883,7 @@ public class FlywayUtils {
             final DatabaseType db,
             final Map<String, ModelDefinition> modelsByName) {
 
-        if (relationField.getRelation() == null || !RelationTypesConstants.MANY_TO_MANY.equals(relationField.getRelation().getType())) {
+        if (relationField.getRelation() == null || !RelationTypeEnum.MANY_TO_MANY.getKey().equals(relationField.getRelation().getType())) {
             throw new IllegalArgumentException(
                 String.format("Field '%s' is not a many-to-many relation field", relationField.getName())
             );

@@ -26,13 +26,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
-import dev.markozivkovic.springcrudgenerator.constants.RelationTypesConstants;
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
+import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
-import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
@@ -142,7 +142,7 @@ public class ModelImports {
         final boolean hasLazyFields = FieldUtils.hasLazyFetchField(fields) && !openInViewEnabled;
         
         ImportCommon.addIf(!relations.isEmpty() || isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.JOIN_COLUMN);
-        ImportCommon.addIf(relations.contains(RelationTypesConstants.MANY_TO_MANY), imports, ImportConstants.Jakarta.JOIN_TABLE);
+        ImportCommon.addIf(relations.contains(RelationTypeEnum.MANY_TO_MANY.getKey()), imports, ImportConstants.Jakarta.JOIN_TABLE);
         ImportCommon.addIf(FieldUtils.isAnyRelationManyToMany(fields), imports, ImportConstants.Jakarta.MANY_TO_MANY);
         ImportCommon.addIf(FieldUtils.isAnyRelationManyToOne(fields), imports, ImportConstants.Jakarta.MANY_TO_ONE);
         ImportCommon.addIf(FieldUtils.isAnyRelationOneToMany(fields), imports, ImportConstants.Jakarta.ONE_TO_MANY);

@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
-import dev.markozivkovic.springcrudgenerator.constants.RelationTypesConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.migrations.MigrationDiffer;
 import dev.markozivkovic.springcrudgenerator.migrations.MigrationManifestBuilder;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -152,7 +152,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 continue;
 
             for (final FieldDefinition f : owner.getFields()) {
-                if (Objects.isNull(f.getRelation()) || !RelationTypesConstants.MANY_TO_MANY.equals(f.getRelation().getType())) continue;
+                if (Objects.isNull(f.getRelation()) || !RelationTypeEnum.MANY_TO_MANY.getKey().equals(f.getRelation().getType())) continue;
 
                 final String joinTable = f.getRelation().getJoinTable().getName();
                 if (existingJoinTables.contains(joinTable)) {
