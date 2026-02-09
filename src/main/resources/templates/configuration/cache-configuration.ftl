@@ -78,11 +78,7 @@ public class CacheConfiguration {
             final String cacheName = e.getKey();
             final Class<?> type = e.getValue();
 
-            <#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
             final RedisSerializer<?> serializer = new ${redisSerializer}<>(redisObjectMapper, type);
-            <#else>
-            final RedisSerializer<?> serializer = new ${redisSerializer}<>(type);
-            </#if>
             final RedisCacheConfiguration cfg = config.serializeValuesWith(
                 SerializationPair.fromSerializer((RedisSerializer<Object>) serializer)
             );
