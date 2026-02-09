@@ -40,7 +40,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 
 ${modelImports}
 </#if><#t>
-<#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
+<#if type == "REDIS">
 <#if !isSpringBoot3>
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -95,7 +95,7 @@ public class CacheConfiguration {
                 .build();
     }
 
-    <#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
+    <#if type == "REDIS">
     <#if isSpringBoot3>
     @Bean
     ObjectMapper redisObjectMapper() {

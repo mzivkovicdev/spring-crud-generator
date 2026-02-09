@@ -144,7 +144,7 @@ class CacheGeneratorTest {
 
         final CrudAndCache cc = prepareCrudWithCache();
         when(cc.cacheConfig.getEnabled()).thenReturn(true);
-        when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.CAFFEINE);
+        when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.REDIS);
         when(cc.cacheConfig.getMaxSize()).thenReturn(100L);
         when(cc.cacheConfig.getExpiration()).thenReturn(3600);
         when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
@@ -186,7 +186,7 @@ class CacheGeneratorTest {
                     eq("configuration/cache-configuration.ftl"),
                     argThat(ctx -> {
                         final Map<String, Object> map = (Map<String, Object>) ctx;
-                        return map.get("type") == CacheTypeEnum.CAFFEINE
+                        return map.get("type") == CacheTypeEnum.REDIS
                                 && Objects.equals(map.get("maxSize"), 100L)
                                 && Objects.equals(map.get("expiration"), 3600)
                                 && Objects.equals(map.get("modelImports"), "// IMPORTS")
@@ -254,7 +254,6 @@ class CacheGeneratorTest {
             addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap())).thenReturn("// CACHE_TEMPLATE");
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hibernate-lazy-null-module.ftl"), anyMap())).thenReturn("// HIBERNATE_MODULE_TEMPLATE");
 
             generator.generate("out");
 
@@ -272,16 +271,7 @@ class CacheGeneratorTest {
                     })
             ));
 
-            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    eq("configuration/hibernate-lazy-null-module.ftl"),
-                    argThat(ctx -> {
-                        final Map<String, Object> map = (Map<String, Object>) ctx;
-                        return Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
-                    })
-            ));
-
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("CacheConfiguration.java"), anyString()));
-            writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("HibernateLazyNullModule.java"), anyString()));
 
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION));
         }
@@ -292,6 +282,7 @@ class CacheGeneratorTest {
 
         final CrudAndCache cc = prepareCrudWithCache();
         when(cc.cacheConfig.getEnabled()).thenReturn(true);
+        when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.REDIS);
         when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
 
         final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
