@@ -44,7 +44,7 @@ services:
             POSTGRES_USER: app
             POSTGRES_PASSWORD: app
         ports:
-            - "${dbPort}:${dbPort}"
+            - "${dbPort}:5432"
         <#elseif dbType == "mysql">
         image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mysql-db
@@ -55,7 +55,7 @@ services:
             MYSQL_ROOT_PASSWORD: root
         command: ["--default-authentication-plugin=mysql_native_password"]
         ports:
-            - "${dbPort}:${dbPort}"
+            - "${dbPort}:3306"
         <#elseif dbType == "mssql">
         image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mssql-db
@@ -67,7 +67,7 @@ services:
             APP_USER: app
             APP_PASSWORD: App!Passw0rd
         ports:
-            - "${dbPort}:${dbPort}"
+            - "${dbPort}:1433"
         command:
             - bash
             - -lc
