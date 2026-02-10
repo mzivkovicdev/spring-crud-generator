@@ -25,7 +25,11 @@ import java.util.UUID;
 ${testImports}
 ${projectImports}
 <#if !swagger>
+<#if isSpringBoot3>
+import com.fasterxml.jackson.core.type.TypeReference;
+<#else>
 import tools.jackson.core.type.TypeReference;
+</#if>
 </#if><#t>
 <#if isSpringBoot3>import com.fasterxml.jackson.databind.ObjectMapper;<#else>import tools.jackson.databind.json.JsonMapper;</#if><#if dataGenerator == "PODAM">
 import uk.co.jemos.podam.api.PodamFactory;

@@ -109,7 +109,9 @@ public class CacheGenerator implements ProjectArtifactGenerator {
             outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "CacheConfiguration.java", sb.toString()
         );
 
-        this.generateHibernateLazyNullModule(outputDir, packagePath);
+        if (CacheTypeEnum.REDIS.equals(this.crudConfiguration.getCache().getType())) {
+            this.generateHibernateLazyNullModule(outputDir, packagePath);
+        }
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION);
     }

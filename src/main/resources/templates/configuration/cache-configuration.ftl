@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 </#if><#t>
-<#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
+<#if type == "REDIS">
 import org.springframework.beans.factory.annotation.Qualifier;
 </#if><#t>
 <#if type == "CAFFEINE">
@@ -40,7 +40,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 
 ${modelImports}
 </#if><#t>
-<#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
+<#if type == "REDIS">
 <#if !isSpringBoot3>
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -63,7 +63,7 @@ public class CacheConfiguration {
 
     @Bean
     @SuppressWarnings("unchecked")
-    RedisCacheManager cacheManager(final RedisConnectionFactory factory<#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">, @Qualifier("redisObjectMapper") final ObjectMapper redisObjectMapper</#if>) {
+    RedisCacheManager cacheManager(final RedisConnectionFactory factory, @Qualifier("redisObjectMapper") final ObjectMapper redisObjectMapper) {
 
         final RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 <#if expiration??>
@@ -78,11 +78,7 @@ public class CacheConfiguration {
             final String cacheName = e.getKey();
             final Class<?> type = e.getValue();
 
-            <#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
             final RedisSerializer<?> serializer = new ${redisSerializer}<>(redisObjectMapper, type);
-            <#else>
-            final RedisSerializer<?> serializer = new ${redisSerializer}<>(type);
-            </#if>
             final RedisCacheConfiguration cfg = config.serializeValuesWith(
                 SerializationPair.fromSerializer((RedisSerializer<Object>) serializer)
             );
@@ -95,7 +91,7 @@ public class CacheConfiguration {
                 .build();
     }
 
-    <#if openInViewEnabled?? && !openInViewEnabled && type == "REDIS">
+    <#if type == "REDIS">
     <#if isSpringBoot3>
     @Bean
     ObjectMapper redisObjectMapper() {
