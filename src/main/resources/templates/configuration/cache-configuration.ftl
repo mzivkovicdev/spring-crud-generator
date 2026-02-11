@@ -2,8 +2,8 @@
 <#assign redisSerializer = isSpringBoot3?then("Jackson2JsonRedisSerializer", "JacksonJsonRedisSerializer")>
 <#if type == "REDIS" && expiration??>
 import java.time.Duration;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 </#if><#t>
 <#if type == "CAFFEINE" && expiration??>
@@ -30,12 +30,12 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 <#if isSpringBoot3>
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 <#else>
 import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 </#if>
+import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
 ${modelImports}

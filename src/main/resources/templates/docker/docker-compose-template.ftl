@@ -10,15 +10,15 @@ services:
             - "${appPort}:${appPort}"
         environment:
             <#if dbType == "postgresql">
-            SPRING_DATASOURCE_URL: jdbc:postgresql://database:${dbPort}/${artifactId}
+            SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/${artifactId}
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: app
             <#elseif dbType == "mysql">
-            SPRING_DATASOURCE_URL: jdbc:mysql://database:${dbPort}/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: app
             <#elseif dbType == "mssql">
-            SPRING_DATASOURCE_URL: jdbc:sqlserver://database:${dbPort};databaseName=${artifactId};encrypt=false
+            SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=${artifactId};encrypt=false
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: App!Passw0rd
             </#if>
@@ -27,9 +27,11 @@ services:
             SPRING_DATA_REDIS_PORT: 6379
             </#if><#t>
         depends_on:
-            - database
+            database:
+                condition: service_healthy
             <#if cacheType?? && cacheType?lower_case == "redis">
-            - redis
+            redis:
+                condition: service_healthy
             </#if><#t>
         networks:
             - ${artifactId}-network
@@ -45,6 +47,12 @@ services:
             POSTGRES_PASSWORD: app
         ports:
             - "${dbPort}:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U app -d ${artifactId}"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
         <#elseif dbType == "mysql">
         image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mysql-db
@@ -56,6 +64,12 @@ services:
         command: ["--default-authentication-plugin=mysql_native_password"]
         ports:
             - "${dbPort}:3306"
+        healthcheck:
+            test: ["CMD-SHELL", "mysqladmin ping -h localhost -P 3306 -uapp -papp --silent"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
         <#elseif dbType == "mssql">
         image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mssql-db
@@ -83,6 +97,16 @@ services:
                 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = '$$APP_USER') BEGIN CREATE LOGIN [$$APP_USER] WITH PASSWORD='$$APP_PASSWORD', CHECK_POLICY=OFF; END";
                 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "USE [$$DB_NAME]; IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$$APP_USER') CREATE USER [$$APP_USER] FOR LOGIN [$$APP_USER]; EXEC sp_addrolemember 'db_owner', '$$APP_USER';";
                 wait $$pid
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" >/dev/null 2>&1"
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
         </#if>
         volumes:
             - db_data:/var/<#if dbType == "mssql">opt<#else>lib</#if>/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql">mysql<#elseif dbType == "mssql">mssql</#if>
@@ -99,6 +123,12 @@ services:
             - "6379:6379"
         volumes:
             - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 15s
         networks:
             - ${artifactId}-network
 
