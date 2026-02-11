@@ -41,6 +41,7 @@ public final class TemplateContextConstants {
     public static final String FIELD_TYPE = "fieldType";
     public static final String FIELD_NAMES = "fieldNames";
     public static final String CLASS_NAME = "className";
+    public static final String CACHE = "cache";
     public static final String INPUT_ARGS = "inputArgs";
     public static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     public static final String AUDIT_ENABLED = "auditEnabled";
@@ -75,6 +76,7 @@ public final class TemplateContextConstants {
     public static final String OPEN_IN_VIEW_ENABLED = "openInViewEnabled";
     public static final String BASE_IMPORTS = "baseImports";
     public static final String PROJECT_IMPORTS = "projectImports";
+    public static final String TEST_IMPORTS = "testImports";
     public static final String LAZY_FIELDS = "lazyFields";
     public static final String EAGER_FIELDS = "eagerFields";
     public static final String BASE_COLLECTION_FIELDS = "baseCollectionFields";
@@ -83,6 +85,9 @@ public final class TemplateContextConstants {
     public static final String IS_RELATION = "isRelation";
     public static final String IS_JSON_FIELD = "isJsonField";
     public static final String IS_ENUM = "isEnum";
+
+    public static final String HAS_RELATIONS = "hasRelations";
+    public static final String IS_DETAILED = "isDetailed";
 
     public static final String JSON_FIELDS = "jsonFields";
     public static final String JSON_MODELS = "jsonModels";
@@ -115,4 +120,8 @@ public final class TemplateContextConstants {
     public static final String PROPERTIES = "properties";
     public static final String TITLE = "title";
     public static final String REQUIRED = "required";
+
+    public static final String CREATE_RESOURCE = "createResource";
+    public static final String ADD_RELATION_METHOD = "addRelationMethod";
+    public static final String REMOVE_RELATION_METHOD = "removeRelationMethod";
 }

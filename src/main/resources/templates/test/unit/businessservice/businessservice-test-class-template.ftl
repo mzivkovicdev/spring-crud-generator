@@ -3,7 +3,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-${baseImport}
+${baseImports}
 ${testImports}
 ${projectImports}<#if dataGenerator == "PODAM">
 

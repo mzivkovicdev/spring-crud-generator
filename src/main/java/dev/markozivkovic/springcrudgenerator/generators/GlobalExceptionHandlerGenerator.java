@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ExceptionImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorResponse;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
-import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorResponse;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -40,10 +40,6 @@ import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 
 public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator {
-    
-    private static final String HAS_RELATIONS = "hasRelations";
-    private static final String PROJECT_IMPORTS = "projectImports";
-    private static final String IS_DETAILED = "isDetailed";
     
     private static final String HTTP_RESPONSE = "HttpResponse";
     private static final String GLOBAL_REST_EXCEPTION_HANDLER = "GlobalRestExceptionHandler";
@@ -98,9 +94,9 @@ public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator
 
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/graphql-exception-handler-template.ftl", Map.of(
-                    HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ExceptionImports.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
-                    IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
+                    TemplateContextConstants.HAS_RELATIONS, hasRelations,
+                    TemplateContextConstants.PROJECT_IMPORTS, ExceptionImports.computeGlobalGraphQlExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
+                    TemplateContextConstants.IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED)
                 )
         );
 
@@ -166,9 +162,9 @@ public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator
 
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/rest-exception-handler-template.ftl", Map.of(
-                    HAS_RELATIONS, hasRelations,
-                    PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
-                    IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED),
+                    TemplateContextConstants.HAS_RELATIONS, hasRelations,
+                    TemplateContextConstants.PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
+                    TemplateContextConstants.IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED),
                     TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.crudConfiguration.getSpringBootVersion())
                 )
         );

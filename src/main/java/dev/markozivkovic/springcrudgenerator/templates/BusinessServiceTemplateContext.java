@@ -26,11 +26,18 @@ import dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
+import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports;
+import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports.BusinessServiceImportScope;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
+import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
+import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 public class BusinessServiceTemplateContext {
 
@@ -58,6 +65,43 @@ public class BusinessServiceTemplateContext {
         final Map<String, Object> context = new HashMap<>();
         context.put(TemplateContextConstants.CLASS_NAME, String.format("%sBusinessService", strippedModelName));
         context.put(TemplateContextConstants.SERVICE_CLASSES, serviceClasses);
+
+        return context;
+    }
+
+    /**
+     * Computes a template context for a business service test class of a model.
+     * 
+     * The generated context contains the base imports, project imports, test imports, class name, model name,
+     * stripped model name, data generator context, and a flag indicating whether the application is
+     * using Spring Boot 3.
+     * 
+     * @param modelDefinition the model definition containing the class and field details
+     * @param configuration the CRUD configuration
+     * @param packageConfiguration the package configuration
+     * @param outputDir the directory where the generated code will be written
+     * @return a template context for the business service test class
+     */
+    public static Map<String, Object> computeBusinessServiceTestContext(final ModelDefinition modelDefinition, final CrudConfiguration configuration,
+                final PackageConfiguration packageConfiguration, final String outputDir) {
+
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String className = String.format("%sBusinessServiceTest", modelWithoutSuffix);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final boolean isSpringBoot3 = SpringBootVersionUtils.isSpringBoot3(configuration.getSpringBootVersion());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(TemplateContextConstants.BASE_IMPORTS, BusinessServiceImports.getTestBaseImport(modelDefinition));
+        context.put(
+            TemplateContextConstants.PROJECT_IMPORTS, BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST, packageConfiguration)
+        );
+        context.put(TemplateContextConstants.TEST_IMPORTS, BusinessServiceImports.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration), isSpringBoot3));
+        context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
+        context.put(TemplateContextConstants.CLASS_NAME, className);
+        context.put(TemplateContextConstants.MODEL_NAME, modelDefinition.getName());
+        context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, modelWithoutSuffix);
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
 
         return context;
     }

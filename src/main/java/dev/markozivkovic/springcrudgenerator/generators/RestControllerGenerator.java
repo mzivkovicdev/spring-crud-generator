@@ -127,7 +127,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entities);
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-resource.ftl", context);
     }
@@ -143,7 +143,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateGetResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeGetByIdEndpointContext(modelDefinition);
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-resource.ftl", context);
     }
@@ -159,7 +159,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateGetAllResourcesEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeGetAllEndpointContext(modelDefinition);
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
         context.put(
             TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties())
         );
@@ -178,7 +178,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeUpdateEndpointContext(modelDefinition, swagger);
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/update-resource.ftl", context);
     }
@@ -194,7 +194,7 @@ public class RestControllerGenerator implements CodeGenerator {
     private String generateDeleteResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeDeleteEndpointContext(modelDefinition);
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/delete-resource.ftl", context);
     }
@@ -215,7 +215,7 @@ public class RestControllerGenerator implements CodeGenerator {
             return null;
         }
 
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/add-resource-relation.ftl", context);
     }
@@ -237,7 +237,7 @@ public class RestControllerGenerator implements CodeGenerator {
             return null;
         }
 
-        context.put("swagger", swagger);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/remove-resource-relation.ftl", context);
     }

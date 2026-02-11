@@ -138,8 +138,8 @@ public class JpaEntityGenerator implements CodeGenerator {
                 "defaultConstructor", defaultConstructor,
                 "constructor", constructor,
                 "gettersAndSetters", gettersAndSetters,
-                "hashCode", equals,
-                "equals", hashCode,
+                "hashCode", hashCode,
+                "equals", equals,
                 "toString", toString,
                 "className", className
         );

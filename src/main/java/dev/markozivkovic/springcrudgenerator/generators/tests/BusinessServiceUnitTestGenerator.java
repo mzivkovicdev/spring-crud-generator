@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.generators.CodeGenerator;
-import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports;
-import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports.BusinessServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
@@ -42,7 +40,6 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
-import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -103,25 +100,14 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
      * @return a string representation of the test business service class
      */
     private String generateTestBusinessServiceClass(final ModelDefinition modelDefinition, final String outputDir) {
-        
-        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
-        final String className = String.format("%sBusinessServiceTest", modelWithoutSuffix);
-        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
-        final boolean isSpringBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
 
-        final Map<String, Object> context = new HashMap<>();
-        context.put("baseImport", BusinessServiceImports.getTestBaseImport(modelDefinition));
-        context.put("projectImports", BusinessServiceImports.computeModelsEnumsAndServiceImports(modelDefinition, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST, packageConfiguration));
-        context.put("testImports", BusinessServiceImports.computeTestBusinessServiceImports(UnitTestUtils.isInstancioEnabled(configuration), isSpringBoot3));
-        context.putAll(BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition));
-        context.put("className", className);
-        context.put("modelName", modelDefinition.getName());
-        context.put("strippedModelName", modelWithoutSuffix);
-        context.put("createResource", createResourceMethod(modelDefinition));
-        context.put("addRelationMethod", addRelationMethod(modelDefinition));
-        context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
-        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
-        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeBusinessServiceTestContext(
+                modelDefinition, configuration, packageConfiguration, outputDir
+        );
+        
+        context.put(TemplateContextConstants.CREATE_RESOURCE, createResourceMethod(modelDefinition));
+        context.put(TemplateContextConstants.ADD_RELATION_METHOD, addRelationMethod(modelDefinition));
+        context.put(TemplateContextConstants.REMOVE_RELATION_METHOD, removeRelationMethod(modelDefinition));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/businessservice-test-class-template.ftl", context
@@ -178,7 +164,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
                 .filter(field -> !field.equals(id))
                 .filter(field -> Objects.isNull(field.getRelation()))
                 .collect(Collectors.toList());
-        context.put("fields", fields);
+        context.put(TemplateContextConstants.FIELDS, fields);
         
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
