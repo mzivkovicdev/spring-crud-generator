@@ -41,6 +41,7 @@ public final class TemplateContextConstants {
     public static final String FIELD_TYPE = "fieldType";
     public static final String FIELD_NAMES = "fieldNames";
     public static final String CLASS_NAME = "className";
+    public static final String CACHE = "cache";
     public static final String INPUT_ARGS = "inputArgs";
     public static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     public static final String AUDIT_ENABLED = "auditEnabled";
@@ -83,6 +84,9 @@ public final class TemplateContextConstants {
     public static final String IS_RELATION = "isRelation";
     public static final String IS_JSON_FIELD = "isJsonField";
     public static final String IS_ENUM = "isEnum";
+
+    public static final String HAS_RELATIONS = "hasRelations";
+    public static final String IS_DETAILED = "isDetailed";
 
     public static final String JSON_FIELDS = "jsonFields";
     public static final String JSON_MODELS = "jsonModels";

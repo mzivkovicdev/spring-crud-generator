@@ -43,7 +43,6 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.models.flyway.DdlArtifactState.DdlArtifactType;
 import dev.markozivkovic.springcrudgenerator.models.flyway.EntityState;
-import dev.markozivkovic.springcrudgenerator.models.flyway.FkState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.MigrationState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.SchemaDiff.Result;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
@@ -214,19 +213,19 @@ public class MigrationScriptGenerator implements CodeGenerator {
 
             if (Objects.isNull(fks) || fks.isEmpty()) return;
 
-            final Set<String> newFkKeys = new HashSet<>();
-            for (final Map<String, Object> m : fks) {
-                final String col = String.valueOf(m.get("column"));
-                final String rt  = String.valueOf(m.get("refTable"));
-                final String rc  = String.valueOf(m.get("refColumn"));
-                newFkKeys.add(MigrationDiffer.fkKey(col, rt, rc));
-            }
+            final Set<String> newFkKeys = fks.stream()
+                    .map(m -> {
+                        final String col = String.valueOf(m.get("column"));
+                        final String rt  = String.valueOf(m.get("refTable"));
+                        final String rc  = String.valueOf(m.get("refColumn"));
+                        return MigrationDiffer.fkKey(col, rt, rc);
+                    }).collect(Collectors.toSet());
 
             final Set<String> oldFkKeys = new HashSet<>();
             if (Objects.nonNull(oldState) && Objects.nonNull(oldState.getFks())) {
-                for (final FkState existing : oldState.getFks()) {
-                    oldFkKeys.add(MigrationDiffer.fkKey(existing.getColumn(), existing.getRefTable(), existing.getRefColumn()));
-                }
+                oldState.getFks().forEach(existing ->
+                        oldFkKeys.add(MigrationDiffer.fkKey(existing.getColumn(), existing.getRefTable(), existing.getRefColumn()))
+                );
             }
 
             final Set<String> reallyNewFkKeys = new HashSet<>(newFkKeys);
@@ -385,7 +384,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
         FileWriterUtils.writeToFile(pathToDbScripts, dbScriptName, dbScript);
         version++;
 
-        for (final Map<String, Object> ct : elementCollectionTables) {
+        elementCollectionTables.forEach(ct -> {
             final String ecTable = String.valueOf(ct.get("tableName"));
             final List<Map<String, Object>> cols = new ArrayList<>();
             cols.add(Map.of(
@@ -418,7 +417,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
             ecCreateCtxForState.put("columns", cols);
             manifest.applyCreateContext(model.getName(), ecTable, ecCreateCtxForState);
             manifest.addEntityFile(ecTable, dbScriptName, dbScript);
-        }
+        });
     }
 
     /**

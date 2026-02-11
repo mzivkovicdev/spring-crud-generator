@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -264,9 +265,9 @@ public class JpaServiceGenerator implements CodeGenerator {
     private void putCacheFlagToContext(final Map<String, Object> context) {
         
         if (Objects.nonNull(this.configuration.getCache())) {
-            context.put("cache", Boolean.TRUE.equals(this.configuration.getCache().getEnabled()));
+            context.put(TemplateContextConstants.CACHE, Boolean.TRUE.equals(this.configuration.getCache().getEnabled()));
         } else {
-            context.put("cache", false);
+            context.put(TemplateContextConstants.CACHE, false);
         }
     }
 
