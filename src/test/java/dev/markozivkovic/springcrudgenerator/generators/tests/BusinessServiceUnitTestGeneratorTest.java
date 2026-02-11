@@ -164,10 +164,10 @@ class BusinessServiceUnitTestGeneratorTest {
         final String bsSubPackage = "service";
         final String strippedModel = "User";
 
-        final Map<String, Object> testContext = new HashMap<>(Map.of("tKey", "tVal")); // MUST be mutable
+        final Map<String, Object> testContext = new HashMap<>(Map.of("tKey", "tVal"));
         final Map<String, Object> createServiceCtx = Map.of("createKey", "createVal");
-        final Map<String, Object> addRelCtx = new HashMap<>(Map.of("addKey", "addVal"));       // mutable ok
-        final Map<String, Object> removeRelCtx = new HashMap<>(Map.of("removeKey", "removeVal")); // mutable ok
+        final Map<String, Object> addRelCtx = new HashMap<>(Map.of("addKey", "addVal"));
+        final Map<String, Object> removeRelCtx = new HashMap<>(Map.of("removeKey", "removeVal"));
         final Map<String, Object> dgCtxMap = Map.of("dgKey", "dgVal");
 
         final String createMethodTpl = "// create method";
