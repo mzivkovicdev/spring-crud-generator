@@ -16,10 +16,19 @@ import dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
+import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports;
+import dev.markozivkovic.springcrudgenerator.imports.BusinessServiceImports.BusinessServiceImportScope;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
+import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
+import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
 class BusinessServiceTemplateContextTest {
 
@@ -91,6 +100,122 @@ class BusinessServiceTemplateContextTest {
             final List<String> services = (List<String>) ctx.get(TemplateContextConstants.SERVICE_CLASSES);
 
             assertEquals(List.of("CustomerService", "ProductService", "OrderService"), services);
+        }
+    }
+
+    @Test
+    void computeBusinessServiceTestContext_shouldBuildContextAndOverrideClassNameWithTestSuffix() {
+
+        final List<FieldDefinition> fields = List.of();
+        final ModelDefinition model = newModel("UserEntity", fields);
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(cfg.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.INSTANCIO);
+        when(cfg.getSpringBootVersion()).thenReturn("4.0.0");
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final String outputDir = "build/generated";
+
+        final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
+        final Map<String, Object> dgCtx = Map.of("dgKey", "dgValue");
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbUtils = mockStatic(SpringBootVersionUtils.class);
+             final MockedStatic<BusinessServiceImports> imports = mockStatic(BusinessServiceImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgTemplateCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of());
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.INSTANCIO)).thenReturn(generatorConfig);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(false);
+            sbUtils.when(() -> SpringBootVersionUtils.isSpringBoot3("4.0.0")).thenReturn(false);
+            imports.when(() -> BusinessServiceImports.getTestBaseImport(model)).thenReturn("baseImport1");
+            imports.when(() -> BusinessServiceImports.computeModelsEnumsAndServiceImports(model, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST, pkgCfg))
+                    .thenReturn("projImport1");
+            imports.when(() -> BusinessServiceImports.computeTestBusinessServiceImports(false, false)).thenReturn("testImport1");
+            dgTemplateCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig)).thenReturn(dgCtx);
+
+            final Map<String, Object> ctx = BusinessServiceTemplateContext.computeBusinessServiceTestContext(model, cfg, pkgCfg, outputDir);
+
+            assertEquals("UserBusinessServiceTest", ctx.get(TemplateContextConstants.CLASS_NAME));
+            assertEquals("UserEntity", ctx.get(TemplateContextConstants.MODEL_NAME));
+            assertEquals("User", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
+
+            @SuppressWarnings("unchecked")
+            final List<String> services = (List<String>) ctx.get(TemplateContextConstants.SERVICE_CLASSES);
+            assertEquals(1, services.size());
+            assertEquals("UserService", services.get(0));
+            assertEquals("baseImport1", ctx.get(TemplateContextConstants.BASE_IMPORTS));
+            assertEquals("projImport1", ctx.get(TemplateContextConstants.PROJECT_IMPORTS));
+            assertEquals("testImport1", ctx.get(TemplateContextConstants.TEST_IMPORTS));
+            assertEquals("dgValue", ctx.get("dgKey"));
+            assertEquals(false, ctx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
+        }
+    }
+
+    @Test
+    void computeBusinessServiceTestContext_shouldUseSpringBoot3AndInstancioFlagsAndIncludeRelationServiceClasses() {
+
+        final FieldDefinition relCustomer = mock(FieldDefinition.class);
+        when(relCustomer.getType()).thenReturn("CustomerEntity");
+
+        final FieldDefinition relProduct = mock(FieldDefinition.class);
+        when(relProduct.getType()).thenReturn("ProductEntity");
+
+        final List<FieldDefinition> fields = List.of(relCustomer, relProduct);
+        final ModelDefinition model = newModel("OrderEntity", fields);
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(cfg.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.INSTANCIO);
+        when(cfg.getSpringBootVersion()).thenReturn("3.2.5");
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final String outputDir = "out";
+
+        final TestDataGeneratorConfig generatorConfig = mock(TestDataGeneratorConfig.class);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbUtils = mockStatic(SpringBootVersionUtils.class);
+             final MockedStatic<BusinessServiceImports> imports = mockStatic(BusinessServiceImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgTemplateCtx = mockStatic(DataGeneratorTemplateContext.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("OrderEntity")).thenReturn("Order");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("CustomerEntity")).thenReturn("Customer");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of(relCustomer, relProduct));
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.INSTANCIO)).thenReturn(generatorConfig);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(true);
+            sbUtils.when(() -> SpringBootVersionUtils.isSpringBoot3("3.2.5")).thenReturn(true);
+
+            imports.when(() -> BusinessServiceImports.getTestBaseImport(model)).thenReturn("baseImport1");
+            imports.when(() -> BusinessServiceImports.computeModelsEnumsAndServiceImports(model, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST, pkgCfg))
+                    .thenReturn("projImport1");
+
+            imports.when(() -> BusinessServiceImports.computeTestBusinessServiceImports(true, true)).thenReturn("testImport1");
+            dgTemplateCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig)).thenReturn(Map.of());
+
+            final Map<String, Object> ctx = BusinessServiceTemplateContext.computeBusinessServiceTestContext(model, cfg, pkgCfg, outputDir);
+
+            assertEquals("OrderBusinessServiceTest", ctx.get(TemplateContextConstants.CLASS_NAME));
+            assertEquals(true, ctx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
+            @SuppressWarnings("unchecked")
+            final List<String> services = (List<String>) ctx.get(TemplateContextConstants.SERVICE_CLASSES);
+            assertEquals(List.of("CustomerService", "ProductService", "OrderService"), services);
+
+            imports.verify(() -> BusinessServiceImports.computeModelsEnumsAndServiceImports(
+                    model, outputDir, BusinessServiceImportScope.BUSINESS_SERVICE_TEST, pkgCfg
+            ));
+            imports.verify(() -> BusinessServiceImports.computeTestBusinessServiceImports(true, true));
+            unitTestUtils.verify(() -> UnitTestUtils.isInstancioEnabled(cfg));
+            unitTestUtils.verify(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.INSTANCIO));
         }
     }
 
