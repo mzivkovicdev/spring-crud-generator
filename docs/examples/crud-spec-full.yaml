@@ -11,7 +11,7 @@ configuration:
       port: 8080
     db:
       image: postgres
-      port: 5433
+      port: 5432
       tag: latest
   cache: 
     enabled: true
