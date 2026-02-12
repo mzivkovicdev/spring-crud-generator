@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -44,6 +45,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 import dev.markozivkovic.springcrudgenerator.models.GeneratorState;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
+import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.GeneratorStateUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.validators.PackageConfigurationValidator;
@@ -75,6 +77,9 @@ public class CrudGeneratorMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.parent.version}", readonly = true)
     private String parentVersion;
 
+    @Parameter(defaultValue = "${plugin}", readonly = true)
+    private PluginDescriptor pluginDescriptor;
+
     public void execute() throws MojoExecutionException {
 
         if (Objects.isNull(inputSpecFile)) {
@@ -86,6 +91,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
         }
         
         try {
+            this.printBanner();
             final ObjectMapper mapper = this.createSpecMapper(inputSpecFile);
             
             LOGGER.info("Generator started for file: {}", inputSpecFile);
@@ -131,6 +137,21 @@ public class CrudGeneratorMojo extends AbstractMojo {
         } catch (final Exception e) {
             throw new MojoExecutionException("Code generation failed", e);
         }
+    }
+
+    /**
+     * Prints a banner to the console with information about the plugin version, the input CRUD spec file, and the output directory.
+     */
+    private void printBanner() {
+        
+        final String version = Objects.nonNull(pluginDescriptor) ? pluginDescriptor.getVersion() : "dev";
+        final Map<String, Object> context = Map.of(
+                "version", version,
+                "specPath", inputSpecFile,
+                "outputDir", outputDir
+        );
+
+        LOGGER.info(FreeMarkerTemplateProcessorUtils.processTemplate("banner.ftl", context));
     }
 
     /**
