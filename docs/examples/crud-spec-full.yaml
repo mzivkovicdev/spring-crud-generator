@@ -101,9 +101,11 @@ entities:
           nullable: false
         validation:
           required: true
-      - name: birthDate
-        description: "The date and time the product was created"
+      - name: releaseDate
+        description: "The release date of the product"
         type: LocalDate
+      - name: details
+        type: JSON<List<ProductDetails>>
       - name: status
         description: "The status of the product"
         type: Enum
@@ -185,4 +187,13 @@ entities:
       - name: firstName
         type: String
       - name: lastName
+        type: String
+  - name: ProductDetails
+    description: "Represents a product details"
+    fields:
+      - name: description
+        type: String
+      - name: weight
+        type: Double
+      - name: option
         type: String
