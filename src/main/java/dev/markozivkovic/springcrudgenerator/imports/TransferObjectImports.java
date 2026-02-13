@@ -30,6 +30,7 @@ import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectTarget;
 import dev.markozivkovic.springcrudgenerator.generators.TransferObjectGenerator.TransferObjectType;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
+import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon.CollectionImplImportsMode;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -103,7 +104,8 @@ public class TransferObjectImports {
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
         ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
-        
+
+        ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INTERFACES_ONLY);
         ImportCommon.importListAndSetForSimpleCollection(modelDefinition, imports);
 
         if (TransferObjectType.CREATE.equals(type) || TransferObjectType.INPUT.equals(type)) {

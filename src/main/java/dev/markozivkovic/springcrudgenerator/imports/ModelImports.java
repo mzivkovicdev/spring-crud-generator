@@ -29,6 +29,7 @@ import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
+import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon.CollectionImplImportsMode;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
@@ -72,6 +73,7 @@ public class ModelImports {
             });
         }
 
+        ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INCLUDE_DEFAULT_IMPLS);
         ImportCommon.addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
         ImportCommon.addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);

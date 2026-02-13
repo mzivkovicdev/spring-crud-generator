@@ -60,4 +60,32 @@ public class ImportCommon {
         }
     }
 
+    /**
+     * Imports the necessary types for JSON collections (e.g. List, Set) found in the given model definition.
+     * 
+     * @param modelDefinition the model definition containing the class name, table name, and field definitions
+     * @param imports         the set of import statements to add to
+     * @param mode            the mode determining whether to include default collection implementations (ArrayList, HashSet)
+     */
+    public static void importListAndSetForJsonFields(final ModelDefinition modelDefinition, final Set<String> imports,
+                final CollectionImplImportsMode mode) {
+
+        FieldUtils.extractJsonFields(modelDefinition.getFields()).forEach(field -> {
+            
+            final String fieldType = FieldUtils.extractJsonInnerType(field);
+            final boolean isList = SpecialTypeEnum.isListType(fieldType);
+            final boolean isSet = SpecialTypeEnum.isSetType(fieldType);
+
+            addIf(isList, imports, ImportConstants.Java.LIST);
+            addIf(isSet, imports, ImportConstants.Java.SET);
+            addIf(CollectionImplImportsMode.INCLUDE_DEFAULT_IMPLS.equals(mode) && isList, imports, ImportConstants.Java.ARRAY_LIST);
+            addIf(CollectionImplImportsMode.INCLUDE_DEFAULT_IMPLS.equals(mode) && isSet, imports, ImportConstants.Java.HASH_SET);
+        });
+    }
+
+    public enum CollectionImplImportsMode {
+        INTERFACES_ONLY,
+        INCLUDE_DEFAULT_IMPLS
+    }
+
 }

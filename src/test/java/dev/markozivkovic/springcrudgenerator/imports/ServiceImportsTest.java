@@ -41,7 +41,7 @@ class ServiceImportsTest {
         Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
@@ -50,8 +50,19 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
-            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
-                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet())).thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
 
             final String result = ServiceImports.getBaseImport(model, false);
 
@@ -62,11 +73,12 @@ class ServiceImportsTest {
     @Test
     @DisplayName("getBaseImport: should import BigDecimal, UUID and List when detected by FieldUtils")
     void getBaseImport_importsBasedOnFieldUtils() {
-        
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(List.of(new FieldDefinition()));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
@@ -75,6 +87,20 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
 
             final String result = ServiceImports.getBaseImport(model, false);
 
@@ -91,11 +117,12 @@ class ServiceImportsTest {
     @Test
     @DisplayName("getBaseImport: should import only List when importList=true and no relations")
     void getBaseImport_importListFlagForcesListImport() {
-        
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
@@ -104,6 +131,20 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
 
             final String result = ServiceImports.getBaseImport(model, true);
 
@@ -116,34 +157,46 @@ class ServiceImportsTest {
     @Test
     @DisplayName("getBaseImport: should import List+Set when model has simple element collections (via ImportCommon helper)")
     void getBaseImport_shouldImportListAndSet_forSimpleCollections() {
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         Mockito.when(model.getFields()).thenReturn(List.of(new FieldDefinition()));
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
-                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Set<String> imports = (Set<String>) inv.getArgument(1);
+                        imports.add(ImportConstants.Java.LIST);
+                        imports.add(ImportConstants.Java.SET);
+                        return null;
+                    });
 
-                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
-                        .thenAnswer(inv -> {
-                                @SuppressWarnings("unchecked")
-                                final Set<String> imports = (Set<String>) inv.getArgument(1);
-                                imports.add(ImportConstants.Java.LIST);
-                                imports.add(ImportConstants.Java.SET);
-                                return null;
-                        });
+            final String result = ServiceImports.getBaseImport(model, false);
 
-                final String result = ServiceImports.getBaseImport(model, false);
-
-                assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"), "Expected List import");
-                assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import");
-                assertTrue(result.endsWith("\n"));
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"), "Expected List import");
+            assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import");
+            assertTrue(result.endsWith("\n"));
         }
     }
 
@@ -155,30 +208,133 @@ class ServiceImportsTest {
         Mockito.when(model.getFields()).thenReturn(List.of(new FieldDefinition()));
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-                final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
-                fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
 
-                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
-                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
 
-                importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
-                        .thenAnswer(inv -> {
-                                @SuppressWarnings("unchecked")
-                                final Set<String> imports = (Set<String>) inv.getArgument(1);
-                                imports.add(ImportConstants.Java.LIST);
-                                return null;
-                        });
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> null);
 
-                final String result = ServiceImports.getBaseImport(model, false);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Set<String> imports = (Set<String>) inv.getArgument(1);
+                        imports.add(ImportConstants.Java.LIST);
+                        return null;
+                    });
 
-                final String needle = "import " + ImportConstants.Java.LIST + ";";
-                assertTrue(result.contains(needle), "Expected List import");
-                assertEquals(result.indexOf(needle), result.lastIndexOf(needle), "List import should not be duplicated");
+            final String result = ServiceImports.getBaseImport(model, false);
+
+            final String needle = "import " + ImportConstants.Java.LIST + ";";
+            assertTrue(result.contains(needle), "Expected List import");
+            assertEquals(result.indexOf(needle), result.lastIndexOf(needle), "List import should not be duplicated");
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport: JSON<List<T>> with INTERFACES_ONLY -> imports only List (no ArrayList)")
+    void getBaseImport_jsonListInner_interfacesOnly_importsListOnly() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Set<String> imports = (Set<String>) inv.getArgument(1);
+                        imports.add(ImportConstants.Java.LIST);
+                        return null;
+                    });
+
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                    .thenAnswer(inv -> null);
+
+            final String result = ServiceImports.getBaseImport(model, false);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+            assertFalse(result.contains("import " + ImportConstants.Java.ARRAY_LIST + ";"));
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport: JSON<Set<T>> with INTERFACES_ONLY -> imports only Set (no HashSet)")
+    void getBaseImport_jsonSetInner_interfacesOnly_importsSetOnly() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Set<String> imports = (Set<String>) inv.getArgument(1);
+                        imports.add(ImportConstants.Java.SET);
+                        return null;
+                    });
+
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                    .thenAnswer(inv -> null);
+
+            final String result = ServiceImports.getBaseImport(model, false);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"));
+            assertFalse(result.contains("import " + ImportConstants.Java.HASH_SET + ";"));
         }
     }
 
