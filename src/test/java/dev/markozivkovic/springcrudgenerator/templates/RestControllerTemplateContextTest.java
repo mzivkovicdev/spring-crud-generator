@@ -140,37 +140,23 @@ class RestControllerTemplateContextTest {
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
 
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity"))
-                    .thenReturn("Product");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("String")).thenReturn("");
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.isJsonField(nameField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isFieldEnum(nameField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of());
 
-            fieldUtils.when(() -> FieldUtils.extractIdField(fields))
-                      .thenReturn(idField);
-
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields))
-                      .thenReturn(List.of());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields))
-                      .thenReturn(List.of());
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("String"))
-                    .thenReturn("");
-
-            fieldUtils.when(() -> FieldUtils.isJsonField(nameField))
-                      .thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isFieldEnum(nameField))
-                      .thenReturn(false);
-
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields))
-                      .thenReturn(List.of());
-
-            final Map<String, Object> ctx =
-                    RestControllerTemplateContext.computeCreateEndpointContext(model, allEntities);
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeCreateEndpointContext(model, allEntities);
 
             assertEquals("ProductEntity", ctx.get(TemplateContextConstants.MODEL_NAME));
             assertEquals("Product", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
             assertEquals(false, ctx.get(TemplateContextConstants.RELATIONS));
 
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> inputFields =
-                    (List<Map<String, Object>>) ctx.get(TemplateContextConstants.INPUT_FIELDS);
+            final List<Map<String, Object>> inputFields = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.INPUT_FIELDS);
 
             assertEquals(1, inputFields.size());
             final Map<String, Object> fCtx = inputFields.get(0);
@@ -188,7 +174,8 @@ class RestControllerTemplateContextTest {
     }
 
     @Test
-    void computeCreateEndpointContext_shouldHandleRelationFieldWithCollectionJsonEnumAndRelationId() {
+    void computeCreateEndpointContext_shouldHandleRelationField_withCollectionFlag_andRelationId() {
+
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
 
@@ -208,35 +195,22 @@ class RestControllerTemplateContextTest {
         when(addressIdField.getType()).thenReturn("java.util.UUID");
 
         final ModelDefinition addressModel = newModel("AddressEntity", List.of(addressIdField));
-
         final List<ModelDefinition> allEntities = List.of(mainModel, addressModel);
 
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
 
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
-                     .thenReturn("User");
-            nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity"))
-                     .thenReturn("Address");
-
-            fieldUtils.when(() -> FieldUtils.extractIdField(fields))
-                      .thenReturn(idField);
-
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields))
-                      .thenReturn(List.of(relationField));
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields))
-                      .thenReturn(List.of());
-
-            fieldUtils.when(() -> FieldUtils.isJsonField(relationField))
-                      .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isFieldEnum(relationField))
-                      .thenReturn(true);
-
-            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields))
-                      .thenReturn(List.of(relationField));
-
-            fieldUtils.when(() -> FieldUtils.extractIdField(addressModel.getFields()))
-                      .thenReturn(addressIdField);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity")).thenReturn("Address");
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields)).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(relationField)).thenReturn("List<AddressEntity>");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(relationField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.isFieldEnum(relationField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractIdField(addressModel.getFields())).thenReturn(addressIdField);
 
             final Map<String, Object> ctx = RestControllerTemplateContext.computeCreateEndpointContext(mainModel, allEntities);
 
@@ -245,14 +219,13 @@ class RestControllerTemplateContextTest {
             assertEquals(true, ctx.get(TemplateContextConstants.RELATIONS));
 
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> inputFields =
-                    (List<Map<String, Object>>) ctx.get(TemplateContextConstants.INPUT_FIELDS);
+            final List<Map<String, Object>> inputFields = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.INPUT_FIELDS);
 
             assertEquals(1, inputFields.size());
             final Map<String, Object> fCtx = inputFields.get(0);
 
             assertEquals("addresses", fCtx.get(TemplateContextConstants.FIELD));
-            assertEquals("java.util.List<com.example.AddressEntity>", fCtx.get(TemplateContextConstants.FIELD_TYPE));
+            assertEquals("AddressEntity", fCtx.get(TemplateContextConstants.FIELD_TYPE));
             assertEquals("Address", fCtx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
             assertEquals(true, fCtx.get(TemplateContextConstants.IS_COLLECTION));
             assertEquals(true, fCtx.get(TemplateContextConstants.IS_RELATION));
@@ -260,6 +233,104 @@ class RestControllerTemplateContextTest {
             assertEquals(true, fCtx.get(TemplateContextConstants.IS_ENUM));
             assertEquals("java.util.UUID", fCtx.get(TemplateContextConstants.RELATION_ID_TYPE));
             assertEquals("addressId", fCtx.get(TemplateContextConstants.RELATION_ID_FIELD));
+        }
+    }
+
+    @Test
+    void computeCreateEndpointContext_shouldHandleJsonNonCollectionFieldType_fromInnerType_new() {
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+
+        final FieldDefinition jsonField = mock(FieldDefinition.class);
+        when(jsonField.getName()).thenReturn("metadata");
+        when(jsonField.getType()).thenReturn("JSON<Metadata>");
+        when(jsonField.getResolvedType()).thenReturn("Metadata");
+        when(jsonField.getRelation()).thenReturn(null);
+
+        final List<FieldDefinition> fields = List.of(idField, jsonField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn(""); // not used here
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn(""); // safe
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("");
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("JSON<Metadata>");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("JSON<Metadata>");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<Metadata>")).thenReturn("JSON<Metadata>");
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonField)).thenReturn("Metadata");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Metadata");
+            fieldUtils.when(() -> FieldUtils.isFieldEnum(jsonField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of());
+
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeCreateEndpointContext(model, List.of(model));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> inputFields = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.INPUT_FIELDS);
+
+            assertEquals(1, inputFields.size());
+            final Map<String, Object> fCtx = inputFields.get(0);
+
+            assertEquals("metadata", fCtx.get(TemplateContextConstants.FIELD));
+            assertEquals("Metadata", fCtx.get(TemplateContextConstants.FIELD_TYPE));
+            assertEquals(false, fCtx.get(TemplateContextConstants.IS_RELATION));
+            assertEquals(false, fCtx.get(TemplateContextConstants.IS_COLLECTION));
+            assertEquals(true, fCtx.get(TemplateContextConstants.IS_JSON_FIELD));
+        }
+    }
+
+    @Test
+    void computeCreateEndpointContext_shouldHandleJsonCollectionFieldType_asElementType_new() {
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+
+        final FieldDefinition jsonField = mock(FieldDefinition.class);
+        when(jsonField.getName()).thenReturn("metadata");
+        when(jsonField.getType()).thenReturn("JSON<List<Metadata>>");
+        when(jsonField.getResolvedType()).thenReturn("java.util.List<Metadata>");
+        when(jsonField.getRelation()).thenReturn(null);
+
+        final List<FieldDefinition> fields = List.of(idField, jsonField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("JSON<List<Metadata>>")).thenReturn("JSON<List<Metadata>>");
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonField)).thenReturn("List<Metadata>");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Metadata");
+            fieldUtils.when(() -> FieldUtils.isFieldEnum(jsonField)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields)).thenReturn(List.of());
+
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeCreateEndpointContext(model, List.of(model));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> inputFields = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.INPUT_FIELDS);
+
+            assertEquals(1, inputFields.size());
+            final Map<String, Object> fCtx = inputFields.get(0);
+
+            assertEquals("Metadata", fCtx.get(TemplateContextConstants.FIELD_TYPE));
+            assertEquals(true, fCtx.get(TemplateContextConstants.IS_JSON_FIELD));
+            assertEquals(false, fCtx.get(TemplateContextConstants.IS_COLLECTION));
         }
     }
 
