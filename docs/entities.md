@@ -102,6 +102,30 @@ For `List<BasicType>` / `Set<BasicType>`, the generator creates a separate colle
 
 ---
 
+## JSON fields
+
+Supported formats:
+
+- `JSON<Type>`
+- `JSON<List<Type>>`
+- `JSON<Set<Type>>`
+
+Where Type can be:
+- a basic type (e.g. String, Long, UUID, BigDecimal, LocalDateTime, …)
+- a model name (another model defined in entities)
+
+Example:
+```yaml
+- name: metadata
+  type: JSON<Metadata>
+- name: tags
+  type: JSON<Set<String>>
+- name: events
+  type: JSON<List<Event>>
+```
+
+---
+
 ## Primary key: `id.strategy`
 
 ```yaml
