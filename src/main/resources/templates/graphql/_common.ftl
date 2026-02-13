@@ -4,13 +4,15 @@
 
 <#function jsonInnerType field isInput>
   <#assign inner = field.type?replace("^JSONB?<(.+)>$", "$1", "r")>
-  <#if isInput?? && isInput>
-    <#return inner + "Input">
-  <#else>
-    <#return inner>
-  </#if>
-</#function>
+  <#assign suffix = (isInput?? && isInput)?then("Input", "")>
 
+  <#if isCollectionType(inner)>
+    <#assign collectionType = collectionInnerType(inner)>
+    <#return "[" + collectionType + suffix + "]">
+  </#if>
+
+  <#return inner + suffix>
+</#function>
 
 <#function mapScalarType t>
   <#assign T = t?trim>

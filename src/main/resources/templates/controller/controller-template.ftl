@@ -45,7 +45,6 @@ public class ${className}<#if swagger> implements ${strippedModelName}sApi</#if>
         this.${serviceField} = ${serviceField};<#if relations>
         this.${businessServiceField} = ${businessServiceField};</#if>
     }
-
     <#if createResource?? && createResource?has_content>${createResource}</#if>
     <#if getResource?? && getResource?has_content>${getResource}</#if>
     <#if getAllResources?? && getAllResources?has_content>${getAllResources}</#if>

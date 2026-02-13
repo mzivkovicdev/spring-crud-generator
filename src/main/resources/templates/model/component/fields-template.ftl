@@ -36,17 +36,18 @@
     <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")><#t>
     private List<${field.resolvedType}> ${field.name};
     <#else>
-    <#if field.type?matches("^JSONB?<.+>$")>
+    <#assign isJsonField = field.type?matches("^JSONB?<.+>$")>
+    <#if isJsonField>
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     </#if><#t>
-    <#if isBaseEntity && isCollection(field.resolvedType)>
+    <#if isBaseEntity && !isJsonField && isCollection(field.resolvedType)>
     @ElementCollection
     @CollectionTable(
         name = "${storageName}_${toSnakeCase(field.name)}",
         joinColumns = @JoinColumn(name = "${strippedModelName?uncap_first}_id")
     )
-    <#if isBaseEntity && isList(field.resolvedType)>
+    <#if isBaseEntity && !isJsonField && isList(field.resolvedType)>
     @OrderColumn(name = "order_index")
     </#if><#t>
     </#if><#t>
