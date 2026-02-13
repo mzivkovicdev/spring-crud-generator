@@ -144,6 +144,13 @@ class SpecialTypeEnumTest {
     }
 
     @Test
+    @DisplayName("getSupportedCollectionValues should return 'List, Set'")
+    void getSupportedCollectionValues_returnsExpectedString() {
+
+        assertEquals("List, Set", SpecialTypeEnum.getSupportedCollectionValues());
+    }
+
+    @Test
     void getSupportedValues_shouldReturnCommaSeparatedKeys() {
         final String expected = Stream.of(SpecialTypeEnum.values())
                 .map(SpecialTypeEnum::getKey)

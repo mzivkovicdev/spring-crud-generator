@@ -110,6 +110,18 @@ public enum SpecialTypeEnum {
     }
 
     /**
+     * Returns a string containing all supported collection types, separated by commas.
+     * 
+     * @return a string containing all supported collection types, separated by commas
+     */
+    public static String getSupportedCollectionValues() {
+
+        return Stream.of(LIST, SET)
+                .map(SpecialTypeEnum::getKey)
+                .collect(Collectors.joining(", "));
+    }
+
+    /**
      * Returns a string containing all supported special types, separated by commas.
      * 
      * @return a string containing all supported special types, separated by commas

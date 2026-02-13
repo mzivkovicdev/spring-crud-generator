@@ -37,11 +37,11 @@ class SpecificationValidatorTest {
         config.setDatabase(DatabaseType.MYSQL);
         spec.setConfiguration(config);
 
-        ModelDefinition user = new ModelDefinition();
+        final ModelDefinition user = new ModelDefinition();
         user.setName("User");
         user.setStorageName("user");
-        
-        FieldDefinition idField = new FieldDefinition();
+
+        final FieldDefinition idField = new FieldDefinition();
         idField.setName("id");
         idField.setType("Long");
         idField.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
@@ -51,38 +51,45 @@ class SpecificationValidatorTest {
         nameField.setType("String");
         nameField.setId(null);
         nameField.setValidation(new ValidationDefinition().setPattern("^[A-Za-z]+$"));
-        
-        final List<FieldDefinition> fieldDefinitions = new ArrayList<>();
-        fieldDefinitions.add(idField);
-        fieldDefinitions.add(nameField);
-        user.setFields(fieldDefinitions);
 
-        spec.setEntities(List.of(user));
+        user.setFields(new ArrayList<>(List.of(idField, nameField)));
+        spec.setEntities(new ArrayList<>(List.of(user)));
 
         return spec;
+    }
+
+    private static FieldDefinition newIdField(final String name, final String type) {
+        final FieldDefinition id = new FieldDefinition();
+        id.setName(name);
+        id.setType(type);
+        id.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
+        return id;
     }
 
     @Test
     @DisplayName("Should throw when specification is null")
     void validate_nullSpecification_throwsIllegalArgumentException() {
-        
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(null));
+
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(null)
+        );
         assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
     }
 
     @Test
     @DisplayName("Should throw when configuration is null")
     void validate_nullConfiguration_throwsIllegalArgumentException() {
-        
-        final CrudSpecification spec = new CrudSpecification();
-        spec.setConfiguration(null);
-        spec.setEntities(Collections.emptyList());
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
-                assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
+        final CrudSpecification spec = buildValidSpecification();
+        spec.setConfiguration(null);
+
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
     }
 
     @Test
@@ -93,8 +100,8 @@ class SpecificationValidatorTest {
         spec.getConfiguration().setDatabase(null);
 
         final IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec)
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Database must not be null or empty"));
@@ -106,14 +113,17 @@ class SpecificationValidatorTest {
         
         final CrudSpecification spec = new CrudSpecification();
         final CrudConfiguration config = new CrudConfiguration();
-
         config.setJavaVersion(17);
+        config.setDatabase(DatabaseType.MYSQL);
+
         spec.setConfiguration(config);
         spec.setEntities(null);
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
     }
 
@@ -131,20 +141,20 @@ class SpecificationValidatorTest {
     void validate_invalidRegexPattern_throwsIllegalArgumentException() {
 
         final CrudSpecification spec = buildValidSpecification();
+
         final FieldDefinition invalidField = new FieldDefinition();
         invalidField.setName("description");
         invalidField.setType("String");
         invalidField.setId(null);
         invalidField.setValidation(new ValidationDefinition().setPattern("[abc"));
-        spec.getEntities().stream()
-                .findAny()
-                .orElseThrow()
-                .getFields()
-                .add(invalidField);
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        spec.getEntities().get(0).getFields().add(invalidField);
+
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Regex pattern"));
     }
 
@@ -155,9 +165,11 @@ class SpecificationValidatorTest {
         final CrudSpecification spec = buildValidSpecification();
         spec.getConfiguration().setJavaVersion(16);
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Minimum supported version is 17"));
     }
 
@@ -168,9 +180,11 @@ class SpecificationValidatorTest {
         final CrudSpecification spec = buildValidSpecification();
         spec.getConfiguration().setJavaVersion(26);
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Maximum supported version is 25"));
     }
 
@@ -199,11 +213,13 @@ class SpecificationValidatorTest {
     void validate_modelNameBlank_throwsIllegalArgumentException() {
 
         final CrudSpecification spec = buildValidSpecification();
-        final ModelDefinition model = spec.getEntities().get(0);
-        model.setName("   ");
+        spec.getEntities().get(0).setName("   ");
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Model name must not be null or empty"));
     }
 
@@ -212,12 +228,13 @@ class SpecificationValidatorTest {
     void validate_modelStorageNameBlank_throwsIllegalArgumentException() {
 
         final CrudSpecification spec = buildValidSpecification();
-        final ModelDefinition model = spec.getEntities().get(0);
-        model.setStorageName("  ");
+        spec.getEntities().get(0).setStorageName("  ");
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Model storage name must not be null or empty"));
     }
 
@@ -226,12 +243,13 @@ class SpecificationValidatorTest {
     void validate_modelStorageNameInvalidPattern_throwsIllegalArgumentException() {
 
         final CrudSpecification spec = buildValidSpecification();
-        final ModelDefinition model = spec.getEntities().get(0);
-        model.setStorageName("UserTable");
+        spec.getEntities().get(0).setStorageName("UserTable");
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Invalid storageName"));
         assertTrue(ex.getMessage().contains("lower_snake_case"));
     }
@@ -241,12 +259,13 @@ class SpecificationValidatorTest {
     void validate_modelWithoutFields_throwsIllegalArgumentException() {
 
         final CrudSpecification spec = buildValidSpecification();
-        final ModelDefinition model = spec.getEntities().get(0);
-        model.setFields(Collections.emptyList());
+        spec.getEntities().get(0).setFields(Collections.emptyList());
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("must have at least one field defined"));
     }
 
@@ -259,12 +278,16 @@ class SpecificationValidatorTest {
 
         final FieldDefinition field = new FieldDefinition();
         field.setName("name");
-        field.setType("string");
+        field.setType("String");
+        field.setId(null);
 
         model.setFields(List.of(field));
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("must have id field defined"));
     }
 
@@ -275,21 +298,16 @@ class SpecificationValidatorTest {
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
 
-        final FieldDefinition id1 = new FieldDefinition();
-        id1.setName("id1");
-        id1.setType("Long");
-        id1.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
-
-        final FieldDefinition id2 = new FieldDefinition();
-        id2.setName("id2");
-        id2.setType("Integer");
-        id2.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
+        final FieldDefinition id1 = newIdField("id1", "Long");
+        final FieldDefinition id2 = newIdField("id2", "Integer");
 
         model.setFields(List.of(id1, id2));
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
-        
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("must have only one id field defined"));
     }
 
@@ -302,13 +320,15 @@ class SpecificationValidatorTest {
 
         final FieldDefinition field = new FieldDefinition();
         field.setName("   ");
-        field.setType("string");
+        field.setType("String");
         field.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
 
         model.setFields(List.of(field));
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
 
         assertTrue(ex.getMessage().contains("Field name in model"));
         assertTrue(ex.getMessage().contains("must not be null or empty"));
@@ -317,14 +337,11 @@ class SpecificationValidatorTest {
     @Test
     @DisplayName("Should throw when field name is duplicated within model")
     void validate_duplicateFieldNames_throwsIllegalArgumentException() {
-        
+
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
 
-        final FieldDefinition idField = new FieldDefinition();
-        idField.setName("id");
-        idField.setType("Long");
-        idField.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
+        final FieldDefinition idField = newIdField("id", "Long");
 
         final FieldDefinition nameField = new FieldDefinition();
         nameField.setName("name");
@@ -336,27 +353,29 @@ class SpecificationValidatorTest {
 
         model.setFields(List.of(idField, nameField, duplicatedNamefield));
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("is duplicated"));
     }
 
     @Test
     @DisplayName("Should throw when field type is blank")
     void validate_fieldTypeBlank_throwsIllegalArgumentException() {
-        
+
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
 
-        final FieldDefinition field = new FieldDefinition();
-        field.setName("id");
-        field.setType("  ");
-        field.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
-
+        final FieldDefinition field = newIdField("id", "  ");
         model.setFields(List.of(field));
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Field type for field"));
         assertTrue(ex.getMessage().contains("must not be null or empty"));
     }
@@ -364,19 +383,18 @@ class SpecificationValidatorTest {
     @Test
     @DisplayName("Should throw when field type is invalid (not basic, not special, not model reference)")
     void validate_invalidFieldType_throwsIllegalArgumentException() {
-        
+
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
 
-        final FieldDefinition field = new FieldDefinition();
-        field.setName("id");
-        field.setType("UnknownType");
-        field.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
-
+        final FieldDefinition field = newIdField("id", "UnknownType");
         model.setFields(List.of(field));
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec));
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
         assertTrue(ex.getMessage().contains("Field type UnknownType"));
         assertTrue(ex.getMessage().contains("is invalid"));
     }
@@ -384,31 +402,20 @@ class SpecificationValidatorTest {
     @Test
     @DisplayName("Should allow field type referencing another model")
     void validate_fieldTypeModelReference_ok() {
-        
+
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition user = spec.getEntities().get(0);
 
         final ModelDefinition address = new ModelDefinition();
         address.setName("Address");
         address.setStorageName("address");
-
-        final FieldDefinition addressId = new FieldDefinition();
-        addressId.setName("id");
-        addressId.setType("String");
-        addressId.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
-
-        address.setFields(List.of(addressId));
+        address.setFields(List.of(newIdField("id", "String")));
 
         final FieldDefinition addressField = new FieldDefinition();
         addressField.setName("address");
         addressField.setType("Address");
-        addressField.setId(null);
 
-        user.setFields(List.of(
-                user.getFields().get(0),
-                addressField
-        ));
-
+        user.setFields(List.of(user.getFields().get(0), addressField));
         spec.setEntities(List.of(user, address));
 
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
@@ -417,7 +424,7 @@ class SpecificationValidatorTest {
     @Test
     @DisplayName("Should accept fully valid specification")
     void validate_validSpecification_ok() {
-        
+
         final CrudSpecification spec = buildValidSpecification();
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
     }
@@ -474,13 +481,13 @@ class SpecificationValidatorTest {
         model.setFields(List.of(id, invalidCollection));
 
         final IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec)
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
         );
 
-        assertTrue(ex.getMessage().contains("Inner type Address"), "Message should mention inner type");
-        assertTrue(ex.getMessage().contains("collection field addresses"), "Message should mention field name");
-        assertTrue(ex.getMessage().contains("must be a basic type"), "Message should mention basic types constraint");
+        assertTrue(ex.getMessage().contains("Inner type Address"));
+        assertTrue(ex.getMessage().contains("collection field addresses"));
+        assertTrue(ex.getMessage().contains("must be a basic type"));
     }
 
     @Test
@@ -499,8 +506,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(id, invalidCollection));
 
         final IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec)
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Inner type Enum"));
@@ -508,37 +515,130 @@ class SpecificationValidatorTest {
     }
 
     @Test
-    @DisplayName("Should throw when collection type has non-basic inner type even if model exists")
-    void validate_simpleCollection_innerTypeModelReferenceStillInvalid_throwsIllegalArgumentException() {
+    @DisplayName("Should allow JSON field with basic inner type (JSON<String>)")
+    void validate_json_basicInner_ok() {
 
         final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition meta = new FieldDefinition();
+        meta.setName("meta");
+        meta.setType("JSON<String>");
+
+        model.setFields(List.of(id, meta));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow JSON field with model inner type (JSON<Address>)")
+    void validate_json_modelInner_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+
         final ModelDefinition address = new ModelDefinition();
         address.setName("Address");
         address.setStorageName("address");
-
-        final FieldDefinition addressId = new FieldDefinition();
-        addressId.setName("id");
-        addressId.setType("Long");
-        addressId.setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY));
-        address.setFields(List.of(addressId));
+        address.setFields(List.of(newIdField("id", "Long")));
 
         final ModelDefinition user = spec.getEntities().get(0);
         final FieldDefinition userId = user.getFields().get(0);
 
-        final FieldDefinition addresses = new FieldDefinition();
-        addresses.setName("addresses");
-        addresses.setType("List<Address>");
+        final FieldDefinition addressJson = new FieldDefinition();
+        addressJson.setName("addressJson");
+        addressJson.setType("JSON<Address>");
 
-        user.setFields(List.of(userId, addresses));
+        user.setFields(List.of(userId, addressJson));
         spec.setEntities(List.of(user, address));
 
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow JSON field with collection inner type (JSON<List<String>>)")
+    void validate_json_collectionInner_list_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition tagsJson = new FieldDefinition();
+        tagsJson.setName("tagsJson");
+        tagsJson.setType("JSON<List<String>>");
+
+        model.setFields(List.of(id, tagsJson));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow JSON field with collection inner type (JSON<Set<Long>>)")
+    void validate_jsonb_collectionInner_set_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition numbersJson = new FieldDefinition();
+        numbersJson.setName("numbersJson");
+        numbersJson.setType("JSON<Set<Long>>");
+
+        model.setFields(List.of(id, numbersJson));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should throw when JSON inner type is invalid (JSON<UnknownType>)")
+    void validate_json_invalidInner_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition bad = new FieldDefinition();
+        bad.setName("badJson");
+        bad.setType("JSON<UnknownType>");
+
+        model.setFields(List.of(id, bad));
+
         final IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec)
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
         );
 
-        assertTrue(ex.getMessage().contains("Inner type Address"));
-        assertTrue(ex.getMessage().contains("must be a basic type"));
+        assertTrue(ex.getMessage().contains("Inner type UnknownType"));
+        assertTrue(ex.getMessage().contains("JSON field User.badJson") || ex.getMessage().contains("field User.badJson"));
+        assertTrue(ex.getMessage().contains("is invalid"));
+    }
+
+    @Test
+    @DisplayName("Should throw when JSON has invalid format (cannot extract inner type)")
+    void validate_json_invalidFormat_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        final FieldDefinition id = model.getFields().get(0);
+
+        final FieldDefinition bad = new FieldDefinition();
+        bad.setName("badJson");
+        bad.setType("JSON<>");
+
+        model.setFields(List.of(id, bad));
+
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("has invalid inner type or invalid format"));
+        assertTrue(ex.getMessage().contains("JSON field User.badJson"));
     }
 
     @Test
@@ -567,5 +667,4 @@ class SpecificationValidatorTest {
             testMock.verify(() -> TestConfigurationValidator.validate(testCfg));
         }
     }
-
 }
