@@ -458,7 +458,7 @@ class SwaggerDocumentationGeneratorTest {
             fieldUtils.when(() -> FieldUtils.extractIdField(entityA.getFields())).thenReturn(idA);
             fieldUtils.when(() -> FieldUtils.extractIdField(jsonModel.getFields())).thenReturn(jsonId);
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of(jsonField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("JsonModel");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("JsonModel");
             swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
             nameUtils.when(() -> ModelNameUtils.stripSuffix("AEntity")).thenReturn("A");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("A")).thenReturn("A");

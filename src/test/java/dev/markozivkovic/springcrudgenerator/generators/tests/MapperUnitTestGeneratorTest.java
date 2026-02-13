@@ -132,7 +132,7 @@ class MapperUnitTestGeneratorTest {
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(user, entities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("src/main/java/"))
                     .thenReturn("com.example.app");
@@ -200,7 +200,7 @@ class MapperUnitTestGeneratorTest {
             unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(user, entities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
             fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(anyList())).thenReturn(List.of("name"));
             fieldUtils.when(() -> FieldUtils.extractNamesOfEnumFields(anyList())).thenReturn(List.of());
@@ -309,7 +309,7 @@ class MapperUnitTestGeneratorTest {
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(user, entities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
             fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(idField);
 
             fieldUtils.when(() -> FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(anyList()))
@@ -431,7 +431,7 @@ class MapperUnitTestGeneratorTest {
             unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(user, entities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
             fieldUtils.when(() -> FieldUtils.extractIdField(user.getFields())).thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.extractEnumFields(address.getFields())).thenReturn(List.of());
             fieldUtils.when(() -> FieldUtils.extractFieldNames(address.getFields())).thenReturn(List.of("addrId"));

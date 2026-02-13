@@ -195,7 +195,7 @@ public class SwaggerUtils {
             }
         } else {
             if (isJsonField) {
-                schema = ref(FieldUtils.extractJsonFieldName(fieldDefinition));
+                schema = ref(FieldUtils.extractJsonInnerElementType(fieldDefinition));
             } else if (isSimpleCollectionType) {
                 schema = arrayOfSimpleType(
                         FieldUtils.extractSimpleCollectionType(fieldDefinition), fieldDefinition.getValues(), SpecialTypeEnum.isSetType(fieldDefinition.getType())

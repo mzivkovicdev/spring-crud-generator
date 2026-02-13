@@ -70,7 +70,7 @@ public class MapperTemplateContexts {
         
         if (!relationFields.isEmpty() || !jsonFields.isEmpty()) {
             final String mapperParameters = Stream.concat(relationFields.stream(), jsonFields.stream())
-                    .map(field -> FieldUtils.isJsonField(field) ? FieldUtils.extractJsonFieldName(field) : ModelNameUtils.stripSuffix(field.getType()))
+                    .map(field -> FieldUtils.isJsonField(field) ? FieldUtils.extractJsonInnerElementType(field) : ModelNameUtils.stripSuffix(field.getType()))
                     .map(field -> isGraphQl ? String.format("%sGraphQLMapper.class", field) : String.format("%sRestMapper.class", field))
                     .distinct()
                     .collect(Collectors.joining(", "));

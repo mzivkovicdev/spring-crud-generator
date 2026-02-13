@@ -877,7 +877,7 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.extractJsonFields(model.getFields()))
                     .thenReturn(List.of(jsonField));
 
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                     .thenReturn("Address");
             packageUtils.when(() -> PackageUtils.computeHelperGraphqlTransferObjectPackage("com.example", packageConfiguration))
                     .thenReturn("com.example.graphql.helper");
@@ -924,7 +924,7 @@ class TransferObjectImportsTest {
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(model.getFields()))
                     .thenReturn(List.of(jsonField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                     .thenReturn("MetaData");
 
             packageUtils.when(() -> PackageUtils.computeHelperRestTransferObjectPackage("com.example.rest", packageConfiguration))

@@ -265,7 +265,7 @@ public class TransferObjectImports {
         if (importJsonFields) {
             final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
             jsonFields.stream()
-                    .map(FieldUtils::extractJsonFieldName)
+                    .map(FieldUtils::extractJsonInnerElementType)
                     .forEach(fieldName -> {
                         switch (target) {
                             case GRAPHQL:

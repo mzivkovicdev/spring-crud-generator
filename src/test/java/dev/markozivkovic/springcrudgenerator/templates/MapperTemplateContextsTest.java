@@ -160,7 +160,7 @@ class MapperTemplateContextsTest {
             fieldUtils.when(() -> FieldUtils.extractEagerFetchFieldNames(fields)).thenReturn(eagerFields);
             fieldUtils.when(() -> FieldUtils.extractBaseCollectionFieldNames(fields)).thenReturn(baseCollectionFields);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Address");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Address");
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
 
             mapperImports.when(() -> MapperImports.computeMapperImports(
@@ -368,7 +368,7 @@ class MapperTemplateContextsTest {
             fieldUtils.when(() -> FieldUtils.extractBaseCollectionFieldNames(fields)).thenReturn(baseCollectionFields);
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Address");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Address");
 
             mapperImports.when(() -> MapperImports.computeMapperImports(packagePath, model, pkgCfg, false, false))
                     .thenReturn("IMPORTS");

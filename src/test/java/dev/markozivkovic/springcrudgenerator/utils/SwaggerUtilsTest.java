@@ -470,7 +470,7 @@ class SwaggerUtilsTest {
 
             fieldUtils.when(() -> FieldUtils.isJsonField(field)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isSimpleCollectionField(field)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(field)).thenReturn("PayloadDto");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(field)).thenReturn("PayloadDto");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("PayloadDto")).thenReturn("Payload");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("Payload")).thenReturn("Payload");
 

@@ -74,13 +74,13 @@ public class TransferObjectGenerator implements CodeGenerator {
                 .filter(FieldUtils::isJsonField)
                 .forEach(field -> {
 
-                    final String jsonFieldName = FieldUtils.extractJsonFieldName(field);
+                    final String jsonInnerElementType = FieldUtils.extractJsonInnerElementType(field);
                     final ModelDefinition jsonModel = this.entities.stream()
-                            .filter(model -> model.getName().equals(jsonFieldName))
+                            .filter(model -> model.getName().equals(jsonInnerElementType))
                             .findFirst()
                             .orElseThrow(() -> new IllegalArgumentException(
                                 String.format(
-                                    "JSON model not found: %s", jsonFieldName
+                                    "JSON model not found: %s", jsonInnerElementType
                                 )
                             ));
                     final String restHelperPackagePath = PackageUtils.computeHelperRestTransferObjectPackage(packagePath, packageConfiguration);

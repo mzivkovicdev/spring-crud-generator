@@ -53,7 +53,7 @@ public class GraphQlTemplateContext {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .collect(Collectors.toList());
         
         final Map<String, Object> context = new HashMap<>();
@@ -87,7 +87,7 @@ public class GraphQlTemplateContext {
             }).collect(Collectors.toList());
             
         final List<String> jsonFieldNames = FieldUtils.extractJsonFields(fields).stream()
-                .map(jsonField -> FieldUtils.extractJsonFieldName(jsonField))
+                .map(jsonField -> FieldUtils.extractJsonInnerElementType(jsonField))
                 .collect(Collectors.toList());
         final List<ModelDefinition> jsonModels = entities.stream()
                 .filter(model -> jsonFieldNames.contains(model.getName()))
@@ -190,7 +190,7 @@ public class GraphQlTemplateContext {
         final String className = String.format("%sResolverMutationTest", modelWithoutSuffix);
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .collect(Collectors.toList());
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         final Boolean isGlobalExceptionHandlerEnabled = !(ErrorResponse.NONE.equals(configuration.getErrorResponse()) ||

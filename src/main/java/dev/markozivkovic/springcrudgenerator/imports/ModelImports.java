@@ -216,7 +216,7 @@ public class ModelImports {
 
         final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
         jsonFields.stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .forEach(fieldName -> {
                     imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperEntityPackage(packagePath, packageConfiguration), fieldName)));
                 });

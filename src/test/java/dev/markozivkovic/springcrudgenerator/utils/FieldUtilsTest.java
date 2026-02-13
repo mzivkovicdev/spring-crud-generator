@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition;
@@ -932,12 +933,31 @@ class FieldUtilsTest {
     }
 
     @Test
-    @DisplayName("isModelUsedAsJsonField returns true when model is referenced as JSONB[...] type in another model")
-    void isModelUsedAsJsonField_shouldReturnTrue_whenReferencedAsJsonb() {
-        
+    @DisplayName("isModelUsedAsJsonField returns true when model is referenced as JSON<List<MODEL>> (collection JSON) - NEW")
+    void isModelUsedAsJsonField_shouldReturnTrue_whenReferencedAsJsonListOfModel() {
+
         final ModelDefinition addressModel = model("Address", List.of());
-        final FieldDefinition userAddressField = fieldWithNameAndType("address", "JSONB<Address>");
-        final ModelDefinition userModel = model("User", List.of(userAddressField));
+
+        final ModelDefinition userModel = model("User", List.of(
+                fieldWithNameAndType("addresses", "JSON<List<Address>>")
+        ));
+
+        final List<ModelDefinition> entities = List.of(userModel);
+
+        final boolean result = FieldUtils.isModelUsedAsJsonField(addressModel, entities);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isModelUsedAsJsonField returns true when model is referenced as JSONB<Set<MODEL>> (collection JSONB) - NEW")
+    void isModelUsedAsJsonField_shouldReturnTrue_whenReferencedAsJsonbSetOfModel() {
+
+        final ModelDefinition addressModel = model("Address", List.of());
+
+        final ModelDefinition userModel = model("User", List.of(
+                fieldWithNameAndType("addresses", "JSONB<Set<Address>>")
+        ));
 
         final List<ModelDefinition> entities = List.of(userModel);
 
@@ -1380,6 +1400,46 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("maps JSON collection field using element type when swagger=false (JSON<List<Address>>) - NEW")
+    void extractNonIdNonRelationFieldNamesForController_shouldMapJsonCollectionField_whenNonSwagger() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressesField = fieldWithNameAndType("addresses", "JSON<List<Address>>");
+        addressesField.setRelation(null);
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForController(
+                List.of(idField, addressesField),
+                false
+        );
+
+        assertEquals(List.of("addressMapper.mapAddressTOToAddress(body.addresses())"), result);
+    }
+
+    @Test
+    @DisplayName("maps JSON collection field using element type when swagger=true (JSON<Set<Address>>) - NEW")
+    void extractNonIdNonRelationFieldNamesForController_shouldMapJsonCollectionField_whenSwagger() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressesField = fieldWithNameAndType("addresses", "JSON<Set<Address>>");
+        addressesField.setRelation(null);
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForController(
+                List.of(idField, addressesField),
+                true
+        );
+
+        final String mapping = result.get(0);
+
+        assertTrue(mapping.startsWith("addressMapper.map"), "Should call addressMapper.map...");
+        assertTrue(mapping.endsWith("(body.getAddresses())"), "Should use body.getAddresses()");
+        assertTrue(mapping.contains("ToAddress"), "Should map ...ToAddress(...)");
+    }
+
+    @Test
     @DisplayName("extractNonIdNonRelationFieldNamesForController maps Enum field correctly when swagger=true")
     void extractNonIdNonRelationFieldNamesForController_shouldMapEnumField_whenSwagger() {
         
@@ -1401,7 +1461,7 @@ class FieldUtilsTest {
     }
 
     @Test
-    @DisplayName("extractNonIdNonRelationFieldNamesForResolver returns input.fieldName() for plain fields without relations or JSON")
+    @DisplayName("extractNonIdNonRelationFieldNamesForResolver returns input.fieldName() for plain fields and filters out relations")
     void extractNonIdNonRelationFieldNamesForResolver_shouldReturnSimpleInputAccess_forPlainFields() {
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
@@ -1409,20 +1469,20 @@ class FieldUtilsTest {
         final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
         nameField.setRelation(null);
 
-        final FieldDefinition relatedField = fieldWithNameAndRelation("owner" ,"OneToOne", "ALL", "ManyToOne");
+        final FieldDefinition relatedField = fieldWithNameAndType("owner", "Owner");
+        relatedField.setRelation(new RelationDefinition().setType(RelationTypeEnum.MANY_TO_ONE.getKey()));
 
         final List<FieldDefinition> fields = List.of(idField, nameField, relatedField);
 
         final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields);
 
-        assertEquals(1, result.size());
-        assertEquals("input.name()", result.get(0));
+        assertEquals(List.of("input.name()"), result);
     }
 
     @Test
-    @DisplayName("extractNonIdNonRelationFieldNamesForResolver uses mapper for JSON fields")
+    @DisplayName("extractNonIdNonRelationFieldNamesForResolver uses mapper for JSON fields (non-collection)")
     void extractNonIdNonRelationFieldNamesForResolver_shouldUseMapper_forJsonField() {
-        
+
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
@@ -1433,14 +1493,47 @@ class FieldUtilsTest {
 
         final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields);
 
-        assertEquals(1, result.size());
-        assertEquals("addressMapper.mapAddressTOToAddress(input.address())", result.get(0));
+        assertEquals(List.of("addressMapper.mapAddressTOToAddress(input.address())"), result);
+    }
+
+    @Test
+    @DisplayName("extractNonIdNonRelationFieldNamesForResolver uses mapper for JSON collection fields (JSON<List<Address>>) - NEW")
+    void extractNonIdNonRelationFieldNamesForResolver_shouldUseMapper_forJsonCollectionField() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressesField = fieldWithNameAndType("addresses", "JSON<List<Address>>");
+        addressesField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, addressesField);
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields);
+
+        assertEquals(List.of("addressMapper.mapAddressTOToAddress(input.addresses())"), result);
+    }
+
+    @Test
+    @DisplayName("extractNonIdNonRelationFieldNamesForResolver uses mapper for JSONB collection fields (JSONB<Set<Address>>) - NEW")
+    void extractNonIdNonRelationFieldNamesForResolver_shouldUseMapper_forJsonbCollectionField() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressesField = fieldWithNameAndType("addresses", "JSONB<Set<Address>>");
+        addressesField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, addressesField);
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields);
+
+        assertEquals(List.of("addressMapper.mapAddressTOToAddress(input.addresses())"), result);
     }
 
     @Test
     @DisplayName("extractNonIdNonRelationFieldNamesForResolver throws IllegalArgumentException when no ID field exists")
     void extractNonIdNonRelationFieldNamesForResolver_shouldThrow_whenNoIdField() {
-        
+
         final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
         final FieldDefinition f2 = fieldWithNameTypeAndId("age", "Integer", false);
 
@@ -1457,7 +1550,7 @@ class FieldUtilsTest {
     @Test
     @DisplayName("extractNonIdFieldNamesForResolver returns input.fieldName() for plain fields")
     void extractNonIdFieldNamesForResolver_shouldReturnSimpleInputAccess_forPlainFields() {
-        
+
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
@@ -1468,14 +1561,13 @@ class FieldUtilsTest {
 
         final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
 
-        assertEquals(1, result.size());
-        assertEquals("input.name()", result.get(0));
+        assertEquals(List.of("input.name()"), result);
     }
 
     @Test
-    @DisplayName("extractNonIdFieldNamesForResolver uses mapper for JSON fields")
+    @DisplayName("extractNonIdFieldNamesForResolver uses mapper for JSON fields (non-collection)")
     void extractNonIdFieldNamesForResolver_shouldUseMapper_forJsonField() {
-        
+
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
@@ -1486,52 +1578,65 @@ class FieldUtilsTest {
 
         final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
 
-        assertEquals(1, result.size());
-        assertEquals("addressMapper.mapAddressTOToAddress(input.address())", result.get(0));
+        assertEquals(List.of("addressMapper.mapAddressTOToAddress(input.address())"), result);
+    }
+
+    @Test
+    @DisplayName("extractNonIdFieldNamesForResolver uses mapper for JSON collection fields (JSON<List<Address>>) - NEW")
+    void extractNonIdFieldNamesForResolver_shouldUseMapper_forJsonCollectionField() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressesField = fieldWithNameAndType("addresses", "JSON<List<Address>>");
+        addressesField.setRelation(null);
+
+        final List<FieldDefinition> fields = List.of(idField, addressesField);
+
+        final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
+
+        assertEquals(List.of("addressMapper.mapAddressTOToAddress(input.addresses())"), result);
     }
 
     @Test
     @DisplayName("extractNonIdFieldNamesForResolver uses input.fieldNameId() for ManyToOne relations")
     void extractNonIdFieldNamesForResolver_shouldUseSingleId_forManyToOneRelation() {
-        
+
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
         final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
-                "owner", "OwnerModel", "ManyToOne", "ALL", "Eager"
+                "owner", "OwnerModel", RelationTypeEnum.MANY_TO_ONE.getKey(), "ALL", "Eager"
         );
 
         final List<FieldDefinition> fields = List.of(idField, ownerField);
 
         final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
 
-        assertEquals(1, result.size());
-        assertEquals("input.ownerId()", result.get(0));
+        assertEquals(List.of("input.ownerId()"), result);
     }
 
     @Test
     @DisplayName("extractNonIdFieldNamesForResolver uses input.fieldNameIds() for ToMany relations (OneToMany/ManyToMany)")
     void extractNonIdFieldNamesForResolver_shouldUseIds_forToManyRelations() {
-        
+
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
-        final FieldDefinition tagsField = fieldWithNameTypeAndRelation("tags", "Tag", "OneToMany", "ALL", "Eager");
-        final FieldDefinition groupsField = fieldWithNameTypeAndRelation("groups", "Group", "ManyToMany", "ALL", "Eager");
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation("tags", "Tag", RelationTypeEnum.ONE_TO_MANY.getKey(), "ALL", "Eager");
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation("groups", "Group", RelationTypeEnum.MANY_TO_MANY.getKey(), "ALL", "Eager");
 
         final List<FieldDefinition> fields = List.of(idField, tagsField, groupsField);
 
         final List<String> result = FieldUtils.extractNonIdFieldNamesForResolver(fields);
 
-        assertEquals(2, result.size());
-        assertEquals("input.tagsIds()", result.get(0));
-        assertEquals("input.groupsIds()", result.get(1));
+        assertEquals(List.of("input.tagsIds()", "input.groupsIds()"), result);
     }
 
     @Test
     @DisplayName("extractNonIdFieldNamesForResolver throws IllegalArgumentException when no ID field exists")
     void extractNonIdFieldNamesForResolver_shouldThrow_whenNoIdField() {
-        
+
         final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
         final FieldDefinition f2 = fieldWithNameTypeAndId("age", "Integer", false);
 
@@ -2287,7 +2392,7 @@ class FieldUtilsTest {
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO returns '<type> <name>' for plain fields excluding ID")
+    @DisplayName("returns '<type> <name>' for plain fields excluding ID (entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldReturnTypeAndName_forPlainFields() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2299,17 +2404,16 @@ class FieldUtilsTest {
         final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
         ageField.setRelation(null);
 
-        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
-        final List<ModelDefinition> entities = List.of();
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, nameField, ageField),
+                List.of()
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities);
-
-        assertEquals(2, result.size());
-        assertTrue(result.get(0).endsWith("String name"));
-        assertTrue(result.get(1).endsWith("Integer age"));
+        assertEquals(List.of("String name", "Integer age"), result);
     }
 
     @Test
+    @DisplayName("includes validation annotations before '<type> <name>' (entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldReturnNameAndValidationAnnotations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2319,73 +2423,65 @@ class FieldUtilsTest {
         nameField.setRelation(null);
         nameField.setValidation(new ValidationDefinition().setMinLength(1).setMaxLength(100));
 
-        final List<FieldDefinition> fields = List.of(idField, nameField);
-        final List<ModelDefinition> entities = List.of();
-
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, nameField),
+                List.of()
+        );
 
         assertEquals(1, result.size());
         assertTrue(result.get(0).endsWith("@Size(min = 1, max = 100) String name"));
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates '<type> <name>Id' for ManyToOne/OneToOne relations")
+    @DisplayName("generates '<idType> <name>Id' for ManyToOne/OneToOne relations (entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSingleId_forToOneRelations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
         final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
-                "category", "Category", "ManyToOne", "ALL", "EAGER"
+                "category", "Category", RelationTypeEnum.MANY_TO_ONE.getKey(), "ALL", "EAGER"
         );
-
-        final List<FieldDefinition> mainFields = List.of(idField, categoryField);
 
         final FieldDefinition categoryIdField = fieldWithNameTypeAndId("id", "UUID", true);
         final ModelDefinition categoryModel = model("Category", List.of(categoryIdField));
 
-        final List<ModelDefinition> entities = List.of(categoryModel);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, categoryField),
+                List.of(categoryModel)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(mainFields, entities);
-
-        assertEquals(1, result.size());
-        assertEquals("UUID categoryId", result.get(0));
+        assertEquals(List.of("UUID categoryId"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates 'List<type> nameIds' for OneToMany/ManyToMany relations")
+    @DisplayName("generates 'List<idType> <name>Ids' for OneToMany/ManyToMany relations (entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateListOfIds_forToManyRelations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         idField.setRelation(null);
 
         final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
-                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+                "tags", "Tag", RelationTypeEnum.ONE_TO_MANY.getKey(), "ALL", "EAGER"
         );
 
         final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
-                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+                "groups", "Group", RelationTypeEnum.MANY_TO_MANY.getKey(), "ALL", "EAGER"
         );
 
-        final List<FieldDefinition> mainFields = List.of(idField, tagsField, groupsField);
+        final ModelDefinition tagModel = model("Tag", List.of(fieldWithNameTypeAndId("id", "Long", true)));
+        final ModelDefinition groupModel = model("Group", List.of(fieldWithNameTypeAndId("id", "UUID", true)));
 
-        final FieldDefinition tagIdField = fieldWithNameTypeAndId("id", "Long", true);
-        final ModelDefinition tagModel = model("Tag", List.of(tagIdField));
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, tagsField, groupsField),
+                List.of(tagModel, groupModel)
+        );
 
-        final FieldDefinition groupIdField = fieldWithNameTypeAndId("id", "UUID", true);
-        final ModelDefinition groupModel = model("Group", List.of(groupIdField));
-
-        final List<ModelDefinition> entities = List.of(tagModel, groupModel);
-
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(mainFields, entities);
-
-        assertEquals(2, result.size());
-        assertEquals("List<Long> tagsIds", result.get(0));
-        assertEquals("List<UUID> groupsIds", result.get(1));
+        assertEquals(List.of("List<Long> tagsIds", "List<UUID> groupsIds"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO uses '<resolvedType>TO name' for JSON fields")
+    @DisplayName("uses '<resolvedType>TO <name>' for JSON fields (non-collection, entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldUseTOType_forJsonFields() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2394,126 +2490,167 @@ class FieldUtilsTest {
         final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
         addressField.setRelation(null);
 
-        final List<FieldDefinition> fields = List.of(idField, addressField);
-        final List<ModelDefinition> entities = List.of();
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, addressField),
+                List.of()
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities);
-
-        assertEquals(1, result.size());
-        assertTrue(result.get(0).endsWith("AddressTO address"));
+        assertEquals(List.of("AddressTO address"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO throws IllegalArgumentException when no ID field exists")
+    @DisplayName("uses '<collectionRawType><ElementTO> <name>' for JSON collection fields (JSON<List<Address>>) - (entities variant)")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldUseCollectionTOType_forJsonCollectionFields_list() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition addressesField = fieldWithNameAndType("addresses", "JSON<List<Address>>");
+        addressesField.setRelation(null);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, addressesField),
+                List.of()
+        );
+
+        assertEquals(List.of("List<AddressTO> addresses"), result);
+    }
+
+    @Test
+    @DisplayName("throws IllegalArgumentException when no ID field exists (entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldThrow_whenNoIdField() {
 
         final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
         nameField.setRelation(null);
 
-        final List<FieldDefinition> fields = List.of(nameField);
-        final List<ModelDefinition> entities = List.of();
-
         final IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields, entities)
+                () -> FieldUtils.generateInputArgsWithoutFinalCreateInputTO(List.of(nameField), List.of())
         );
 
         assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO returns '<type> <name>' for plain fields excluding ID")
+    @DisplayName("returns '<type> <name>' for plain fields excluding ID (no-entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldReturnTypeAndName_forPlainFields_excludingId() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
         final FieldDefinition ageField = fieldWithNameTypeAndId("age", "Integer", false);
 
-        final List<FieldDefinition> fields = List.of(idField, nameField, ageField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, nameField, ageField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
-
-        assertEquals(2, result.size());
-        assertTrue(result.get(0).endsWith("String name"));
-        assertTrue(result.get(1).endsWith("Integer age"));
+        assertEquals(List.of("String name", "Integer age"), result);
     }
 
     @Test
+    @DisplayName("includes validation annotations before '<type> <name>' (no-entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldReturnNameWithValidationAnnotations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
         final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
         nameField.setValidation(new ValidationDefinition().setMinLength(1).setMaxLength(100));
 
-        final List<FieldDefinition> fields = List.of(idField, nameField);
-
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, nameField)
+        );
 
         assertEquals(1, result.size());
         assertTrue(result.get(0).endsWith("@Size(min = 1, max = 100) String name"));
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates '<Relation>InputTO <name>' for ManyToOne/OneToOne relations")
+    @DisplayName("generates '<Relation>InputTO <name>' for ManyToOne/OneToOne relations (no-entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSingleInputTO_forToOneRelations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
 
         final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
-                "category", "Category", "ManyToOne", "ALL", "EAGER"
+                "category", "Category", RelationTypeEnum.MANY_TO_ONE.getKey(), "ALL", "EAGER"
         );
 
-        final List<FieldDefinition> fields = List.of(idField, categoryField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, categoryField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
-
-        assertEquals(1, result.size());
-        assertEquals("CategoryInputTO category", result.get(0));
+        assertEquals(List.of("CategoryInputTO category"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO generates 'List<<Relation>InputTO> <name>' for OneToMany/ManyToMany relations")
+    @DisplayName("generates 'List<<Relation>InputTO> <name>' for OneToMany/ManyToMany relations (no-entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateListOfInputTO_forToManyRelations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
 
         final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
-                "tags", "Tag", "ManyToMany", "ALL", "EAGER"
+                "tags", "Tag", RelationTypeEnum.MANY_TO_MANY.getKey(), "ALL", "EAGER"
         );
 
         final FieldDefinition commentsField = fieldWithNameTypeAndRelation(
-                "comments", "Comment", "OneToMany", "ALL", "LAZY"
+                "comments", "Comment", RelationTypeEnum.ONE_TO_MANY.getKey(), "ALL", "LAZY"
         );
 
-        final List<FieldDefinition> fields = List.of(idField, tagsField, commentsField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, tagsField, commentsField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
-
-        assertEquals(2, result.size());
-        assertEquals("List<TagInputTO> tags", result.get(0));
-        assertEquals("List<CommentInputTO> comments", result.get(1));
+        assertEquals(List.of("List<TagInputTO> tags", "List<CommentInputTO> comments"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalCreateInputTO strips suffix from relation type before adding InputTO")
+    @DisplayName("strips suffix from relation type before adding InputTO (no-entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldStripSuffix_beforeAppendingInputTO_forRelations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
 
         final FieldDefinition categoryField = fieldWithNameTypeAndRelation(
-                "category", "CategoryEntity", "ManyToOne", "ALL", "EAGER"
+                "category", "CategoryEntity", RelationTypeEnum.MANY_TO_ONE.getKey(), "ALL", "EAGER"
         );
 
-        final List<FieldDefinition> fields = List.of(idField, categoryField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, categoryField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(fields);
-
-        assertEquals(1, result.size());
-        assertEquals("CategoryInputTO category", result.get(0));
+        assertEquals(List.of("CategoryInputTO category"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO returns '<type> <name>' for non-relation fields excluding ID")
+    @DisplayName("uses '<resolvedType>TO <name>' for JSON fields (non-collection, no-entities variant)")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldUseTOType_forJsonFields_noEntities() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition addressField = fieldWithNameAndType("address", "JSON<Address>");
+        addressField.setRelation(null);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, addressField)
+        );
+
+        assertEquals(List.of("AddressTO address"), result);
+    }
+
+    @Test
+    @DisplayName("uses '<collectionRawType><ElementTO> <name>' for JSON collection fields (JSON<List<Address>>)")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldUseCollectionTOType_forJsonCollectionFields_noEntities() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition addressesField = fieldWithNameAndType("addresses", "JSON<List<Address>>");
+        addressesField.setRelation(null);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, addressesField)
+        );
+
+        assertEquals(List.of("List<AddressTO> addresses"), result);
+    }
+
+    @Test
+    @DisplayName("returns '<type> <name>' for non-relation fields excluding ID")
     void generateInputArgsWithoutFinalUpdateInputTO_shouldReturnTypeAndName_forPlainFields() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2523,18 +2660,18 @@ class FieldUtilsTest {
         nameField.setRelation(null);
 
         final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
-                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+                "owner", "OwnerModel", RelationTypeEnum.MANY_TO_ONE.getKey(), "ALL", "EAGER"
         );
 
-        final List<FieldDefinition> fields = List.of(idField, nameField, ownerField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(
+                List.of(idField, nameField, ownerField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
-
-        assertEquals(1, result.size());
-        assertEquals("String name", result.get(0));
+        assertEquals(List.of("String name"), result);
     }
 
     @Test
+    @DisplayName("includes validation annotations for plain field")
     void generateInputArgsWithoutFinalUpdateInputTO_shouldReturnNameAndValidationAnnotations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2545,19 +2682,18 @@ class FieldUtilsTest {
         nameField.setValidation(new ValidationDefinition().setMinLength(1).setMaxLength(100));
 
         final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
-                "owner", "OwnerModel", "ManyToOne", "ALL", "EAGER"
+                "owner", "OwnerModel", RelationTypeEnum.MANY_TO_ONE.getKey(), "ALL", "EAGER"
         );
 
-        final List<FieldDefinition> fields = List.of(idField, nameField, ownerField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(
+                List.of(idField, nameField, ownerField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
-
-        assertEquals(1, result.size());
-        assertEquals("@Size(min = 1, max = 100) String name", result.get(0));
+        assertEquals(List.of("@Size(min = 1, max = 100) String name"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO uses '<resolvedType>TO name' for JSON fields")
+    @DisplayName("uses '<resolvedType>TO <name>' for JSON fields (non-collection) - FIX")
     void generateInputArgsWithoutFinalUpdateInputTO_shouldUseTOType_forJsonFields() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2566,16 +2702,32 @@ class FieldUtilsTest {
         final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON<Metadata>");
         jsonField.setRelation(null);
 
-        final List<FieldDefinition> fields = List.of(idField, jsonField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(
+                List.of(idField, jsonField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
-
-        assertEquals(1, result.size());
-        assertEquals("MetadataTO metadata", result.get(0));
+        assertEquals(List.of("MetadataTO metadata"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO adds validation annotations when column constraints are present")
+    @DisplayName("uses '<collectionType><ElementTO> <name>' for JSON collection fields (JSON<List<Metadata>>) - NEW")
+    void generateInputArgsWithoutFinalUpdateInputTO_shouldUseCollectionTOType_forJsonList() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition jsonField = fieldWithNameAndType("metadata", "JSON<List<Metadata>>");
+        jsonField.setRelation(null);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(
+                List.of(idField, jsonField)
+        );
+
+        assertEquals(List.of("List<MetadataTO> metadata"), result);
+    }
+
+    @Test
+    @DisplayName("adds validation annotations when column constraints are present")
     void generateInputArgsWithoutFinalUpdateInputTO_shouldIncludeValidationAnnotations() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2589,16 +2741,15 @@ class FieldUtilsTest {
         column.setLength(100);
         nameField.setColumn(column);
 
-        final List<FieldDefinition> fields = List.of(idField, nameField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(
+                List.of(idField, nameField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
-
-        assertEquals(1, result.size());
-        assertEquals("@NotNull @Size(max = 100) String name", result.get(0));
+        assertEquals(List.of("@NotNull @Size(max = 100) String name"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO includes validation annotations for name field")
+    @DisplayName("includes validation annotations for name field (email + size + notnull)")
     void generateInputArgsWithoutFinalUpdateInputTO_includeValidationField() {
 
         final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
@@ -2607,10 +2758,10 @@ class FieldUtilsTest {
         final FieldDefinition nameField = fieldWithNameTypeAndId("name", "String", false);
         nameField.setRelation(null);
         nameField.setValidation(
-            new ValidationDefinition()
-                    .setEmail(true)
-                    .setMinLength(1)
-                    .setMaxLength(100)
+                new ValidationDefinition()
+                        .setEmail(true)
+                        .setMinLength(1)
+                        .setMaxLength(100)
         );
 
         final ColumnDefinition column = new ColumnDefinition();
@@ -2618,16 +2769,35 @@ class FieldUtilsTest {
         column.setLength(100);
         nameField.setColumn(column);
 
-        final List<FieldDefinition> fields = List.of(idField, nameField);
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(
+                List.of(idField, nameField)
+        );
 
-        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields);
-
-        assertEquals(1, result.size());
-        assertEquals("@NotNull @Size(min = 1, max = 100) @Email String name", result.get(0));
+        assertEquals(List.of("@NotNull @Size(min = 1, max = 100) @Email String name"), result);
     }
 
     @Test
-    @DisplayName("generateInputArgsWithoutFinalUpdateInputTO throws IllegalArgumentException when no ID field exists")
+    @DisplayName("filters out relation fields (only non-relation fields are included) - NEW")
+    void generateInputArgsWithoutFinalUpdateInputTO_shouldFilterOutRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation(
+                "owner", "OwnerModel", RelationTypeEnum.MANY_TO_ONE.getKey(), "ALL", "EAGER"
+        );
+
+        final FieldDefinition titleField = fieldWithNameTypeAndId("title", "String", false);
+        titleField.setRelation(null);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(
+                List.of(idField, ownerField, titleField)
+        );
+
+        assertEquals(List.of("String title"), result);
+    }
+
+    @Test
+    @DisplayName("throws IllegalArgumentException when no ID field exists")
     void generateInputArgsWithoutFinalUpdateInputTO_shouldThrow_whenNoIdField() {
 
         final FieldDefinition f1 = fieldWithNameTypeAndId("name", "String", false);
@@ -2636,11 +2806,9 @@ class FieldUtilsTest {
         final FieldDefinition f2 = fieldWithNameTypeAndId("age", "Integer", false);
         f2.setRelation(null);
 
-        final List<FieldDefinition> fields = List.of(f1, f2);
-
         final IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(fields)
+                () -> FieldUtils.generateInputArgsWithoutFinalUpdateInputTO(List.of(f1, f2))
         );
 
         assertTrue(ex.getMessage().contains("No ID field found in the provided fields."));
@@ -2826,6 +2994,30 @@ class FieldUtilsTest {
 
         assertEquals(1, result.size());
         assertEquals("AddressTO address", result.get(0));
+    }
+
+    @Test
+    @DisplayName("uses '<collectionType><ElementTO> <name>' for JSON collection fields (JSON<List<Address>>) - NEW")
+    void generateInputArgsWithoutFinal_shouldUseCollectionTOType_forJsonList() {
+
+        final FieldDefinition jsonField = fieldWithNameAndType("addresses", "JSON<List<Address>>");
+        jsonField.setRelation(null);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinal(List.of(jsonField));
+
+        assertEquals(List.of("List<AddressTO> addresses"), result);
+    }
+
+    @Test
+    @DisplayName("uses '<collectionType><ElementTO> <name>' for JSONB collection fields (JSONB<Set<Address>>) - NEW")
+    void generateInputArgsWithoutFinal_shouldUseCollectionTOType_forJsonbSet() {
+
+        final FieldDefinition jsonField = fieldWithNameAndType("addresses", "JSONB<Set<Address>>");
+        jsonField.setRelation(null);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinal(List.of(jsonField));
+
+        assertEquals(List.of("Set<AddressTO> addresses"), result);
     }
 
     @Test
@@ -3041,26 +3233,69 @@ class FieldUtilsTest {
     }
 
     @Test
-    @DisplayName("extractJsonFieldName returns inner type for JSON[...] type")
-    void extractJsonFieldName_shouldReturnInnerType_forJsonType() {
+    @DisplayName("extractJsonInnerElementType returns inner type for JSON<...> when inner is non-collection")
+    void extractJsonInnerElementType_shouldReturnInnerType_forJsonType() {
 
         final FieldDefinition field = fieldWithNameAndType("metadata", "JSON<Metadata>");
 
-        final String result = FieldUtils.extractJsonFieldName(field);
+        final String result = FieldUtils.extractJsonInnerElementType(field);
 
         assertEquals("Metadata", result);
     }
 
     @Test
-    @DisplayName("extractJsonFieldName returns inner type for JSONB[...] type")
-    void extractJsonFieldName_shouldReturnInnerType_forJsonbType() {
+    @DisplayName("extractJsonInnerElementType returns element type for JSON<List<T>>")
+    void extractJsonInnerElementType_shouldReturnElementType_forJsonList() {
 
-        final FieldDefinition field = fieldWithNameAndType("metadata", "JSONB<MyCustom_Type>");
+        final FieldDefinition field = fieldWithNameAndType("tags", "JSON<List<String>>");
 
-        final String result = FieldUtils.extractJsonFieldName(field);
+        final String result = FieldUtils.extractJsonInnerElementType(field);
 
-        assertEquals("MyCustom_Type", result);
+        assertEquals("String", result);
     }
+
+    @Test
+    @DisplayName("extractJsonInnerElementType returns element type for JSON<Set<T>>")
+    void extractJsonInnerElementType_shouldReturnElementType_forJsonSet() {
+
+        final FieldDefinition field = fieldWithNameAndType("ids", "JSON<Set<Long>>");
+
+        final String result = FieldUtils.extractJsonInnerElementType(field);
+
+        assertEquals("Long", result);
+    }
+
+    @Test
+    @DisplayName("extractJsonInnerElementType trims spaces inside collection generic (List<  T  >)")
+    void extractJsonInnerElementType_shouldHandleSpacesInsideCollectionGeneric() {
+
+        final FieldDefinition field = fieldWithNameAndType("ids", "JSON<List<   UUID   >>");
+
+        final String result = FieldUtils.extractJsonInnerElementType(field);
+
+        assertEquals("UUID", result);
+    }
+
+    @Test
+    @DisplayName("extractJsonInnerType returns inner type for JSON<...>")
+    void extractJsonInnerType_shouldReturnInnerType_forJson() {
+        final FieldDefinition field = fieldWithNameAndType("meta", "JSON<Metadata>");
+
+        final String result = FieldUtils.extractJsonInnerType(field);
+
+        assertEquals("Metadata", result);
+    }
+
+    @Test
+    @DisplayName("extractJsonInnerType returns collection inner type as-is for JSON<List<T>>")
+    void extractJsonInnerType_shouldReturnCollectionInner_asIs() {
+        final FieldDefinition field = fieldWithNameAndType("tags", "JSON<List<String>>");
+
+        final String result = FieldUtils.extractJsonInnerType(field);
+
+        assertEquals("List<String>", result);
+    }
+
 
     @Test
     @DisplayName("isSimpleCollectionField: List<String> -> true")
@@ -3147,6 +3382,28 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("extractCollectionRawType returns 'List' for resolvedType List<T>")
+    void extractCollectionRawType_shouldReturnList_forListResolvedType() {
+       
+        final FieldDefinition field = fieldWithNameAndType("items", "List<String>");
+
+        final String result = FieldUtils.extractCollectionRawType(field);
+
+        assertEquals("List", result);
+    }
+
+    @Test
+    @DisplayName("extractCollectionRawType returns 'Set' for resolvedType Set<T>")
+    void extractCollectionRawType_shouldReturnSet_forSetResolvedType() {
+        
+        final FieldDefinition field = fieldWithNameAndType("items", "Set<Long>");
+
+        final String result = FieldUtils.extractCollectionRawType(field);
+
+        assertEquals("Set", result);
+    }
+
+    @Test
     @DisplayName("computeResolvedType returns JSON inner type for JSON field")
     void computeResolvedType_shouldReturnInnerType_forJsonField() {
 
@@ -3155,6 +3412,17 @@ class FieldUtilsTest {
         final String result = FieldUtils.computeResolvedType(field);
 
         assertEquals("Metadata", result);
+    }
+
+    @Test
+    @DisplayName("computeResolvedType returns JSON inner type as-is for JSON<List<T>> (collection inside JSON)")
+    void computeResolvedType_shouldReturnCollectionInnerType_forJsonList() {
+    
+        final FieldDefinition field = fieldWithNameAndType("tags", "JSON<List<String>>");
+
+        final String result = FieldUtils.computeResolvedType(field);
+
+        assertEquals("List<String>", result);
     }
 
     @Test

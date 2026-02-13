@@ -69,7 +69,7 @@ class RestControllerTemplateContextTest {
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(fields))
                       .thenReturn(List.of(jsonField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                       .thenReturn("AddressEntity");
 
             fieldUtils.when(() -> FieldUtils.extractRelationFields(fields))
@@ -413,7 +413,7 @@ class RestControllerTemplateContextTest {
 
             final FieldDefinition jsonField = mock(FieldDefinition.class);
             fu.when(() -> FieldUtils.extractJsonFields(fields)).thenReturn(List.of(jsonField));
-            fu.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("payload");
+            fu.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("payload");
 
             utu.when(() -> UnitTestUtils.computeInvalidIdType(idField)).thenReturn("invalid-id");
             utu.when(() -> UnitTestUtils.isInstancioEnabled(crudCfg)).thenReturn(false);

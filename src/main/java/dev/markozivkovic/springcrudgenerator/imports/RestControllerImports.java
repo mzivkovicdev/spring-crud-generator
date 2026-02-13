@@ -142,7 +142,7 @@ public class RestControllerImports {
         if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
             modelDefinition.getFields().stream()
                 .filter(field -> FieldUtils.isJsonField(field))
-                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .map(field -> FieldUtils.extractJsonInnerElementType(field))
                 .forEach(jsonField -> {
                     imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", jsonField))));
                 });
@@ -397,7 +397,7 @@ public class RestControllerImports {
         if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
             modelDefinition.getFields().stream()
                 .filter(field -> FieldUtils.isJsonField(field))
-                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .map(field -> FieldUtils.extractJsonInnerElementType(field))
                 .forEach(jsonField -> {
                     imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeHelperRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", jsonField))));
                 });
@@ -475,7 +475,7 @@ public class RestControllerImports {
         if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
             modelDefinition.getFields().stream()
                 .filter(field -> FieldUtils.isJsonField(field))
-                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .map(field -> FieldUtils.extractJsonInnerElementType(field))
                 .forEach(jsonField -> {
                     imports.add(String.format(
                         IMPORT,

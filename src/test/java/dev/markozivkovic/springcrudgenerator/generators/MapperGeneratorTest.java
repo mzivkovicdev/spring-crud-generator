@@ -118,7 +118,7 @@ class MapperGeneratorTest {
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(userModel, allEntities)).thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn(packagePath);
             pkg.when(() -> PackageUtils.computeRestMapperPackage(packagePath, pkgCfg)).thenReturn("com.example.app.mapper.rest");
@@ -192,7 +192,7 @@ class MapperGeneratorTest {
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(userModel, allEntities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
 
@@ -239,7 +239,7 @@ class MapperGeneratorTest {
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(userModel, allEntities)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
             pkg.when(() -> PackageUtils.computeRestMapperPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.mapper.rest");

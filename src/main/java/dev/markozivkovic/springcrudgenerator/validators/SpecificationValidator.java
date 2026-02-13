@@ -259,7 +259,7 @@ public class SpecificationValidator {
 
         final String inner;
         try {
-            inner = FieldUtils.extractJsonFieldName(field);
+            inner = FieldUtils.extractJsonInnerElementType(field);
         } catch (final IllegalStateException e) {
             throw new IllegalArgumentException(
                 String.format(

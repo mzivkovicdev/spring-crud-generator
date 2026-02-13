@@ -77,7 +77,7 @@ public class ResolverImports {
         if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
             modelDefinition.getFields().stream()
                 .filter(field -> FieldUtils.isJsonField(field))
-                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .map(field -> FieldUtils.extractJsonInnerElementType(field))
                 .forEach(jsonField -> {
                     imports.add(String.format(
                         IMPORT,
@@ -228,7 +228,7 @@ public class ResolverImports {
         if (FieldUtils.isAnyFieldJson(modelDefinition.getFields())) {
             modelDefinition.getFields().stream()
                 .filter(field -> FieldUtils.isJsonField(field))
-                .map(field -> FieldUtils.extractJsonFieldName(field))
+                .map(field -> FieldUtils.extractJsonInnerElementType(field))
                 .forEach(jsonField -> {
                     imports.add(String.format(
                         IMPORT,
