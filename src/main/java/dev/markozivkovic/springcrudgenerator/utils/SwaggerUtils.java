@@ -195,7 +195,12 @@ public class SwaggerUtils {
             }
         } else {
             if (isJsonField) {
-                schema = ref(FieldUtils.extractJsonInnerElementType(fieldDefinition));
+                final String fieldType = FieldUtils.extractJsonInnerType(fieldDefinition);
+                if (SpecialTypeEnum.isCollectionType(fieldType)) {
+                    schema = arrayOfRef(FieldUtils.extractJsonInnerElementType(fieldDefinition), SpecialTypeEnum.isSetType(fieldType));
+                } else {
+                    schema = ref(FieldUtils.extractJsonInnerElementType(fieldDefinition));
+                }
             } else if (isSimpleCollectionType) {
                 schema = arrayOfSimpleType(
                         FieldUtils.extractSimpleCollectionType(fieldDefinition), fieldDefinition.getValues(), SpecialTypeEnum.isSetType(fieldDefinition.getType())
@@ -395,6 +400,20 @@ public class SwaggerUtils {
         final Map<String, Object> m = new LinkedHashMap<>();
         m.put("type", "array");
         m.put("items", ref(targetSchemaName, swaggerSchemaMode));
+        return m;
+    }
+
+    /**
+     * Return a Swagger array type definition which references the given targetSchemaName.
+     * The array type definition will also specify whether the array elements should be unique or not.
+     * 
+     * @param targetSchemaName the name of the target schema
+     * @param isUnique whether the array elements should be unique or not
+     * @return a Swagger array type definition
+     */
+    private static Map<String, Object> arrayOfRef(final String targetSchemaName, final boolean isUnique) {
+        final Map<String, Object> m = arrayOfRef(targetSchemaName, SwaggerSchemaModeEnum.DEFAULT);
+        m.put("uniqueItems", isUnique);
         return m;
     }
 

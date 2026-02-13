@@ -686,6 +686,37 @@ class SwaggerUtilsTest {
     }
 
     @Test
+    @DisplayName("toSwaggerProperty: JSON<Metadata> -> schema $ref to Metadata")
+    void toSwaggerProperty_jsonNonCollection_usesRefSchema() {
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("metadata");
+        fieldDefinition.setType("JSON<Metadata>");
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals("./metaPayload.yaml", property.get("$ref"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: JSON<List<Item>> -> schema array of $ref, uniqueItems=false")
+    void toSwaggerProperty_jsonList_usesArrayOfRef_uniqueItemsFalse() {
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("items");
+        fieldDefinition.setType("JSON<List<Item>>");
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals("array", property.get("type"));
+
+        final Map<String, Object> items = asMap(property.get("items"));
+        assertEquals("./itemPayload.yaml", items.get("$ref"));
+
+        assertEquals(false, property.get("uniqueItems"));
+    }
+
+    @Test
     @DisplayName("ref: should create $ref entry with .yaml path")
     void ref_createsRefWithYamlPath() {
         final Map<String, Object> result = SwaggerUtils.ref("UserDto");
