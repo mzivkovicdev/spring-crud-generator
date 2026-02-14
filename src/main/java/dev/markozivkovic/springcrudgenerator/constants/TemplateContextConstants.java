@@ -106,13 +106,14 @@ public final class TemplateContextConstants {
     public static final String SWAGGER_MODEL = "swaggerModel";
     public static final String GENERATED_MODEL_IMPORT = "generatedModelImport";
     public static final String GENERATE_ALL_HELPER_METHODS = "generateAllHelperMethods";
-    public static final String HELPER_MAPPER_IMPORTS = "helperMapperImports";
+    public static final String HELPER_MAPPER = "helperMapper";
     public static final String PARAMETERS = "parameters";
 
     public static final String DATA_GENERATOR = "dataGenerator";
     public static final String DATA_GENERATOR_FIELD_NAME = "generatorFieldName";
     public static final String DATA_GENERATOR_SINGLE_OBJ = "singleObjectMethodName";
     public static final String DATA_GENERATOR_LIST_METHOD = "multipleObjectsMethodName";
+    public static final String DATA_GENERATOR_SET_METHOD = "multipleUniqueObjectsMethodName";
 
     public static final String IS_SPRING_BOOT_3 = "isSpringBoot3";
     public static final String SCHEMA_NAME = "schemaName";

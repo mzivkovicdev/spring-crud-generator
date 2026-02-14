@@ -498,6 +498,7 @@ class MapperTemplateContextsTest {
             assertEquals("Address", ctx.get(TemplateContextConstants.SWAGGER_MODEL));
             assertEquals(false, ctx.get(TemplateContextConstants.GENERATE_ALL_HELPER_METHODS));
             assertEquals(expectedImports, ctx.get("projectImports"));
+            assertEquals(true, ctx.get(TemplateContextConstants.HELPER_MAPPER));
         }
     }
 
@@ -534,6 +535,7 @@ class MapperTemplateContextsTest {
             assertEquals("Profile", ctx.get(TemplateContextConstants.SWAGGER_MODEL));
             assertEquals(true, ctx.get(TemplateContextConstants.GENERATE_ALL_HELPER_METHODS));
             assertEquals(expectedImports, ctx.get("projectImports"));
+            assertEquals(true, ctx.get(TemplateContextConstants.HELPER_MAPPER));
         }
     }
 }

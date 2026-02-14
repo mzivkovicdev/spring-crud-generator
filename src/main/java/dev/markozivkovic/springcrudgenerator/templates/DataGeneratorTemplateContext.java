@@ -40,6 +40,7 @@ public class DataGeneratorTemplateContext {
         context.put(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, config.randomFieldName());
         context.put(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, config.singleObjectMethodName());
         context.put(TemplateContextConstants.DATA_GENERATOR_LIST_METHOD, config.multipleObjectsMethodName());
+        context.put(TemplateContextConstants.DATA_GENERATOR_SET_METHOD, config.multipleUniqueObjectsMethodName());
         
         return context;
     }

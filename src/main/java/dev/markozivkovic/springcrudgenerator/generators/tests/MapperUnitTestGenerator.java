@@ -196,6 +196,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
         context.put("enumFields", enumFields);
+        context.put(TemplateContextConstants.HELPER_MAPPER, true);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         context.put("projectImports", MapperImports.computeTestHelperMapperImports(packagePath, jsonModel, parentModel, packageConfiguration, swagger, isGraphQl));

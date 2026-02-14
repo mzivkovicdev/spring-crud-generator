@@ -109,6 +109,7 @@ public class MapperTemplateContexts {
         context.put(TemplateContextConstants.MODEL_NAME, jsonModel.getName());
         context.put(TemplateContextConstants.MAPPER_NAME, mapperName);
         context.put(TemplateContextConstants.TRANSFER_OBJECT_NAME, transferObjectName);
+        context.put(TemplateContextConstants.HELPER_MAPPER, true);
 
         context.put(TemplateContextConstants.SWAGGER, swagger);
         context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(jsonModel.getName()));

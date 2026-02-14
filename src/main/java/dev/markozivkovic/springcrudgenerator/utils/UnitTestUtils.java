@@ -105,10 +105,12 @@ public class UnitTestUtils {
                     DataGeneratorEnum.INSTANCIO.name().toUpperCase(Locale.ROOT),
                     "Instancio",
                     "create",
-                    "ofList");
+                    "ofList",
+                    "ofSet");
             case PODAM -> new TestDataGeneratorConfig(
                     DataGeneratorEnum.PODAM.name().toUpperCase(Locale.ROOT),
                     "PODAM_FACTORY",
+                    "manufacturePojo",
                     "manufacturePojo",
                     "manufacturePojo");
             default -> throw new IllegalArgumentException(
@@ -124,7 +126,8 @@ public class UnitTestUtils {
             String generator,
             String randomFieldName,
             String singleObjectMethodName,
-            String multipleObjectsMethodName) {
+            String multipleObjectsMethodName,
+            String multipleUniqueObjectsMethodName) {
         
     }
 
