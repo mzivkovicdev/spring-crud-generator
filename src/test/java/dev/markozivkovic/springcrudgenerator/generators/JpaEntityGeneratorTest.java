@@ -100,7 +100,7 @@ class JpaEntityGeneratorTest {
             genCtx.when(() -> GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(true);
 
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Address");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Address");
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(userModel, allEntities)).thenReturn(false);
 
             final FieldDefinition idField = mockIdField(IdStrategyEnum.AUTO);
@@ -222,7 +222,7 @@ class JpaEntityGeneratorTest {
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Address");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Address");
 
             assertThrows(IllegalArgumentException.class, () -> generator.generate(model, outputDir));
 

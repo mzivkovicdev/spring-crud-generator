@@ -270,7 +270,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         final String className = String.format("%sCreateMockMvcTest", modelWithoutSuffix);
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
         final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .collect(Collectors.toList());
 
         final Map<String, Object> context = RestControllerTemplateContext.computeCreateTestEndpointContext(modelDefinition, entities);

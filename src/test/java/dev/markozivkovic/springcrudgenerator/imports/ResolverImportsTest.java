@@ -170,7 +170,7 @@ class ResolverImportsTest {
 
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField1)).thenReturn(true);
 
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField1))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField1))
                     .thenReturn("Shipping");
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(model.getFields()))
                     .thenReturn(Collections.emptyList());
@@ -682,7 +682,7 @@ class ResolverImportsTest {
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(nonJsonField)).thenReturn(false);
 
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                     .thenReturn("Shipping");
             fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
                     .thenReturn(Collections.emptyList());

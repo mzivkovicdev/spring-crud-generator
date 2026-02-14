@@ -71,7 +71,7 @@ class GraphQlTemplateContextTest {
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(fields))
                       .thenReturn(List.of(jsonField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                       .thenReturn("Address");
 
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields))
@@ -159,7 +159,7 @@ class GraphQlTemplateContextTest {
             when(clonedRelationField.setType("Address")).thenReturn(clonedRelationField);
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of(clonedRelationField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(clonedRelationField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(clonedRelationField)).thenReturn("AddressEntity");
 
             final Map<String, Object> ctx = GraphQlTemplateContext.computeGraphQlSchemaContext(mainModel, allEntities);
 

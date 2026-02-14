@@ -190,7 +190,7 @@ class MigrationScriptGeneratorTest {
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("migration/flyway/create-table.sql.ftl"), eq(createCtx))).thenReturn("CREATE TABLE book (...);");
 
             flyway.when(() -> FlywayUtils.save(eq("/tmp/project"), any(MigrationState.class))).thenAnswer(inv -> null);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(any(FieldDefinition.class)))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(any(FieldDefinition.class)))
                     .thenThrow(new IllegalStateException("Should not be called in this test"));
 
             generator.generate(bookModel, "out");
@@ -246,7 +246,7 @@ class MigrationScriptGeneratorTest {
             flyway.when(() -> FlywayUtils.collectReverseOneToManyExtras(anyList(), any(), anyMap())).thenReturn(Collections.emptyMap());
 
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(anyList())).thenReturn(true);
 

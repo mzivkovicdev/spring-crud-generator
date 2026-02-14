@@ -59,7 +59,7 @@ class TransferObjectImportsTest {
     }
 
     @Test
-    @DisplayName("getBaseImport(model): BigDecimal + UUID + list relations → BigDecimal, UUID i List importi")
+    @DisplayName("getBaseImport(model): BigDecimal + UUID + list relations → BigDecimal, UUID and List imports")
     void getBaseImport_simple_withTypesAndLists() {
         
         final ModelDefinition model = new ModelDefinition();
@@ -126,13 +126,15 @@ class TransferObjectImportsTest {
     }
 
     @Test
-    @DisplayName("getBaseImport(model, entities, BASE): samo liste kada postoje relacije 1-N/N-M")
+    @DisplayName("getBaseImport(model, entities, BASE): only list relations → List import")
     void getBaseImport_withEntities_baseType_listsOnly() {
-        
+
         final ModelDefinition model = new ModelDefinition();
         model.setFields(List.of(new FieldDefinition()));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -140,6 +142,19 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet())).thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    @SuppressWarnings("unchecked")
+                    final Set<String> set = (Set<String>) inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
 
             final String result = TransferObjectImports.getBaseImport(
                     model,
@@ -154,9 +169,9 @@ class TransferObjectImportsTest {
     }
 
     @Test
-    @DisplayName("getBaseImport(model, entities, CREATE): UUID dolazi iz related entiteta sa UUID id poljem")
+    @DisplayName("getBaseImport(model, entities, CREATE): UUID from related entity id → UUID import")
     void getBaseImport_createType_uuidFromRelatedEntityId() {
-        
+
         final FieldDefinition relationField = new FieldDefinition();
         relationField.setType("User");
         relationField.setRelation(new RelationDefinition());
@@ -171,18 +186,31 @@ class TransferObjectImportsTest {
 
         final List<ModelDefinition> entities = List.of(userEntity);
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields()))
-                    .thenReturn(userIdField);
-            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(userIdField))
-                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields())).thenReturn(userIdField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(userIdField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet())).thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    @SuppressWarnings("unchecked")
+                    final Set<String> set = (Set<String>) inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
 
             final String result = TransferObjectImports.getBaseImport(
                     model,
@@ -190,15 +218,14 @@ class TransferObjectImportsTest {
                     TransferObjectType.CREATE
             );
 
-            assertTrue(result.contains("import " + ImportConstants.Java.UUID),
-                    "UUID import expected from related entity id field");
+            assertTrue(result.contains("import " + ImportConstants.Java.UUID), "UUID import expected from related entity id field");
             assertFalse(result.contains("import " + ImportConstants.Java.LIST));
             assertTrue(result.endsWith("\n"));
         }
     }
 
     @Test
-    @DisplayName("getBaseImport(model, entities, INPUT): baca IllegalArgumentException kada related entity ne postoji")
+    @DisplayName("getBaseImport(model, entities, INPUT): missing related entity throws IllegalArgumentException")
     void getBaseImport_inputType_missingRelatedEntity_throws() {
 
         final FieldDefinition relationField = new FieldDefinition();
@@ -210,7 +237,9 @@ class TransferObjectImportsTest {
 
         final List<ModelDefinition> entities = Collections.emptyList();
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -218,6 +247,12 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet())).thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString())).thenAnswer(inv -> null);
 
             final IllegalArgumentException ex = assertThrows(
                     IllegalArgumentException.class,
@@ -231,11 +266,10 @@ class TransferObjectImportsTest {
             assertTrue(ex.getMessage().contains("Related entity not found: MissingEntity"));
         }
     }
-
     @Test
-    @DisplayName("getBaseImport(model, entities, INPUT): related entity postoji, id nije UUID → nema UUID importa ni LIST importa")
+    @DisplayName("getBaseImport(model, entities, INPUT): related entity has non-UUID id → no UUID import")
     void getBaseImport_inputType_relatedEntityNonUuidId_noUuidNoList() {
-        
+
         final FieldDefinition relationField = new FieldDefinition();
         relationField.setType("User");
         relationField.setRelation(new RelationDefinition());
@@ -250,19 +284,32 @@ class TransferObjectImportsTest {
 
         final List<ModelDefinition> entities = List.of(userEntity);
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-
-            fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields()))
-                    .thenReturn(userIdField);
-            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(userIdField))
-                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields())).thenReturn(userIdField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(userIdField)).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet())).thenAnswer(inv -> null);
+
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    @SuppressWarnings("unchecked")
+                    final Set<String> set = (Set<String>) inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
 
             final String result = TransferObjectImports.getBaseImport(
                     model,
@@ -274,6 +321,57 @@ class TransferObjectImportsTest {
                     "UUID import should not be present");
             assertFalse(result.contains("import " + ImportConstants.Java.LIST),
                     "List import should not be present for INPUT even if relations exist");
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport(model, entities, BASE): JSON<List<T>> -> imports List (no ArrayList, interfaces only)")
+    void getBaseImport_baseType_jsonList_importsListOnly() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(List.of(new FieldDefinition()));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+            final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    @SuppressWarnings("unchecked")
+                    final Set<String> set = (Set<String>) inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
+
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                .thenAnswer(inv -> {
+                    @SuppressWarnings("unchecked")
+                    final Set<String> imports = (Set<String>) inv.getArgument(1);
+                    imports.add(ImportConstants.Java.LIST);
+                    return null;
+                });
+
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                .thenAnswer(inv -> null);
+
+            final String result = TransferObjectImports.getBaseImport(
+                    model,
+                    Collections.emptyList(),
+                    TransferObjectType.BASE
+            );
+
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+            assertFalse(result.contains("import " + ImportConstants.Java.ARRAY_LIST + ";"));
         }
     }
 
@@ -877,7 +975,7 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.extractJsonFields(model.getFields()))
                     .thenReturn(List.of(jsonField));
 
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                     .thenReturn("Address");
             packageUtils.when(() -> PackageUtils.computeHelperGraphqlTransferObjectPackage("com.example", packageConfiguration))
                     .thenReturn("com.example.graphql.helper");
@@ -924,7 +1022,7 @@ class TransferObjectImportsTest {
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(model.getFields()))
                     .thenReturn(List.of(jsonField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                     .thenReturn("MetaData");
 
             packageUtils.when(() -> PackageUtils.computeHelperRestTransferObjectPackage("com.example.rest", packageConfiguration))

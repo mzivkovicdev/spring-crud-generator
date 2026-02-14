@@ -93,7 +93,7 @@ class MapperImportsTest {
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList()))
                     .thenReturn(List.of(jsonField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                     .thenReturn("Address");
 
             pkg.when(() -> PackageUtils.computeHelperRestMapperPackage(packagePath, packageConfiguration))
@@ -158,7 +158,7 @@ class MapperImportsTest {
 
             fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList()))
                     .thenReturn(List.of(jsonField));
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField))
                     .thenReturn("Settings");
 
             pkg.when(() -> PackageUtils.computeHelperGraphQlMapperPackage(packagePath, packageConfiguration))

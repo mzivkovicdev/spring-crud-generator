@@ -138,7 +138,7 @@ class TransferObjectGeneratorTest {
 
             fieldUtils.when(() -> FieldUtils.isJsonField(mainJsonField))
                       .thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(mainJsonField))
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(mainJsonField))
                       .thenReturn("AddressEntity");
 
             pkg.when(() -> PackageUtils.computeHelperRestTransferObjectPackage("com.example.app", pkgCfg))
@@ -270,7 +270,7 @@ class TransferObjectGeneratorTest {
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities)).thenReturn(false);
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.example.app");
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("AddressEntity");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("AddressEntity");
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(Collections.emptyList());
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(mainModel.getFields())).thenReturn(false);
 

@@ -9,11 +9,13 @@
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 <#assign openApiResponse = strippedModelName + "Payload">
 <#assign openApiRequest = strippedModelName + "CreatePayload">
+
     <#if swagger>
     @Override
-    <#else>@PostMapping
+    <#else>
+    @PostMapping
     @Validated
-    </#if><#t>
+    </#if>
     public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiResponse}</#if>> ${uncapModelName}sPost(<#if !swagger>@RequestBody @Valid </#if>final <#if !swagger>${createTransferObjectClass}<#else>${openApiRequest}</#if> body) {
 
         <#list inputFields?filter(f -> f.isRelation) as rel>

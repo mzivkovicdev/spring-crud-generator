@@ -19,6 +19,7 @@ package dev.markozivkovic.springcrudgenerator.utils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -322,7 +323,7 @@ public class FieldUtils {
         return entities.stream()
                 .flatMap(entity -> entity.getFields().stream())
                 .filter(field -> isJsonField(field))
-                .map(field -> extractJsonFieldName(field))
+                .map(field -> extractJsonInnerElementType(field))
                 .anyMatch(fieldName -> fieldName.equals(modelDefinition.getName()));
     }
 
@@ -476,12 +477,16 @@ public class FieldUtils {
                 .filter(field -> Objects.isNull(field.getRelation()))
                 .map(field -> {
                     if (isJsonField(field)) {
+                        final String fieldType = extractJsonInnerType(field);
+                        final String resolvedType = SpecialTypeEnum.isCollectionType(fieldType) ?
+                                extractJsonInnerElementType(field) :
+                                field.getResolvedType();
                         return String.format(
                             !swagger ? "%sMapper.map%sTOTo%s(body.%s())" : "%sMapper.map%sTo%s(body.get%s())",
-                            StringUtils.uncapitalize(field.getResolvedType()),
-                            !swagger ? StringUtils.capitalize(field.getResolvedType()) : ModelNameUtils.computeOpenApiModelName(field.getResolvedType()),
-                            StringUtils.capitalize(field.getResolvedType()),
-                            !swagger ? StringUtils.uncapitalize(field.getResolvedType()) : StringUtils.capitalize(field.getResolvedType())
+                            StringUtils.uncapitalize(resolvedType),
+                            !swagger ? StringUtils.capitalize(resolvedType) : ModelNameUtils.computeOpenApiModelName(resolvedType),
+                            StringUtils.capitalize(resolvedType),
+                            !swagger ? StringUtils.uncapitalize(field.getName()) : StringUtils.capitalize(field.getName())
                         );
                     }
 
@@ -510,26 +515,7 @@ public class FieldUtils {
      *         expected by the resolver layer.
      */
     public static List<String> extractNonIdNonRelationFieldNamesForResolver(final List<FieldDefinition> fields) {
-
-        final FieldDefinition id = extractIdField(fields);
-        
-        return fields.stream()
-                .filter(field -> !field.getName().equals(id.getName()))
-                .filter(field -> Objects.isNull(field.getRelation()))
-                .map(field -> {
-                    if (isJsonField(field)) {
-                        return String.format(
-                            "%sMapper.map%sTOTo%s(input.%s())",
-                            StringUtils.uncapitalize(field.getResolvedType()),
-                            StringUtils.capitalize(field.getResolvedType()),
-                            StringUtils.capitalize(field.getResolvedType()),
-                            StringUtils.uncapitalize(field.getResolvedType())
-                        );
-                    }
-
-                    return String.format("input.%s()", field.getName());
-                })
-                .collect(Collectors.toList());
+        return extractNonIdFieldNamesForResolver(fields, false);
     }
 
     /**
@@ -541,34 +527,53 @@ public class FieldUtils {
      *         resolver layer.
      */
     public static List<String> extractNonIdFieldNamesForResolver(final List<FieldDefinition> fields) {
+        return extractNonIdFieldNamesForResolver(fields, true);
+    }
+
+    /**
+     * Extracts the names of all fields from the given list that are not marked as ID fields
+     * and formats them as strings in the format expected by the resolver layer.
+     * 
+     * @param fields The list of fields to extract non-ID field names from.
+     * @param includeRelations Whether to include fields with relations.
+     * @return A list of strings representing the non-ID fields in the format expected by the
+     *         resolver layer.
+     */
+    private static List<String> extractNonIdFieldNamesForResolver(final List<FieldDefinition> fields, final boolean includeRelations) {
 
         final FieldDefinition id = extractIdField(fields);
-        
+
         return fields.stream()
                 .filter(field -> !field.getName().equals(id.getName()))
+                .filter(field -> includeRelations || Objects.isNull(field.getRelation()))
                 .map(field -> {
-                    if (isJsonField(field)) {
-                        return String.format(
-                            "%sMapper.map%sTOTo%s(input.%s())",
-                            StringUtils.uncapitalize(field.getResolvedType()),
-                            StringUtils.capitalize(field.getResolvedType()),
-                            StringUtils.capitalize(field.getResolvedType()),
-                            StringUtils.uncapitalize(field.getResolvedType())
-                        );
+                    if (includeRelations && Objects.nonNull(field.getRelation())) {
+                        final boolean toMany =
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey());
+
+                        return toMany
+                                ? String.format("input.%sIds()", field.getName())
+                                : String.format("input.%sId()", field.getName());
                     }
 
-                    if (Objects.nonNull(field.getRelation())) {
-                        final String inputArg;
-                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
-                            inputArg = String.format("input.%sIds()", field.getName());
-                        } else {
-                            inputArg = String.format("input.%sId()", field.getName());
+                    if (isJsonField(field)) {
+                        final String fieldType = extractJsonInnerType(field);
+                        if (SpecialTypeEnum.isCollectionType(fieldType)) {
+                            final String type = extractJsonInnerElementType(field);
+                            return String.format(
+                                    "%sMapper.map%sTOTo%s(input.%s())",
+                                    StringUtils.uncapitalize(type), StringUtils.capitalize(type),
+                                    StringUtils.capitalize(type), StringUtils.uncapitalize(field.getName())
+                            );
                         }
 
-                        return inputArg;
+                        return String.format(
+                                "%sMapper.map%sTOTo%s(input.%s())",
+                                StringUtils.uncapitalize(field.getResolvedType()), StringUtils.capitalize(field.getResolvedType()),
+                                StringUtils.capitalize(field.getResolvedType()), StringUtils.uncapitalize(field.getName())
+                        );
                     }
-
                     return String.format("input.%s()", field.getName());
                 })
                 .collect(Collectors.toList());
@@ -899,35 +904,18 @@ public class FieldUtils {
      */
     public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields, final List<ModelDefinition> entities) {
         
-        final FieldDefinition idField = extractIdField(fields);
-        
-        return fields.stream()
-                .filter(field -> !field.equals(idField))
-                .map(field -> {
-                    final String annotations = computeValidationAnnotations(field);
+        return generateInputArgsWithoutFinalCreateInputTO(
+                fields,
+                field -> {
+                    final ModelDefinition target = entities.stream()
+                            .filter(model -> model.getName().equals(field.getType()))
+                            .findFirst()
+                            .orElseThrow();
 
-                    if (Objects.nonNull(field.getRelation())) {
-                        final String inputArg;
-                        final ModelDefinition modelDefinition = entities.stream()
-                                .filter(model -> model.getName().equals(field.getType()))
-                                .findFirst()
-                                .orElseThrow();
-                        final FieldDefinition relationId = extractIdField(modelDefinition.getFields());
-                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
-                            inputArg = String.format("List<%s> %sIds", relationId.getType(), field.getName());
-                        } else {
-                            inputArg = String.format("%s %sId", relationId.getType(), field.getName());
-                        }
-                        return inputArg;
-                    }
-
-                    if (isJsonField(field)) {
-                        return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName());
-                    }
-                    return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName());
-                })
-                .collect(Collectors.toList());
+                    return extractIdField(target.getFields()).getType();
+                },
+                true
+        );
     }
 
     /**
@@ -943,29 +931,59 @@ public class FieldUtils {
      *         for a create input TO.
      */
     public static List<String> generateInputArgsWithoutFinalCreateInputTO(final List<FieldDefinition> fields) {
+        return generateInputArgsWithoutFinalCreateInputTO(
+                fields,
+                field -> String.format("%sInputTO", ModelNameUtils.stripSuffix(field.getType())),
+                false
+        );
+    }
+
+    /**
+     * Generates a list of strings representing the input arguments for a constructor or method without the final keyword,
+     * internal implementation.
+     *
+     * @param fields The list of fields to generate the input arguments from.
+     * @param relationBaseTypeResolver The function that resolves the base type of a relation.
+     * @param relationUsesIdSuffix Whether relations use the "Id" suffix in their names.
+     * @return A list of strings representing the input arguments for a constructor or method without the final keyword.
+     */
+    private static List<String> generateInputArgsWithoutFinalCreateInputTO( final List<FieldDefinition> fields,
+            final Function<FieldDefinition, String> relationBaseTypeResolver, final boolean relationUsesIdSuffix) {
         
         final FieldDefinition idField = extractIdField(fields);
-        
+
         return fields.stream()
                 .filter(field -> !field.equals(idField))
                 .map(field -> {
                     final String annotations = computeValidationAnnotations(field);
-
                     if (Objects.nonNull(field.getRelation())) {
-                        final String inputArg;
-                        final String relationType = String.format("%sInputTO", ModelNameUtils.stripSuffix(field.getType()));
-                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
-                            inputArg = String.format("List<%s> %s", relationType, field.getName());
+                        final String baseType = relationBaseTypeResolver.apply(field);
+
+                        final boolean toMany =
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
+                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey());
+
+                        if (toMany) {
+                            final String name = relationUsesIdSuffix ? field.getName() + "Ids" : field.getName();
+                            return String.format("List<%s> %s", baseType, name);
                         } else {
-                            inputArg = String.format("%s %s", relationType, field.getName());
+                            final String name = relationUsesIdSuffix ? field.getName() + "Id" : field.getName();
+                            return String.format("%s %s", baseType, name);
                         }
-                        return inputArg;
                     }
 
                     if (isJsonField(field)) {
+                        final String fieldType = extractJsonInnerType(field);
+
+                        if (SpecialTypeEnum.isCollectionType(fieldType)) {
+                            final String type = extractJsonInnerElementType(field);
+                            final String collectionType = extractCollectionRawType(field);
+                            return String.format("%s%s<%sTO> %s", annotations, collectionType, type, field.getName());
+                        }
+
                         return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName());
                     }
+
                     return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName());
                 })
                 .collect(Collectors.toList());
@@ -1023,6 +1041,12 @@ public class FieldUtils {
                 .map(field -> {
                     final String annotations = computeValidationAnnotations(field);
                     if (isJsonField(field)) {
+                        final String fieldType = extractJsonInnerType(field);
+                        if (SpecialTypeEnum.isCollectionType(fieldType)) {
+                            final String type = extractJsonInnerElementType(field);
+                            final String collectionType = extractCollectionRawType(field);
+                            return String.format("%s%s<%sTO> %s", annotations, collectionType, type, field.getName());
+                        }
                         return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName()).trim();
                     }
                     return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName()). trim();
@@ -1059,6 +1083,12 @@ public class FieldUtils {
                     }
 
                     if (isJsonField(field)) {
+                        final String fieldType = extractJsonInnerType(field);
+                        if (SpecialTypeEnum.isCollectionType(fieldType)) {
+                            final String type = extractJsonInnerElementType(field);
+                            final String collectionType = extractCollectionRawType(field);
+                            return String.format("%s%s<%sTO> %s", annotations, collectionType, type, field.getName());
+                        }
                         return String.format("%s%sTO %s", annotations, field.getResolvedType(), field.getName());
                     }
                     return String.format("%s%s %s", annotations, field.getResolvedType(), field.getName());
@@ -1147,7 +1177,28 @@ public class FieldUtils {
      * @param field The field definition to extract the JSON field name from.
      * @return The name of the JSON field if the field is marked as a JSON field, null otherwise.
      */
-    public static String extractJsonFieldName(final FieldDefinition field) {
+    public static String extractJsonInnerElementType(final FieldDefinition field) {
+
+        final Matcher matcher = jsonPattern.matcher(field.getType());
+        matcher.matches();
+        final String type = matcher.group(1);
+
+        if (SpecialTypeEnum.isCollectionType(type)) {
+            final Matcher collectionMatcher = collectionPattern.matcher(type);
+            collectionMatcher.matches();
+            return collectionMatcher.group(2);
+        }
+
+        return type;
+    }
+
+    /**
+     * Extracts the generic type of a JSON field from the given field definition if it is marked as a JSON field.
+     * 
+     * @param field The field definition to extract the JSON field generic type from.
+     * @return The generic type of the JSON field if the field is marked as a JSON field
+     */
+    public static String extractJsonInnerType(final FieldDefinition field) {
 
         final Matcher matcher = jsonPattern.matcher(field.getType());
         matcher.matches();
@@ -1179,6 +1230,19 @@ public class FieldUtils {
         matcher.matches();
         return matcher.group(2);
     }
+
+    /**
+     * Extracts the type of a collection type from the given field definition.
+     * 
+     * @param field The field definition to extract the collection field type from.
+     * @return The type of the collection field if the field is marked as a collection field, null otherwise.
+     */
+    public static String extractCollectionRawType(final FieldDefinition field) {
+        
+        final Matcher matcher = collectionPattern.matcher(field.getResolvedType());
+        matcher.matches();
+        return matcher.group(1);
+    }
     
     /**
      * Computes the resolved type of the given field definition.
@@ -1192,7 +1256,7 @@ public class FieldUtils {
     public static String computeResolvedType(final FieldDefinition fieldDefinition) {
 
         if (isJsonField(fieldDefinition)) {
-            return extractJsonFieldName(fieldDefinition);
+            return extractJsonInnerType(fieldDefinition);
         }
         
         if (ENUM.equalsIgnoreCase(fieldDefinition.getType()) && Objects.nonNull(fieldDefinition.getName())) {

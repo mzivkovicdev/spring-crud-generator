@@ -54,7 +54,7 @@ public class MapperImports {
         final List<FieldDefinition> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields());
 
         jsonFields.stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .forEach(field -> {
                     
                     final String resolvedPackage = isGraphQl ?

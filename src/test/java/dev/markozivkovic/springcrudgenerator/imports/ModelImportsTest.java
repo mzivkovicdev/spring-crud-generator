@@ -3,12 +3,17 @@ package dev.markozivkovic.springcrudgenerator.imports;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +23,7 @@ import org.mockito.Mockito;
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
+import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
@@ -33,14 +39,28 @@ class ModelImportsTest {
     @Test
     @DisplayName("getBaseImport: no special types, no Objects, no auditing → empty string")
     void getBaseImport_noTypes_noObjects_noAuditing() {
-        
+
         final ModelDefinition model = new ModelDefinition();
         model.setFields(Collections.emptyList());
         model.setAudit(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
+             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    any(ModelDefinition.class), anySet(), any(ImportCommon.CollectionImplImportsMode.class)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    final Set<String> set = inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -52,6 +72,8 @@ class ModelImportsTest {
             final String result = ModelImports.getBaseImport(model, false, false);
 
             assertEquals("", result);
+
+            auditUtils.verifyNoInteractions();
         }
     }
 
@@ -64,7 +86,20 @@ class ModelImportsTest {
         model.setAudit(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-            final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
+             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    any(ModelDefinition.class), anySet(), any(ImportCommon.CollectionImplImportsMode.class)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    final Set<String> set = inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
@@ -97,18 +132,28 @@ class ModelImportsTest {
         model.setAudit(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-            final MockedStatic<SpecialTypeEnum> specialType = Mockito.mockStatic(SpecialTypeEnum.class);
-            final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
+             final MockedStatic<SpecialTypeEnum> specialType = Mockito.mockStatic(SpecialTypeEnum.class);
+             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    any(ModelDefinition.class), anySet(), any(ImportCommon.CollectionImplImportsMode.class)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    final Set<String> set = inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.extractSimpleCollectionFields(anyList()))
-                    .thenReturn(List.of(listField, setField));
-
+            fieldUtils.when(() -> FieldUtils.extractSimpleCollectionFields(anyList())).thenReturn(List.of(listField, setField));
             specialType.when(() -> SpecialTypeEnum.isListType("List<String>")).thenReturn(true);
             specialType.when(() -> SpecialTypeEnum.isSetType("List<String>")).thenReturn(false);
             specialType.when(() -> SpecialTypeEnum.isListType("Set<UUID>")).thenReturn(false);
             specialType.when(() -> SpecialTypeEnum.isSetType("Set<UUID>")).thenReturn(true);
-
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -136,13 +181,27 @@ class ModelImportsTest {
     @Test
     @DisplayName("getBaseImport: BigDecimal + UUID + List + Objects + auditing enabled → all relevant imports present")
     void getBaseImport_withTypes_objects_and_auditing() {
-        
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(model.getAudit()).thenReturn(new AuditDefinition(true, AuditTypeEnum.INSTANT));
         Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
+             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    any(ModelDefinition.class), anySet(), any(ImportCommon.CollectionImplImportsMode.class)))
+                .thenAnswer(inv -> null);
+
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    final Set<String> set = inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(true);
@@ -152,15 +211,9 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.INSTANT)).thenReturn("java.time.Instant");
 
-            auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.INSTANT))
-                    .thenReturn("java.time.Instant");
-
-            final String result = ModelImports.getBaseImport(
-                    model,
-                    true,
-                    true
-            );
+            final String result = ModelImports.getBaseImport(model, true, true);
 
             assertTrue(result.contains("import " + ImportConstants.Java.BIG_DECIMAL), "BigDecimal import missing");
             assertTrue(result.contains("import " + ImportConstants.Java.UUID), "UUID import missing");
@@ -174,15 +227,29 @@ class ModelImportsTest {
     @Test
     @DisplayName("getBaseImport: auditing enabled on model, but importAuditing=false → no auditing imports")
     void getBaseImport_auditEnabled_butFlagFalse_noAuditingImport() {
-        
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(model.getFields()).thenReturn(Collections.emptyList());
         Mockito.when(model.getAudit().isEnabled()).thenReturn(true);
         Mockito.when(model.getAudit().getType()).thenReturn(AuditTypeEnum.INSTANT);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
-             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class)) {
+             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
 
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    any(ModelDefinition.class), anySet(), any(ImportCommon.CollectionImplImportsMode.class)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    final Set<String> set = inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -190,20 +257,13 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.INSTANT)).thenReturn("java.time.Instant");
 
-            auditUtils.when(() -> AuditUtils.resolveAuditType(AuditTypeEnum.INSTANT))
-                    .thenReturn("java.time.Instant");
-
-            final String result = ModelImports.getBaseImport(
-                    model,
-                    false,
-                    false
-            );
+            final String result = ModelImports.getBaseImport(model, false, false);
 
             assertFalse(result.contains("java.time.Instant"), "Auditing import should not be present");
         }
     }
-
     @Test
     @DisplayName("computeJakartaImports: no enums, no relations, no json, no auditing, optimisticLocking=false → only base JPA imports")
     void computeJakartaImports_minimal() {

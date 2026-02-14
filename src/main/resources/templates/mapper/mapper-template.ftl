@@ -4,6 +4,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 </#if><#t>
 import java.util.List;
+<#if helperMapper?? && helperMapper>
+import java.util.Set;
+</#if>
 
 <#if openInViewEnabled?? && !openInViewEnabled>
 import org.mapstruct.IterableMapping;
@@ -43,7 +46,11 @@ public interface ${mapperName} {
     </#list>
     </#if><#t>
     List<${transferObjectName}> map${modelName}To${transferObjectName}(final List<${modelName}> model);
-    
+
+    <#if helperMapper?? && helperMapper>
+    Set<${transferObjectName}> map${modelName}To${transferObjectName}(final Set<${modelName}> model);
+
+    </#if><#t>
     <#if openInViewEnabled?? && !openInViewEnabled>
     @Named("simple")
     <#list lazyFields as lazyField>
@@ -62,11 +69,20 @@ public interface ${mapperName} {
     ${modelName} map${transferObjectName}To${modelName}(final ${transferObjectName} transferObject);
 
     List<${modelName}> map${transferObjectName}To${modelName}(final List<${transferObjectName}> transferObject);
+
+    <#if helperMapper?? && helperMapper>
+    Set<${modelName}> map${transferObjectName}To${modelName}(final Set<${transferObjectName}> transferObject);
+
+    </#if><#t>
     <#if swagger?? && swagger>
 
     ${swaggerModel} map${transferObjectName}To${swaggerModel}(final ${transferObjectName} transferObject);
 
     List<${swaggerModel}> map${transferObjectName}To${swaggerModel}(final List<${transferObjectName}> transferObject);
+    <#if helperMapper?? && helperMapper>
+
+    Set<${swaggerModel}> map${transferObjectName}To${swaggerModel}(final Set<${transferObjectName}> transferObject);
+    </#if><#t>
 
     <#if auditEnabled?? && auditEnabled>
     <#if auditType == "Instant">
@@ -94,6 +110,10 @@ public interface ${mapperName} {
     ${modelName} map${swaggerModel}To${modelName}(final ${swaggerModel} ${swaggerModel?uncap_first});
 
     List<${modelName}> map${swaggerModel}To${modelName}(final List<${swaggerModel}> ${swaggerModel?uncap_first});
+    <#if helperMapper?? && helperMapper>
+
+    Set<${modelName}> map${swaggerModel}To${modelName}(final Set<${swaggerModel}> ${swaggerModel?uncap_first});
+    </#if><#t>
     </#if><#t>
     
 }

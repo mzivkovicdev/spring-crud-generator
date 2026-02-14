@@ -470,7 +470,7 @@ class SwaggerUtilsTest {
 
             fieldUtils.when(() -> FieldUtils.isJsonField(field)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isSimpleCollectionField(field)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(field)).thenReturn("PayloadDto");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(field)).thenReturn("PayloadDto");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("PayloadDto")).thenReturn("Payload");
             nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("Payload")).thenReturn("Payload");
 
@@ -683,6 +683,37 @@ class SwaggerUtilsTest {
         final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
 
         assertEquals(1, property.get("minItems"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: JSON<Metadata> -> schema $ref to Metadata")
+    void toSwaggerProperty_jsonNonCollection_usesRefSchema() {
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("metadata");
+        fieldDefinition.setType("JSON<Metadata>");
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals("./metaPayload.yaml", property.get("$ref"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: JSON<List<Item>> -> schema array of $ref, uniqueItems=false")
+    void toSwaggerProperty_jsonList_usesArrayOfRef_uniqueItemsFalse() {
+
+        final FieldDefinition fieldDefinition = new FieldDefinition();
+        fieldDefinition.setName("items");
+        fieldDefinition.setType("JSON<List<Item>>");
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(fieldDefinition, SwaggerSchemaModeEnum.DEFAULT);
+
+        assertEquals("array", property.get("type"));
+
+        final Map<String, Object> items = asMap(property.get("items"));
+        assertEquals("./itemPayload.yaml", items.get("$ref"));
+
+        assertEquals(false, property.get("uniqueItems"));
     }
 
     @Test

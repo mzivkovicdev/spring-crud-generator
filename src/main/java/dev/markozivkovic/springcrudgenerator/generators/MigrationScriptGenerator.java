@@ -90,7 +90,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
             .flatMap(entity -> entity.getFields().stream())
             .filter(field -> FieldUtils.isJsonField(field))
             .map(jsonField -> {
-                final String jsonType = FieldUtils.extractJsonFieldName(jsonField);
+                final String jsonType = FieldUtils.extractJsonInnerElementType(jsonField);
                 return this.entities.stream()
                         .filter(entity -> entity.getName().equals(jsonType))
                         .findFirst()

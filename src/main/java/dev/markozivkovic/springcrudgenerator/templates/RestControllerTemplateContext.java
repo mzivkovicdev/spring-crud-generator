@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.imports.RestControllerImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -52,7 +53,7 @@ public class RestControllerTemplateContext {
 
         final String strippedModelName = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .collect(Collectors.toList());
 
         final Map<String, Object> context = new HashMap<>();
@@ -88,14 +89,25 @@ public class RestControllerTemplateContext {
 
                 final boolean isRelation = Objects.nonNull(field.getRelation());
                 final boolean isCollection = isRelation && (manyToManyFields.contains(field) || oneToManyFields.contains(field));
+                final boolean isJsonField = FieldUtils.isJsonField(field);
+                final String type;
+                
+                if (isJsonField) {
+                    final String fieldType = FieldUtils.extractJsonInnerType(field);
+                    type = SpecialTypeEnum.isCollectionType(fieldType) ?
+                            FieldUtils.extractJsonInnerElementType(field) :
+                            fieldType;
+                } else {
+                    type = field.getResolvedType();
+                }
                 
                 final Map<String, Object> fieldContext = new HashMap<>(Map.of(
                     TemplateContextConstants.FIELD, field.getName(),
-                    TemplateContextConstants.FIELD_TYPE, field.getResolvedType(),
+                    TemplateContextConstants.FIELD_TYPE, type,
                     TemplateContextConstants.STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(field.getType()),
                     TemplateContextConstants.IS_COLLECTION, isCollection,
                     TemplateContextConstants.IS_RELATION, isRelation,
-                    TemplateContextConstants.IS_JSON_FIELD, FieldUtils.isJsonField(field),
+                    TemplateContextConstants.IS_JSON_FIELD, isJsonField,
                     TemplateContextConstants.IS_ENUM, FieldUtils.isFieldEnum(field)
                 ));
 
@@ -166,7 +178,7 @@ public class RestControllerTemplateContext {
         final String className = String.format("%sUpdateByIdMockMvcTest", modelWithoutSuffix);
         final String controllerClassName = String.format("%sController", modelWithoutSuffix);
         final List<String> jsonFields = FieldUtils.extractJsonFields(modelDefinition.getFields()).stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .collect(Collectors.toList());
 
         context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));

@@ -3,6 +3,7 @@ package dev.markozivkovic.springcrudgenerator.imports.common;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -236,4 +237,213 @@ class ImportCommonTest {
                     "LIST import should appear only once");
         }
     }
+
+    @Test
+    @DisplayName("importListAndSetForJsonFields: when no json fields -> does not add LIST/SET nor impl imports")
+    void importListAndSetForJsonFields_noJsonFields_addsNothing() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getFields()).thenReturn(Collections.emptyList());
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class, Mockito.CALLS_REAL_METHODS)) {
+
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(Collections.emptyList());
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), any()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        final Set<String> set = inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+
+            ImportCommon.importListAndSetForJsonFields(model, imports, ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY);
+
+            assertTrue(imports.isEmpty(), "No imports should be added");
+        }
+    }
+
+    @Test
+    @DisplayName("importListAndSetForJsonFields: json fields but inner type not List/Set -> adds nothing")
+    void importListAndSetForJsonFields_jsonButNotCollectionInner_addsNothing() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getFields()).thenReturn(Collections.emptyList());
+
+        final FieldDefinition jsonField = mock(FieldDefinition.class);
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class, Mockito.CALLS_REAL_METHODS)) {
+
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of(jsonField));
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonField)).thenReturn("Address");
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), any()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        final Set<String> set = inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+
+            ImportCommon.importListAndSetForJsonFields(model, imports, ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY);
+
+            assertFalse(imports.contains(ImportConstants.Java.LIST));
+            assertFalse(imports.contains(ImportConstants.Java.SET));
+            assertFalse(imports.contains(ImportConstants.Java.ARRAY_LIST));
+            assertFalse(imports.contains(ImportConstants.Java.HASH_SET));
+            assertTrue(imports.isEmpty(), "No imports should be added");
+        }
+    }
+
+    @Test
+    @DisplayName("importListAndSetForJsonFields: List inner + INTERFACES_ONLY -> adds java.util.List only")
+    void importListAndSetForJsonFields_listInner_interfacesOnly_addsListOnly() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getFields()).thenReturn(Collections.emptyList());
+
+        final FieldDefinition jsonField = mock(FieldDefinition.class);
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class, Mockito.CALLS_REAL_METHODS)) {
+
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of(jsonField));
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonField)).thenReturn("List<Address>");
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), any()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        final Set<String> set = inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+
+            ImportCommon.importListAndSetForJsonFields(model, imports, ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY);
+
+            assertTrue(imports.contains(ImportConstants.Java.LIST));
+            assertFalse(imports.contains(ImportConstants.Java.SET));
+            assertFalse(imports.contains(ImportConstants.Java.ARRAY_LIST));
+            assertFalse(imports.contains(ImportConstants.Java.HASH_SET));
+        }
+    }
+
+    @Test
+    @DisplayName("importListAndSetForJsonFields: Set inner + INTERFACES_ONLY -> adds java.util.Set only")
+    void importListAndSetForJsonFields_setInner_interfacesOnly_addsSetOnly() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getFields()).thenReturn(Collections.emptyList());
+
+        final FieldDefinition jsonField = mock(FieldDefinition.class);
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class, Mockito.CALLS_REAL_METHODS)) {
+
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of(jsonField));
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonField)).thenReturn("Set<Address>");
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), any()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        final Set<String> set = inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+
+            ImportCommon.importListAndSetForJsonFields(model, imports, ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY);
+
+            assertFalse(imports.contains(ImportConstants.Java.LIST));
+            assertTrue(imports.contains(ImportConstants.Java.SET));
+            assertFalse(imports.contains(ImportConstants.Java.ARRAY_LIST));
+            assertFalse(imports.contains(ImportConstants.Java.HASH_SET));
+        }
+    }
+
+    @Test
+    @DisplayName("importListAndSetForJsonFields: both List and Set inners + INTERFACES_ONLY -> adds both List and Set")
+    void importListAndSetForJsonFields_listAndSetInner_interfacesOnly_addsBothInterfaces() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getFields()).thenReturn(Collections.emptyList());
+
+        final FieldDefinition jsonListField = mock(FieldDefinition.class);
+        final FieldDefinition jsonSetField = mock(FieldDefinition.class);
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class, Mockito.CALLS_REAL_METHODS)) {
+
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of(jsonListField, jsonSetField));
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonListField)).thenReturn("List<Address>");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonSetField)).thenReturn("Set<Tag>");
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), any()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        final Set<String> set = inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+
+            ImportCommon.importListAndSetForJsonFields(model, imports, ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY);
+
+            assertTrue(imports.contains(ImportConstants.Java.LIST));
+            assertTrue(imports.contains(ImportConstants.Java.SET));
+            assertFalse(imports.contains(ImportConstants.Java.ARRAY_LIST));
+            assertFalse(imports.contains(ImportConstants.Java.HASH_SET));
+        }
+    }
+
+    @Test
+    @DisplayName("importListAndSetForJsonFields: INCLUDE_DEFAULT_IMPLS -> adds List/Set and ArrayList/HashSet")
+    void importListAndSetForJsonFields_includeDefaultImpls_addsImplImports() {
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getFields()).thenReturn(Collections.emptyList());
+
+        final FieldDefinition jsonListField = mock(FieldDefinition.class);
+        final FieldDefinition jsonSetField = mock(FieldDefinition.class);
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class, Mockito.CALLS_REAL_METHODS)) {
+
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList()))
+                    .thenReturn(List.of(jsonListField, jsonSetField));
+
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonListField))
+                    .thenReturn("List<Address>");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerType(jsonSetField))
+                    .thenReturn("Set<Tag>");
+
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), any()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        final Set<String> set = inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+
+            ImportCommon.importListAndSetForJsonFields(model, imports, ImportCommon.CollectionImplImportsMode.INCLUDE_DEFAULT_IMPLS);
+
+            assertTrue(imports.contains(ImportConstants.Java.LIST));
+            assertTrue(imports.contains(ImportConstants.Java.SET));
+            assertTrue(imports.contains(ImportConstants.Java.ARRAY_LIST));
+            assertTrue(imports.contains(ImportConstants.Java.HASH_SET));
+        }
+    }
+
 }

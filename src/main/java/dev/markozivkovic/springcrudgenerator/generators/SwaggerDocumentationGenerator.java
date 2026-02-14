@@ -189,7 +189,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
                 .collect(Collectors.toList());
 
         final List<String> jsonFields = FieldUtils.extractJsonFields(fields).stream()
-                .map(FieldUtils::extractJsonFieldName)
+                .map(FieldUtils::extractJsonInnerElementType)
                 .distinct()
                 .collect(Collectors.toList());
 

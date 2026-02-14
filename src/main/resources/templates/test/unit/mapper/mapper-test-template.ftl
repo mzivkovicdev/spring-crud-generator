@@ -3,6 +3,9 @@
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+<#if helperMapper?? && helperMapper>
+import java.util.Set;
+</#if>
 
 <#if dataGenerator == "INSTANCIO">
 import org.instancio.Instancio;
@@ -62,6 +65,33 @@ class ${className} {
             verify${transferObjectName}(result, ${modelNameUncapFirst});
         });
     }
+    <#if helperMapper?? && helperMapper>
+
+    @Test
+    void map${modelName}To${transferObjectName}_set() {
+
+        <#if dataGenerator == "PODAM">
+        final Set<${modelName}> ${modelNameUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(Set.class, ${modelName}.class);
+        <#else>
+        final Set<${modelName}> ${modelNameUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(${modelName}.class)
+                .size(10)
+                .create();
+        </#if>
+
+        final Set<${transferObjectName}> results = this.${strippedModelName?uncap_first}Mapper.map${modelName}To${transferObjectName}(${modelNameUncapFirst}s);
+
+        results.forEach(result -> {
+
+            final ${modelName} ${modelNameUncapFirst} = ${modelName?uncap_first}s.stream()
+                    .filter(obj -> obj.get${idField?cap_first}().equals(result.${idField?uncap_first}()))
+                    .findFirst()
+                    .orElseThrow();
+            
+            verify${transferObjectName}(result, ${modelNameUncapFirst});
+        });
+    }
+    
+    </#if>
     <#if openInViewEnabled?? && hasLazyFields?? && !openInViewEnabled && hasLazyFields>
     @Test
     void map${modelName}To${transferObjectName}Simple() {
@@ -132,6 +162,32 @@ class ${className} {
         });
     }
 
+    <#if helperMapper?? && helperMapper>
+    @Test
+    void map${transferObjectName}To${modelName}_set() {
+
+        <#if dataGenerator == "PODAM">
+        final Set<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(Set.class, ${transferObjectName}.class);
+        <#else>
+        final Set<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(${transferObjectName}.class)
+                .size(10)
+                .create();
+        </#if>
+
+        final Set<${modelName}> results = this.${strippedModelName?uncap_first}Mapper.map${transferObjectName}To${modelName}(${transferObjectUncapFirst}s);
+
+        results.forEach(result -> {
+
+            final ${transferObjectName} ${transferObjectUncapFirst} = ${transferObjectUncapFirst}s.stream()
+                    .filter(${strippedModelName?uncap_first} -> ${strippedModelName?uncap_first}.${idField?uncap_first}().equals(result.get${idField?cap_first}()))
+                    .findFirst()
+                    .orElseThrow();
+            
+            verify${modelName}(result, ${transferObjectUncapFirst});
+        });
+    }
+
+    </#if>
     <#if swagger?? && swagger>
     @Test
     void map${transferObjectName}To${swaggerModel}() {
@@ -166,6 +222,33 @@ class ${className} {
             verify${swaggerModel}(result, ${transferObjectUncapFirst});
         });
     }
+    <#if helperMapper?? && helperMapper>
+
+    @Test
+    void map${transferObjectName}To${swaggerModel}_set() {
+
+        <#if dataGenerator == "PODAM">
+        final Set<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(Set.class, ${transferObjectName}.class);
+        <#else>
+        final Set<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(${transferObjectName}.class)
+                .size(10)
+                .create();
+        </#if>
+
+        final Set<${swaggerModel}> results = this.${strippedModelName?uncap_first}Mapper.map${transferObjectName}To${swaggerModel}(${transferObjectUncapFirst}s);
+
+        results.forEach(result -> {
+
+            final ${transferObjectName} ${transferObjectUncapFirst} = ${transferObjectUncapFirst}s.stream()
+                    .filter(${strippedModelName?uncap_first} -> ${strippedModelName?uncap_first}.${idField?uncap_first}().equals(result.get${idField?cap_first}()))
+                    .findFirst()
+                    .orElseThrow();
+            
+            verify${swaggerModel}(result, ${transferObjectUncapFirst});
+        });
+    }
+
+    </#if><#t>
     </#if>
     <#if generateAllHelperMethods?? && generateAllHelperMethods>
     @Test
@@ -202,6 +285,32 @@ class ${className} {
         });
     }
 
+    <#if helperMapper?? && helperMapper>
+    @Test
+    void map${swaggerModel}To${modelName}_set() {
+
+        <#if dataGenerator == "PODAM">
+        final Set<${swaggerModel}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(Set.class, ${swaggerModel}.class);
+        <#else>
+        final Set<${swaggerModel}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(${swaggerModel}.class)
+                .size(10)
+                .create();
+        </#if>
+
+        final Set<${modelName}> results = this.${strippedModelName?uncap_first}Mapper.map${swaggerModel}To${modelName}(${swaggerModel?uncap_first}s);
+
+        results.forEach(result -> {
+
+            final ${swaggerModel} ${swaggerModel?uncap_first} = ${swaggerModel?uncap_first}s.stream()
+                    .filter(obj -> obj.get${idField?cap_first}().equals(result.get${idField?cap_first}()))
+                    .findFirst()
+                    .orElseThrow();
+
+            verify${modelName}(result, ${swaggerModel?uncap_first});
+        });
+    }
+
+    </#if><#t>
     private void verify${modelName}(final ${modelName} result, final ${swaggerModel} ${swaggerModel?uncap_first}) {
 
         assertThat(result).isNotNull();

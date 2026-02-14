@@ -361,7 +361,7 @@ class RestControllerImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(normalField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Settings");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Settings");
 
             pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.api.rest.helper.mapper", "SettingsRestMapper"))
@@ -1184,7 +1184,7 @@ class RestControllerImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Settings");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Settings");
 
             pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.api.rest.helper.mapper", "SettingsRestMapper"))
@@ -1263,7 +1263,7 @@ class RestControllerImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Config");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Config");
 
             pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.shop.rest.helper.mapper", "ConfigRestMapper")).thenReturn("com.shop.rest.helper.mapper.ConfigRestMapper");
@@ -1585,7 +1585,7 @@ class RestControllerImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Shipping");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Shipping");
             pkg.when(() -> PackageUtils.computeRestTransferObjectPackage("com.shop", packageConfiguration)).thenReturn("com.shop.rest.to");
             pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderItemInputTO")).thenReturn("com.shop.rest.to.OrderItemInputTO");
             pkg.when(() -> PackageUtils.join("com.shop.rest.to", "OrderTO")).thenReturn("com.shop.rest.to.OrderTO");
@@ -1662,7 +1662,7 @@ class RestControllerImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(relationField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.extractJsonFieldName(jsonField)).thenReturn("Config");
+            fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Config");
 
             pkg.when(() -> PackageUtils.computeHelperRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.helper.mapper");
             pkg.when(() -> PackageUtils.join("com.api.rest.helper.mapper", "ConfigRestMapper")).thenReturn("com.api.rest.helper.mapper.ConfigRestMapper");

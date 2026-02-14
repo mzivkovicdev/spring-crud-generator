@@ -82,13 +82,13 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                 .filter(FieldUtils::isJsonField)
                 .forEach(field -> {
 
-                    final String jsonFieldName = FieldUtils.extractJsonFieldName(field);
+                    final String jsonInnerElementType = FieldUtils.extractJsonInnerElementType(field);
                     final ModelDefinition jsonModel = this.entities.stream()
-                            .filter(model -> model.getName().equals(jsonFieldName))
+                            .filter(model -> model.getName().equals(jsonInnerElementType))
                             .findFirst()
                             .orElseThrow(() -> new IllegalArgumentException(
                                 String.format(
-                                    "JSON model not found: %s", jsonFieldName
+                                    "JSON model not found: %s", jsonInnerElementType
                                 )
                             ));
                     
@@ -196,6 +196,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
         context.put("enumFields", enumFields);
+        context.put(TemplateContextConstants.HELPER_MAPPER, true);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         context.put("projectImports", MapperImports.computeTestHelperMapperImports(packagePath, jsonModel, parentModel, packageConfiguration, swagger, isGraphQl));
