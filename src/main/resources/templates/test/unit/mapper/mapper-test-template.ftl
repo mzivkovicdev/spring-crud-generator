@@ -167,7 +167,7 @@ class ${className} {
     void map${transferObjectName}To${modelName}_set() {
 
         <#if dataGenerator == "PODAM">
-        final Set<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(List.class, ${transferObjectName}.class);
+        final Set<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(Set.class, ${transferObjectName}.class);
         <#else>
         final Set<${transferObjectName}> ${transferObjectUncapFirst}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(${transferObjectName}.class)
                 .size(10)
@@ -290,7 +290,7 @@ class ${className} {
     void map${swaggerModel}To${modelName}_set() {
 
         <#if dataGenerator == "PODAM">
-        final Set<${swaggerModel}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(List.class, ${swaggerModel}.class);
+        final Set<${swaggerModel}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(Set.class, ${swaggerModel}.class);
         <#else>
         final Set<${swaggerModel}> ${swaggerModel?uncap_first}s = ${generatorFieldName}.${multipleUniqueObjectsMethodName}(${swaggerModel}.class)
                 .size(10)
