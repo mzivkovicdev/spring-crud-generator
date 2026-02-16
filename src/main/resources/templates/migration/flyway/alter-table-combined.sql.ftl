@@ -51,7 +51,7 @@ ALTER TABLE ${quoteIdent(table)}
 </#if><#t>
 <#if m.uniqueChanged?? && m.uniqueChanged>
 ALTER TABLE ${quoteIdent(table)}
-  DROP CONSTRAINT IF EXISTS uk_${table}_${m.name};
+  DROP <#if isMySql>INDEX<#else>CONSTRAINT</#if> <#if isPostgres>IF EXISTS </#if>uk_${table}_${m.name};
 <#if m.newUnique?? && m.newUnique>
 ALTER TABLE ${quoteIdent(table)}
   ADD CONSTRAINT uk_${table}_${m.name}
@@ -61,8 +61,13 @@ ALTER TABLE ${quoteIdent(table)}
 </#list>
 </#if><#t>
 <#if pkChanged?? && pkChanged && newPk?has_content>
+<#if isMySql>
 ALTER TABLE ${quoteIdent(table)}
-  DROP CONSTRAINT IF EXISTS pk_${table};
+  DROP PRIMARY KEY;
+<#else>
+ALTER TABLE ${quoteIdent(table)}
+  DROP CONSTRAINT <#if isPostgres>IF EXISTS </#if>pk_${table};
+</#if>
 
 ALTER TABLE ${quoteIdent(table)}
   ADD CONSTRAINT pk_${table}
@@ -72,8 +77,13 @@ ALTER TABLE ${quoteIdent(table)}
 </#if><#t>
 <#if removedFks?has_content>
 <#list removedFks as fk>
+<#if isMySql>
 ALTER TABLE ${quoteIdent(table)}
-  DROP CONSTRAINT IF EXISTS fk_${table}_${fk.column};
+  DROP FOREIGN KEY fk_${table}_${fk.column};
+<#else>
+ALTER TABLE ${quoteIdent(table)}
+  DROP CONSTRAINT <#if isPostgres>IF EXISTS </#if>fk_${table}_${fk.column};
+</#if>
 </#list>
 </#if><#t>
 <#if addedFks?has_content>
@@ -89,8 +99,8 @@ ALTER TABLE ${quoteIdent(table)} ADD<#if !isMsSql> COLUMN</#if> ${quoteIdent("cr
 ALTER TABLE ${quoteIdent(table)} ADD<#if !isMsSql> COLUMN</#if> ${quoteIdent("updated_at")} ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr};
 </#if><#t>
 <#if auditRemoved?? && auditRemoved>
-ALTER TABLE ${quoteIdent(table)} DROP COLUMN IF EXISTS ${quoteIdent("created_at")};
-ALTER TABLE ${quoteIdent(table)} DROP COLUMN IF EXISTS ${quoteIdent("updated_at")};
+ALTER TABLE ${quoteIdent(table)} DROP COLUMN <#if isPostgres>IF EXISTS </#if>${quoteIdent("created_at")};
+ALTER TABLE ${quoteIdent(table)} DROP COLUMN <#if isPostgres>IF EXISTS </#if>${quoteIdent("updated_at")};
 </#if><#t>
 <#if auditTypeChanged?? && auditTypeChanged>
 ALTER TABLE ${quoteIdent(table)} ALTER COLUMN ${quoteIdent("created_at")} TYPE ${auditCreatedType};
