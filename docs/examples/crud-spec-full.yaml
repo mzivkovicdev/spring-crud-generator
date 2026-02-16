@@ -68,12 +68,12 @@ entities:
           nullable: false
           updateable: true
           unique: true
-          length: 10000
+          length: 100
         validation:
           required: true
           notBlank: true
           minLength: 10
-          maxLength: 10000
+          maxLength: 100
       - name: price
         description: "The price of the product"
         type: Integer
