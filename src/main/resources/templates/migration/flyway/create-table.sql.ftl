@@ -12,8 +12,8 @@ CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${quoteIdent(tableName)} (
   ${quoteIdent(c.name)} ${c.sqlType}<#if c.defaultExpr??> DEFAULT ${c.defaultExpr}</#if><#if !c.nullable> NOT NULL</#if><#if (c?has_next) || (auditEnabled) || (pkColumns??) || hasChecks || hasUniques>,</#if>
 </#list>
 <#if auditEnabled>
-  created_at ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr},
-  updated_at ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr}<#if (pkColumns??) || hasChecks || hasUniques>,</#if>
+  ${quoteIdent("created_at")} ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr},
+  ${quoteIdent("updated_at")} ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr}<#if (pkColumns??) || hasChecks || hasUniques>,</#if>
 </#if>
 <#if pkColumns??>
   CONSTRAINT pk_${tableName} PRIMARY KEY (${pkColumns})<#if hasChecks || hasUniques>,</#if>
