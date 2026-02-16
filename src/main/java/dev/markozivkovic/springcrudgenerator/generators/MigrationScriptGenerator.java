@@ -246,6 +246,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     .collect(Collectors.toList());
 
             context.put("fks", filteredFks);
+            context.put("db", this.configuration.getDatabase());
 
             final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "migration/flyway/add-foreign-keys.sql.ftl", context

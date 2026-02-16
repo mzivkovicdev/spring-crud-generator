@@ -1,3 +1,4 @@
+<#include "_common.ftl">
 <#assign hasChecks = (checks?? && (checks?size > 0))>
 <#assign uniqueCols = []>
 <#list columns as c>
@@ -6,9 +7,9 @@
   </#if>
 </#list>
 <#assign hasUniques = (uniqueCols?size > 0)>
-CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${tableName} (
+CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${quoteIdent(tableName)} (
 <#list columns as c>
-  ${c.name} ${c.sqlType}<#if c.defaultExpr??> DEFAULT ${c.defaultExpr}</#if><#if !c.nullable> NOT NULL</#if><#if (c?has_next) || (auditEnabled) || (pkColumns??) || hasChecks || hasUniques>,</#if>
+  ${quoteIdent(c.name)} ${c.sqlType}<#if c.defaultExpr??> DEFAULT ${c.defaultExpr}</#if><#if !c.nullable> NOT NULL</#if><#if (c?has_next) || (auditEnabled) || (pkColumns??) || hasChecks || hasUniques>,</#if>
 </#list>
 <#if auditEnabled>
   created_at ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr},
@@ -24,7 +25,7 @@ CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${tableName} (
 </#if>
 <#if hasUniques>
   <#list uniqueCols as u>
-  CONSTRAINT uk_${tableName}_${u.name} UNIQUE (${u.name})<#if u?has_next>,</#if>
+  CONSTRAINT uk_${tableName}_${u.name} UNIQUE (${quoteIdent(u.name)})<#if u?has_next>,</#if>
   </#list>
 </#if>
 );
