@@ -12,13 +12,15 @@ CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${tableName} (
 </#list>
 <#if auditEnabled>
   created_at ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr},
-  updated_at ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr}<#if (pkColumns??) || hasChecks>,</#if>
+  updated_at ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr}<#if (pkColumns??) || hasChecks || hasUniques>,</#if>
 </#if>
 <#if pkColumns??>
-  CONSTRAINT pk_${tableName} PRIMARY KEY (${pkColumns})<#if hasChecks> ,</#if>
+  CONSTRAINT pk_${tableName} PRIMARY KEY (${pkColumns})<#if hasChecks || hasUniques>,</#if>
 </#if>
 <#if hasChecks>
-  <#list checks as chk>CONSTRAINT ${chk.name} CHECK (${chk.expr})<#if chk?has_next>,</#if></#list>
+  <#list checks as chk>
+  CONSTRAINT ${chk.name} CHECK (${chk.expr})<#if chk?has_next || hasUniques>,</#if>
+  </#list>
 </#if>
 <#if hasUniques>
   <#list uniqueCols as u>
