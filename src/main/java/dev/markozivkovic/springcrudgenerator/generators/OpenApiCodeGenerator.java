@@ -151,7 +151,12 @@ public class OpenApiCodeGenerator implements ProjectArtifactGenerator {
      */
     private void generateOpenApiGeneratorIgnore() {
 
-        final String fileContent = "pom.xml";
+        final String fileContent = """
+                pom.xml
+                README.md
+                Readme.md
+                readme.md
+                """;
         
         FileWriterUtils.writeToFile(
                 projectMetadata.getProjectBaseDir(),

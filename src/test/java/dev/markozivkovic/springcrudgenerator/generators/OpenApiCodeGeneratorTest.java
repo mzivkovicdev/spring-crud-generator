@@ -39,6 +39,13 @@ import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
 class OpenApiCodeGeneratorTest {
 
+    private static final String OPENAPI_GENERATOR_IGNORE_CONTENT = """
+            pom.xml
+            README.md
+            Readme.md
+            readme.md
+            """;
+
     private ModelDefinition newModel(final String name, final List<FieldDefinition> fields) {
         final ModelDefinition m = mock(ModelDefinition.class);
         when(m.getName()).thenReturn(name);
@@ -116,7 +123,7 @@ class OpenApiCodeGeneratorTest {
              final MockedConstruction<CodegenConfigurator> cfgConstr = mockConstruction(CodegenConfigurator.class)) {
 
             ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPENAPI_CODEGEN))
-               .thenReturn(true);
+                    .thenReturn(true);
 
             generator.generate("out");
 
@@ -165,7 +172,8 @@ class OpenApiCodeGeneratorTest {
                          when(mockParser.readLocation(anyString(), eq(null), any(ParseOptions.class)))
                                  .thenReturn(pr);
                      });
-             final MockedConstruction<CodegenConfigurator> cfgConstr = mockConstruction(CodegenConfigurator.class, (mockCfgObj, constructionCtx) -> {
+             final MockedConstruction<CodegenConfigurator> cfgConstr =
+                     mockConstruction(CodegenConfigurator.class, (mockCfgObj, constructionCtx) -> {
                          when(mockCfgObj.setInputSpec(anyString())).thenReturn(mockCfgObj);
                          when(mockCfgObj.setGeneratorName(anyString())).thenReturn(mockCfgObj);
                          when(mockCfgObj.setLibrary(anyString())).thenReturn(mockCfgObj);
@@ -191,12 +199,15 @@ class OpenApiCodeGeneratorTest {
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("OtherEntity")).thenReturn("Other");
 
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out/generated-src/user")).thenReturn("com.example.generated.user");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out/generated-src/user"))
+                    .thenReturn("com.example.generated.user");
 
             generator.generate("out");
 
             writer.verify(() -> FileWriterUtils.writeToFile(
-                    "/tmp/project", GeneratorConstants.OPEN_API_GENERATOR_IGNORE, "pom.xml"
+                    "/tmp/project",
+                    GeneratorConstants.OPEN_API_GENERATOR_IGNORE,
+                    OPENAPI_GENERATOR_IGNORE_CONTENT
             ));
 
             assertEquals(1, parserConstr.constructed().size());
@@ -208,6 +219,7 @@ class OpenApiCodeGeneratorTest {
             verify(usedCfg).addAdditionalProperty("useSpringBoot3", true);
             verify(usedCfg).addAdditionalProperty("interfaceOnly", true);
             verify(usedCfg).addAdditionalProperty("hideGenerationTimestamp", true);
+
             verify(usedCfg).addTypeMapping("UserInput0", "UserInput");
             verify(usedCfg).addTypeMapping("UserInput1", "UserInput");
             verify(usedCfg).addTypeMapping("OtherInput0", "OtherInput");
@@ -270,15 +282,21 @@ class OpenApiCodeGeneratorTest {
                          when(mockGen.generate()).thenReturn(List.of());
                      })) {
 
-            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPENAPI_CODEGEN)).thenReturn(false);
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPENAPI_CODEGEN))
+                    .thenReturn(false);
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(userEntity.getFields())).thenReturn(true);
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
-            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out/generated/user")).thenReturn("com.example.generated.user");
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out/generated/user"))
+                    .thenReturn("com.example.generated.user");
 
             generator.generate("out");
 
             writer.verify(() -> FileWriterUtils.writeToFile(
-                    "/tmp/project", GeneratorConstants.OPEN_API_GENERATOR_IGNORE, "pom.xml"
+                    "/tmp/project",
+                    GeneratorConstants.OPEN_API_GENERATOR_IGNORE,
+                    OPENAPI_GENERATOR_IGNORE_CONTENT
             ));
 
             assertEquals(1, genConstr.constructed().size());
@@ -319,7 +337,9 @@ class OpenApiCodeGeneratorTest {
              final MockedConstruction<CodegenConfigurator> cfgConstr = mockConstruction(CodegenConfigurator.class);
              final MockedConstruction<DefaultGenerator> genConstr = mockConstruction(DefaultGenerator.class)) {
 
-            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPENAPI_CODEGEN)).thenReturn(false);
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPENAPI_CODEGEN))
+                    .thenReturn(false);
+
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(userEntity.getFields())).thenReturn(true);
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
 
@@ -330,7 +350,9 @@ class OpenApiCodeGeneratorTest {
             assertTrue(ex.getMessage().contains("Missing paths"), ex.getMessage());
 
             writer.verify(() -> FileWriterUtils.writeToFile(
-                    "/tmp/project", GeneratorConstants.OPEN_API_GENERATOR_IGNORE, "pom.xml"
+                    "/tmp/project",
+                    GeneratorConstants.OPEN_API_GENERATOR_IGNORE,
+                    OPENAPI_GENERATOR_IGNORE_CONTENT
             ));
 
             assertEquals(0, genConstr.constructed().size());
