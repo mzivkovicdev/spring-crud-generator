@@ -18,7 +18,7 @@ Spring CRUD Generator is an open-source **Maven plugin** that accelerates backen
 
 This project aims to eliminate repetitive boilerplate code while keeping full control and transparency over the generated output.
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.1.0`
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.2.0`
 
 ---
 
@@ -54,7 +54,7 @@ Generate a fully functional Spring Boot CRUD application in minutes using a sing
 
 ### Step 1: Add Maven Profile
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.1.0`  
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.2.0`  
 > Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 Add the following `profile` section to your `pom.xml`:
@@ -68,7 +68,7 @@ Add the following `profile` section to your `pom.xml`:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.1.0</version>
+                    <version>1.2.0</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>
