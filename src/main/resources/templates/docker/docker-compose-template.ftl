@@ -17,6 +17,10 @@ services:
             SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: app
+            <#elseif dbType == "mariadb">
+            SPRING_DATASOURCE_URL: jdbc:mariadb://database:3306/${artifactId}?useSSL=false&serverTimezone=UTC
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: app
             <#elseif dbType == "mssql">
             SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=${artifactId};encrypt=false
             SPRING_DATASOURCE_USERNAME: app
@@ -56,6 +60,7 @@ services:
         <#elseif dbType == "mysql">
         image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mysql-db
+        restart: unless-stopped
         environment:
             MYSQL_DATABASE: ${artifactId}
             MYSQL_USER: app
@@ -69,9 +74,27 @@ services:
             timeout: 5s
             retries: 30
             start_period: 45s
+        <#elseif dbType == "mariadb">
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
+        container_name: ${artifactId}-mariadb-db
+        restart: unless-stopped
+        environment:
+            MARIADB_DATABASE: ${artifactId}
+            MARIADB_USER: app
+            MARIADB_PASSWORD: app
+            MARIADB_ROOT_PASSWORD: root
+        ports:
+            - "${dbPort}:3306"
+        healthcheck:
+            test: ["CMD-SHELL", "mariadb-admin ping -h localhost -P 3306 -uapp -papp --silent"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
         <#elseif dbType == "mssql">
         image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
         container_name: ${artifactId}-mssql-db
+        restart: unless-stopped
         environment:
             ACCEPT_EULA: "Y"
             DB_NAME: ${artifactId}
@@ -108,7 +131,7 @@ services:
             start_period: 45s
         </#if>
         volumes:
-            - db_data:/var/<#if dbType == "mssql">opt<#else>lib</#if>/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql">mysql<#elseif dbType == "mssql">mssql</#if>
+            - db_data:/var/<#if dbType == "mssql">opt<#else>lib</#if>/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql" || dbType == "mariadb">mysql<#elseif dbType == "mssql">mssql</#if>
         networks:
             - ${artifactId}-network
     <#if cacheType?? && cacheType?lower_case == "redis">

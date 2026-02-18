@@ -69,20 +69,21 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, VARCHAR({@code len})</li>
      *     <li>For MYSQL, VARCHAR({@code len})</li>
+     *     <li>For MARIADB, VARCHAR({@code len})</li>
      *     <li>For MSSQL, NVARCHAR({@code len})</li>
      * </ul>
-     * @param d the {@link DatabaseType}
-     * @param len the length of the VARCHAR or TEXT type
+     * @param database the {@link DatabaseType}
+     * @param length the length of the VARCHAR or TEXT type
      * @return the VARCHAR or TEXT type to use
      */
-    private static String varcharOrText(DatabaseType d, int len) {
-        return switch (d) {
-            case POSTGRESQL -> "VARCHAR(" + len + ")";
-            case MYSQL -> "VARCHAR(" + len + ")";
-            case MSSQL -> "NVARCHAR(" + len + ")";
+    private static String varcharOrText(final DatabaseType database, final Integer length) {
+        return switch (database) {
+            case POSTGRESQL -> String.format("VARCHAR(%d)", length);
+            case MYSQL -> String.format("VARCHAR(%d)", length);
+            case MARIADB -> String.format("VARCHAR(%d)", length);
+            case MSSQL -> String.format("NVARCHAR(%d)", length);
         };
     }
-
     /**
      * Returns the type to use for a {@link java.time.LocalDateTime} in the given
      * {@link DatabaseType}.
@@ -91,6 +92,7 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, TIMESTAMP</li>
      *     <li>For MYSQL, DATETIME(6)</li>
+     *     <li>For MARIADB, DATETIME(6)</li>
      *     <li>For MSSQL, DATETIME2(6)</li>
      * </ul>
      * @param d the {@link DatabaseType}
@@ -100,6 +102,7 @@ public class FlywayUtils {
         return switch (d) {
             case POSTGRESQL -> "TIMESTAMP";
             case MYSQL -> "DATETIME(6)";
+            case MARIADB -> "DATETIME(6)";
             case MSSQL -> "DATETIME2(6)";
         };
     }
@@ -112,15 +115,17 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, TIMESTAMP WITH TIME ZONE</li>
      *     <li>For MYSQL, DATETIME(6)</li>
+     *     <li>For MARIADB, DATETIME(6)</li>
      *     <li>For MSSQL, DATETIME2(6)</li>
      * </ul>
-     * @param d the {@link DatabaseType}
+     * @param database the {@link DatabaseType}
      * @return the type to use for a {@link java.time.Instant}
      */
-    private static String instantType(DatabaseType d) {
-        return switch (d) {
+    private static String instantType(DatabaseType database) {
+        return switch (database) {
             case POSTGRESQL -> "TIMESTAMP WITH TIME ZONE";
             case MYSQL -> "DATETIME(6)";
+            case MARIADB -> "DATETIME(6)";
             case MSSQL -> "DATETIME2(6)";
         };
     }
@@ -133,15 +138,17 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, NUMERIC(19,2)</li>
      *     <li>For MYSQL, DECIMAL(19,2)</li>
+     *     <li>For MARIADB, DECIMAL(19,2)</li>
      *     <li>For MSSQL, DECIMAL(19,2)</li>
      * </ul>
-     * @param d the {@link DatabaseType}
+     * @param database the {@link DatabaseType}
      * @return the default type for a DECIMAL column
      */
-    private static String decimalDefault(DatabaseType d) {
-        return switch (d) {
+    private static String decimalDefault(final DatabaseType database) {
+        return switch (database) {
             case POSTGRESQL -> "NUMERIC(19,2)";
             case MYSQL -> "DECIMAL(19,2)";
+            case MARIADB -> "DECIMAL(19,2)";
             case MSSQL -> "DECIMAL(19,2)";
         };
     }
@@ -154,15 +161,17 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, NUMERIC</li>
      *     <li>For MYSQL, DECIMAL(65,0)</li>
+     *     <li>For MARIADB, DECIMAL(65,0)</li>
      *     <li>For MSSQL, DECIMAL(38,0)</li>
      * </ul>
-     * @param d the {@link DatabaseType}
+     * @param database the {@link DatabaseType}
      * @return the default type for a BIGINTEGER column
      */
-    private static String bigIntegerDefault(final DatabaseType d) {
-        return switch (d) {
+    private static String bigIntegerDefault(final DatabaseType database) {
+        return switch (database) {
             case POSTGRESQL -> "NUMERIC";
             case MYSQL -> "DECIMAL(65,0)";
+            case MARIADB -> "DECIMAL(65,0)";
             case MSSQL -> "DECIMAL(38,0)";
         };
     }
@@ -175,15 +184,17 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, JSONB</li>
      *     <li>For MYSQL, JSON</li>
+     *     <li>For MARIADB, JSON</li>
      *     <li>For MSSQL, NVARCHAR(MAX)</li>
      * </ul>
-     * @param d the {@link DatabaseType}
+     * @param database the {@link DatabaseType}
      * @return the type to use for a JSON column
      */
-    private static String jsonType(DatabaseType d) {
-        return switch (d) {
+    private static String jsonType(DatabaseType database) {
+        return switch (database) {
             case POSTGRESQL -> "JSONB";
             case MYSQL -> "JSON";
+            case MARIADB -> "JSON";
             case MSSQL -> "NVARCHAR(MAX)";
         };
     }
@@ -196,15 +207,17 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, UUID</li>
      *     <li>For MYSQL, BINARY(16)</li>
+     *     <li>For MARIADB, BINARY(16)</li>
      *     <li>For MSSQL, UNIQUEIDENTIFIER</li>
      * </ul>
-     * @param d the {@link DatabaseType}
+     * @param database the {@link DatabaseType}
      * @return the type to use for a UUID column
      */
-    private static String uuidType(DatabaseType d) {
-        return switch (d) {
+    private static String uuidType(final DatabaseType database) {
+        return switch (database) {
             case POSTGRESQL -> "UUID";
             case MYSQL -> "BINARY(16)";
+            case MARIADB -> "BINARY(16)";
             case MSSQL -> "UNIQUEIDENTIFIER";
         };
     }
@@ -223,23 +236,25 @@ public class FlywayUtils {
      *     <li>For Instant, TIMESTAMP WITH TIME ZONE, DATETIME(6) or
      *         DATETIME2(6)</li>
      * </ul>
-     * @param d the {@link DatabaseType}
+     * @param database the {@link DatabaseType}
      * @param auditType the Java audit type
      * @return the SQL type
      */
-    private static String auditType(final DatabaseType d, final String auditType) {
+    private static String auditType(final DatabaseType database, final String auditType) {
         if ("LocalDate".equals(auditType)) return "DATE";
-        if ("LocalDateTime".equals(auditType)) return localDateTimeType(d);
+        if ("LocalDateTime".equals(auditType)) return localDateTimeType(database);
         if ("OffsetDateTime".equals(auditType)) {
-            return switch (d) {
+            return switch (database) {
                 case POSTGRESQL -> "TIMESTAMP WITH TIME ZONE";
                 case MYSQL -> "DATETIME(6)";
+                case MARIADB -> "DATETIME(6)";
                 case MSSQL -> "DATETIMEOFFSET(6)";
             };
         }
-        return switch (d) {
+        return switch (database) {
             case POSTGRESQL -> "TIMESTAMP WITH TIME ZONE";
             case MYSQL -> "DATETIME(6)";
+            case MARIADB -> "DATETIME(6)";
             case MSSQL -> "DATETIME2(6)";
         };
     }
@@ -248,13 +263,14 @@ public class FlywayUtils {
      * Maps a database type to a SQL expression that evaluates to the current
      * timestamp. This is used for the default values of the audit columns.
      *
-     * @param d The database type to map.
+     * @param database The database type to map.
      * @return The SQL expression that evaluates to the current timestamp.
      */
-    private static String auditNow(DatabaseType d) {
-        return switch (d) {
+    private static String auditNow(final DatabaseType database) {
+        return switch (database) {
             case POSTGRESQL -> "now()";
             case MYSQL -> "CURRENT_TIMESTAMP(6)";
+            case MARIADB -> "CURRENT_TIMESTAMP(6)";
             case MSSQL -> "SYSUTCDATETIME()";
         };
     }
@@ -285,8 +301,9 @@ public class FlywayUtils {
                         fieldDefinition.getColumn().getLength() : DEFAULT_VARCHAR;
                 return varcharOrText(databaseType, length);
             }
-            case "Boolean": return databaseType == DatabaseType.MSSQL ? "BIT" : "BOOLEAN";
-            case "Double": return databaseType == DatabaseType.MYSQL ? "DOUBLE" : "DOUBLE PRECISION";
+            case "Boolean": return DatabaseType.MSSQL.equals(databaseType) ? "BIT" : "BOOLEAN";
+            case "Double": return (DatabaseType.MYSQL.equals(databaseType) || DatabaseType.MARIADB.equals(databaseType))
+                    ? "DOUBLE" : "DOUBLE PRECISION";
             case "Float": return "REAL";
             case "BigDecimal": return decimalDefault(databaseType);
             case "BigInteger": return bigIntegerDefault(databaseType);
@@ -327,17 +344,19 @@ public class FlywayUtils {
                 return switch (databaseType) {
                     case POSTGRESQL -> "BIGINT GENERATED BY DEFAULT AS IDENTITY";
                     case MYSQL -> "BIGINT AUTO_INCREMENT";
+                    case MARIADB -> "BIGINT AUTO_INCREMENT";
                     case MSSQL -> "BIGINT IDENTITY(1,1)";
                 };
             case AUTO:
                 return switch (databaseType) {
                     case POSTGRESQL -> "BIGINT";
                     case MYSQL -> "BIGINT AUTO_INCREMENT";
+                    case MARIADB -> "BIGINT AUTO_INCREMENT";
                     case MSSQL -> "BIGINT";
                 };
             case SEQUENCE:
                 return switch (databaseType) {
-                    case POSTGRESQL, MSSQL, MYSQL -> "BIGINT";
+                    case POSTGRESQL, MSSQL, MYSQL, MARIADB -> "BIGINT";
                 };
             case TABLE:
             default:
@@ -351,34 +370,35 @@ public class FlywayUtils {
      * column that is equal to the next value of the given sequence. If the field
      * definition does not have an ID definition or the ID definition does not have a
      * strategy, then this method returns null.
-     * @param databaseType the database type for which the Flyway decorator should be generated
+     * @param database        the database type for which the Flyway decorator should be generated
      * @param fieldDefinition the field definition for which the Flyway decorator should be generated
-     * @param table the table name for which the Flyway decorator should be generated
+     * @param table           the table name for which the Flyway decorator should be generated
      * @return a Flyway string to define the default value of the column based on a sequence,
      * or null if the field definition does not have an ID definition or the ID definition
      * does not have a strategy
      */
-    private static String sequenceDefaultExpr(final DatabaseType d, final FieldDefinition f, final String table) {
+    private static String sequenceDefaultExpr(final DatabaseType database, final FieldDefinition fieldDefinition, final String table) {
 
-        if (f.getId() == null) {
+        if (fieldDefinition.getId() == null) {
             return null;
         }
 
-        final boolean needsSequenceDefault = IdStrategyEnum.SEQUENCE.equals(f.getId().getStrategy())
-            || (IdStrategyEnum.AUTO.equals(f.getId().getStrategy()) && (DatabaseType.POSTGRESQL.equals(d) || DatabaseType.MSSQL.equals(d)));
+        final boolean needsSequenceDefault = IdStrategyEnum.SEQUENCE.equals(fieldDefinition.getId().getStrategy())
+            || (IdStrategyEnum.AUTO.equals(fieldDefinition.getId().getStrategy()) && (DatabaseType.POSTGRESQL.equals(database) || DatabaseType.MSSQL.equals(database)));
 
         if (!needsSequenceDefault) {
             return null;
         }
 
-        final String seq = (StringUtils.isNotBlank(f.getId().getGeneratorName()))
-                ? f.getId().getGeneratorName()
+        final String seq = (StringUtils.isNotBlank(fieldDefinition.getId().getGeneratorName()))
+                ? fieldDefinition.getId().getGeneratorName()
                 : table + "_id_seq";
 
-        return switch (d) {
+        return switch (database) {
             case POSTGRESQL -> "nextval('" + seq + "')";
             case MSSQL      -> "NEXT VALUE FOR " + seq;
             case MYSQL      -> null;
+            case MARIADB    -> null;
         };
     }
 

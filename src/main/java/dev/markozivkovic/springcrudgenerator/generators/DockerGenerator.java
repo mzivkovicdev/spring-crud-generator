@@ -71,12 +71,14 @@ public class DockerGenerator implements ProjectArtifactGenerator {
         final int defaultDbPort = switch (this.configuration.getDatabase()) {
             case POSTGRESQL -> 5432;
             case MYSQL -> 3306;
+            case MARIADB -> 3306;
             case MSSQL -> 1433;
         };
 
         final String defaultDbImage = switch (this.configuration.getDatabase()) {
             case POSTGRESQL -> "postgres";
             case MYSQL -> "mysql";
+            case MARIADB -> "mariadb";
             case MSSQL -> "mcr.microsoft.com/mssql/server";
         };
 

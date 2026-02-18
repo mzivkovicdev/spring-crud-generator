@@ -159,9 +159,11 @@ class FlywayUtilsTest {
         final String pg = FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL);
         final String my = FlywayUtils.columnSqlType(field, DatabaseType.MYSQL);
         final String ms = FlywayUtils.columnSqlType(field, DatabaseType.MSSQL);
+        final String ma = FlywayUtils.columnSqlType(field, DatabaseType.MARIADB);
 
         assertEquals("VARCHAR(255)", pg);
         assertEquals("VARCHAR(255)", my);
+        assertEquals("VARCHAR(255)", ma);
         assertEquals("NVARCHAR(255)", ms);
     }
 
@@ -173,6 +175,7 @@ class FlywayUtilsTest {
 
         assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -184,6 +187,7 @@ class FlywayUtilsTest {
 
         assertEquals("INTEGER", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("INTEGER", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("INTEGER", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("INT", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -195,6 +199,7 @@ class FlywayUtilsTest {
 
         assertEquals("UUID", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("BINARY(16)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("BINARY(16)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("UNIQUEIDENTIFIER", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -206,6 +211,7 @@ class FlywayUtilsTest {
 
         assertEquals("DATE", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("DATE", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("DATE", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("DATE", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -217,6 +223,7 @@ class FlywayUtilsTest {
 
         assertEquals("TIMESTAMP", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("DATETIME(6)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("DATETIME(6)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("DATETIME2(6)", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -228,6 +235,7 @@ class FlywayUtilsTest {
 
         assertEquals("TIMESTAMP WITH TIME ZONE", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("DATETIME(6)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("DATETIME(6)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("DATETIME2(6)", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -239,6 +247,7 @@ class FlywayUtilsTest {
 
         assertEquals("VARCHAR(255)", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("VARCHAR(255)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("VARCHAR(255)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("NVARCHAR(255)", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -250,10 +259,12 @@ class FlywayUtilsTest {
 
         final String pg = FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL);
         final String my = FlywayUtils.columnSqlType(field, DatabaseType.MYSQL);
+        final String ma = FlywayUtils.columnSqlType(field, DatabaseType.MARIADB);
         final String ms = FlywayUtils.columnSqlType(field, DatabaseType.MSSQL);
 
         assertEquals("VARCHAR(255)", pg);
         assertEquals("VARCHAR(255)", my);
+        assertEquals("VARCHAR(255)", ma);
         assertEquals("NVARCHAR(255)", ms);
     }
 
@@ -265,10 +276,12 @@ class FlywayUtilsTest {
 
         final String pg = FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL);
         final String my = FlywayUtils.columnSqlType(field, DatabaseType.MYSQL);
+        final String ma = FlywayUtils.columnSqlType(field, DatabaseType.MARIADB);
         final String ms = FlywayUtils.columnSqlType(field, DatabaseType.MSSQL);
 
         assertEquals("VARCHAR(100)", pg);
         assertEquals("VARCHAR(100)", my);
+        assertEquals("VARCHAR(100)", ma);
         assertEquals("NVARCHAR(100)", ms);
     }
 
@@ -280,6 +293,7 @@ class FlywayUtilsTest {
 
         assertEquals("BOOLEAN", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("BOOLEAN", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("BOOLEAN", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("BIT", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -291,6 +305,7 @@ class FlywayUtilsTest {
 
         assertEquals("DOUBLE PRECISION", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("DOUBLE", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("DOUBLE", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("DOUBLE PRECISION", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -302,6 +317,7 @@ class FlywayUtilsTest {
 
         assertEquals("REAL", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("REAL", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("REAL", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("REAL", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -313,6 +329,7 @@ class FlywayUtilsTest {
 
         assertEquals("NUMERIC(19,2)", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("DECIMAL(19,2)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("DECIMAL(19,2)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("DECIMAL(19,2)", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -324,6 +341,7 @@ class FlywayUtilsTest {
 
         assertEquals("NUMERIC", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("DECIMAL(65,0)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("DECIMAL(65,0)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("DECIMAL(38,0)", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -357,6 +375,7 @@ class FlywayUtilsTest {
 
         assertEquals("JSONB", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("JSON", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("JSON", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("NVARCHAR(MAX)", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -368,6 +387,7 @@ class FlywayUtilsTest {
 
         assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
+        assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("BIGINT", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 
@@ -397,6 +417,8 @@ class FlywayUtilsTest {
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, identityField, "t"));
         assertEquals("BIGINT AUTO_INCREMENT",
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.MYSQL, identityField, "t"));
+        assertEquals("BIGINT AUTO_INCREMENT",
+                FlywayUtils.identityDecorateIfNeeded(DatabaseType.MARIADB, identityField, "t"));
         assertEquals("BIGINT IDENTITY(1,1)",
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, identityField, "t"));
 
@@ -404,6 +426,8 @@ class FlywayUtilsTest {
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, autoField, "t"));
         assertEquals("BIGINT AUTO_INCREMENT",
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.MYSQL, autoField, "t"));
+        assertEquals("BIGINT AUTO_INCREMENT",
+                FlywayUtils.identityDecorateIfNeeded(DatabaseType.MARIADB, autoField, "t"));
         assertEquals("BIGINT",
                 FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, autoField, "t"));
     }
@@ -416,6 +440,7 @@ class FlywayUtilsTest {
 
         assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, seqField, "my_table"));
         assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.MYSQL, seqField, "my_table"));
+        assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.MARIADB, seqField, "my_table"));
         assertEquals("BIGINT", FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, seqField, "my_table"));
     }
 
@@ -439,6 +464,7 @@ class FlywayUtilsTest {
 
         assertNull(FlywayUtils.identityDecorateIfNeeded(DatabaseType.POSTGRESQL, tableField, "t"));
         assertNull(FlywayUtils.identityDecorateIfNeeded(DatabaseType.MYSQL, tableField, "t"));
+        assertNull(FlywayUtils.identityDecorateIfNeeded(DatabaseType.MARIADB, tableField, "t"));
         assertNull(FlywayUtils.identityDecorateIfNeeded(DatabaseType.MSSQL, tableField, "t"));
     }
 

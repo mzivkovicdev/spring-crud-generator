@@ -219,6 +219,7 @@ public class CrudConfiguration {
 
     public enum DatabaseType {
         MYSQL,
+        MARIADB,
         POSTGRESQL,
         MSSQL;
     }
