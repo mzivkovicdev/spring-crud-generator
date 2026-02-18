@@ -61,7 +61,6 @@ services:
             MYSQL_USER: app
             MYSQL_PASSWORD: app
             MYSQL_ROOT_PASSWORD: root
-        command: ["--default-authentication-plugin=mysql_native_password"]
         ports:
             - "${dbPort}:3306"
         healthcheck:
