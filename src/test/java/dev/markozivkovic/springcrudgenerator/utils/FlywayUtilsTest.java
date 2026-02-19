@@ -199,7 +199,7 @@ class FlywayUtilsTest {
 
         assertEquals("UUID", FlywayUtils.columnSqlType(field, DatabaseType.POSTGRESQL));
         assertEquals("BINARY(16)", FlywayUtils.columnSqlType(field, DatabaseType.MYSQL));
-        assertEquals("BINARY(16)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
+        assertEquals("CHAR(36)", FlywayUtils.columnSqlType(field, DatabaseType.MARIADB));
         assertEquals("UNIQUEIDENTIFIER", FlywayUtils.columnSqlType(field, DatabaseType.MSSQL));
     }
 

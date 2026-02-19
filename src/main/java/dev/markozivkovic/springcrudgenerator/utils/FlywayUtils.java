@@ -207,7 +207,7 @@ public class FlywayUtils {
      * <ul>
      *     <li>For POSTGRESQL, UUID</li>
      *     <li>For MYSQL, BINARY(16)</li>
-     *     <li>For MARIADB, BINARY(16)</li>
+     *     <li>For MARIADB, CHAR(36)</li>
      *     <li>For MSSQL, UNIQUEIDENTIFIER</li>
      * </ul>
      * @param database the {@link DatabaseType}
@@ -217,7 +217,7 @@ public class FlywayUtils {
         return switch (database) {
             case POSTGRESQL -> "UUID";
             case MYSQL -> "BINARY(16)";
-            case MARIADB -> "BINARY(16)";
+            case MARIADB -> "CHAR(36)";
             case MSSQL -> "UNIQUEIDENTIFIER";
         };
     }
