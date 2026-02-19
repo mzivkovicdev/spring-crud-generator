@@ -436,7 +436,8 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     final FieldDefinition idField = FieldUtils.extractIdField(model.getFields());
                     final boolean importSequenceIfAutoStrategy = (DatabaseType.POSTGRESQL.equals(this.configuration.getDatabase())
                             || DatabaseType.MSSQL.equals(this.configuration.getDatabase())
-                            || DatabaseType.MYSQL.equals(this.configuration.getDatabase()))
+                            || DatabaseType.MYSQL.equals(this.configuration.getDatabase())
+                            || DatabaseType.MARIADB.equals(this.configuration.getDatabase()))
                              && IdStrategyEnum.AUTO.equals(idField.getId().getStrategy());
                     return IdStrategyEnum.SEQUENCE.equals(idField.getId().getStrategy()) || importSequenceIfAutoStrategy;
                 }).collect(Collectors.toList());
