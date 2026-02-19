@@ -1,10 +1,10 @@
 <#include "_common.ftl">
-<#if sequence?? && db != "MYSQL">
+<#if sequence?? && db != "MYSQL" && db != "MARIADB">
 CREATE SEQUENCE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${quoteIdent(name)}
     START WITH ${initialValue}
     INCREMENT BY ${allocationSize};
 </#if><#t>
-<#if sequence?? && db == "MYSQL">
+<#if sequence?? && (db == "MYSQL" || db == "MARIADB")>
 CREATE TABLE ${quoteIdent(name)} (
     ${quoteIdent("next_val")} BIGINT NOT NULL
 );
@@ -21,7 +21,7 @@ INSERT INTO ${quoteIdent(name)}(${quoteIdent(pkColumnName)}, ${quoteIdent(valueC
     VALUES ('${pkColumnValue}', ${initialValue})
     ON CONFLICT DO NOTHING;
 </#if><#t>
-<#if db == "MYSQL">
+<#if (db == "MYSQL" || db == "MARIADB")>
 INSERT INTO ${quoteIdent(name)}(${quoteIdent(pkColumnName)}, ${quoteIdent(valueColumnName)})
     VALUES ('${pkColumnValue}', ${initialValue})
     ON DUPLICATE KEY UPDATE ${quoteIdent(valueColumnName)} = ${quoteIdent(valueColumnName)};

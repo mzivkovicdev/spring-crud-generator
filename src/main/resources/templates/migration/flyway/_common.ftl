@@ -1,6 +1,6 @@
 <#function quoteIdent ident>
     <#assign s = (ident!"" )>
-    <#if db == "MYSQL">
+    <#if db == "MYSQL" || db == "MARIADB">
         <#return "`${s}`">
     <#elseif db == "MSSQL">
         <#return "[${s}]">
