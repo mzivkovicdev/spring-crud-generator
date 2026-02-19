@@ -28,7 +28,7 @@ import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 
 public class PackageUtils {
 
-    private static final String SOURCE_JAVA = "src/main/java/";
+    private static final Path SOURCE_JAVA_PATH = Paths.get("src", "main", "java");
     
     private PackageUtils() {
         
@@ -48,27 +48,31 @@ public class PackageUtils {
         if (!StringUtils.isNotBlank(outputDir)) {
             throw new IllegalArgumentException("Output directory cannot be null or empty");
         }
-        
-        final Path absoluteOutputDir = Paths.get(outputDir);
-        
+
+        final Path absoluteOutputDir = Paths.get(outputDir).toAbsolutePath().normalize();
         if (!absoluteOutputDir.isAbsolute()) {
             throw new IllegalArgumentException("Output directory must be an absolute path");
         }
 
-        final String outputPathStr = absoluteOutputDir.toString();
+        int sourceIndex = -1;
 
-        if (!outputPathStr.contains(SOURCE_JAVA)) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "Output directory '%s' does not contain the source Java directory '%s'",
-                    outputPathStr, SOURCE_JAVA
-                )
-            );
+        for (int i = 0; i <= absoluteOutputDir.getNameCount() - SOURCE_JAVA_PATH.getNameCount(); i++) {
+            if (absoluteOutputDir.subpath(i, i + SOURCE_JAVA_PATH.getNameCount()).equals(SOURCE_JAVA_PATH)) {
+                sourceIndex = i;
+                break;
+            }
         }
 
-        final String relativePackagePath = outputPathStr.substring(outputPathStr.indexOf(SOURCE_JAVA) + SOURCE_JAVA.length());
-        
-        return relativePackagePath.replace(File.separator, ".");
+        if (sourceIndex == -1) {
+            throw new IllegalArgumentException("Output directory does not contain src/main/java");
+        }
+
+        if (sourceIndex + SOURCE_JAVA_PATH.getNameCount() == absoluteOutputDir.getNameCount()) {
+            return "";
+        }
+
+        final Path packagePath = absoluteOutputDir.subpath(sourceIndex + SOURCE_JAVA_PATH.getNameCount(), absoluteOutputDir.getNameCount());
+        return packagePath.toString().replace(File.separatorChar, '.');
     }
 
     /**
