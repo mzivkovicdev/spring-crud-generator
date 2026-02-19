@@ -2,7 +2,7 @@
 <#list fields as field>
     <#if field.id?has_content>
     @Id
-    <#assign defaultSequence = (field.id.strategy == "AUTO" && (db == "MSSQL" || db == "POSTGRESQL" || db == "MYSQL")) />
+    <#assign defaultSequence = (field.id.strategy == "AUTO" && (db == "MSSQL" || db == "POSTGRESQL" || db == "MYSQL" || db == "MARIADB")) />
     <#if field.id.strategy == "SEQUENCE" || defaultSequence>
     @SequenceGenerator(
         name = "${strippedModelName}_gen",
