@@ -17,6 +17,8 @@
 package dev.markozivkovic.springcrudgenerator.plugins;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -93,10 +95,11 @@ public class CrudGeneratorMojo extends AbstractMojo {
         try {
             this.printBanner();
             final ObjectMapper mapper = this.createSpecMapper(inputSpecFile);
-            
-            LOGGER.info("Generator started for file: {}", inputSpecFile);
+            final Path specPath = Paths.get(inputSpecFile).toAbsolutePath().normalize();
 
-            final CrudSpecification spec = mapper.readValue(new File(inputSpecFile), CrudSpecification.class);
+            LOGGER.info("Generator started for file: {}", specPath);
+
+            final CrudSpecification spec = mapper.readValue(specPath.toFile(), CrudSpecification.class);
             SpecificationValidator.validate(spec);
             PackageConfigurationValidator.validate(spec.getPackages(), spec.getConfiguration());
             SpringBootVersionUtils.resolveAndSetSpringBootMajor(spec, parentVersion);
