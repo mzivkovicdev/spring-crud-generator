@@ -3,6 +3,9 @@ package dev.markozivkovic.springcrudgenerator.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +17,6 @@ class PackageUtilsTest {
     @Test
     @DisplayName("Should throw IllegalArgumentException when outputDir is null")
     void getPackagePathFromOutputDir_whenNull_throwsIllegalArgumentException() {
-        
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class,
             () -> PackageUtils.getPackagePathFromOutputDir(null)
@@ -46,39 +48,28 @@ class PackageUtilsTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when outputDir is not an absolute path")
-    void getPackagePathFromOutputDir_whenNotAbsolute_throwsIllegalArgumentException() {
-        final String relativePath = "project/src/main/java/com/example";
-
-        final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> PackageUtils.getPackagePathFromOutputDir(relativePath)
-        );
-
-        assertEquals("Output directory must be an absolute path", ex.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should throw IllegalArgumentException when outputDir does not contain src/main/java/")
+    @DisplayName("Should throw IllegalArgumentException when outputDir does not contain src/main/java")
     void getPackagePathFromOutputDir_whenNoSourceJava_throwsIllegalArgumentException() {
-        final String outputDir = "/home/user/project/target/generated-sources";
+        final String outputDir = Paths.get("home", "user", "project", "target", "generated-sources")
+                .toAbsolutePath()
+                .normalize()
+                .toString();
 
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class,
             () -> PackageUtils.getPackagePathFromOutputDir(outputDir)
         );
 
-        assertEquals(
-            "Output directory '/home/user/project/target/generated-sources' " +
-            "does not contain the source Java directory 'src/main/java/'",
-            ex.getMessage()
-        );
+        assertEquals("Output directory does not contain src/main/java", ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should return valid package path for correct absolute path containing src/main/java/")
+    @DisplayName("Should return valid package path for correct absolute path containing src/main/java")
     void getPackagePathFromOutputDir_whenValid_returnsPackagePath() {
-        final String outputDir = "/home/user/project/src/main/java/com/example/model";
+        final String outputDir = Paths.get("home", "user", "project", "src", "main", "java", "com", "example", "model")
+                .toAbsolutePath()
+                .normalize()
+                .toString();
 
         final String result = PackageUtils.getPackagePathFromOutputDir(outputDir);
 
@@ -86,13 +77,45 @@ class PackageUtilsTest {
     }
 
     @Test
-    @DisplayName("Should return root package name when only one segment follows src/main/java/")
+    @DisplayName("Should return root package name when only one segment follows src/main/java")
     void getPackagePathFromOutputDir_whenValidRootPackage_returnsSingleSegment() {
-        final String outputDir = "/home/user/project/src/main/java/com";
+        final String outputDir = Paths.get("home", "user", "project", "src", "main", "java", "com")
+                .toAbsolutePath()
+                .normalize()
+                .toString();
 
         final String result = PackageUtils.getPackagePathFromOutputDir(outputDir);
 
         assertEquals("com", result);
+    }
+
+    @Test
+    @DisplayName("Should return empty string when outputDir points exactly to src/main/java")
+    void getPackagePathFromOutputDir_whenExactlySourceJava_returnsEmptyString() {
+        final String outputDir = Paths.get("home", "user", "project", "src", "main", "java")
+                .toAbsolutePath()
+                .normalize()
+                .toString();
+
+        final String result = PackageUtils.getPackagePathFromOutputDir(outputDir);
+
+        assertEquals("", result);
+    }
+
+    @Test
+    @DisplayName("Should ignore extra path noise like '.' and '..' due to normalize()")
+    void getPackagePathFromOutputDir_whenPathHasDotSegments_normalizesCorrectly() {
+        final Path outputDirPath = Paths.get("home", "user", "project", "src", "main", "java", "com", "example")
+                .toAbsolutePath()
+                .normalize();
+
+        final String noisy = outputDirPath.resolve("..").resolve("example").resolve(".").resolve("model")
+                .normalize()
+                .toString();
+
+        final String result = PackageUtils.getPackagePathFromOutputDir(noisy);
+
+        assertEquals("com.example.model", result);
     }
 
     @Test

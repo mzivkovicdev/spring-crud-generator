@@ -13,7 +13,7 @@ Add this `profile` section to your `pom.xml`:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.2.0</version>
+                    <version>1.2.1</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>
