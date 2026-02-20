@@ -24,6 +24,7 @@ public class AdditionalConfigurationConstants {
     private AdditionalConfigurationConstants() {}
 
     public static final String REST_BASEPATH = "rest.basepath";
+    public static final String REST_RESPONSE_EXCLUDE_NULL = "rest.response.excludeNull";
 
     public static final String OPT_LOCK_RETRY_CONFIGURATION = "optimisticLocking.retry.config";
     public static final String OPT_LOCK_MAX_ATTEMPTS = "optimisticLocking.retry.maxAttempts";

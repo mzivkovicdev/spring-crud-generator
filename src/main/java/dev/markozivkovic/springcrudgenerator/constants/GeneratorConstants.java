@@ -80,6 +80,7 @@ public class GeneratorConstants {
         public static final String SWAGGER = "swagger";
         public static final String RESOLVER_TEST_CONFIG = "resolver-test-config";
         public static final String JPA_AUDITING_CONFIG = "jpa-auditing-config";
+        public static final String EXCLUSION_NULL_CONFIG = "exclusion-null-config";
     }
 
 }
