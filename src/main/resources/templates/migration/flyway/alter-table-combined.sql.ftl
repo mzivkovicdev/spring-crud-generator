@@ -1,6 +1,7 @@
 <#include "_common.ftl">
 <#assign isPostgres = (db?string == "POSTGRESQL")>
 <#assign isMySql    = (db?string == "MYSQL")>
+<#assign isMariaDB  = (db?string == "MARIADB")>
 <#assign isMsSql    = (db?string == "MSSQL")>
 <#if addedColumns?has_content>
 <#list addedColumns as c>
@@ -27,7 +28,7 @@ ALTER TABLE ${quoteIdent(table)}
 <#if isPostgres>
 ALTER TABLE ${quoteIdent(table)}
   ALTER COLUMN ${quoteIdent(m.name)} TYPE ${m.newType};
-<#elseif isMySql>
+<#elseif isMySql || isMariaDB>
 ALTER TABLE ${quoteIdent(table)}
   MODIFY COLUMN ${quoteIdent(m.name)} ${m.newType}
   <#if m.newNullable?? && !m.newNullable> NOT NULL</#if>
@@ -43,7 +44,7 @@ ALTER TABLE ${quoteIdent(table)}
 ALTER TABLE ${quoteIdent(table)}
   ALTER COLUMN ${quoteIdent(m.name)}
   <#if m.newNullable?? && m.newNullable>DROP NOT NULL<#else>SET NOT NULL</#if>;
-<#elseif isMySql>
+<#elseif isMySql || isMariaDB>
 <#assign myColType = (m.newType!m.type!m.oldType)!"" >
 <#if myColType?has_content>
 ALTER TABLE ${quoteIdent(table)}
@@ -68,7 +69,7 @@ ALTER TABLE ${quoteIdent(table)}
   <#else>
     DROP DEFAULT
   </#if>;
-<#elseif isMySql>
+<#elseif isMySql || isMariaDB>
 ALTER TABLE ${quoteIdent(table)}
   ALTER COLUMN ${quoteIdent(m.name)}
   <#if m.newDefault?? && m.newDefault?has_content>
@@ -100,7 +101,7 @@ ALTER TABLE ${quoteIdent(table)}
 <#if isPostgres>
 ALTER TABLE ${quoteIdent(table)}
   DROP CONSTRAINT IF EXISTS uk_${table}_${m.name};
-<#elseif isMySql>
+<#elseif isMySql || isMariaDB>
 SET @uk_exists_${m_index} := (
   SELECT COUNT(1)
   FROM information_schema.statistics
@@ -134,7 +135,7 @@ ALTER TABLE ${quoteIdent(table)}
 <#if isPostgres>
 ALTER TABLE ${quoteIdent(table)}
   DROP CONSTRAINT IF EXISTS pk_${table};
-<#elseif isMySql>
+<#elseif isMySql || isMariaDB>
 SET @pk_exists := (
   SELECT COUNT(1)
   FROM information_schema.table_constraints
@@ -167,7 +168,7 @@ ALTER TABLE ${quoteIdent(table)}
 <#if isPostgres>
 ALTER TABLE ${quoteIdent(table)}
   DROP CONSTRAINT IF EXISTS fk_${table}_${fk.column};
-<#elseif isMySql>
+<#elseif isMySql || isMariaDB>
 SET @fk_exists_${fk_index} := (
   SELECT COUNT(1)
   FROM information_schema.table_constraints
@@ -212,7 +213,7 @@ ALTER TABLE ${quoteIdent(table)} DROP COLUMN <#if isPostgres>IF EXISTS </#if>${q
 <#if isPostgres>
 ALTER TABLE ${quoteIdent(table)} ALTER COLUMN ${quoteIdent("created_at")} TYPE ${auditCreatedType};
 ALTER TABLE ${quoteIdent(table)} ALTER COLUMN ${quoteIdent("updated_at")} TYPE ${auditUpdatedType};
-<#elseif isMySql>
+<#elseif isMySql || isMariaDB>
 ALTER TABLE ${quoteIdent(table)} MODIFY COLUMN ${quoteIdent("created_at")} ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr};
 ALTER TABLE ${quoteIdent(table)} MODIFY COLUMN ${quoteIdent("updated_at")} ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr};
 <#elseif isMsSql>

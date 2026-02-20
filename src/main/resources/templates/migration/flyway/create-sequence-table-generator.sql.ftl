@@ -21,7 +21,12 @@ INSERT INTO ${quoteIdent(name)}(${quoteIdent(pkColumnName)}, ${quoteIdent(valueC
     VALUES ('${pkColumnValue}', ${initialValue})
     ON CONFLICT DO NOTHING;
 </#if><#t>
-<#if db == "MYSQL">
+<#if (db == "MYSQL")>
+INSERT INTO ${quoteIdent(name)}(${quoteIdent(pkColumnName)}, ${quoteIdent(valueColumnName)})
+    VALUES ('${pkColumnValue}', ${initialValue})
+    ON DUPLICATE KEY UPDATE ${quoteIdent(valueColumnName)} = ${quoteIdent(valueColumnName)};
+</#if><#t>
+<#if (db == "MARIADB")>
 INSERT INTO ${quoteIdent(name)}(${quoteIdent(pkColumnName)}, ${quoteIdent(valueColumnName)})
     VALUES ('${pkColumnValue}', ${initialValue})
     ON DUPLICATE KEY UPDATE ${quoteIdent(valueColumnName)} = ${quoteIdent(valueColumnName)};
