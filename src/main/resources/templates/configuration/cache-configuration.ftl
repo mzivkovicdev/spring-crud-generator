@@ -46,7 +46,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 <#else>
 <#if excludeNull?? && excludeNull>
-import com.fasterxml.jackson.annotaion.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude;
 </#if><#t>
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
