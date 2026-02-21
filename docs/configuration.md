@@ -8,7 +8,7 @@ All options are defined under the root `configuration` key.
 
 | Property            | Type    | Default | Description                                                                                                                                                                                                                                                                                                                                  |
 | ------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `database`          | string  | `-`     | **Required.** Target SQL database (e.g. `postgresql`, `mysql`, `mssql`)                                                                                                                                                                                                                                                                      |
+| `database`          | string  | `-`     | **Required.** Target SQL database (e.g. `postgresql`, `mysql`, `mariadb`, `mssql`)                                                                                                                                                                                                                                                                      |
 | `javaVersion`       | number  | `17`    | Java version used for generated code and Dockerfile                                                                                                                                                                                                                                                                                          |
 | `springBootVersion` | string  | `4`     | Spring Boot **major** version (`3` or `4`). If not provided, the generator tries to detect it from the project `pom.xml` (parent version). If detection fails, it defaults to `4`. If an unsupported value is provided (e.g. `1`, `2`, `5`), it will be ignored and the generator will fall back to the detected value or the default (`4`). |
 | `optimisticLocking` | boolean | `false` | Enables optimistic locking support                                                                                                                                                                                                                                                                                                           |
@@ -62,6 +62,9 @@ When you don’t override `image`/`port`, the generator uses:
   - `port`: `5432`
 - **MySQL**
   - `image`: `mysql`
+  - `port`: `3306`
+- **MariaDB**
+  - `image`: `mariadb`
   - `port`: `3306`
 - **MSSQL**
   - `image`: `mcr.microsoft.com/mssql/server`
