@@ -321,4 +321,94 @@ class AdditionalPropertiesUtilsTest {
         assertFalse(result);
     }
 
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns false when additionalProperties is null")
+    void shouldExcludeNullValuesInRestResponse_nullMap_returnsFalse() {
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(null);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns false when additionalProperties is empty")
+    void shouldExcludeNullValuesInRestResponse_emptyMap_returnsFalse() {
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(Map.of());
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns false when key is missing")
+    void shouldExcludeNullValuesInRestResponse_keyMissing_returnsFalse() {
+
+        final Map<String, Object> props = new HashMap<>();
+        props.put("some.other.key", Boolean.TRUE);
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(props);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns true when value is Boolean.TRUE")
+    void shouldExcludeNullValuesInRestResponse_valueBooleanTrue_returnsTrue() {
+
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.REST_RESPONSE_EXCLUDE_NULL, Boolean.TRUE);
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(props);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns false when value is Boolean.FALSE")
+    void shouldExcludeNullValuesInRestResponse_valueBooleanFalse_returnsFalse() {
+
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.REST_RESPONSE_EXCLUDE_NULL, Boolean.FALSE);
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(props);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns false when value is null")
+    void shouldExcludeNullValuesInRestResponse_valueNull_returnsFalse() {
+
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.REST_RESPONSE_EXCLUDE_NULL, null);
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(props);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns false when value is String 'true' (only Boolean.TRUE is accepted)")
+    void shouldExcludeNullValuesInRestResponse_valueStringTrue_returnsFalse() {
+
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.REST_RESPONSE_EXCLUDE_NULL, "true");
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(props);
+
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("shouldExcludeNullValuesInRestResponse: returns false when value is String 'false'")
+    void shouldExcludeNullValuesInRestResponse_valueStringFalse_returnsFalse() {
+
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.REST_RESPONSE_EXCLUDE_NULL, "false");
+
+        final boolean result = AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(props);
+
+        assertFalse(result);
+    }
+
 }

@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -34,6 +35,7 @@ import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 
 public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
 
@@ -60,8 +62,42 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
 
         this.generateOptimisticLockingRetryConfiguration(outputDir);
         this.generateRetryableAnnotationConfiguration(outputDir);
+        this.generateExclusionNullConfiguration(outputDir);
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG);
+    }
+
+    /**
+     * Generates the Exclusion Null configuration. This method is only called if the additional property
+     * 'rest.response.excludeNull' is set to true.
+     *
+     * @param outputDir the directory where the generated configuration file will be written
+     */
+    private void generateExclusionNullConfiguration(final String outputDir) {
+
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG)) return;
+
+        if (!AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(this.configuration.getAdditionalProperties())) return;
+
+        LOGGER.info("Generating Exclusion Null configuration");
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "configuration/jackson-null-exclusion-configuration.ftl",
+                    Map.of(TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion()))
+                ));
+
+        FileWriterUtils.writeToFile(
+                outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), 
+                "JacksonNullExclusionConfig.java", sb.toString()
+        );
+
+        LOGGER.info("Exclusion Null configuration generated");
+
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG);
     }
 
     /**

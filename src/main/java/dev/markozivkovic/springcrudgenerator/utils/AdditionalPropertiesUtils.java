@@ -165,5 +165,21 @@ public class AdditionalPropertiesUtils {
                         .orElse(false)
         );
     }
+
+    /**
+     * Returns true if the 'rest.response.excludeNull' key is present in the given map of additional properties and its value is true,
+     * false otherwise.
+     * This method is used to determine whether null values should be excluded from the REST response.
+     * 
+     * @param additionalProperties the map of additional properties to check
+     * @return true if the 'rest.response.excludeNull' key is present and its value is true, false otherwise
+     */
+    public static boolean shouldExcludeNullValuesInRestResponse(final Map<String, Object> additionalProperties) {
+        return Boolean.TRUE.equals(
+                Optional.ofNullable(additionalProperties)
+                        .map(properties -> properties.get(AdditionalConfigurationConstants.REST_RESPONSE_EXCLUDE_NULL))
+                        .orElse(false)
+        );
+    }
     
 }

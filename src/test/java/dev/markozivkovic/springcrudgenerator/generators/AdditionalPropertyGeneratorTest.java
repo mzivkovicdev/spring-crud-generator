@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 
 class AdditionalPropertyGeneratorTest {
 
@@ -94,12 +96,12 @@ class AdditionalPropertyGeneratorTest {
     }
 
     @Test
-    @DisplayName("generate: should generate GraphQL config, retry config and retryable annotation when all flags & params provided")
-    void generate_shouldGenerateGraphqlRetryConfigAndRetryableAnnotation() {
+    @DisplayName("generate: should generate retry config and retryable annotation when all flags & params provided")
+    void generate_shouldGenerateRetryConfigAndRetryableAnnotation() {
 
         final Env env = prepareEnv();
 
-        env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_RETRY_CONFIGURATION, true);
+        env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_RETRY_CONFIGURATION, Boolean.TRUE);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS, 5);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS, 100);
         env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS, 1000);
@@ -111,61 +113,48 @@ class AdditionalPropertyGeneratorTest {
         final List<InvocationOnMock> writerInvocations = new ArrayList<>();
 
         try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
-                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
-                final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
-                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
-                        FreeMarkerTemplateProcessorUtils.class, invocation -> {
-                            templateInvocations.add(invocation);
-                            if ("processTemplate".equals(invocation.getMethod().getName())) {
-                                String templateName = invocation.getArgument(0, String.class);
-                                return "TEMPLATE-" + templateName;
-                            }
-                            return null;
-                        });
-                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
-                    writerInvocations.add(invocation);
-                    return null;
-                });
-                final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(
-                        AdditionalPropertiesUtils.class)) {
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+            final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+            final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                    FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                        templateInvocations.add(invocation);
+                        if ("processTemplate".equals(invocation.getMethod().getName())) {
+                            String templateName = invocation.getArgument(0, String.class);
+                            return "TEMPLATE-" + templateName;
+                        }
+                        return null;
+                    });
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                writerInvocations.add(invocation);
+                return null;
+            });
+            final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(AdditionalPropertiesUtils.class)) {
 
             cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
-
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
-                    .thenReturn(false);
-            genCtx.when(
-                    () -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION))
-                    .thenReturn(false);
-            genCtx.when(() -> GeneratorContext
-                    .isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
-                    .thenReturn(false);
-            genCtx.when(
-                    () -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
-                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG)).thenReturn(false);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(env.additionalProps)).thenReturn(false);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
-            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", env.pkgConfig))
-                    .thenReturn("com.example.app.config");
+            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", env.pkgConfig)).thenReturn("com.example.app.config");
             pkg.when(() -> PackageUtils.computeConfigurationSubPackage(env.pkgConfig)).thenReturn("config");
-            pkg.when(() -> PackageUtils.computeAnnotationPackage("com.example.app", env.pkgConfig))
-                    .thenReturn("com.example.app.annotation");
+            pkg.when(() -> PackageUtils.computeAnnotationPackage("com.example.app", env.pkgConfig)).thenReturn("com.example.app.annotation");
             pkg.when(() -> PackageUtils.computeAnnotationSubPackage(env.pkgConfig)).thenReturn("annotation");
 
-            additionalPropsUtils
-                    .when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps))
-                    .thenReturn(true);
-            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
-                    AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps)).thenReturn(true);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS))
                     .thenReturn(5);
-            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
-                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS))
                     .thenReturn(100);
-            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps,
-                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS))
                     .thenReturn(1000);
-            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getDouble(env.additionalProps,
-                    AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER))
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getDouble(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER))
                     .thenReturn(2.0d);
+            when(env.config.getSpringBootVersion()).thenReturn("3.2.0");
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.2.0")).thenReturn(true);
 
             env.generator.generate("out");
 
@@ -209,6 +198,8 @@ class AdditionalPropertyGeneratorTest {
 
             assertTrue(wroteRetryConfig, "EnableRetryConfiguration.java should be written");
             assertTrue(wroteRetryableAnnotation, "OptimisticLockingRetry.java should be written");
+
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
         }
     }
 
@@ -425,6 +416,184 @@ class AdditionalPropertyGeneratorTest {
             assertFalse(anyRetryTemplateUsed, "Retry templates should NOT be used when optimistic locking is disabled");
             assertFalse(anyRetryFileWritten,
                     "Retry-related files should NOT be written when optimistic locking is disabled");
+        }
+    }
+
+    @Test
+    @DisplayName("generate: should generate JacksonNullExclusionConfig when rest.response.excludeNull is true")
+    void generate_shouldGenerateJacksonNullExclusionConfig_whenExcludeNullEnabled() {
+
+        final Env env = prepareEnv();
+        env.additionalProps.put("some.key", true);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+        final List<InvocationOnMock> writerInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+            final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+            final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                    FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                        templateInvocations.add(invocation);
+                        if ("processTemplate".equals(invocation.getMethod().getName())) {
+                            return "TEMPLATE-" + invocation.getArgument(0, String.class);
+                        }
+                        return null;
+                    });
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                writerInvocations.add(invocation);
+                return null;
+            });
+            final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(AdditionalPropertiesUtils.class)) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
+                    .thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(true);
+
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(env.additionalProps))
+                    .thenReturn(true);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", env.pkgConfig))
+                    .thenReturn("com.example.app.config");
+            pkg.when(() -> PackageUtils.computeConfigurationSubPackage(env.pkgConfig)).thenReturn("config");
+
+            when(env.config.getSpringBootVersion()).thenReturn("3.2.0");
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.2.0")).thenReturn(true);
+
+            env.generator.generate("out");
+
+            final boolean nullExclTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "configuration/jackson-null-exclusion-configuration.ftl".equals(inv.getArgument(0)));
+
+            assertTrue(nullExclTemplateUsed, "Null exclusion template should be used");
+
+            final boolean wroteNullExclConfig = writerInvocations.stream()
+                    .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
+                            && "out".equals(inv.getArgument(0))
+                            && "config".equals(inv.getArgument(1))
+                            && "JacksonNullExclusionConfig.java".equals(inv.getArgument(2)));
+
+            assertTrue(wroteNullExclConfig, "JacksonNullExclusionConfig.java should be written");
+
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG));
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
+        }
+    }
+
+    @Test
+    @DisplayName("generate: should NOT generate JacksonNullExclusionConfig when rest.response.excludeNull is false")
+    void generate_shouldNotGenerateJacksonNullExclusionConfig_whenExcludeNullDisabled() {
+
+        final Env env = prepareEnv();
+        env.additionalProps.put("some.key", true);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+        final List<InvocationOnMock> writerInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                    FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                        templateInvocations.add(invocation);
+                        return null;
+                    });
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                writerInvocations.add(invocation);
+                return null;
+            });
+            final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(AdditionalPropertiesUtils.class)) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG))
+                    .thenReturn(false);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(env.additionalProps))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
+                    .thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(true);
+
+            env.generator.generate("out");
+
+            final boolean nullExclTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "configuration/jackson-null-exclusion-configuration.ftl".equals(inv.getArgument(0)));
+
+            final boolean wroteNullExclConfig = writerInvocations.stream()
+                    .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
+                            && "JacksonNullExclusionConfig.java".equals(inv.getArgument(2)));
+
+            assertFalse(nullExclTemplateUsed, "Null exclusion template should NOT be used");
+            assertFalse(wroteNullExclConfig, "JacksonNullExclusionConfig.java should NOT be written");
+
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
+        }
+    }
+
+    @Test
+    @DisplayName("generate: should skip JacksonNullExclusionConfig when EXCLUSION_NULL_CONFIG already generated")
+    void generate_shouldSkipJacksonNullExclusionConfig_whenAlreadyGenerated() {
+
+        final Env env = prepareEnv();
+        env.additionalProps.put("some.key", true);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+        final List<InvocationOnMock> writerInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                    FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                        templateInvocations.add(invocation);
+                        return null;
+                    });
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                writerInvocations.add(invocation);
+                return null;
+            });
+            final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(AdditionalPropertiesUtils.class)) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG))
+                    .thenReturn(true);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(env.additionalProps))
+                    .thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
+                    .thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(true);
+
+            env.generator.generate("out");
+
+            final boolean nullExclTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "configuration/jackson-null-exclusion-configuration.ftl".equals(inv.getArgument(0)));
+
+            final boolean wroteNullExclConfig = writerInvocations.stream()
+                    .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
+                            && "JacksonNullExclusionConfig.java".equals(inv.getArgument(2)));
+
+            assertFalse(nullExclTemplateUsed, "Null exclusion template should NOT be used when already generated");
+            assertFalse(wroteNullExclConfig, "JacksonNullExclusionConfig.java should NOT be written when already generated");
+
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG), never());
         }
     }
 }

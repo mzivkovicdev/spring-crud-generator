@@ -132,6 +132,7 @@ Advanced and feature-specific configuration options.
 | Property                               | Type    | Default | Description                                                                                           |
 | -------------------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------- |
 | `rest.basePath`                        | string  | `/api`  | Base path for generated REST endpoints. Example: `/api/v1`                                            |
+| `rest.response.excludeNull`            | boolean | `false` | When enabled, exclude `null` fields from JSON responses globally (Jackson `NON_NULL`).                |
 | `optimisticLocking.retry.config`       | boolean | `false` | Enables generation of a dedicated `@Retryable` configuration for optimistic locking                   |
 | `optimisticLocking.retry.maxAttempts`  | number  | `3`     | Maximum retry attempts (falls back to this value if not overridden)                                   |
 | `optimisticLocking.backoff.delayMs`    | number  | `1000`  | Initial backoff delay in milliseconds (falls back to this value if not overridden)                    |

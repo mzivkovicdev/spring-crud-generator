@@ -121,6 +121,7 @@ public final class TemplateContextConstants {
     public static final String PROPERTIES = "properties";
     public static final String TITLE = "title";
     public static final String REQUIRED = "required";
+    public static final String EXCLUDE_NULL = "excludeNull";
 
     public static final String CREATE_RESOURCE = "createResource";
     public static final String ADD_RELATION_METHOD = "addRelationMethod";
