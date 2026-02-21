@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -86,7 +87,7 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "configuration/jackson-null-exclusion-configuration.ftl",
-                    Map.of("isSpringBoot3", SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion()))
+                    Map.of(TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion()))
                 ));
 
         FileWriterUtils.writeToFile(

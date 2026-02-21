@@ -45,8 +45,13 @@ ${modelImports}
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 <#else>
+<#if excludeNull?? && excludeNull>
+import com.fasterxml.jackson.annotaion.JsonInclude;
+</#if><#t>
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 </#if>
 
 </#if>
@@ -98,12 +103,18 @@ public class CacheConfiguration {
         
         final ObjectMapper objectMapper = JsonMapper.builder()
                 .addModule(new HibernateLazyNullModule())
+                .addModule(new JavaTimeModule())
+                <#if excludeNull?? && excludeNull>
+                .serializationInclusion(JsonInclude.Include.NON_NULL)
+                </#if><#t>
                 .build();
 
         objectMapper.setVisibility(
             com.fasterxml.jackson.annotation.PropertyAccessor.FIELD,
             com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY
         );
+
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         return objectMapper;
     }

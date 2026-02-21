@@ -95,6 +95,9 @@ public class CacheGenerator implements ProjectArtifactGenerator {
         context.put("modelImports", modelImports);
         context.put("entities", entityNames);
         context.put(
+            TemplateContextConstants.EXCLUDE_NULL, AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(this.crudConfiguration.getAdditionalProperties())
+        );
+        context.put(
             TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.crudConfiguration.getAdditionalProperties())
         );
         context.put(TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.crudConfiguration.getSpringBootVersion()));
