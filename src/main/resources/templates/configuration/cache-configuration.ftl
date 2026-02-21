@@ -50,6 +50,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 </#if><#t>
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 </#if>
@@ -104,6 +105,7 @@ public class CacheConfiguration {
         final ObjectMapper objectMapper = JsonMapper.builder()
                 .addModule(new HibernateLazyNullModule())
                 .addModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 <#if excludeNull?? && excludeNull>
                 .serializationInclusion(JsonInclude.Include.NON_NULL)
                 </#if><#t>
