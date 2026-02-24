@@ -31,6 +31,7 @@ configuration:
     dataGenerator: instancio
   additionalProperties:
     rest.basePath: /api/v1
+    rest.response.excludeNull: true
     optimisticLocking.retry.config: true
     optimisticLocking.retry.maxAttempts: 5
     optimisticLocking.backoff.delayMs: 100
