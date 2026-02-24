@@ -5,6 +5,11 @@
     <#if field.relation.cascade??>
     <#assign args = args + ["cascade = CascadeType." + field.relation.cascade]>
     </#if>
+    <#assign supportsOrphanRemoval = field.relation.type == "OneToOne" || field.relation.type == "OneToMany">
+    <#assign orphanRemovalEnabled = field.relation.orphanRemoval?? && field.relation.orphanRemoval>
+    <#if supportsOrphanRemoval && orphanRemovalEnabled>
+    <#assign args = args + ["orphanRemoval = true"]>
+    </#if>
     @${field.relation.type}(${args?join(", ")})
     <#if field.relation.type == "ManyToMany">
     @JoinTable(
