@@ -9,8 +9,9 @@
 ![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat&logo=springboot&logoColor=white)
 ![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.x-6DB33F?style=flat&logo=springboot&logoColor=white)
 
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
+![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=flat&logo=mariadb&logoColor=white)
 ![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=flat&logo=microsoftsqlserver&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DD0031?style=flat&logo=redis&logoColor=white)
 
@@ -18,7 +19,7 @@ Spring CRUD Generator is an open-source **Maven plugin** that accelerates backen
 
 This project aims to eliminate repetitive boilerplate code while keeping full control and transparency over the generated output.
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.2.1`
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.3.0`
 
 ---
 
@@ -54,7 +55,7 @@ Generate a fully functional Spring Boot CRUD application in minutes using a sing
 
 ### Step 1: Add Maven Profile
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.2.1`  
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.3.0`  
 > Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 Add the following `profile` section to your `pom.xml`:
@@ -68,7 +69,7 @@ Add the following `profile` section to your `pom.xml`:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.2.1</version>
+                    <version>1.3.0</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>
