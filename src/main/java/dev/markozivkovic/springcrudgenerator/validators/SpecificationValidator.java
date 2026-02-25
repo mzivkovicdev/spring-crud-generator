@@ -277,6 +277,13 @@ public class SpecificationValidator {
                 }
             }
 
+            if (StringUtils.isNotBlank(relation.getJoinColumn()) && !relation.getJoinColumn().matches(LOWER_SNAKE_CASE_REGEX)) {
+                errors.add(String.format(
+                        "Invalid join column name '%s' in relation for field %s in model %s. Column names should be lower_snake_case.",
+                        relation.getJoinColumn(), field.getName(), model.getName()
+                ));
+            }
+
             if (RelationTypeEnum.MANY_TO_MANY.equals(relationType) && Objects.isNull(relation.getJoinTable())) {
                 errors.add(String.format(
                         "Many-to-Many relation for field %s in model %s must have a join table defined",
