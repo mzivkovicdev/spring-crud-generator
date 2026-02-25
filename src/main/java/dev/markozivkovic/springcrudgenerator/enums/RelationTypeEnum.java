@@ -17,6 +17,8 @@
 package dev.markozivkovic.springcrudgenerator.enums;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public enum RelationTypeEnum {
     
@@ -35,12 +37,57 @@ public enum RelationTypeEnum {
         return this.key;
     }
 
+    /**
+     * Returns a list of the default lazy relation types, which are {@link ONE_TO_MANY} and {@link MANY_TO_MANY}.
+     * These are the relation types that are not eagerly loaded by default.
+     * 
+     * @return a list containing the default lazy relation types
+     */
     public static List<String> getDefaultLazyTypes() {
         return List.of(ONE_TO_MANY.getKey(), MANY_TO_MANY.getKey());
     }
 
+    /**
+     * Returns a list of the default eager relation types, which are {@link ONE_TO_ONE} and {@link MANY_TO_ONE}.
+     * These are the relation types that are eagerly loaded by default.
+     * 
+     * @return a list containing the default eager relation types
+     */
     public static List<String> getDefaultEagerTypes() {
         return List.of(ONE_TO_ONE.getKey(), MANY_TO_ONE.getKey());
+    }
+
+    /**
+     * Returns the enum constant with the given value, or throws an exception if no such constant exists.
+     * 
+     * @param value the value of the enum constant
+     * @return the enum constant with the given value
+     * @throws IllegalArgumentException if no enum constant with the given value exists
+     */
+    public static RelationTypeEnum fromString(final String value) {
+        
+        return Stream.of(values())
+                .filter(enumValue -> enumValue.key.equals(value))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format(
+                                "No enum constant with value %s. Possible values are: %s",
+                                value, getPossibleValues()
+                        )
+                ));
+    }
+
+    /**
+     * Returns a string containing all possible values of the relation types, separated by commas.
+     * This string can be used to construct error messages or other text that requires a list of possible relation types.
+     * 
+     * @return a string containing all possible values of the relation types, separated by commas
+     */
+    public static String getPossibleValues() {
+
+        return Stream.of(values())
+                .map(RelationTypeEnum::getKey)
+                .collect(Collectors.joining(", "));
     }
 
 }

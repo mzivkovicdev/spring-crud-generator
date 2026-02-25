@@ -130,6 +130,7 @@ entities:
           joinColumn: product_id
           fetch: EAGER
           cascade: MERGE
+          orphanRemoval: true
         validation:
           required: true
       - name: quantity

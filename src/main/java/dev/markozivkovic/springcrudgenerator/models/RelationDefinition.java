@@ -24,6 +24,7 @@ public class RelationDefinition {
     private String joinColumn;
     private String fetch;
     private String cascade;
+    private Boolean orphanRemoval;
     private JoinTableDefinition joinTable;
     
     public RelationDefinition() {
@@ -75,6 +76,19 @@ public class RelationDefinition {
         return this;
     }
 
+    public Boolean getOrphanRemoval() {
+        return this.orphanRemoval;
+    }
+
+    public Boolean isOrphanRemoval() {
+        return this.orphanRemoval;
+    }
+
+    public RelationDefinition setOrphanRemoval(final Boolean orphanRemoval) {
+        this.orphanRemoval = orphanRemoval;
+        return this;
+    }
+
     public JoinTableDefinition getJoinTable() {
         return this.joinTable;
     }
@@ -96,12 +110,13 @@ public class RelationDefinition {
                 Objects.equals(joinColumn, relationDefinition.joinColumn) &&
                 Objects.equals(fetch, relationDefinition.fetch) &&
                 Objects.equals(cascade, relationDefinition.cascade) &&
+                Objects.equals(orphanRemoval, relationDefinition.orphanRemoval) &&
                 Objects.equals(joinTable, relationDefinition.joinTable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, joinColumn, fetch, cascade, joinTable);
+        return Objects.hash(type, joinColumn, fetch, cascade, orphanRemoval, joinTable);
     }
 
     @Override
@@ -111,6 +126,7 @@ public class RelationDefinition {
             ", joinColumn='" + getJoinColumn() + "'" +
             ", fetch='" + getFetch() + "'" +
             ", cascade='" + getCascade() + "'" +
+            ", orphanRemoval='" + isOrphanRemoval() + "'" +
             ", joinTable='" + getJoinTable() + "'" +
             "}";
     }
