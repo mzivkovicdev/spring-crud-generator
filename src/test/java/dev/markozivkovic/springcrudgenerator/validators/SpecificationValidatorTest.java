@@ -23,6 +23,8 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 
 class SpecificationValidatorTest {
@@ -66,13 +68,47 @@ class SpecificationValidatorTest {
         return id;
     }
 
+    private static ModelDefinition newSimpleModel(final String name, final String storageName) {
+        final ModelDefinition model = new ModelDefinition();
+        model.setName(name);
+        model.setStorageName(storageName);
+        model.setFields(List.of(newIdField("id", "Long")));
+        return model;
+    }
+
+    private static FieldDefinition newRelationField(final String name, final String targetType, final RelationDefinition relation) {
+        final FieldDefinition field = new FieldDefinition();
+        field.setName(name);
+        field.setType(targetType);
+        field.setRelation(relation);
+        return field;
+    }
+
+    private static void addRoleModel(final CrudSpecification spec) {
+        final ModelDefinition role = newSimpleModel("Role", "role");
+        final List<ModelDefinition> entities = new ArrayList<>(spec.getEntities());
+        entities.add(role);
+        spec.setEntities(entities);
+    }
+
+    private static ModelDefinition getModel(final CrudSpecification spec, final String modelName) {
+        return spec.getEntities().stream()
+                .filter(m -> modelName.equals(m.getName()))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private static FieldDefinition getFirstField(final ModelDefinition model) {
+        return model.getFields().get(0);
+    }
+
     @Test
     @DisplayName("Should throw when specification is null")
     void validate_nullSpecification_throwsIllegalArgumentException() {
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(null)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(null)
         );
         assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
     }
@@ -85,8 +121,8 @@ class SpecificationValidatorTest {
         spec.setConfiguration(null);
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
@@ -100,8 +136,8 @@ class SpecificationValidatorTest {
         spec.getConfiguration().setDatabase(null);
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Database must not be null or empty"));
@@ -110,7 +146,7 @@ class SpecificationValidatorTest {
     @Test
     @DisplayName("Should throw when entities list is null or empty")
     void validate_emptyEntities_throwsIllegalArgumentException() {
-        
+
         final CrudSpecification spec = new CrudSpecification();
         final CrudConfiguration config = new CrudConfiguration();
         config.setJavaVersion(17);
@@ -120,8 +156,8 @@ class SpecificationValidatorTest {
         spec.setEntities(null);
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("CRUD specification, configuration and entities must not be null"));
@@ -151,8 +187,8 @@ class SpecificationValidatorTest {
         spec.getEntities().get(0).getFields().add(invalidField);
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Regex pattern"));
@@ -166,8 +202,8 @@ class SpecificationValidatorTest {
         spec.getConfiguration().setJavaVersion(16);
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Minimum supported version is 17"));
@@ -181,8 +217,8 @@ class SpecificationValidatorTest {
         spec.getConfiguration().setJavaVersion(26);
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Maximum supported version is 25"));
@@ -216,8 +252,8 @@ class SpecificationValidatorTest {
         spec.getEntities().get(0).setName("   ");
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Model name must not be null or empty"));
@@ -231,8 +267,8 @@ class SpecificationValidatorTest {
         spec.getEntities().get(0).setStorageName("  ");
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Model storage name must not be null or empty"));
@@ -246,8 +282,8 @@ class SpecificationValidatorTest {
         spec.getEntities().get(0).setStorageName("UserTable");
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Invalid storageName"));
@@ -262,8 +298,8 @@ class SpecificationValidatorTest {
         spec.getEntities().get(0).setFields(Collections.emptyList());
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("must have at least one field defined"));
@@ -284,8 +320,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(field));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("must have id field defined"));
@@ -304,8 +340,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(id1, id2));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("must have only one id field defined"));
@@ -326,8 +362,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(field));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Field name in model"));
@@ -347,15 +383,15 @@ class SpecificationValidatorTest {
         nameField.setName("name");
         nameField.setType("String");
 
-        final FieldDefinition duplicatedNamefield = new FieldDefinition();
-        duplicatedNamefield.setName("name");
-        duplicatedNamefield.setType("String");
+        final FieldDefinition duplicatedNameField = new FieldDefinition();
+        duplicatedNameField.setName("name");
+        duplicatedNameField.setType("String");
 
-        model.setFields(List.of(idField, nameField, duplicatedNamefield));
+        model.setFields(List.of(idField, nameField, duplicatedNameField));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("is duplicated"));
@@ -372,8 +408,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(field));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Field type for field"));
@@ -391,8 +427,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(field));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Field type UnknownType"));
@@ -435,8 +471,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition phoneNumbers = new FieldDefinition();
         phoneNumbers.setName("phoneNumbers");
@@ -453,8 +488,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition tags = new FieldDefinition();
         tags.setName("tags");
@@ -471,8 +505,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition invalidCollection = new FieldDefinition();
         invalidCollection.setName("addresses");
@@ -481,8 +514,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(id, invalidCollection));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Inner type Address"));
@@ -496,8 +529,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition invalidCollection = new FieldDefinition();
         invalidCollection.setName("statuses");
@@ -506,8 +538,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(id, invalidCollection));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Inner type Enum"));
@@ -520,8 +552,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition meta = new FieldDefinition();
         meta.setName("meta");
@@ -544,7 +575,7 @@ class SpecificationValidatorTest {
         address.setFields(List.of(newIdField("id", "Long")));
 
         final ModelDefinition user = spec.getEntities().get(0);
-        final FieldDefinition userId = user.getFields().get(0);
+        final FieldDefinition userId = getFirstField(user);
 
         final FieldDefinition addressJson = new FieldDefinition();
         addressJson.setName("addressJson");
@@ -562,8 +593,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition tagsJson = new FieldDefinition();
         tagsJson.setName("tagsJson");
@@ -576,12 +606,11 @@ class SpecificationValidatorTest {
 
     @Test
     @DisplayName("Should allow JSON field with collection inner type (JSON<Set<Long>>)")
-    void validate_jsonb_collectionInner_set_ok() {
+    void validate_json_collectionInner_set_ok() {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition numbersJson = new FieldDefinition();
         numbersJson.setName("numbersJson");
@@ -598,8 +627,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition bad = new FieldDefinition();
         bad.setName("badJson");
@@ -608,8 +636,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(id, bad));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("Inner type UnknownType"));
@@ -623,8 +651,7 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
-
-        final FieldDefinition id = model.getFields().get(0);
+        final FieldDefinition id = getFirstField(model);
 
         final FieldDefinition bad = new FieldDefinition();
         bad.setName("badJson");
@@ -633,8 +660,8 @@ class SpecificationValidatorTest {
         model.setFields(List.of(id, bad));
 
         final IllegalArgumentException ex = assertThrows(
-            IllegalArgumentException.class,
-            () -> SpecificationValidator.validate(spec)
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
         );
 
         assertTrue(ex.getMessage().contains("has invalid inner type or invalid format"));
@@ -666,5 +693,462 @@ class SpecificationValidatorTest {
             cacheMock.verify(() -> CacheConfigurationValidator.validate(cacheCfg));
             testMock.verify(() -> TestConfigurationValidator.validate(testCfg));
         }
+    }
+
+    @Test
+    @DisplayName("Should throw when relation type is invalid")
+    void validate_relationTypeInvalid_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("INVALID_RELATION_TYPE");
+
+        final FieldDefinition roleField = newRelationField("role", "Role", relation);
+
+        user.setFields(List.of(userId, roleField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Found"));
+    }
+
+    @Test
+    @DisplayName("Should throw when relation target model does not exist")
+    void validate_relationTargetModelMissing_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToOne");
+        relation.setJoinColumn("department_id");
+
+        final FieldDefinition departmentField = newRelationField("department", "Department", relation);
+
+        user.setFields(List.of(userId, departmentField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Target model Department"));
+        assertTrue(ex.getMessage().contains("does not exist"));
+    }
+
+    @Test
+    @DisplayName("Should throw when many-to-many relation has no join table")
+    void validate_manyToManyWithoutJoinTable_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Many-to-Many relation"));
+        assertTrue(ex.getMessage().contains("must have a join table defined"));
+    }
+
+    @Test
+    @DisplayName("Should throw when join table name is blank")
+    void validate_relationJoinTableNameBlank_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("   ");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Join table name in relation"));
+        assertTrue(ex.getMessage().contains("must not be null or empty"));
+    }
+
+    @Test
+    @DisplayName("Should throw when join table name is not lower_snake_case")
+    void validate_relationJoinTableNameInvalidPattern_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("UserRole");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Invalid join table name"));
+        assertTrue(ex.getMessage().contains("lower_snake_case"));
+    }
+
+    @Test
+    @DisplayName("Should throw when join table join column is blank")
+    void validate_relationJoinTableJoinColumnBlank_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn(" ");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Join table -> join column name"));
+        assertTrue(ex.getMessage().contains("must not be null or empty"));
+    }
+
+    @Test
+    @DisplayName("Should throw when join table join column is not lower_snake_case")
+    void validate_relationJoinTableJoinColumnInvalidPattern_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn("userId");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Invalid join table -> join column name"));
+        assertTrue(ex.getMessage().contains("lower_snake_case"));
+    }
+
+    @Test
+    @DisplayName("Should throw when join table inverse join column is blank")
+    void validate_relationJoinTableInverseJoinColumnBlank_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn(" ");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Join table -> inverse join column name"));
+        assertTrue(ex.getMessage().contains("must not be null or empty"));
+    }
+
+    @Test
+    @DisplayName("Should throw when join table inverse join column is not lower_snake_case")
+    void validate_relationJoinTableInverseJoinColumnInvalidPattern_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn("roleId");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Invalid join table -> inverse join column name"));
+        assertTrue(ex.getMessage().contains("lower_snake_case"));
+    }
+
+    @Test
+    @DisplayName("Should throw when relation join column is defined together with join table")
+    void validate_relationJoinColumnDefinedWithJoinTable_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+        relation.setJoinColumn("role_id");
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Join column name should not be defined"));
+    }
+
+    @Test
+    @DisplayName("Should throw when relation join column is not lower_snake_case")
+    void validate_relationJoinColumnInvalidPattern_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToOne");
+        relation.setJoinColumn("roleId");
+
+        final FieldDefinition roleField = newRelationField("role", "Role", relation);
+
+        user.setFields(List.of(userId, roleField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Invalid join column name"));
+        assertTrue(ex.getMessage().contains("lower_snake_case"));
+    }
+
+    @Test
+    @DisplayName("Should throw when orphanRemoval is enabled for many-to-many relation")
+    void validate_relationOrphanRemovalManyToMany_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+        relation.setOrphanRemoval(true);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Orphan removal is not supported"));
+        assertTrue(ex.getMessage().contains("Many-to-Many or Many-to-One"));
+    }
+
+    @Test
+    @DisplayName("Should throw when orphanRemoval is enabled for many-to-one relation")
+    void validate_relationOrphanRemovalManyToOne_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToOne");
+        relation.setJoinColumn("role_id");
+        relation.setOrphanRemoval(true);
+
+        final FieldDefinition roleField = newRelationField("role", "Role", relation);
+
+        user.setFields(List.of(userId, roleField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Orphan removal is not supported"));
+    }
+
+    @Test
+    @DisplayName("Should allow valid many-to-one relation")
+    void validate_validManyToOneRelation_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToOne");
+        relation.setJoinColumn("role_id");
+        relation.setOrphanRemoval(false);
+
+        final FieldDefinition roleField = newRelationField("role", "Role", relation);
+
+        user.setFields(List.of(userId, roleField));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow valid many-to-many relation with join table")
+    void validate_validManyToManyRelationWithJoinTable_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+        relation.setOrphanRemoval(false);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+
+        user.setFields(List.of(userId, rolesField));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should collect multiple validation errors")
+    void validate_multipleErrors_throwsIllegalArgumentExceptionWithAllMessages() {
+
+        final CrudSpecification spec = buildValidSpecification();
+
+        spec.getConfiguration().setJavaVersion(26);
+        spec.getConfiguration().setDatabase(null);
+        spec.getEntities().get(0).setStorageName("UserTable");
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Found"));
+        assertTrue(ex.getMessage().contains("Maximum supported version is 25"));
+        assertTrue(ex.getMessage().contains("Database must not be null or empty"));
+        assertTrue(ex.getMessage().contains("Invalid storageName"));
     }
 }
