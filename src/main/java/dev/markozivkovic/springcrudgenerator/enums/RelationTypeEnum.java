@@ -59,7 +59,6 @@ public enum RelationTypeEnum {
 
     /**
      * Returns the enum constant with the given value, or throws an exception if no such constant exists.
-     * The value is case-insensitive.
      * 
      * @param value the value of the enum constant
      * @return the enum constant with the given value
@@ -90,6 +89,5 @@ public enum RelationTypeEnum {
                 .map(RelationTypeEnum::getKey)
                 .collect(Collectors.joining(", "));
     }
-
 
 }
