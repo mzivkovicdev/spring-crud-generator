@@ -26,12 +26,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
-import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
+import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.RegexUtils;
@@ -167,7 +169,100 @@ public class SpecificationValidator {
             validateEnumValues(model, field);
             validateJsonType(model, field, modelNames);
             validateRegexPattern(model, field);
+            validateRelations(model, field, modelNames);
         });
+    }
+
+    /**
+     * Validates the relations for a field in a model definition.
+     * 
+     * @param model the model definition that contains the field
+     * @param field the field definition with the relations to validate
+     * @param modelNames the set of names of all models in the CRUD specification
+     */
+    private static void validateRelations(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames) {
+        
+        if (Objects.nonNull(field.getRelation())) {
+
+            final RelationDefinition relation = field.getRelation();
+            final RelationTypeEnum relationType = RelationTypeEnum.fromString(relation.getType());
+            
+            if (!modelNames.contains(field.getType())) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Target model %s in relation for field %s in model %s does not exist",
+                        field.getType(), field.getName(), model.getName()
+                    )
+                );
+            }
+
+            if (Objects.nonNull(relation.getJoinTable())) {
+                if (StringUtils.isBlank(relation.getJoinTable().getName())) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            "Join table name in relation for field %s in model %s must not be null or empty",
+                            field.getName(), model.getName()
+                        )
+                    );
+                }
+
+                if (!relation.getJoinTable().getName().matches("[a-z][a-z0-9_]*")) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            "Invalid join table name '%s' in relation for field %s in model %s. Table names should be lower_snake_case.",
+                            relation.getJoinTable().getName(), field.getName(), model.getName()
+                        )
+                    );
+                }
+
+                if (StringUtils.isBlank(relation.getJoinTable().getJoinColumn())) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            "Join table -> join column name in relation for field %s in model %s must not be null or empty",
+                            field.getName(), model.getName()
+                        )
+                    );
+                }
+
+                if (StringUtils.isBlank(relation.getJoinTable().getInverseJoinColumn())) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            "Join table -> inverse join column name in relation for field %s in model %s must not be null or empty",
+                            field.getName(), model.getName()
+                        )
+                    );
+                }
+
+                if (StringUtils.isNotBlank(relation.getJoinColumn())) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            "Join column name should not be defined for field %s in model %s when join table is defined. Please remove join column name or remove join table definition.",
+                            field.getName(), model.getName()
+                        )
+                    );
+                }
+            }
+
+            if (RelationTypeEnum.MANY_TO_MANY.equals(relationType) && Objects.isNull(relation.getJoinTable())) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Many-to-Many relation for field %s in model %s must have a join table defined",
+                        field.getName(), model.getName()
+                    )
+                );
+            }
+
+            if ((RelationTypeEnum.MANY_TO_MANY.equals(relationType) || RelationTypeEnum.MANY_TO_ONE.equals(relationType))
+                    && Boolean.TRUE.equals(relation.getOrphanRemoval())) {
+
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Orphan removal is not supported for Many-to-Many or Many-to-One relations. Field %s in model %s has orphan removal enabled.",
+                        field.getName(), model.getName()
+                    )
+                );
+            }
+        }
     }
 
     /**
@@ -220,6 +315,18 @@ public class SpecificationValidator {
         if (StringUtils.isNotBlank(model.getStorageName()) && !model.getStorageName().matches("[a-z][a-z0-9_]*")) {
             throw new IllegalArgumentException(
                 String.format("Invalid storageName '%s'. Table names should be lower_snake_case.", model.getStorageName())
+            );
+        }
+
+        if (usedAsJson && FieldUtils.hasRelation(model, models)) {
+            throw new IllegalArgumentException(
+                String.format("Model %s is used as a JSON field but it is tried to be connected to another model by relation.", model.getName())
+            );
+        }
+
+        if (usedAsJson && !ContainerUtils.isEmpty(FieldUtils.extractRelationFields(model.getFields()))) {
+            throw new IllegalArgumentException(
+                String.format("Model %s is used as a JSON field but it has relation fields defined.", model.getName())
             );
         }
         
