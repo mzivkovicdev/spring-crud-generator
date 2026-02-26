@@ -140,6 +140,7 @@ public class ModelImports {
         final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
                 .anyMatch(field -> Objects.nonNull(field.getColumn()));
         final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
+        final boolean isSoftDeleteEnabled = Boolean.TRUE.equals(modelDefinition.getSoftDelete());
         final boolean isAnyFieldSimpleCollection = FieldUtils.isAnyFieldSimpleCollection(fields);
         final boolean hasLazyFields = FieldUtils.hasLazyFetchField(fields) && !openInViewEnabled;
         
@@ -152,7 +153,7 @@ public class ModelImports {
         ImportCommon.addIf(FieldUtils.isFetchTypeDefined(fields), imports, ImportConstants.Jakarta.FETCH_TYPE);
         ImportCommon.addIf(FieldUtils.isCascadeTypeDefined(fields), imports, ImportConstants.Jakarta.CASCADE_TYPE);
         ImportCommon.addIf(optimisticLocking, imports, ImportConstants.Jakarta.VERSION);
-        ImportCommon.addIf(hasAnyFieldColumn || isAuditingEnabled, imports, ImportConstants.Jakarta.COLUMN);
+        ImportCommon.addIf(hasAnyFieldColumn || isAuditingEnabled || isSoftDeleteEnabled, imports, ImportConstants.Jakarta.COLUMN);
         ImportCommon.addIf(isAuditingEnabled, imports, ImportConstants.Jakarta.ENTITY_LISTENERS);
         ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.ELEMENT_COLLECTION);
         ImportCommon.addIf(isAnyFieldSimpleCollection, imports, ImportConstants.Jakarta.COLLECTION_TABLE);
@@ -169,6 +170,8 @@ public class ModelImports {
         ImportCommon.addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.AUDITING_ENTITY_LISTENER);
         ImportCommon.addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.CREATED_DATE);
         ImportCommon.addIf(isAuditingEnabled, orgImports, ImportConstants.SpringData.LAST_MODIFIED_DATE);
+        ImportCommon.addIf(isSoftDeleteEnabled, orgImports, ImportConstants.HibernateAnnotation.SQL_DELETE);
+        ImportCommon.addIf(isSoftDeleteEnabled, orgImports, ImportConstants.HibernateAnnotation.SQL_RESTRICTION);
         
         if (!FieldUtils.isAnyFieldJson(fields)) {
             if (orgImports.isEmpty()) {
