@@ -15,6 +15,10 @@
 )
 </#if><#t>
 </#if><#t>
+<#if softDeleteEnabled?? && softDeleteEnabled>
+@SQLDelete(sql = "UPDATE ${tableName} SET deleted = true WHERE ${idField} = ?")
+@SQLRestriction("deleted = false")
+</#if><#t>
 public class ${className} {
 
 ${fields}

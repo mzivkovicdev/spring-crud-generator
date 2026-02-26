@@ -15,6 +15,9 @@ CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${quoteIdent(tableName)} (
   ${quoteIdent("created_at")} ${auditCreatedType} NOT NULL DEFAULT ${auditNowExpr},
   ${quoteIdent("updated_at")} ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr}<#if (pkColumns??) || hasChecks || hasUniques>,</#if>
 </#if>
+<#if softDeleteEnabled?? && softDeleteEnabled>
+  ${quoteIdent("deleted")}<#if db == "MSSQL"> bit DEFAULT 0 NOT NULL<#else> BOOLEAN DEFAULT FALSE NOT NULL</#if><#if (pkColumns??) || hasChecks || hasUniques>,</#if>
+</#if>
 <#if pkColumns??>
   CONSTRAINT pk_${tableName} PRIMARY KEY (${pkColumns})<#if hasChecks || hasUniques>,</#if>
 </#if>
@@ -29,3 +32,11 @@ CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${quoteIdent(tableName)} (
   </#list>
 </#if>
 );
+<#if softDeleteEnabled?? && softDeleteEnabled>
+<#if db == "MSSQL">
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_${tableName}_deleted' AND object_id = OBJECT_ID('${tableName}'))
+CREATE INDEX ix_${tableName}_deleted ON ${quoteIdent(tableName)} (${quoteIdent("deleted")});
+<#else>
+CREATE INDEX IF NOT EXISTS ix_${tableName}_deleted ON ${quoteIdent(tableName)} (${quoteIdent("deleted")});
+</#if>
+</#if>

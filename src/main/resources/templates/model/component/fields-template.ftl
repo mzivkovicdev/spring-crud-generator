@@ -69,3 +69,8 @@
     @Column(nullable = false)
     private ${auditType} updatedAt;
 </#if><#t>
+<#if softDeleteEnabled?? && softDeleteEnabled>
+
+    @Column(nullable = false)
+    private boolean deleted = Boolean.FALSE;
+</#if><#t>
