@@ -16,21 +16,41 @@ entities:
   - name: ProductModel
     storageName: product_table
     description: "Represents a product"
+    softDelete: true
     audit:
       enabled: true
       type: Instant
     fields: []
 ```
 
-| Property      | Type   | Required | Description                                                     |
-| ------------- | ------ | -------- | ----------------------------------------------------------------|
-| `name`        | string | ✅       | Java class name of the entity/model                             |
-| `storageName` | string | ✅       | Database table name (storage name).                             |
-| `description` | string | optional | Used to generate Javadoc and enrich API docs (where applicable) |
-| `audit`       | object | optional | Audit configuration for `created_at` / `updated_at` columns     |
-| `fields`      | list   | ✅       | List of fields for the entity                                   |
+| Property      | Type    | Required  | Description                                                     |
+| ------------- | ------- | ----------| ----------------------------------------------------------------|
+| `name`        | string  | ✅        | Java class name of the entity/model                             |
+| `storageName` | string  | ✅        | Database table name (storage name).                             |
+| `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable) |
+| `audit`       | object  | optional  | Audit configuration for `created_at` / `updated_at` columns     |
+| `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)          |
+| `fields`      | list    | ✅        | List of fields for the entity                                   |
 
 > If `description` is provided, the generator can produce Javadoc for entities/fields.
+
+---
+
+## Soft delete configuration
+
+Soft delete allows “deleting” rows without physically removing them from the table.
+
+```yaml
+softDelete: true
+```
+
+| Property     | Type    | Required | Description                                     |
+| ------------ | ------- | -------- | ----------------------------------------------- |
+| `softDelete` | boolean | optional | Enables soft delete behavior (default: `false`) |
+
+### Generator behavior (when `softDelete: true`)
+
+- The entity is generated with Hibernate soft-delete annotations (`@SQLDelete` and `@SQLRestriction`) so that DELETE statements become UPDATE ... (logical delete)
 
 ---
 

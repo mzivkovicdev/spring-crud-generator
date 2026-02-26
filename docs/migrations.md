@@ -61,6 +61,24 @@ When a field is removed:
 - generator detects the removal
 - a Flyway `ALTER TABLE DROP COLUMN` migration is created
 
+### Enabling / disabling soft delete
+
+Soft delete is controlled per-entity via:
+
+```yaml
+softDelete: true
+```
+
+When `softDelete` is toggled, the generator detects the change by comparing:
+- the previous state in .`crud-generator/migration-state.json`
+
+This results in a migration being generated that updates the table to match the soft delete strategy (for example, adding/removing the required soft-delete column(s), constraints, or indexes — depending on the database).
+
+Notes:
+- Soft delete changes are also reflected in the entity fingerprint used for diffing, so the generator reliably detects toggles even if the rest of the schema is unchanged.
+- The generator does not drop tables when disabling soft delete; it only applies the schema changes defined by the migration templates.
+
+
 ## ⚠️ Important limitation: no table drop
 
 Dropping database tables is **not** supported.
