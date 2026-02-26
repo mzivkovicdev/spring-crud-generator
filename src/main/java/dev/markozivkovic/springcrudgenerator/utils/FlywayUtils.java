@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
@@ -730,6 +731,7 @@ public class FlywayUtils {
         ctx.put("auditUpdatedType", auditType(db, resolvedAuditType));
         ctx.put("auditNowExpr", auditNow(db));
         ctx.put("db", db.name().toUpperCase(Locale.ROOT));
+        ctx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, Boolean.TRUE.equals(model.getSoftDelete()));
 
         return ctx;
     }
