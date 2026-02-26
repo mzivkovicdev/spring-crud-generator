@@ -104,6 +104,8 @@ public final class ImportConstants {
         private HibernateAnnotation() {}
         public static final String JDBC_TYPE_CODE = "org.hibernate.annotations.JdbcTypeCode";
         public static final String SQL_TYPES = "org.hibernate.type.SqlTypes";
+        public static final String SQL_DELETE = "org.hibernate.annotations.SQLDelete";
+        public static final String SQL_RESTRICTION = "org.hibernate.annotations.SQLRestriction";
     }
 
     public static final class JUnit {
