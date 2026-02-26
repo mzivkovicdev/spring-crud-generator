@@ -22,11 +22,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.models.flyway.AuditState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.ColumnState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.DdlArtifactState;
@@ -40,6 +42,7 @@ import dev.markozivkovic.springcrudgenerator.models.flyway.MigrationState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.SchemaDiff.FkChange;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.HashUtils;
+import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 
 public class MigrationManifestBuilder {
     
@@ -138,6 +141,8 @@ public class MigrationManifestBuilder {
         final Object at = createCtx.get("auditCreatedType");
         audit.setType(at != null ? at.toString() : null);
         entityState.setAudit(audit);
+        entityState.setSoftDelete(Boolean.TRUE.equals(createCtx.get(TemplateContextConstants.SOFT_DELETE_ENABLED)));
+
         entityState.setFingerprint(fingerprintFromCreateCtx(createCtx));
     }
 
@@ -452,6 +457,7 @@ public class MigrationManifestBuilder {
             final Map<String,Object> canonical = new LinkedHashMap<>();
             canonical.put("table", ctx.get("tableName"));
             canonical.put("auditEnabled", ctx.get("auditEnabled"));
+            canonical.put(TemplateContextConstants.SOFT_DELETE_ENABLED, Boolean.TRUE.equals(ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED)));
             canonical.put("auditType", ctx.get("auditCreatedType"));
             canonical.put("pkColumns", ctx.get("pkColumns"));
 
@@ -530,7 +536,7 @@ public class MigrationManifestBuilder {
     public boolean hasDdlArtifactFileWithSuffixAndContent(final DdlArtifactType type,
                 final String artifactName, final String fileNameSuffix, final String content) {
         
-        if (type == null || artifactName == null || artifactName.isBlank()) {
+        if (Objects.isNull(type) || StringUtils.isBlank(artifactName)) {
             return false;
         }
 
