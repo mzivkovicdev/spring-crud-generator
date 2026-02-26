@@ -30,6 +30,7 @@ public class EntityState {
     private Map<String, ColumnState> columns = new HashMap<>();
     private List<String> pk = new ArrayList<>();
     private AuditState audit;
+    private boolean softDelete = Boolean.FALSE;
     private List<FkState> fks = new ArrayList<>();
     private List<FileState> files = new ArrayList<>();
     private List<JoinState> joins = new ArrayList<>();
@@ -40,13 +41,15 @@ public class EntityState {
 
     public EntityState(final String name, final String table, final String fingerprint,
             final Map<String,ColumnState> columns, final List<String> pk, final AuditState audit,
-            final List<FkState> fks, final List<FileState> files, final List<JoinState> joins) {
+            final boolean softDelete, final List<FkState> fks, final List<FileState> files,
+            final List<JoinState> joins) {
         this.name = name;
         this.table = table;
         this.fingerprint = fingerprint;
         this.columns = columns;
         this.pk = pk;
         this.audit = audit;
+        this.softDelete = softDelete;
         this.fks = fks;
         this.files = files;
         this.joins = joins;
@@ -106,6 +109,15 @@ public class EntityState {
         return this;
     }
 
+    public boolean getSoftDelete() {
+        return this.softDelete;
+    }
+
+    public EntityState setSoftDelete(final boolean softDelete) {
+        this.softDelete = softDelete;
+        return this;
+    }
+
     public List<FkState> getFks() {
         return this.fks;
     }
@@ -147,6 +159,7 @@ public class EntityState {
                 Objects.equals(columns, entityState.columns) &&
                 Objects.equals(pk, entityState.pk) &&
                 Objects.equals(audit, entityState.audit) &&
+                Objects.equals(softDelete, entityState.softDelete) &&
                 Objects.equals(fks, entityState.fks) &&
                 Objects.equals(files, entityState.files) &&
                 Objects.equals(joins, entityState.joins);
@@ -154,7 +167,7 @@ public class EntityState {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, table, fingerprint, columns, pk, audit, fks, files, joins);
+        return Objects.hash(name, table, fingerprint, columns, pk, audit, softDelete, fks, files, joins);
     }
 
     @Override
@@ -166,6 +179,7 @@ public class EntityState {
             ", columns='" + getColumns() + "'" +
             ", pk='" + getPk() + "'" +
             ", audit='" + getAudit() + "'" +
+            ", softDelete='" + getSoftDelete() + "'" +
             ", fks='" + getFks() + "'" +
             ", files='" + getFiles() + "'" +
             ", joins='" + getJoins() + "'" +

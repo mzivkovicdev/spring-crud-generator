@@ -448,6 +448,8 @@ public class SchemaDiff {
         private boolean auditTypeChanged;
         private String oldAuditType;
         private String newAuditType;
+        private boolean softDeleteChanged;
+        private boolean softDeleteEnabled;
 
         public Result() {}
 
@@ -455,7 +457,8 @@ public class SchemaDiff {
                 final List<ColumnChange> modifiedColumns, final boolean pkChanged, 
                 final List<String> newPk, final List<FkChange> addedFks, final List<FkChange> removedFks,
                 final boolean auditAdded, final boolean auditRemoved, final boolean auditTypeChanged,
-                final String oldAuditType, final String newAuditType) {
+                final String oldAuditType, final String newAuditType, final boolean softDeleteChanged,
+                final boolean softDeleteEnabled) {
             this.addedColumns = addedColumns;
             this.removedColumns = removedColumns;
             this.modifiedColumns = modifiedColumns;
@@ -468,6 +471,8 @@ public class SchemaDiff {
             this.auditTypeChanged = auditTypeChanged;
             this.oldAuditType = oldAuditType;
             this.newAuditType = newAuditType;
+            this.softDeleteChanged = softDeleteChanged;
+            this.softDeleteEnabled = softDeleteEnabled;
         }
 
         public List<AddedColumn> getAddedColumns() {
@@ -582,6 +587,24 @@ public class SchemaDiff {
             return this;
         }
 
+        public boolean getSoftDeleteChanged() {
+            return this.softDeleteChanged;
+        }
+
+        public Result setSoftDeleteChanged(final boolean softDeleteChanged) {
+            this.softDeleteChanged = softDeleteChanged;
+            return this;
+        }
+
+        public boolean getSoftDeleteEnabled() {
+            return this.softDeleteEnabled;
+        }
+
+        public Result setSoftDeleteEnabled(final boolean softDeleteEnabled) {
+            this.softDeleteEnabled = softDeleteEnabled;
+            return this;
+        }
+
         @Override
         public boolean equals(final Object o) {
             if (o == this)
@@ -601,13 +624,18 @@ public class SchemaDiff {
                     auditRemoved == result.auditRemoved &&
                     auditTypeChanged == result.auditTypeChanged &&
                     Objects.equals(oldAuditType, result.oldAuditType) &&
-                    Objects.equals(newAuditType, result.newAuditType);
+                    Objects.equals(newAuditType, result.newAuditType) &&
+                    softDeleteChanged == result.softDeleteChanged &&
+                    softDeleteEnabled == result.softDeleteEnabled;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(addedColumns, removedColumns, modifiedColumns, pkChanged, newPk, addedFks, removedFks,
-                    auditAdded, auditRemoved, auditTypeChanged, oldAuditType, newAuditType);
+            return Objects.hash(
+                    addedColumns, removedColumns, modifiedColumns, pkChanged, newPk, addedFks, removedFks,
+                    auditAdded, auditRemoved, auditTypeChanged, oldAuditType, newAuditType, softDeleteChanged,
+                    softDeleteEnabled
+            );
         }
 
         @Override
@@ -625,13 +653,15 @@ public class SchemaDiff {
                 ", auditTypeChanged='" + isAuditTypeChanged() + "'" +
                 ", oldAuditType='" + getOldAuditType() + "'" +
                 ", newAuditType='" + getNewAuditType() + "'" +
+                ", softDeleteChanged='" + getSoftDeleteChanged() + "'" +
+                ", softDeleteEnabled='" + getSoftDeleteEnabled() + "'" +
                 "}";
         }
 
         public boolean isEmpty() {
             return addedColumns.isEmpty() && removedColumns.isEmpty() && modifiedColumns.isEmpty() &&
                    !pkChanged && addedFks.isEmpty() && removedFks.isEmpty() && !auditAdded && !auditRemoved && !auditTypeChanged
-                    && Objects.isNull(oldAuditType) && Objects.isNull(newAuditType);
+                    && Objects.isNull(oldAuditType) && Objects.isNull(newAuditType) && !softDeleteChanged;
         }
     }
     
