@@ -158,6 +158,7 @@ entities:
   - name: UserEntity
     storageName: user_table
     description: "Represents a user"
+    softDelete: true
     fields:
       - name: userId
         type: Long
