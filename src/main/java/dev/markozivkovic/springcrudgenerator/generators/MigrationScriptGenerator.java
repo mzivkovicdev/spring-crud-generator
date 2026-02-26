@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.migrations.MigrationDiffer;
@@ -333,6 +334,7 @@ public class MigrationScriptGenerator implements CodeGenerator {
                     alterCtx.put("auditCreatedType", context.get("auditCreatedType"));
                     alterCtx.put("auditUpdatedType", context.get("auditUpdatedType"));
                     alterCtx.put("auditNowExpr", context.get("auditNowExpr"));
+                    alterCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, context.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
                     
                     final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
                         "migration/flyway/alter-table-combined.sql.ftl", alterCtx
