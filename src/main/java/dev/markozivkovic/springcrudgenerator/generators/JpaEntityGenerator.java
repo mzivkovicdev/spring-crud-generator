@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants.GeneratorContextKeys;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.ModelImports;
@@ -217,7 +218,9 @@ public class JpaEntityGenerator implements CodeGenerator {
                 Map.entry("hashCode", equals),
                 Map.entry("equals", hashCode),
                 Map.entry("toString", toString),
-                Map.entry("className", className)
+                Map.entry("className", className),
+                Map.entry(TemplateContextConstants.SOFT_DELETE_ENABLED, Boolean.TRUE.equals(model.getSoftDelete())),
+                Map.entry(TemplateContextConstants.ID_FIELD, ModelNameUtils.toSnakeCase(idField.getName()))
         );
 
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));

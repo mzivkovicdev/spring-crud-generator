@@ -26,6 +26,7 @@ import org.mockito.MockedStatic;
 
 import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants.GeneratorContextKeys;
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.ModelImports;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
@@ -37,9 +38,11 @@ import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.JpaEntityTemplateContext;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
+import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
 class JpaEntityGeneratorTest {
@@ -49,6 +52,8 @@ class JpaEntityGeneratorTest {
         when(m.getName()).thenReturn(name);
         when(m.getStorageName()).thenReturn(storageName);
         when(m.getFields()).thenReturn(fields);
+        when(m.getAudit()).thenReturn(null);
+        when(m.getSoftDelete()).thenReturn(null);
         return m;
     }
 
@@ -57,6 +62,7 @@ class JpaEntityGeneratorTest {
         final IdDefinition idDef = mock(IdDefinition.class);
         when(idDef.getStrategy()).thenReturn(strategy);
         when(idField.getId()).thenReturn(idDef);
+        when(idField.getName()).thenReturn("id");
         return idField;
     }
 
@@ -94,10 +100,14 @@ class JpaEntityGeneratorTest {
              final MockedStatic<JpaEntityTemplateContext> jpaCtx = mockStatic(JpaEntityTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(false);
-            genCtx.when(() -> GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG))
+                    .thenAnswer(inv -> null);
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Address");
@@ -117,7 +127,6 @@ class JpaEntityGeneratorTest {
             modelImports.when(() -> ModelImports.getBaseImport(userModel, true, true)).thenReturn("//ENTITY_BASE_IMPORTS\n");
             modelImports.when(() -> ModelImports.computeEnumsAndHelperEntitiesImport(addressModel, outputDir, pkgCfg)).thenReturn("//HELPER_ENUM_IMPORTS\n");
             modelImports.when(() -> ModelImports.computeEnumsAndHelperEntitiesImport(userModel, outputDir, pkgCfg)).thenReturn("//ENTITY_ENUM_IMPORTS\n");
-
             modelImports.when(() -> ModelImports.computeJakartaImports(userModel, true, true, false))
                     .thenReturn("//JAKARTA_IMPORTS\n");
 
@@ -126,6 +135,9 @@ class JpaEntityGeneratorTest {
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(startsWith("model/component/"), anyMap()))
                     .thenReturn("//COMPONENT_TEMPLATE\n");
+
+            modelNameUtils.when(() -> ModelNameUtils.computeEntityGraphName(eq("User"), anyList())).thenReturn("User.withUsersTags");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("id")).thenReturn("id");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("model/model-class-template.ftl"), anyMap()))
                     .thenAnswer(inv -> {
@@ -184,9 +196,11 @@ class JpaEntityGeneratorTest {
              final MockedStatic<ModelImports> modelImports = mockStatic(ModelImports.class);
              final MockedStatic<JpaEntityTemplateContext> jpaCtx = mockStatic(JpaEntityTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class)) {
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(false);
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(model, allEntities)).thenReturn(true);
 
@@ -219,7 +233,10 @@ class JpaEntityGeneratorTest {
         final String outputDir = "out";
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class)) {
+
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.isJsonField(jsonField)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.extractJsonInnerElementType(jsonField)).thenReturn("Address");
@@ -261,7 +278,11 @@ class JpaEntityGeneratorTest {
              final MockedStatic<ModelImports> modelImports = mockStatic(ModelImports.class);
              final MockedStatic<JpaEntityTemplateContext> jpaCtx = mockStatic(JpaEntityTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
+
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(any(), eq(allEntities))).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(any())).thenReturn(false);
@@ -269,7 +290,8 @@ class JpaEntityGeneratorTest {
 
             final FieldDefinition idField = mockIdField(IdStrategyEnum.IDENTITY);
             fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
-
+            modelNameUtils.when(() -> ModelNameUtils.computeEntityGraphName(anyString(), anyList())).thenReturn("X");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase(anyString())).thenReturn("id");
             modelImports.when(() -> ModelImports.getBaseImport(any(), eq(true), eq(true))).thenReturn("//BASE\n");
             modelImports.when(() -> ModelImports.computeJakartaImports(any(), anyBoolean(), anyBoolean(), anyBoolean())).thenReturn("//JAKARTA\n");
             modelImports.when(() -> ModelImports.computeEnumsAndHelperEntitiesImport(any(), anyString(), eq(pkgCfg))).thenReturn("");
@@ -290,7 +312,7 @@ class JpaEntityGeneratorTest {
                     .thenReturn("//AUDITING_CONFIG\n");
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(false);
-            genCtx.when(() -> GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenAnswer(inv -> null);
 
             writer.when(() -> FileWriterUtils.writeToFile(eq(outputDir), eq("config"), eq("EnableAuditingConfiguration.java"), anyString()))
                     .thenAnswer(inv -> { writtenConfigFiles.add(inv.getArgument(2)); return null; });
@@ -334,7 +356,11 @@ class JpaEntityGeneratorTest {
              final MockedStatic<ModelImports> modelImports = mockStatic(ModelImports.class);
              final MockedStatic<JpaEntityTemplateContext> jpaCtx = mockStatic(JpaEntityTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
-             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
+
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(any(), eq(allEntities))).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isJsonField(any())).thenReturn(false);
@@ -342,7 +368,8 @@ class JpaEntityGeneratorTest {
 
             final FieldDefinition idField = mockIdField(IdStrategyEnum.IDENTITY);
             fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
-
+            modelNameUtils.when(() -> ModelNameUtils.computeEntityGraphName(anyString(), anyList())).thenReturn("X");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase(anyString())).thenReturn("id");
             modelImports.when(() -> ModelImports.getBaseImport(any(), eq(true), eq(true))).thenReturn("//BASE\n");
             modelImports.when(() -> ModelImports.computeJakartaImports(any(), anyBoolean(), anyBoolean(), anyBoolean())).thenReturn("//JAKARTA\n");
             modelImports.when(() -> ModelImports.computeEnumsAndHelperEntitiesImport(any(), anyString(), eq(pkgCfg))).thenReturn("");
@@ -361,14 +388,8 @@ class JpaEntityGeneratorTest {
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/jpa-auditing-configuration.ftl"), anyMap()))
                     .thenReturn("//AUDITING_CONFIG\n");
-
-            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG))
-                    .thenAnswer(inv -> generated[0]);
-            genCtx.when(() -> GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG))
-                    .thenAnswer(inv -> {
-                        generated[0] = true;
-                        return true;
-                    });
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenAnswer(inv -> generated[0]);
+            genCtx.when(() -> GeneratorContext.markGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenAnswer(inv -> { generated[0] = true; return null; });
 
             writer.when(() -> FileWriterUtils.writeToFile(eq(outputDir), eq("config"), eq("EnableAuditingConfiguration.java"), anyString()))
                     .thenAnswer(inv -> { writtenConfigFiles.add(inv.getArgument(2)); return null; });
@@ -406,31 +427,38 @@ class JpaEntityGeneratorTest {
              final MockedStatic<JpaEntityTemplateContext> jpaCtx = mockStatic(JpaEntityTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
-             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
 
             genCtx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(false);
-
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(props)).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isJsonField(any())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(model, allEntities)).thenReturn(false);
+
             final FieldDefinition idField = mockIdField(IdStrategyEnum.IDENTITY);
             fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.extractLazyFetchFieldNames(fields)).thenReturn(List.of("tags"));
+            modelNameUtils.when(() -> ModelNameUtils.computeEntityGraphName(eq("User"), eq(List.of("tags")))).thenReturn("User.withTags");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("id")).thenReturn("id");
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
             pkg.when(() -> PackageUtils.computeEntityPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.entity");
             pkg.when(() -> PackageUtils.computeEntitySubPackage(pkgCfg)).thenReturn("entity");
+
             modelImports.when(() -> ModelImports.getBaseImport(model, true, true)).thenReturn("//BASE\n");
             modelImports.when(() -> ModelImports.computeEnumsAndHelperEntitiesImport(model, "out", pkgCfg)).thenReturn("");
             modelImports.when(() -> ModelImports.computeJakartaImports(model, false, false, true)).thenReturn("//JAKARTA\n");
 
             jpaCtx.when(() -> JpaEntityTemplateContext.computeJpaModelContext(model)).thenReturn(new HashMap<>());
+
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(startsWith("model/component/"), anyMap())).thenReturn("//COMP\n");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("model/model-class-template.ftl"), anyMap()))
-                    .thenAnswer(inv -> {
-                        @SuppressWarnings("unchecked")
-                        final Map<String, Object> ctx = (Map<String, Object>) inv.getArgument(1);
-                        userCtx.set(new HashMap<>(ctx));
-                        return "//MODEL\n";
-                    });
+                .thenAnswer(inv -> {
+                    @SuppressWarnings("unchecked")
+                    final Map<String, Object> ctx = (Map<String, Object>) inv.getArgument(1);
+                    userCtx.set(new HashMap<>(ctx));
+                    return "//MODEL\n";
+                });
 
             generator.generate(model, "out");
 
@@ -441,5 +469,83 @@ class JpaEntityGeneratorTest {
         assertEquals(true, userCtx.get().get("openInView"));
         assertEquals("User.withTags", userCtx.get().get("entityGraphName"));
     }
-    
+
+    @Test
+    void generate_shouldPassSoftDeleteAndSnakeCaseIdField_toModelTemplateContext() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.isOptimisticLocking()).thenReturn(false);
+        when(cfg.getDatabase()).thenReturn(DatabaseType.MYSQL);
+        when(cfg.getAdditionalProperties()).thenReturn(null);
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final List<FieldDefinition> fields = List.of(new FieldDefinition());
+        final ModelDefinition model = newModel("User", "users", fields);
+        when(model.getSoftDelete()).thenReturn(true);
+
+        final List<ModelDefinition> allEntities = List.of(model);
+
+        final JpaEntityGenerator generator = new JpaEntityGenerator(cfg, allEntities, pkgCfg);
+
+        final AtomicReference<Map<String, Object>> ctxRef = new AtomicReference<>();
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final IdDefinition idDef = mock(IdDefinition.class);
+        when(idDef.getStrategy()).thenReturn(IdStrategyEnum.IDENTITY);
+        when(idField.getId()).thenReturn(idDef);
+        when(idField.getName()).thenReturn("userId");
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelImports> modelImports = mockStatic(ModelImports.class);
+             final MockedStatic<JpaEntityTemplateContext> jpaCtx = mockStatic(JpaEntityTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.JPA_AUDITING_CONFIG)).thenReturn(false);
+
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(null)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isJsonField(any())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(model, allEntities)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractIdField(anyList())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractLazyFetchFieldNames(anyList())).thenReturn(Collections.emptyList());
+
+            modelNameUtils.when(() -> ModelNameUtils.computeEntityGraphName(eq("User"), eq(Collections.emptyList())))
+                    .thenReturn("User");
+            modelNameUtils.when(() -> ModelNameUtils.toSnakeCase("userId")).thenReturn("user_id");
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.entity");
+            pkg.when(() -> PackageUtils.computeEntitySubPackage(pkgCfg)).thenReturn("entity");
+
+            modelImports.when(() -> ModelImports.getBaseImport(model, true, true)).thenReturn("//BASE\n");
+            modelImports.when(() -> ModelImports.computeEnumsAndHelperEntitiesImport(model, "out", pkgCfg)).thenReturn("");
+            modelImports.when(() -> ModelImports.computeJakartaImports(model, false, false, false)).thenReturn("//JAKARTA\n");
+
+            jpaCtx.when(() -> JpaEntityTemplateContext.computeJpaModelContext(model)).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(startsWith("model/component/"), anyMap()))
+                    .thenReturn("//COMP\n");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("model/model-class-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = (Map<String, Object>) inv.getArgument(1);
+                        ctxRef.set(new HashMap<>(ctx));
+                        return "//MODEL\n";
+                    });
+
+            generator.generate(model, "out");
+        }
+
+        final Map<String, Object> ctx = ctxRef.get();
+        assertNotNull(ctx);
+
+        assertEquals(true, ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        assertEquals("user_id", ctx.get(TemplateContextConstants.ID_FIELD));
+    }
 }
