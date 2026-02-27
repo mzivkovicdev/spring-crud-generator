@@ -444,7 +444,7 @@ public class CrudConfiguration {
         }
 
         public enum CacheTypeEnum {
-            REDIS, CAFFEINE, SIMPLE
+            REDIS, CAFFEINE, SIMPLE, HAZELCAST
         }
 
     }
