@@ -1,5 +1,9 @@
 <#setting number_format="computer">
 <#assign redisSerializer = isSpringBoot3?then("Jackson2JsonRedisSerializer", "JacksonJsonRedisSerializer")>
+<#if type == "HAZELCAST">
+import java.util.List;
+
+</#if>
 <#if type == "REDIS" && expiration??>
 import java.time.Duration;
 import java.util.HashMap;
@@ -13,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 <#if type == "REDIS">
 import org.springframework.beans.factory.annotation.Qualifier;
 </#if><#t>
-<#if type == "CAFFEINE">
+<#if type == "CAFFEINE" || type == "HAZELCAST">
 import org.springframework.cache.CacheManager;
 </#if><#t>
 import org.springframework.cache.annotation.EnableCaching;
@@ -25,6 +29,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+</#if><#t>
+<#if type == "HAZELCAST">
+import org.springframework.cache.hazelcast.HazelcastCacheManager;
+
+import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+
 </#if><#t>
 <#if type == "REDIS">
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -153,4 +168,50 @@ public class CacheConfiguration {
         return manager;
     }
     </#if><#t>
+    <#if type == "HAZELCAST">
+    private static final List<String> CACHE_NAMES = List.of(
+        <#list entities as entity>
+        "${entity?uncap_first}"<#if entity_has_next>,</#if>
+        </#list>
+    );
+
+    @Bean
+    HazelcastInstance hazelcastInstance() {
+
+        final Config config = new Config();
+        config.setClusterName("spring-crud-generator");
+
+        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(false);
+        config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
+
+        CACHE_NAMES.forEach(name -> config.addMapConfig(buildMapConfig(name)));
+
+        return Hazelcast.newHazelcastInstance(config);
+    }
+
+    @Bean
+    CacheManager cacheManager(final HazelcastInstance hazelcastInstance) {
+        return new HazelcastCacheManager(hazelcastInstance);
+    }
+
+    private MapConfig buildMapConfig(final String cacheName) {
+
+        final MapConfig mapConfig = new MapConfig();
+        mapConfig.setName(cacheName);
+        <#if expiration??>
+        mapConfig.setTimeToLiveSeconds(${expiration * 60});
+        </#if><#t>
+        <#if maxSize??>
+        mapConfig.setEvictionConfig(
+            new EvictionConfig()
+                .setEvictionPolicy(EvictionPolicy.LRU)
+                .setSize(${maxSize})
+        );
+        </#if><#t>
+
+        return mapConfig;
+    }
+    </#if><#t>
+
 }
