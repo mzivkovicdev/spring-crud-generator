@@ -219,6 +219,7 @@ public class JpaEntityGenerator implements CodeGenerator {
                 Map.entry("equals", hashCode),
                 Map.entry("toString", toString),
                 Map.entry("className", className),
+                Map.entry("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT)),
                 Map.entry(TemplateContextConstants.SOFT_DELETE_ENABLED, Boolean.TRUE.equals(model.getSoftDelete())),
                 Map.entry(TemplateContextConstants.ID_FIELD, ModelNameUtils.toSnakeCase(idField.getName())),
                 Map.entry(TemplateContextConstants.OPTIMISTIC_LOCKING, optimisticLocking)
