@@ -37,6 +37,6 @@ CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${quoteIdent(tableName)} (
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_${tableName}_deleted' AND object_id = OBJECT_ID('${tableName}'))
 CREATE INDEX ix_${tableName}_deleted ON ${quoteIdent(tableName)} (${quoteIdent("deleted")});
 <#else>
-CREATE INDEX IF NOT EXISTS ix_${tableName}_deleted ON ${quoteIdent(tableName)} (${quoteIdent("deleted")});
+CREATE INDEX <#if db == "POSTGRESQL">IF NOT EXISTS</#if> ix_${tableName}_deleted ON ${quoteIdent(tableName)} (${quoteIdent("deleted")});
 </#if>
 </#if>
