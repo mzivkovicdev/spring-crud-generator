@@ -193,7 +193,7 @@ public class JpaEntityGenerator implements CodeGenerator {
         }
 
         final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(model);
-        classContext.put("optimisticLocking", optimisticLocking);
+        classContext.put(TemplateContextConstants.OPTIMISTIC_LOCKING, optimisticLocking);
         classContext.put("db", this.configuration.getDatabase().name().toUpperCase(Locale.ROOT));
         
         final String fieldsTemplate = FreeMarkerTemplateProcessorUtils.processTemplate("model/component/fields-template.ftl", classContext);
@@ -220,7 +220,8 @@ public class JpaEntityGenerator implements CodeGenerator {
                 Map.entry("toString", toString),
                 Map.entry("className", className),
                 Map.entry(TemplateContextConstants.SOFT_DELETE_ENABLED, Boolean.TRUE.equals(model.getSoftDelete())),
-                Map.entry(TemplateContextConstants.ID_FIELD, ModelNameUtils.toSnakeCase(idField.getName()))
+                Map.entry(TemplateContextConstants.ID_FIELD, ModelNameUtils.toSnakeCase(idField.getName())),
+                Map.entry(TemplateContextConstants.OPTIMISTIC_LOCKING, optimisticLocking)
         );
 
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("model/model-class-template.ftl", classTemplateContext));

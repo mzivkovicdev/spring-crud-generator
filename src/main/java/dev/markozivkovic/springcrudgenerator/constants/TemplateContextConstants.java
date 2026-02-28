@@ -38,6 +38,7 @@ public final class TemplateContextConstants {
     public static final String ID_TYPE = "idType";
     public static final String ID_FIELD = "idField";
     public static final String ID_DESCRIPTION = "idDescription";
+    public static final String OPTIMISTIC_LOCKING = "optimisticLocking";
     public static final String FIELD_TYPE = "fieldType";
     public static final String FIELD_NAMES = "fieldNames";
     public static final String CLASS_NAME = "className";

@@ -16,7 +16,7 @@
 </#if><#t>
 </#if><#t>
 <#if softDeleteEnabled?? && softDeleteEnabled>
-@SQLDelete(sql = "UPDATE ${tableName} SET deleted = true WHERE ${idField} = ?")
+@SQLDelete(sql = "UPDATE ${tableName} SET deleted = true WHERE ${idField} = ?<#if optimisticLocking?? && optimisticLocking> AND version = ?</#if>")
 @SQLRestriction("deleted = false")
 </#if><#t>
 public class ${className} {
