@@ -38,6 +38,7 @@ public final class TemplateContextConstants {
     public static final String ID_TYPE = "idType";
     public static final String ID_FIELD = "idField";
     public static final String ID_DESCRIPTION = "idDescription";
+    public static final String OPTIMISTIC_LOCKING = "optimisticLocking";
     public static final String FIELD_TYPE = "fieldType";
     public static final String FIELD_NAMES = "fieldNames";
     public static final String CLASS_NAME = "className";
@@ -46,6 +47,7 @@ public final class TemplateContextConstants {
     public static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     public static final String AUDIT_ENABLED = "auditEnabled";
     public static final String AUDIT_TYPE = "auditType";
+    public static final String SOFT_DELETE_ENABLED = "softDeleteEnabled";
     public static final String SERVICE_CLASSES = "serviceClasses";
     public static final String MODEL_NAME = "modelName";
     public static final String STRIPPED_MODEL_NAME = "strippedModelName";

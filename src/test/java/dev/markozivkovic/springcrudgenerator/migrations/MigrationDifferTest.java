@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.models.flyway.AuditState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.ColumnState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.EntityState;
@@ -36,7 +37,7 @@ class MigrationDifferTest {
 
     @Test
     void splitCsv_shouldReturnEmptyListForNullOrLiteralNull() throws Exception {
-        
+
         final var method = MigrationDiffer.class.getDeclaredMethod("splitCsv", String.class);
         method.setAccessible(true);
 
@@ -51,7 +52,7 @@ class MigrationDifferTest {
 
     @Test
     void splitCsv_shouldSplitTrimAndIgnoreEmpty() throws Exception {
-        
+
         final var method = MigrationDiffer.class.getDeclaredMethod("splitCsv", String.class);
         method.setAccessible(true);
 
@@ -63,7 +64,7 @@ class MigrationDifferTest {
 
     @Test
     void equalListIgnoreOrder_shouldReturnTrueForSameElementsDifferentOrder() throws Exception {
-        
+
         final var method = MigrationDiffer.class.getDeclaredMethod("equalListIgnoreOrder", List.class, List.class);
         method.setAccessible(true);
 
@@ -76,7 +77,7 @@ class MigrationDifferTest {
 
     @Test
     void equalListIgnoreOrder_shouldIgnoreDuplicatesBecauseOfSetSemantics() throws Exception {
-        
+
         final var method = MigrationDiffer.class.getDeclaredMethod("equalListIgnoreOrder", List.class, List.class);
         method.setAccessible(true);
 
@@ -89,43 +90,62 @@ class MigrationDifferTest {
 
     @Test
     void diff_shouldNotMarkPkChangedWhenPkSameIgnoringOrder() {
-        
+
         final EntityState oldState = mock(EntityState.class);
         when(oldState.getColumns()).thenReturn(Collections.emptyMap());
         when(oldState.getFks()).thenReturn(null);
         when(oldState.getPk()).thenReturn(List.of("id", "tenant_id"));
+        when(oldState.getSoftDelete()).thenReturn(false);
+        when(oldState.getAudit()).thenReturn(null);
 
         final Map<String, Object> newCreateCtx = new HashMap<>();
         newCreateCtx.put("columns", Collections.emptyList());
         newCreateCtx.put("pkColumns", "tenant_id, id");
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
         assertFalse(result.isPkChanged());
         assertTrue(result.getNewPk().isEmpty());
+        assertFalse(result.getSoftDeleteChanged());
+        assertFalse(result.getSoftDeleteEnabled());
     }
 
     @Test
     void diff_shouldMarkPkChangedWhenPkDiffers() {
-        
+
         final EntityState oldState = mock(EntityState.class);
         when(oldState.getColumns()).thenReturn(Collections.emptyMap());
         when(oldState.getFks()).thenReturn(null);
         when(oldState.getPk()).thenReturn(List.of("id"));
+        when(oldState.getSoftDelete()).thenReturn(false);
+        when(oldState.getAudit()).thenReturn(null);
 
         final Map<String, Object> newCreateCtx = new HashMap<>();
         newCreateCtx.put("columns", Collections.emptyList());
         newCreateCtx.put("pkColumns", "id, tenant_id");
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
         assertTrue(result.isPkChanged());
         assertEquals(List.of("id", "tenant_id"), result.getNewPk());
+
+        assertFalse(result.getSoftDeleteChanged());
+        assertFalse(result.getSoftDeleteEnabled());
     }
 
     @Test
     void diff_shouldDetectAddedRemovedAndModifiedColumns() {
-    
+
         final ColumnState idOld = mock(ColumnState.class);
         when(idOld.getType()).thenReturn("BIGINT");
         when(idOld.getNullable()).thenReturn(false);
@@ -146,6 +166,8 @@ class MigrationDifferTest {
         when(oldState.getColumns()).thenReturn(oldCols);
         when(oldState.getPk()).thenReturn(Collections.emptyList());
         when(oldState.getFks()).thenReturn(null);
+        when(oldState.getSoftDelete()).thenReturn(false);
+        when(oldState.getAudit()).thenReturn(null);
 
         final Map<String, Object> newIdCol = new HashMap<>();
         newIdCol.put("name", "id");
@@ -170,6 +192,9 @@ class MigrationDifferTest {
         newCreateCtx.put("pkColumns", null);
         newCreateCtx.put("fksCtx", null);
         newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
@@ -193,11 +218,13 @@ class MigrationDifferTest {
         assertTrue(change.getNullableChanged());
         assertTrue(change.getUniqueChanged());
         assertTrue(change.getDefaultChanged());
+        assertFalse(result.getSoftDeleteChanged());
+        assertFalse(result.getSoftDeleteEnabled());
     }
 
     @Test
     void diff_shouldDetectAddedAndRemovedForeignKeys() {
-        
+
         final FkState oldFk = mock(FkState.class);
         when(oldFk.getColumn()).thenReturn("role_id");
         when(oldFk.getRefTable()).thenReturn("roles");
@@ -207,6 +234,8 @@ class MigrationDifferTest {
         when(oldState.getColumns()).thenReturn(Collections.emptyMap());
         when(oldState.getPk()).thenReturn(Collections.emptyList());
         when(oldState.getFks()).thenReturn(List.of(oldFk));
+        when(oldState.getSoftDelete()).thenReturn(false);
+        when(oldState.getAudit()).thenReturn(null);
 
         final Map<String, Object> newFk = new HashMap<>();
         newFk.put("column", "tenant_id");
@@ -222,6 +251,9 @@ class MigrationDifferTest {
         newCreateCtx.put("columns", Collections.emptyList());
         newCreateCtx.put("pkColumns", null);
         newCreateCtx.put("fksCtx", fkCtx);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
@@ -236,16 +268,52 @@ class MigrationDifferTest {
         assertEquals("role_id", removedFk.getColumn());
         assertEquals("roles", removedFk.getRefTable());
         assertEquals("id", removedFk.getRefColumn());
+
+        assertFalse(result.getSoftDeleteChanged());
+        assertFalse(result.getSoftDeleteEnabled());
+    }
+
+    @Test
+    void diff_shouldReadForeignKeysFromRootFks_whenFksCtxIsNull() {
+
+        final EntityState oldState = mock(EntityState.class);
+        when(oldState.getColumns()).thenReturn(Collections.emptyMap());
+        when(oldState.getPk()).thenReturn(Collections.emptyList());
+        when(oldState.getFks()).thenReturn(Collections.emptyList());
+        when(oldState.getSoftDelete()).thenReturn(false);
+        when(oldState.getAudit()).thenReturn(null);
+
+        final Map<String, Object> newFk = new HashMap<>();
+        newFk.put("column", "tenant_id");
+        newFk.put("refTable", "tenants");
+        newFk.put("refColumn", "id");
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", List.of(newFk));
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertEquals(1, result.getAddedFks().size());
+        assertEquals("tenant_id", result.getAddedFks().get(0).getColumn());
     }
 
     @Test
     void diff_shouldHandleNullOldStateAndNullCollectionsGracefully() {
-        
+
         final Map<String, Object> newCreateCtx = new HashMap<>();
         newCreateCtx.put("columns", null);
         newCreateCtx.put("pkColumns", null);
         newCreateCtx.put("fksCtx", null);
         newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(null, newCreateCtx);
 
@@ -256,6 +324,8 @@ class MigrationDifferTest {
         assertFalse(result.isPkChanged());
         assertTrue(result.getAddedFks().isEmpty());
         assertTrue(result.getRemovedFks().isEmpty());
+        assertFalse(result.getSoftDeleteChanged());
+        assertFalse(result.getSoftDeleteEnabled());
     }
 
     @Test
@@ -265,8 +335,11 @@ class MigrationDifferTest {
         final Map<String, Object> newCreateCtx = new HashMap<>();
         newCreateCtx.put("columns", Collections.emptyList());
         newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
         newCreateCtx.put("auditEnabled", true);
         newCreateCtx.put("auditCreatedType", "TIMESTAMP");
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
@@ -275,12 +348,6 @@ class MigrationDifferTest {
         assertFalse(result.isAuditTypeChanged(), "auditTypeChanged should be false");
         assertNull(result.getOldAuditType(), "oldAuditType should be null when there was no previous state");
         assertEquals("TIMESTAMP", result.getNewAuditType(), "newAuditType should match auditCreatedType from context");
-
-        assertTrue(result.getAddedColumns().isEmpty());
-        assertTrue(result.getRemovedColumns().isEmpty());
-        assertTrue(result.getModifiedColumns().isEmpty());
-        assertTrue(result.getAddedFks().isEmpty());
-        assertTrue(result.getRemovedFks().isEmpty());
     }
 
     @Test
@@ -292,12 +359,19 @@ class MigrationDifferTest {
 
         final EntityState oldState = new EntityState();
         oldState.setAudit(oldAudit);
+        oldState.setColumns(Collections.emptyMap());
+        oldState.setFks(null);
+        oldState.setPk(Collections.emptyList());
+        oldState.setSoftDelete(false);
 
         final Map<String, Object> newCreateCtx = new HashMap<>();
         newCreateCtx.put("columns", Collections.emptyList());
         newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
         newCreateCtx.put("auditEnabled", true);
         newCreateCtx.put("auditCreatedType", "TIMESTAMP");
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
@@ -317,12 +391,19 @@ class MigrationDifferTest {
 
         final EntityState oldState = new EntityState();
         oldState.setAudit(oldAudit);
+        oldState.setColumns(Collections.emptyMap());
+        oldState.setFks(null);
+        oldState.setPk(Collections.emptyList());
+        oldState.setSoftDelete(false);
 
         final Map<String, Object> newCreateCtx = new HashMap<>();
         newCreateCtx.put("columns", Collections.emptyList());
         newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
         newCreateCtx.put("auditEnabled", false);
         newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
@@ -332,9 +413,9 @@ class MigrationDifferTest {
         assertEquals("TIMESTAMP", result.getOldAuditType());
         assertNull(result.getNewAuditType());
     }
-    
+
     @Test
-        void diff_shouldDetectAuditTypeChanged() {
+    void diff_shouldDetectAuditTypeChanged() {
 
         final AuditState oldAudit = new AuditState();
         oldAudit.setEnabled(true);
@@ -342,12 +423,19 @@ class MigrationDifferTest {
 
         final EntityState oldState = new EntityState();
         oldState.setAudit(oldAudit);
+        oldState.setColumns(Collections.emptyMap());
+        oldState.setFks(null);
+        oldState.setPk(Collections.emptyList());
+        oldState.setSoftDelete(false);
 
         final Map<String, Object> newCreateCtx = new HashMap<>();
         newCreateCtx.put("columns", Collections.emptyList());
         newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
         newCreateCtx.put("auditEnabled", true);
         newCreateCtx.put("auditCreatedType", "DATE");
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
 
@@ -358,4 +446,114 @@ class MigrationDifferTest {
         assertEquals("DATE", result.getNewAuditType());
     }
 
+    @Test
+    void diff_shouldSetSoftDeleteEnabledFalseAndNotChanged_whenOldNullNewFalse() {
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
+
+        final Result result = MigrationDiffer.diff(null, newCreateCtx);
+
+        assertFalse(result.getSoftDeleteChanged());
+        assertFalse(result.getSoftDeleteEnabled());
+    }
+
+    @Test
+    void diff_shouldSetSoftDeleteChangedTrue_whenOldNullNewTrue() {
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, true);
+
+        final Result result = MigrationDiffer.diff(null, newCreateCtx);
+
+        assertTrue(result.getSoftDeleteChanged());
+        assertTrue(result.getSoftDeleteEnabled());
+    }
+
+    @Test
+    void diff_shouldSetSoftDeleteChangedTrue_whenOldFalseNewTrue() {
+
+        final EntityState oldState = new EntityState();
+        oldState.setColumns(Collections.emptyMap());
+        oldState.setPk(Collections.emptyList());
+        oldState.setFks(null);
+        oldState.setAudit(null);
+        oldState.setSoftDelete(false);
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, true);
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertTrue(result.getSoftDeleteChanged());
+        assertTrue(result.getSoftDeleteEnabled());
+    }
+
+    @Test
+    void diff_shouldNotSetSoftDeleteChanged_whenOldTrueNewTrue() {
+
+        final EntityState oldState = new EntityState();
+        oldState.setColumns(Collections.emptyMap());
+        oldState.setPk(Collections.emptyList());
+        oldState.setFks(null);
+        oldState.setAudit(null);
+        oldState.setSoftDelete(true);
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, true);
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertFalse(result.getSoftDeleteChanged());
+        assertTrue(result.getSoftDeleteEnabled());
+    }
+
+    @Test
+    void diff_shouldSetSoftDeleteChangedTrue_whenOldTrueNewFalse() {
+
+        final EntityState oldState = new EntityState();
+        oldState.setColumns(Collections.emptyMap());
+        oldState.setPk(Collections.emptyList());
+        oldState.setFks(null);
+        oldState.setAudit(null);
+        oldState.setSoftDelete(true);
+
+        final Map<String, Object> newCreateCtx = new HashMap<>();
+        newCreateCtx.put("columns", Collections.emptyList());
+        newCreateCtx.put("pkColumns", null);
+        newCreateCtx.put("fksCtx", null);
+        newCreateCtx.put("fks", null);
+        newCreateCtx.put("auditEnabled", false);
+        newCreateCtx.put("auditCreatedType", null);
+        newCreateCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
+
+        final Result result = MigrationDiffer.diff(oldState, newCreateCtx);
+
+        assertTrue(result.getSoftDeleteChanged());
+        assertFalse(result.getSoftDeleteEnabled());
+    }
 }

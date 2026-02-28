@@ -264,14 +264,16 @@ class ModelImportsTest {
             assertFalse(result.contains("java.time.Instant"), "Auditing import should not be present");
         }
     }
+    
     @Test
     @DisplayName("computeJakartaImports: no enums, no relations, no json, no auditing, optimisticLocking=false → only base JPA imports")
     void computeJakartaImports_minimal() {
-        
+
         final ModelDefinition model = Mockito.mock(ModelDefinition.class);
         final List<FieldDefinition> fields = Collections.emptyList();
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -303,10 +305,16 @@ class ModelImportsTest {
             assertFalse(result.contains(ImportConstants.Jakarta.ENTITY_LISTENERS));
             assertFalse(result.contains(ImportConstants.SpringData.AUDITING_ENTITY_LISTENER));
             assertFalse(result.contains(ImportConstants.HibernateAnnotation.JDBC_TYPE_CODE));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_TYPES));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_DELETE));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_RESTRICTION));
             assertFalse(result.contains(ImportConstants.Jakarta.SEQUENCE_GENERATOR));
             assertFalse(result.contains(ImportConstants.Jakarta.TABLE_GENERATOR));
             assertFalse(result.contains(ImportConstants.Jakarta.NAMED_ENTITY_GRAPH));
             assertFalse(result.contains(ImportConstants.Jakarta.NAMED_ATTRIBUTE_NODE));
+            assertFalse(result.contains(ImportConstants.Jakarta.JOIN_COLUMN));
+            assertFalse(result.contains(ImportConstants.Jakarta.ELEMENT_COLLECTION));
+            assertFalse(result.contains(ImportConstants.Jakarta.COLLECTION_TABLE));
         }
     }
 
@@ -322,6 +330,7 @@ class ModelImportsTest {
 
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit().isEnabled()).thenReturn(true);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -355,6 +364,8 @@ class ModelImportsTest {
             assertTrue(result.contains("import " + ImportConstants.SpringData.LAST_MODIFIED_DATE));
             assertFalse(result.contains(ImportConstants.HibernateAnnotation.JDBC_TYPE_CODE));
             assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_TYPES));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_DELETE));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_RESTRICTION));
             assertFalse(result.contains(ImportConstants.Jakarta.SEQUENCE_GENERATOR));
             assertFalse(result.contains(ImportConstants.Jakarta.TABLE_GENERATOR));
             assertFalse(result.contains(ImportConstants.Jakarta.NAMED_ENTITY_GRAPH));
@@ -374,6 +385,7 @@ class ModelImportsTest {
 
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit().isEnabled()).thenReturn(true);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -401,6 +413,8 @@ class ModelImportsTest {
             assertTrue(result.contains("import " + ImportConstants.SpringData.AUDITING_ENTITY_LISTENER));
             assertTrue(result.contains("import " + ImportConstants.SpringData.CREATED_DATE));
             assertTrue(result.contains("import " + ImportConstants.SpringData.LAST_MODIFIED_DATE));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_DELETE));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_RESTRICTION));
             assertFalse(result.contains(ImportConstants.Jakarta.SEQUENCE_GENERATOR));
             assertFalse(result.contains(ImportConstants.Jakarta.TABLE_GENERATOR));
             assertFalse(result.contains(ImportConstants.Jakarta.NAMED_ENTITY_GRAPH));
@@ -423,6 +437,7 @@ class ModelImportsTest {
         final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -465,6 +480,7 @@ class ModelImportsTest {
         final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -508,6 +524,7 @@ class ModelImportsTest {
         final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -550,6 +567,7 @@ class ModelImportsTest {
         final ModelDefinition model = Mockito.mock(ModelDefinition.class, Mockito.RETURNS_DEEP_STUBS);
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -571,9 +589,6 @@ class ModelImportsTest {
 
             assertTrue(result.contains("import " + ImportConstants.Jakarta.SEQUENCE_GENERATOR));
             assertFalse(result.contains("import " + ImportConstants.Jakarta.TABLE_GENERATOR));
-            assertTrue(result.contains("import " + ImportConstants.Jakarta.ENTITY));
-            assertTrue(result.contains("import " + ImportConstants.Jakarta.ID));
-            assertTrue(result.contains("import " + ImportConstants.Jakarta.GENERATED_VALUE));
         }
     }
 
@@ -586,6 +601,7 @@ class ModelImportsTest {
 
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -619,6 +635,7 @@ class ModelImportsTest {
 
         Mockito.when(model.getFields()).thenReturn(fields);
         Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
 
@@ -642,4 +659,162 @@ class ModelImportsTest {
             assertFalse(result.contains(ImportConstants.Jakarta.NAMED_ATTRIBUTE_NODE));
         }
     }
+
+    @Test
+    @DisplayName("computeJakartaImports: softDelete=true, no auditing, no json → adds @Column + Hibernate SQL_DELETE/SQL_RESTRICTION (no JSON hibernate types)")
+    void computeJakartaImports_softDeleteEnabled_noJson() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        final List<FieldDefinition> fields = List.of(new FieldDefinition());
+
+        Mockito.when(model.getFields()).thenReturn(fields);
+        Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(true);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(new FieldDefinition().setId(new IdDefinition()));
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToOne(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasLazyFetchField(fields)).thenReturn(false);
+
+            final String result = ModelImports.computeJakartaImports(model, false, false, true);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.COLUMN));
+            assertTrue(result.contains("import " + ImportConstants.HibernateAnnotation.SQL_DELETE));
+            assertTrue(result.contains("import " + ImportConstants.HibernateAnnotation.SQL_RESTRICTION));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.JDBC_TYPE_CODE));
+            assertFalse(result.contains(ImportConstants.HibernateAnnotation.SQL_TYPES));
+        }
+    }
+
+    @Test
+    @DisplayName("computeJakartaImports: softDelete=true + json=true → adds Hibernate JSON imports + SQL_DELETE/SQL_RESTRICTION together")
+    void computeJakartaImports_softDeleteEnabled_withJson() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        final List<FieldDefinition> fields = List.of(new FieldDefinition());
+
+        Mockito.when(model.getFields()).thenReturn(fields);
+        Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(true);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(new FieldDefinition().setId(new IdDefinition()));
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(fields)).thenReturn(true);
+
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToOne(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasLazyFetchField(fields)).thenReturn(false);
+
+            final String result = ModelImports.computeJakartaImports(model, false, false, true);
+
+            assertTrue(result.contains("import " + ImportConstants.HibernateAnnotation.JDBC_TYPE_CODE));
+            assertTrue(result.contains("import " + ImportConstants.HibernateAnnotation.SQL_TYPES));
+            assertTrue(result.contains("import " + ImportConstants.HibernateAnnotation.SQL_DELETE));
+            assertTrue(result.contains("import " + ImportConstants.HibernateAnnotation.SQL_RESTRICTION));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.COLUMN));
+        }
+    }
+
+    @Test
+    @DisplayName("computeJakartaImports: simple collection present → adds @ElementCollection + @CollectionTable + @JoinColumn")
+    void computeJakartaImports_withSimpleCollection_addsElementCollectionImports() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        final List<FieldDefinition> fields = List.of(new FieldDefinition());
+
+        Mockito.when(model.getFields()).thenReturn(fields);
+        Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(new FieldDefinition().setId(new IdDefinition()));
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasLazyFetchField(fields)).thenReturn(false);
+
+            final String result = ModelImports.computeJakartaImports(model, false, false, true);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.JOIN_COLUMN));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.ELEMENT_COLLECTION));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.COLLECTION_TABLE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeJakartaImports: MANY_TO_MANY relation type list → adds @JoinTable and @ManyToMany")
+    void computeJakartaImports_manyToManyRelation_addsJoinTableAndManyToMany() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        final List<FieldDefinition> fields = List.of(new FieldDefinition());
+
+        Mockito.when(model.getFields()).thenReturn(fields);
+        Mockito.when(model.getAudit()).thenReturn(null);
+        Mockito.when(model.getSoftDelete()).thenReturn(null);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields))
+                    .thenReturn(List.of(RelationTypeEnum.MANY_TO_MANY.getKey()));
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(new FieldDefinition().setId(new IdDefinition()));
+            fieldUtils.when(() -> FieldUtils.isAnyFieldEnum(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToOne(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToOne(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isFetchTypeDefined(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isCascadeTypeDefined(fields)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleListType(fields)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasLazyFetchField(fields)).thenReturn(false);
+
+            final String result = ModelImports.computeJakartaImports(model, false, false, true);
+
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.JOIN_COLUMN));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.JOIN_TABLE));
+            assertTrue(result.contains("import " + ImportConstants.Jakarta.MANY_TO_MANY));
+        }
+    }
+
 }

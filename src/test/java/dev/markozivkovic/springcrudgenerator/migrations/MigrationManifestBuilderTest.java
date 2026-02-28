@@ -2,6 +2,7 @@ package dev.markozivkovic.springcrudgenerator.migrations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.models.flyway.ColumnState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.DdlArtifactState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.DdlArtifactState.DdlArtifactType;
@@ -86,6 +88,7 @@ class MigrationManifestBuilderTest {
         createCtx.put("pkColumns", "id, name");
         createCtx.put("auditEnabled", true);
         createCtx.put("auditCreatedType", "LOCAL_DATE_TIME");
+        createCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, true);
 
         builder.applyCreateContext("User", "users", createCtx);
 
@@ -117,7 +120,7 @@ class MigrationManifestBuilderTest {
         assertNotNull(e.getAudit());
         assertTrue(e.getAudit().getEnabled());
         assertEquals("LOCAL_DATE_TIME", e.getAudit().getType());
-
+        assertTrue(Boolean.TRUE.equals(e.getSoftDelete()));
         assertNotNull(e.getFiles());
         assertNotNull(e.getJoins());
         assertNotNull(e.getFks());
@@ -154,6 +157,8 @@ class MigrationManifestBuilderTest {
         createCtx.put("columns", List.of(cId));
         createCtx.put("pkColumns", "id");
         createCtx.put("auditEnabled", false);
+        createCtx.put("auditCreatedType", null);
+        createCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         builder.applyCreateContext("IgnoredModelName", "users", createCtx);
 
@@ -165,6 +170,7 @@ class MigrationManifestBuilderTest {
         assertEquals(1, e.getColumns().size());
         assertTrue(e.getColumns().containsKey("id"));
         assertEquals(List.of("id"), e.getPk());
+        assertFalse(Boolean.TRUE.equals(e.getSoftDelete()));
     }
 
     @Test
@@ -179,6 +185,7 @@ class MigrationManifestBuilderTest {
         createCtx.put("pkColumns", null);
         createCtx.put("auditEnabled", null);
         createCtx.put("auditCreatedType", null);
+        createCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, null);
 
         builder.applyCreateContext("User", "users", createCtx);
 
@@ -192,6 +199,7 @@ class MigrationManifestBuilderTest {
         assertNotNull(e.getAudit());
         assertFalse(Boolean.TRUE.equals(e.getAudit().getEnabled()));
         assertNull(e.getAudit().getType());
+        assertFalse(Boolean.TRUE.equals(e.getSoftDelete()));
     }
 
     @Test
@@ -211,6 +219,8 @@ class MigrationManifestBuilderTest {
         createCtx.put("columns", List.of(cId));
         createCtx.put("pkColumns", "id");
         createCtx.put("auditEnabled", false);
+        createCtx.put("auditCreatedType", null);
+        createCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Map<String, Object> fk1 = new LinkedHashMap<>();
         fk1.put("column", "category_id");
@@ -234,6 +244,7 @@ class MigrationManifestBuilderTest {
         assertEquals("category_id", fk.getColumn());
         assertEquals("category", fk.getRefTable());
         assertEquals("id", fk.getRefColumn());
+        assertFalse(Boolean.TRUE.equals(e.getSoftDelete()));
     }
 
     @Test
@@ -246,12 +257,13 @@ class MigrationManifestBuilderTest {
         final Map<String, Object> createCtx = new HashMap<>();
         createCtx.put("columns", List.of());
         createCtx.put("auditEnabled", false);
+        createCtx.put("auditCreatedType", null);
+        createCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Map<String, Object> fk1 = new LinkedHashMap<>();
         fk1.put("column", "customer_id");
         fk1.put("refTable", "customer");
         fk1.put("refColumn", "id");
-
         createCtx.put("fksCtx", new LinkedHashMap<>());
         createCtx.put("fks", List.of(fk1));
 
@@ -264,6 +276,32 @@ class MigrationManifestBuilderTest {
         assertEquals("customer_id", fk.getColumn());
         assertEquals("customer", fk.getRefTable());
         assertEquals("id", fk.getRefColumn());
+    }
+
+    @Test
+    void applyCreateContext_shouldNotPopulateFks_whenFksCtxKeyMissing_evenIfRootFksPresent() {
+
+        final List<EntityState> entities = new ArrayList<>();
+        final MigrationState state = newStateWithEntitiesList(entities);
+        final MigrationManifestBuilder builder = new MigrationManifestBuilder(state);
+
+        final Map<String, Object> fk1 = new LinkedHashMap<>();
+        fk1.put("column", "customer_id");
+        fk1.put("refTable", "customer");
+        fk1.put("refColumn", "id");
+
+        final Map<String, Object> createCtx = new HashMap<>();
+        createCtx.put("columns", List.of());
+        createCtx.put("auditEnabled", false);
+        createCtx.put("auditCreatedType", null);
+        createCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
+        createCtx.put("fks", List.of(fk1));
+
+        builder.applyCreateContext("Order", "order", createCtx);
+
+        final EntityState e = entities.get(0);
+        assertNotNull(e.getFks());
+        assertTrue(e.getFks().isEmpty(), "Expected no FKs because fksCtx key is missing by current implementation");
     }
 
     @Test
@@ -1058,12 +1096,13 @@ class MigrationManifestBuilderTest {
 
     @Test
     void fingerprintFromCreateCtx_shouldProduceNonNullFingerprint() {
-        
+
         final Map<String, Object> ctx = new LinkedHashMap<>();
         ctx.put("tableName", "users");
         ctx.put("auditEnabled", true);
         ctx.put("auditCreatedType", "LOCAL_DATE_TIME");
         ctx.put("pkColumns", "id, tenant_id");
+        ctx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
 
         final Map<String, Object> c1 = new HashMap<>();
         c1.put("name", "id");
@@ -1089,12 +1128,104 @@ class MigrationManifestBuilderTest {
 
     @Test
     void fingerprintFromCreateCtx_shouldBeOrderIndependentForColumns() {
-        
+
         final Map<String, Object> ctx1 = new LinkedHashMap<>();
         ctx1.put("tableName", "users");
         ctx1.put("auditEnabled", true);
         ctx1.put("auditCreatedType", "LOCAL_DATE_TIME");
         ctx1.put("pkColumns", "id, tenant_id");
+        ctx1.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
+
+        final Map<String, Object> cId = new HashMap<>();
+        cId.put("name", "id");
+        cId.put("sqlType", "BIGINT");
+        cId.put("nullable", false);
+        cId.put("unique", true);
+        cId.put("defaultExpr", "1");
+
+        final Map<String, Object> cName = new HashMap<>();
+        cName.put("name", "name");
+        cName.put("sqlType", "VARCHAR");
+        cName.put("nullable", true);
+        cName.put("unique", false);
+        cName.put("defaultExpr", null);
+
+        ctx1.put("columns", List.of(cId, cName));
+
+        final Map<String, Object> ctx2 = new LinkedHashMap<>(ctx1);
+        ctx2.put("columns", List.of(cName, cId));
+
+        final String fp1 = MigrationManifestBuilder.fingerprintFromCreateCtx(ctx1);
+        final String fp2 = MigrationManifestBuilder.fingerprintFromCreateCtx(ctx2);
+
+        assertEquals(fp1, fp2);
+    }
+
+    @Test
+    void fingerprintFromCreateCtx_shouldTreatMissingSoftDeleteKeySameAsFalse() {
+
+        final Map<String, Object> base = new LinkedHashMap<>();
+        base.put("tableName", "users");
+        base.put("auditEnabled", true);
+        base.put("auditCreatedType", "LOCAL_DATE_TIME");
+        base.put("pkColumns", "id");
+
+        final Map<String, Object> cId = new HashMap<>();
+        cId.put("name", "id");
+        cId.put("sqlType", "BIGINT");
+        cId.put("nullable", false);
+        cId.put("unique", true);
+        cId.put("defaultExpr", "1");
+
+        base.put("columns", List.of(cId));
+
+        final Map<String, Object> ctxMissing = new LinkedHashMap<>(base);
+        final Map<String, Object> ctxFalse = new LinkedHashMap<>(base);
+        ctxFalse.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
+
+        final String fpMissing = MigrationManifestBuilder.fingerprintFromCreateCtx(ctxMissing);
+        final String fpFalse = MigrationManifestBuilder.fingerprintFromCreateCtx(ctxFalse);
+
+        assertEquals(fpFalse, fpMissing, "Missing SOFT_DELETE_ENABLED must be canonicalized to false.");
+    }
+
+    @Test
+    void fingerprintFromCreateCtx_shouldChangeWhenSoftDeleteEnabledChanges() {
+
+        final Map<String, Object> ctxFalse = new LinkedHashMap<>();
+        ctxFalse.put("tableName", "users");
+        ctxFalse.put("auditEnabled", true);
+        ctxFalse.put("auditCreatedType", "LOCAL_DATE_TIME");
+        ctxFalse.put("pkColumns", "id");
+        ctxFalse.put(TemplateContextConstants.SOFT_DELETE_ENABLED, false);
+
+        final Map<String, Object> cId = new HashMap<>();
+        cId.put("name", "id");
+        cId.put("sqlType", "BIGINT");
+        cId.put("nullable", false);
+        cId.put("unique", true);
+        cId.put("defaultExpr", "1");
+
+        ctxFalse.put("columns", List.of(cId));
+
+        final Map<String, Object> ctxTrue = new LinkedHashMap<>(ctxFalse);
+        ctxTrue.put(TemplateContextConstants.SOFT_DELETE_ENABLED, true);
+
+        final String fpFalse = MigrationManifestBuilder.fingerprintFromCreateCtx(ctxFalse);
+        final String fpTrue = MigrationManifestBuilder.fingerprintFromCreateCtx(ctxTrue);
+
+        assertNotEquals(fpFalse, fpTrue, "soft delete flag must affect fingerprint");
+    }
+
+    @Test
+    void fingerprintFromCreateCtx_shouldRemainOrderIndependentEvenWhenSoftDeleteTrue() {
+
+        final Map<String, Object> ctx1 = new LinkedHashMap<>();
+        ctx1.put("tableName", "users");
+        ctx1.put("auditEnabled", true);
+        ctx1.put("auditCreatedType", "LOCAL_DATE_TIME");
+        ctx1.put("pkColumns", "id, tenant_id");
+        ctx1.put(TemplateContextConstants.SOFT_DELETE_ENABLED, true);
 
         final Map<String, Object> cId = new HashMap<>();
         cId.put("name", "id");

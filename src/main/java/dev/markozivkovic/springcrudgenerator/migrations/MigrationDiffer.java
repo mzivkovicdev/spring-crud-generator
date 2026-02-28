@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.models.flyway.ColumnState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.EntityState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.FkState;
@@ -70,8 +71,30 @@ public class MigrationDiffer {
 
         diffAudit(r, oldState, newCreateCtx);
 
+        diffSoftDelete(r, oldState, newCreateCtx);
+
         return r;
     }
+    
+    /**
+     * Compares the soft delete state of the old state of the entity with the soft delete state from the new state.
+     * If the soft delete states are different, adds the difference to the result object.
+     *
+     * @param r the result object to add the differences to
+     * @param oldState the old state of the entity
+     * @param newCreateCtx the new state of the entity
+     */
+    private static void diffSoftDelete(final Result r, final EntityState oldState, final Map<String,Object> newCreateCtx) {
+
+        final boolean oldEnabled = Objects.nonNull(oldState) && Boolean.TRUE.equals(oldState.getSoftDelete());
+        final boolean newEnabled = Boolean.TRUE.equals(newCreateCtx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+
+        if (oldEnabled != newEnabled) {
+            r.setSoftDeleteChanged(true);
+        }
+        r.setSoftDeleteEnabled(newEnabled);
+    }
+
 
     /**
      * Compares two maps of column states and finds the differences between them.

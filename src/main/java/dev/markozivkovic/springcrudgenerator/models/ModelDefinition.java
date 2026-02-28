@@ -27,19 +27,22 @@ public class ModelDefinition {
     private Boolean ignore = false;
     private List<FieldDefinition> fields; 
     private AuditDefinition audit;
+    private Boolean softDelete = Boolean.FALSE;
 
     public ModelDefinition() {
 
     }
 
     public ModelDefinition(final String name, final String storageName, final String description,
-            final Boolean ignore, final List<FieldDefinition> fields, final AuditDefinition audit) {
+            final Boolean ignore, final List<FieldDefinition> fields, final AuditDefinition audit,
+            final Boolean softDelete) {
         this.name = name;
         this.storageName = storageName;
         this.description = description;
         this.ignore = ignore;
         this.fields = fields;
         this.audit = audit;
+        this.softDelete = softDelete;
     }
 
     public String getName() {
@@ -96,6 +99,15 @@ public class ModelDefinition {
         return this;
     }
 
+    public Boolean getSoftDelete() {
+        return this.softDelete;
+    }
+
+    public ModelDefinition setSoftDelete(final Boolean softDelete) {
+        this.softDelete = softDelete;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -109,12 +121,13 @@ public class ModelDefinition {
                 Objects.equals(description, modelDefinition.description) &&
                 Objects.equals(ignore, modelDefinition.ignore) &&
                 Objects.equals(fields, modelDefinition.fields) &&
-                Objects.equals(audit, modelDefinition.audit);
+                Objects.equals(audit, modelDefinition.audit) &&
+                Objects.equals(softDelete, modelDefinition.softDelete);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, storageName, description, ignore, fields, audit);
+        return Objects.hash(name, storageName, description, ignore, fields, audit, softDelete);
     }
 
     @Override
@@ -126,6 +139,7 @@ public class ModelDefinition {
             ", ignore='" + getIgnore() + "'" +
             ", fields='" + getFields() + "'" +
             ", audit='" + getAudit() + "'" +
+            ", softDelete='" + getSoftDelete() + "'" +
             "}";
     }    
 

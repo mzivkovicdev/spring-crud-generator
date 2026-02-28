@@ -24,28 +24,29 @@ import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 
 class JpaEntityTemplateContextTest {
 
-    private ModelDefinition newModel(final String name,
-                                     final String storageName,
-                                     final List<FieldDefinition> fields,
-                                     final AuditDefinition audit) {
+    private ModelDefinition newModel(final String name, final String storageName, final List<FieldDefinition> fields,
+                final AuditDefinition audit, final Boolean softDelete) {
 
         final ModelDefinition m = mock(ModelDefinition.class);
         when(m.getName()).thenReturn(name);
         when(m.getStorageName()).thenReturn(storageName);
         when(m.getFields()).thenReturn(fields);
         when(m.getAudit()).thenReturn(audit);
+        when(m.getSoftDelete()).thenReturn(softDelete);
         return m;
     }
 
     @Test
     void computeJpaModelContext_shouldUseIdAwareArgsAndNonIdFieldNames_whenNoException() {
-        
+
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
         final FieldDefinition f1 = mock(FieldDefinition.class);
         final FieldDefinition f2 = mock(FieldDefinition.class);
         final List<FieldDefinition> fields = List.of(idField, f1, f2);
-        final ModelDefinition model = newModel("UserEntity", "user_table", fields, null);
+
+        final ModelDefinition model = newModel("UserEntity", "user_table", fields, null, null);
+
         final List<String> allFieldNames = List.of("id", "firstName", "lastName");
         final List<String> inputArgsExcludingId = List.of("String firstName", "String lastName");
         final List<String> nonIdFieldNames = List.of("firstName", "lastName");
@@ -75,6 +76,7 @@ class JpaEntityTemplateContextTest {
             assertFalse(ctx.containsKey(TemplateContextConstants.AUDIT_TYPE));
             assertEquals(true, ctx.get(TemplateContextConstants.IS_BASE_ENTITY));
             assertEquals("user_table", ctx.get(TemplateContextConstants.STORAGE_NAME));
+            assertEquals(false, ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
 
             auditUtils.verifyNoInteractions();
         }
@@ -82,6 +84,7 @@ class JpaEntityTemplateContextTest {
 
     @Test
     void computeJpaModelContext_shouldFallbackWhenGenerateInputArgsExcludingIdThrows_andIncludeAuditInfo() {
+
         final FieldDefinition f1 = mock(FieldDefinition.class);
         final FieldDefinition f2 = mock(FieldDefinition.class);
         final List<FieldDefinition> fields = List.of(f1, f2);
@@ -90,7 +93,7 @@ class JpaEntityTemplateContextTest {
         when(audit.isEnabled()).thenReturn(true);
         when(audit.getType()).thenReturn(AuditTypeEnum.INSTANT);
 
-        final ModelDefinition model = newModel("OrderEntity", null, fields, audit);
+        final ModelDefinition model = newModel("OrderEntity", null, fields, audit, null);
 
         final List<String> allFieldNames = List.of("amount", "status");
         final List<String> fallbackInputArgs = List.of("BigDecimal amount", "String status");
@@ -103,6 +106,7 @@ class JpaEntityTemplateContextTest {
             fieldUtils.when(() -> FieldUtils.generateInputArgsExcludingId(fields)).thenThrow(new IllegalArgumentException("No id field"));
             fieldUtils.when(() -> FieldUtils.generateInputArgsWithoutRelations(fields)).thenReturn(fallbackInputArgs);
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(false);
+
             auditUtils.when(() -> AuditUtils.resolveAuditType(AuditTypeEnum.INSTANT)).thenReturn("JPA_AUDIT_TYPE");
             modelNameUtils.when(() -> ModelNameUtils.stripSuffix("OrderEntity")).thenReturn("Order");
 
@@ -121,21 +125,21 @@ class JpaEntityTemplateContextTest {
             assertEquals(false, ctx.get(TemplateContextConstants.IS_BASE_ENTITY));
             assertNull(ctx.get(TemplateContextConstants.STORAGE_NAME));
             assertFalse(ctx.containsKey(TemplateContextConstants.ID_FIELD));
+            assertEquals(false, ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
         }
     }
 
     @Test
     void computeJpaModelContext_shouldNotIncludeAuditInfo_whenAuditDisabled() {
-        
+
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");
-        
+
         final List<FieldDefinition> fields = List.of(idField);
         final AuditDefinition audit = mock(AuditDefinition.class);
-        
-        when(audit.isEnabled()).thenReturn(false);
 
-        final ModelDefinition model = newModel("UserEntity", "users", fields, audit);
+        when(audit.isEnabled()).thenReturn(false);
+        final ModelDefinition model = newModel("UserEntity", "users", fields, audit, null);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<AuditUtils> auditUtils = mockStatic(AuditUtils.class);
@@ -153,8 +157,58 @@ class JpaEntityTemplateContextTest {
 
             assertFalse(ctx.containsKey(TemplateContextConstants.AUDIT_ENABLED));
             assertFalse(ctx.containsKey(TemplateContextConstants.AUDIT_TYPE));
+            assertEquals(false, ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
 
             auditUtils.verifyNoInteractions();
         }
     }
+
+    @Test
+    void computeJpaModelContext_shouldSetSoftDeleteEnabled_true_whenSoftDeleteIsTrue() {
+
+        final FieldDefinition f1 = mock(FieldDefinition.class);
+        final List<FieldDefinition> fields = List.of(f1);
+
+        final ModelDefinition model = newModel("ItemEntity", "items", fields, null, true);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractFieldNames(fields)).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.generateInputArgsExcludingId(fields)).thenReturn(List.of("String name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNames(fields)).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(false);
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("ItemEntity")).thenReturn("Item");
+
+            final Map<String, Object> ctx = JpaEntityTemplateContext.computeJpaModelContext(model);
+
+            assertEquals(true, ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        }
+    }
+
+    @Test
+    void computeJpaModelContext_shouldSetSoftDeleteEnabled_false_whenSoftDeleteIsFalse() {
+
+        final FieldDefinition f1 = mock(FieldDefinition.class);
+        final List<FieldDefinition> fields = List.of(f1);
+
+        final ModelDefinition model = newModel("ItemEntity", "items", fields, null, false);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractFieldNames(fields)).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.generateInputArgsExcludingId(fields)).thenReturn(List.of("String name"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNames(fields)).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(false);
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("ItemEntity")).thenReturn("Item");
+
+            final Map<String, Object> ctx = JpaEntityTemplateContext.computeJpaModelContext(model);
+
+            assertEquals(false, ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        }
+    }
+    
 }

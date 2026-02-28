@@ -25,6 +25,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
@@ -979,6 +980,25 @@ class FlywayUtilsTest {
         assertEquals("TIMESTAMP", ctx.get("auditCreatedType"));
         assertEquals("TIMESTAMP", ctx.get("auditUpdatedType"));
         assertEquals("now()", ctx.get("auditNowExpr"));
+    }
+
+    @Test
+    @DisplayName("toCreateTableContext fills soft delete context when soft delete is enabled")
+    void toCreateTableContext_shouldFillSoftDelete_whenSoftDeleteEnabled() {
+
+        final FieldDefinition idField = new FieldDefinition();
+        idField.setName("id");
+        idField.setType("Long");
+        IdDefinition idDef = new IdDefinition();
+        idDef.setStrategy(IdStrategyEnum.IDENTITY);
+        idField.setId(idDef);
+
+        final ModelDefinition model = model("Order", "order", List.of(idField));
+        model.setSoftDelete(true);
+
+        final Map<String, Object> ctx = FlywayUtils.toCreateTableContext(model, DatabaseType.POSTGRESQL, Map.of(), List.of(), false);
+
+        assertEquals(true, ctx.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
     }
 
     @Test

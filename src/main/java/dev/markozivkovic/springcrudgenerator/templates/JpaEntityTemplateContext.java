@@ -63,6 +63,7 @@ public class JpaEntityTemplateContext {
 
         context.put(TemplateContextConstants.IS_BASE_ENTITY, Objects.nonNull(modelDefinition.getStorageName()));
         context.put(TemplateContextConstants.STORAGE_NAME, modelDefinition.getStorageName());
+        context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
 
         return context;  
     }
