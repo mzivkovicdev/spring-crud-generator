@@ -20,7 +20,7 @@ ALTER TABLE ${quoteIdent(table)}
 </#if><#t>
 <#if softDeleteOn>
 ALTER TABLE ${quoteIdent(table)}
-  ADD<#if !isMsSql> COLUMN</#if> ${quoteIdent("deleted")}<#if isMsSql> bit DEFAULT 0 NOT NULL<#else> BOOLEAN DEFAULT FALSE NOT NULL</#if>;
+  ADD<#if !isMsSql> COLUMN</#if> ${quoteIdent("deleted")}<#if isMsSql> bit CONSTRAINT [DF_${table}_deleted] DEFAULT 0 NOT NULL<#else> BOOLEAN DEFAULT FALSE NOT NULL</#if>;
 <#if isMsSql>
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_${table}_deleted' AND object_id = OBJECT_ID('${table}'))
 CREATE INDEX ix_${table}_deleted ON ${quoteIdent(table)} (${quoteIdent("deleted")});
@@ -40,6 +40,9 @@ DROP INDEX IF EXISTS ix_${table}_deleted;
 <#elseif isMySql || isMariaDB>
 DROP INDEX ix_${table}_deleted ON ${quoteIdent(table)};
 <#elseif isMsSql>
+IF EXISTS (SELECT 1 FROM sys.objects WHERE type = 'D' AND name = 'DF_${table}_deleted')
+ALTER TABLE ${quoteIdent(table)} DROP CONSTRAINT [DF_${table}_deleted];
+
 IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_${table}_deleted' AND object_id = OBJECT_ID('${table}'))
 DROP INDEX ix_${table}_deleted ON ${quoteIdent(table)};
 </#if>

@@ -16,7 +16,7 @@ CREATE TABLE<#if db != "MSSQL"> IF NOT EXISTS</#if> ${quoteIdent(tableName)} (
   ${quoteIdent("updated_at")} ${auditUpdatedType} NOT NULL DEFAULT ${auditNowExpr}<#if (pkColumns??) || hasChecks || hasUniques>,</#if>
 </#if>
 <#if softDeleteEnabled?? && softDeleteEnabled>
-  ${quoteIdent("deleted")}<#if db == "MSSQL"> bit DEFAULT 0 NOT NULL<#else> BOOLEAN DEFAULT FALSE NOT NULL</#if><#if (pkColumns??) || hasChecks || hasUniques>,</#if>
+  ${quoteIdent("deleted")}<#if db == "MSSQL"> bit CONSTRAINT [DF_${tableName}_deleted] DEFAULT 0 NOT NULL<#else> BOOLEAN DEFAULT FALSE NOT NULL</#if><#if (pkColumns??) || hasChecks || hasUniques>,</#if>
 </#if>
 <#if pkColumns??>
   CONSTRAINT pk_${tableName} PRIMARY KEY (${pkColumns})<#if hasChecks || hasUniques>,</#if>
