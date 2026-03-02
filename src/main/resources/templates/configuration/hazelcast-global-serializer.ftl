@@ -39,9 +39,9 @@ public class HazelcastJacksonGlobalSerializer implements StreamSerializer<Object
                 PropertyAccessor.FIELD,
                 JsonAutoDetect.Visibility.ANY
         );
-        </#if>
-
+        
         this.objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        </#if>
     }
 
     @Override
