@@ -79,7 +79,7 @@ Enables and configures caching.
 | Property | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `false` | Enables caching |
-| `type` | string | `null` | Cache provider (`CAFFEINE`, `REDIS`) |
+| `type` | string | `null` | Cache provider (`CAFFEINE`, `REDIS`, `HAZELCAST`, `SIMPLE`) |
 | `expiration` | number | `null` | Cache expiration time (minutes) |
 | `maxSize` | number | `null` | Maximum cache size |
 

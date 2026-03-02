@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
@@ -140,7 +141,7 @@ class CacheGeneratorTest {
     }
 
     @Test
-    void generate_shouldGenerateCacheConfigurationWithExplicitValues_andAlsoGenerateHibernateLazyNullModule() {
+    void generate_shouldGenerateCacheConfigurationWithExplicitValues_andAlsoGenerateHibernateLazyNullModule_forRedis() {
 
         final CrudAndCache cc = prepareCrudWithCache();
         when(cc.cacheConfig.getEnabled()).thenReturn(true);
@@ -148,6 +149,7 @@ class CacheGeneratorTest {
         when(cc.cacheConfig.getMaxSize()).thenReturn(100L);
         when(cc.cacheConfig.getExpiration()).thenReturn(3600);
         when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
+        when(cc.crudConfig.getAdditionalProperties()).thenReturn(Collections.emptyMap());
 
         final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
 
@@ -175,10 +177,13 @@ class CacheGeneratorTest {
 
             imports.when(() -> ConfigurationImports.getModelImports(eq("com.example.app"), eq(packageConfiguration), eq(List.of("Product"))))
                     .thenReturn("// IMPORTS");
+            addProps.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(any())).thenReturn(true);
             addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(true);
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap())).thenReturn("// CACHE_TEMPLATE");
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hibernate-lazy-null-module.ftl"), anyMap())).thenReturn("// HIBERNATE_MODULE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap()))
+                    .thenReturn("// CACHE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hibernate-lazy-null-module.ftl"), anyMap()))
+                    .thenReturn("// HIBERNATE_MODULE_TEMPLATE");
 
             generator.generate("out");
 
@@ -191,6 +196,7 @@ class CacheGeneratorTest {
                                 && Objects.equals(map.get("expiration"), 3600)
                                 && Objects.equals(map.get("modelImports"), "// IMPORTS")
                                 && Objects.equals(map.get("entities"), List.of("Product"))
+                                && Objects.equals(map.get(TemplateContextConstants.EXCLUDE_NULL), true)
                                 && Objects.equals(map.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED), true)
                                 && Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
                     })
@@ -214,12 +220,16 @@ class CacheGeneratorTest {
                     argThat(content -> content.contains("// HIBERNATE_MODULE_TEMPLATE"))
             ));
 
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq("out"), eq("config"), eq("HazelcastJacksonGlobalSerializer.java"), anyString()
+            ), never());
+
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION));
         }
     }
 
     @Test
-    void generate_shouldUseDefaultCacheTypeSimpleWhenTypeIsNull_andNotIncludeOptionalFields_andStillGenerateHibernateLazyNullModule() {
+    void generate_shouldUseDefaultCacheTypeSimpleWhenTypeIsNull_andNotIncludeOptionalFields_andNotGenerateAdditionalCacheArtifacts() {
 
         final CrudAndCache cc = prepareCrudWithCache();
         when(cc.cacheConfig.getEnabled()).thenReturn(true);
@@ -227,6 +237,7 @@ class CacheGeneratorTest {
         when(cc.cacheConfig.getMaxSize()).thenReturn(null);
         when(cc.cacheConfig.getExpiration()).thenReturn(null);
         when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
+        when(cc.crudConfig.getAdditionalProperties()).thenReturn(Collections.emptyMap());
 
         final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
 
@@ -251,9 +262,11 @@ class CacheGeneratorTest {
 
             imports.when(() -> ConfigurationImports.getModelImports(eq("com.example.app"), eq(packageConfiguration), eq(List.of("Product"))))
                     .thenReturn("// IMPORTS");
+            addProps.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(any())).thenReturn(false);
             addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap())).thenReturn("// CACHE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap()))
+                    .thenReturn("// CACHE_TEMPLATE");
 
             generator.generate("out");
 
@@ -266,24 +279,32 @@ class CacheGeneratorTest {
                                 && !map.containsKey("expiration")
                                 && Objects.equals(map.get("modelImports"), "// IMPORTS")
                                 && Objects.equals(map.get("entities"), List.of("Product"))
+                                && Objects.equals(map.get(TemplateContextConstants.EXCLUDE_NULL), false)
                                 && Objects.equals(map.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED), false)
                                 && Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
                     })
             ));
 
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("CacheConfiguration.java"), anyString()));
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq("out"), eq("config"), eq("HibernateLazyNullModule.java"), anyString()
+            ), never());
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq("out"), eq("config"), eq("HazelcastJacksonGlobalSerializer.java"), anyString()
+            ), never());
 
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION));
         }
     }
 
     @Test
-    void generate_shouldFilterEntitiesByStorageName_andPassNamesToImports_andGenerateHibernateLazyNullModule() {
+    void generate_shouldFilterEntitiesByStorageName_andPassNamesToImports_andGenerateHibernateLazyNullModule_forRedis() {
 
         final CrudAndCache cc = prepareCrudWithCache();
         when(cc.cacheConfig.getEnabled()).thenReturn(true);
         when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.REDIS);
         when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.1.0");
+        when(cc.crudConfig.getAdditionalProperties()).thenReturn(Collections.emptyMap());
 
         final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
 
@@ -311,16 +332,183 @@ class CacheGeneratorTest {
             pkg.when(() -> PackageUtils.computeConfigurationSubPackage(packageConfiguration)).thenReturn("config");
             imports.when(() -> ConfigurationImports.getModelImports(eq("com.example.app"), eq(packageConfiguration), eq(List.of("Product", "User"))))
                     .thenReturn("// IMPORTS");
+            addProps.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(any())).thenReturn(false);
             addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(true);
 
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap())).thenReturn("// CACHE_TEMPLATE");
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hibernate-lazy-null-module.ftl"), anyMap())).thenReturn("// HIBERNATE_MODULE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap()))
+                    .thenReturn("// CACHE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hibernate-lazy-null-module.ftl"), anyMap()))
+                    .thenReturn("// HIBERNATE_MODULE_TEMPLATE");
 
             generator.generate("out");
 
             imports.verify(() -> ConfigurationImports.getModelImports(eq("com.example.app"), eq(packageConfiguration), eq(List.of("Product", "User"))));
 
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("HibernateLazyNullModule.java"), anyString()));
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq("out"), eq("config"), eq("HazelcastJacksonGlobalSerializer.java"), anyString()
+            ), never());
+        }
+    }
+
+    @Test
+    void generate_shouldGenerateHazelcastArtifacts_forSpringBoot3() {
+
+        final CrudAndCache cc = prepareCrudWithCache();
+        when(cc.cacheConfig.getEnabled()).thenReturn(true);
+        when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.HAZELCAST);
+        when(cc.cacheConfig.getMaxSize()).thenReturn(500L);
+        when(cc.cacheConfig.getExpiration()).thenReturn(120);
+        when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.2.0");
+        when(cc.crudConfig.getAdditionalProperties()).thenReturn(Collections.emptyMap());
+
+        final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
+        final List<ModelDefinition> entities = List.of(
+                model("Product", "product"),
+                model("User", "users"),
+                model("Ignored", null)
+        );
+
+        final CacheGenerator generator = new CacheGenerator(cc.crudConfig, packageConfiguration, entities);
+
+        try (final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ConfigurationImports> imports = mockStatic(ConfigurationImports.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION)).thenReturn(false);
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.2.0")).thenReturn(true);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.demo");
+            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.demo", packageConfiguration)).thenReturn("com.example.demo.config");
+            pkg.when(() -> PackageUtils.computeConfigurationSubPackage(packageConfiguration)).thenReturn("config");
+
+            imports.when(() -> ConfigurationImports.getModelImports(eq("com.example.demo"), eq(packageConfiguration), eq(List.of("Product", "User"))))
+                    .thenReturn("// IMPORTS");
+
+            addProps.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(any())).thenReturn(true);
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap()))
+                    .thenReturn("// CACHE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hibernate-lazy-null-module.ftl"), anyMap()))
+                    .thenReturn("// HIBERNATE_MODULE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hazelcast-global-serializer.ftl"), anyMap()))
+                    .thenReturn("// HAZELCAST_SERIALIZER_TEMPLATE");
+
+            generator.generate("out");
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("configuration/cache-configuration.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return map.get("type") == CacheTypeEnum.HAZELCAST
+                                && Objects.equals(map.get("maxSize"), 500L)
+                                && Objects.equals(map.get("expiration"), 120)
+                                && Objects.equals(map.get("modelImports"), "// IMPORTS")
+                                && Objects.equals(map.get("entities"), List.of("Product", "User"))
+                                && Objects.equals(map.get(TemplateContextConstants.EXCLUDE_NULL), true)
+                                && Objects.equals(map.get(TemplateContextConstants.OPEN_IN_VIEW_ENABLED), false)
+                                && Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
+                    })
+            ));
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("configuration/hibernate-lazy-null-module.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true);
+                    })
+            ));
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("configuration/hazelcast-global-serializer.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), true)
+                                && Objects.equals(map.get(TemplateContextConstants.BASE_PACKAGE), "com.example.demo");
+                    })
+            ));
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq("out"), eq("config"), eq("CacheConfiguration.java"),
+                    argThat(content -> content.contains("// CACHE_TEMPLATE"))
+            ));
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq("out"), eq("config"), eq("HibernateLazyNullModule.java"),
+                    argThat(content -> content.contains("// HIBERNATE_MODULE_TEMPLATE"))
+            ));
+
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    eq("out"), eq("config"), eq("HazelcastJacksonGlobalSerializer.java"),
+                    argThat(content -> content.contains("// HAZELCAST_SERIALIZER_TEMPLATE"))
+            ));
+
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION));
+        }
+    }
+
+    @Test
+    void generate_shouldGenerateHazelcastArtifacts_forSpringBoot4() {
+
+        final CrudAndCache cc = prepareCrudWithCache();
+        when(cc.cacheConfig.getEnabled()).thenReturn(true);
+        when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.HAZELCAST);
+        when(cc.crudConfig.getSpringBootVersion()).thenReturn("4.0.0");
+        when(cc.crudConfig.getAdditionalProperties()).thenReturn(Collections.emptyMap());
+
+        final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
+        final List<ModelDefinition> entities = List.of(model("Product", "product"));
+
+        final CacheGenerator generator = new CacheGenerator(cc.crudConfig, packageConfiguration, entities);
+
+        try (final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ConfigurationImports> imports = mockStatic(ConfigurationImports.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION)).thenReturn(false);
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("4.0.0")).thenReturn(false);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.demo");
+            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.demo", packageConfiguration)).thenReturn("com.example.demo.config");
+            pkg.when(() -> PackageUtils.computeConfigurationSubPackage(packageConfiguration)).thenReturn("config");
+
+            imports.when(() -> ConfigurationImports.getModelImports(eq("com.example.demo"), eq(packageConfiguration), eq(List.of("Product"))))
+                    .thenReturn("// IMPORTS");
+
+            addProps.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(any())).thenReturn(false);
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap()))
+                    .thenReturn("// CACHE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hibernate-lazy-null-module.ftl"), anyMap()))
+                    .thenReturn("// HIBERNATE_MODULE_TEMPLATE");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/hazelcast-global-serializer.ftl"), anyMap()))
+                    .thenReturn("// HAZELCAST_SERIALIZER_TEMPLATE");
+
+            generator.generate("out");
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("configuration/hazelcast-global-serializer.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return Objects.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3), false)
+                                && Objects.equals(map.get(TemplateContextConstants.BASE_PACKAGE), "com.example.demo");
+                    })
+            ));
+
+            writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("HibernateLazyNullModule.java"), anyString()));
+            writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("HazelcastJacksonGlobalSerializer.java"), anyString()));
+
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION));
         }
     }
 }

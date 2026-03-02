@@ -30,12 +30,20 @@ services:
             SPRING_DATA_REDIS_HOST: redis
             SPRING_DATA_REDIS_PORT: 6379
             </#if><#t>
+            <#if cacheType?? && cacheType?lower_case == "hazelcast">
+            SPRING_CACHE_TYPE: hazelcast
+            SPRING_HAZELCAST_CONFIG: classpath:hazelcast-client.yaml
+            </#if><#t>
         depends_on:
             database:
                 condition: service_healthy
             <#if cacheType?? && cacheType?lower_case == "redis">
             redis:
                 condition: service_healthy
+            </#if><#t>
+            <#if cacheType?? && cacheType?lower_case == "hazelcast">
+            hazelcast:
+                condition: service_started
             </#if><#t>
         networks:
             - ${artifactId}-network
@@ -151,6 +159,20 @@ services:
             timeout: 5s
             retries: 30
             start_period: 15s
+        networks:
+            - ${artifactId}-network
+
+    </#if><#t>
+    <#if cacheType?? && cacheType?lower_case == "hazelcast">
+
+    hazelcast:
+        image: hazelcast/hazelcast
+        container_name: ${artifactId}-hazelcast
+        restart: unless-stopped
+        environment:
+            HZ_CLUSTERNAME: ${artifactId}-cluster
+        ports:
+            - "5701:5701"
         networks:
             - ${artifactId}-network
 
