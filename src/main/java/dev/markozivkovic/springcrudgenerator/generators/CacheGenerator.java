@@ -112,8 +112,12 @@ public class CacheGenerator implements ProjectArtifactGenerator {
             outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "CacheConfiguration.java", sb.toString()
         );
 
-        if (CacheTypeEnum.REDIS.equals(this.crudConfiguration.getCache().getType())) {
+        if (CacheTypeEnum.REDIS.equals(this.crudConfiguration.getCache().getType()) || CacheTypeEnum.HAZELCAST.equals(this.crudConfiguration.getCache().getType())) {
             this.generateHibernateLazyNullModule(outputDir, packagePath);
+        }
+
+        if (CacheTypeEnum.HAZELCAST.equals(this.crudConfiguration.getCache().getType())) {
+            this.generateHazelcastGlobalSerializer(outputDir, packagePath);
         }
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION);
@@ -140,6 +144,29 @@ public class CacheGenerator implements ProjectArtifactGenerator {
         
         FileWriterUtils.writeToFile(
             outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "HibernateLazyNullModule.java", sb.toString()
+        );
+    }
+
+    /**
+     * Generates a HazelcastJacksonGlobalSerializer Java class file.
+     *
+     * @param outputDir   The directory where the generated file should be written.
+     * @param packagePath The package path where the generated file should be written.
+     */
+    private void generateHazelcastGlobalSerializer(final String outputDir, final String packagePath) {
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+                .append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "configuration/hazelcast-global-serializer.ftl",
+                    Map.of(
+                        TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.crudConfiguration.getSpringBootVersion()),
+                        TemplateContextConstants.BASE_PACKAGE, packagePath
+                    )
+                ));
+        
+        FileWriterUtils.writeToFile(
+            outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "HazelcastJacksonGlobalSerializer.java", sb.toString()
         );
     }
 
