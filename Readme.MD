@@ -14,6 +14,7 @@
 ![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=flat&logo=mariadb&logoColor=white)
 ![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=flat&logo=microsoftsqlserver&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DD0031?style=flat&logo=redis&logoColor=white)
+![Hazelcast](https://img.shields.io/badge/Hazelcast-Real--time%20Data%20Platform-0A0A0A?style=flat&logo=hazelcast&logoColor=white)
 
 Spring CRUD Generator is an open-source **Maven plugin** that accelerates backend development with **Spring Boot** by generating production-ready CRUD layers, database migrations, API documentation, Docker resources, tests, and more — directly from a single YAML or JSON configuration file.
 
