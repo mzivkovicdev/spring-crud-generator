@@ -1,6 +1,6 @@
-<#if isSpringBoot3>
 import java.io.IOException;
 
+<#if isSpringBoot3>
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -29,6 +29,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 public class HazelcastJacksonGlobalSerializer implements StreamSerializer<Object> {
 
+    private static final int TYPE_ID = 99001;
+
     private final ObjectMapper objectMapper;
 
     public HazelcastJacksonGlobalSerializer() {
@@ -43,30 +45,40 @@ public class HazelcastJacksonGlobalSerializer implements StreamSerializer<Object
         );
 
         this.objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        this.objectMapper.activateDefaultTyping(
-                BasicPolymorphicTypeValidator.builder()
-                        .allowIfSubType("${basePackage}")
-                        .build(),
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
     }
 
     @Override
     public int getTypeId() {
-        return 99001;
+        return TYPE_ID;
     }
 
     @Override
     public void write(final ObjectDataOutput out, final Object object)<#if isSpringBoot3> throws IOException</#if> {
+        if (object == null) {
+            out.writeString(null);
+            out.writeByteArray(null);
+            return;
+        }
+
+        out.writeString(object.getClass().getName());
         out.writeByteArray(this.objectMapper.writeValueAsBytes(object));
     }
 
     @Override
-    public Object read(final ObjectDataInput in)<#if isSpringBoot3> throws IOException</#if> {
+    public Object read(final ObjectDataInput in) throws IOException {
+        final String className = in.readString();
         final byte[] bytes = in.readByteArray();
-        return this.objectMapper.readValue(bytes, Object.class);
+
+        if (className == null || bytes == null) {
+            return null;
+        }
+
+        try {
+            final Class<?> clazz = Class.forName(className);
+            return this.objectMapper.readValue(bytes, clazz);
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Failed to deserialize Hazelcast cached value. Unknown class: " + className, e);
+        }
     }
 
     @Override
