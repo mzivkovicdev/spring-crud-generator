@@ -31,14 +31,17 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import com.github.benmanes.caffeine.cache.Caffeine;
 </#if><#t>
 <#if type == "HAZELCAST">
-import org.springframework.cache.hazelcast.HazelcastCacheManager;
 
 import com.hazelcast.config.Config;
+<#if maxSize??>
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
+</#if>
+import com.hazelcast.config.GlobalSerializerConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.spring.cache.HazelcastCacheManager;
 
 </#if><#t>
 <#if type == "REDIS">
@@ -184,6 +187,12 @@ public class CacheConfiguration {
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(false);
         config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
+
+        config.getSerializationConfig().setGlobalSerializerConfig(
+            new GlobalSerializerConfig()
+                .setImplementation(new HazelcastJacksonGlobalSerializer())
+                .setOverrideJavaSerialization(true)
+        );
 
         CACHE_NAMES.forEach(name -> config.addMapConfig(buildMapConfig(name)));
 
