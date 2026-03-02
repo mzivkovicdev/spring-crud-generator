@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.StreamSerializer;
 <#else>
 import com.hazelcast.nio.ObjectDataInput;
@@ -39,7 +41,7 @@ public class HazelcastJacksonGlobalSerializer implements StreamSerializer<Object
                 PropertyAccessor.FIELD,
                 JsonAutoDetect.Visibility.ANY
         );
-        
+
         this.objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         </#if>
     }
