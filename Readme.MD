@@ -37,7 +37,7 @@ From one spec file, the generator can produce:
 - **Flyway migrations** (optional)
 - **Dockerfile + docker-compose** (optional)
 - **Unit tests + test data generation** (Instancio / Podam) - (optional)
-- **Caching** (Redis / Caffeine) - (optional)
+- **Caching** (Redis, Caffeine, Hazelcast or Simple) - (optional)
 - **Optimistic locking support** (optional)
 
 > ⚠️ Table deletion is **not** supported by the generator (must be handled manually).
