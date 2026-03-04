@@ -65,6 +65,10 @@ public final class TemplateContextConstants {
     public static final String RELATION_FIELD_MODEL = "relationFieldModel";
     public static final String RELATION_FIELD = "relationField";
     public static final String IS_COLLECTION = "isCollection";
+    public static final String COLLECTION_TYPE = "collectionType";
+    public static final String COLLECTION_IMPL = "collectionImpl";
+    public static final String COLLECT_METHOD = "collectMethod";
+    public static final String EMPTY_COLLECTION = "emptyCollection";
     public static final String IS_BASE_ENTITY = "isBaseEntity";
     public static final String JAVADOC_FIELDS = "javadocFields";
     public static final String METHOD_NAME = "methodName";
