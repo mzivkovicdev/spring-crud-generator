@@ -424,6 +424,67 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("isCollectionRelation returns true only for OneToMany and ManyToMany relations")
+    void isCollectionRelation_shouldReturnTrueOnlyForToManyRelations() {
+
+        final FieldDefinition oneToMany = fieldWithNameTypeAndRelation("tags", "Tag", "OneToMany", "ALL", "EAGER");
+        final FieldDefinition manyToMany = fieldWithNameTypeAndRelation("groups", "Group", "ManyToMany", "ALL", "EAGER");
+        final FieldDefinition manyToOne = fieldWithNameTypeAndRelation("owner", "User", "ManyToOne", "ALL", "EAGER");
+        final FieldDefinition noRelation = fieldWithNameAndType("name", "String");
+
+        assertTrue(FieldUtils.isCollectionRelation(oneToMany));
+        assertTrue(FieldUtils.isCollectionRelation(manyToMany));
+        assertFalse(FieldUtils.isCollectionRelation(manyToOne));
+        assertFalse(FieldUtils.isCollectionRelation(noRelation));
+        assertFalse(FieldUtils.isCollectionRelation(null));
+    }
+
+    @Test
+    @DisplayName("isUniqueCollectionRelation and isListCollectionRelation follow uniqueItems flag")
+    void collectionRelationTypeFlags_shouldFollowUniqueItemsFlag() {
+
+        final FieldDefinition uniqueRelation = fieldWithNameTypeAndRelation("tags", "Tag", "OneToMany", "ALL", "EAGER");
+        uniqueRelation.getRelation().setUniqueItems(true);
+        final FieldDefinition listRelation = fieldWithNameTypeAndRelation("groups", "Group", "ManyToMany", "ALL", "EAGER");
+
+        assertTrue(FieldUtils.isUniqueCollectionRelation(uniqueRelation));
+        assertFalse(FieldUtils.isListCollectionRelation(uniqueRelation));
+
+        assertFalse(FieldUtils.isUniqueCollectionRelation(listRelation));
+        assertTrue(FieldUtils.isListCollectionRelation(listRelation));
+    }
+
+    @Test
+    @DisplayName("isAnyRelationCollectionSet and isAnyRelationCollectionList detect relation collection target type")
+    void anyRelationCollectionTypeDetectors_shouldDetectSetAndListRelations() {
+
+        final FieldDefinition uniqueRelation = fieldWithNameTypeAndRelation("tags", "Tag", "OneToMany", "ALL", "EAGER");
+        uniqueRelation.getRelation().setUniqueItems(true);
+        final FieldDefinition listRelation = fieldWithNameTypeAndRelation("groups", "Group", "ManyToMany", "ALL", "EAGER");
+
+        assertTrue(FieldUtils.isAnyRelationCollectionSet(List.of(uniqueRelation)));
+        assertFalse(FieldUtils.isAnyRelationCollectionSet(List.of(listRelation)));
+
+        assertTrue(FieldUtils.isAnyRelationCollectionList(List.of(listRelation)));
+        assertFalse(FieldUtils.isAnyRelationCollectionList(List.of(uniqueRelation)));
+    }
+
+    @Test
+    @DisplayName("resolveRelationCollectionType and resolveRelationCollectionImpl return Set/HashSet for uniqueItems=true")
+    void resolveRelationCollectionTypes_shouldRespectUniqueItems() {
+
+        final FieldDefinition uniqueRelation = fieldWithNameTypeAndRelation("tags", "Tag", "OneToMany", "ALL", "EAGER");
+        uniqueRelation.getRelation().setUniqueItems(true);
+        final FieldDefinition listRelation = fieldWithNameTypeAndRelation("groups", "Group", "ManyToMany", "ALL", "EAGER");
+
+        assertEquals("Set", FieldUtils.resolveRelationCollectionType(uniqueRelation));
+        assertEquals("HashSet", FieldUtils.resolveRelationCollectionImpl(uniqueRelation));
+
+        assertEquals("List", FieldUtils.resolveRelationCollectionType(listRelation));
+        assertEquals("ArrayList", FieldUtils.resolveRelationCollectionImpl(listRelation));
+    }
+
+    @Test
     @DisplayName("extractManyToManyRelations returns empty list when there are no ManyToMany relations")
     void extractManyToManyRelations_shouldReturnEmpty_whenNoManyToMany() {
         
@@ -2157,6 +2218,37 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("generateInputArgsExcludingId generates set of IDs when relation uniqueItems=true")
+    void generateInputArgsExcludingId_shouldGenerateSetOfIds_forUniqueToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+        tagsField.getRelation().setUniqueItems(true);
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+        groupsField.getRelation().setUniqueItems(true);
+
+        final List<FieldDefinition> mainFields = List.of(idField, tagsField, groupsField);
+
+        final FieldDefinition tagIdField = fieldWithNameTypeAndId("id", "Long", true);
+        final ModelDefinition tagModel = model("Tag", List.of(tagIdField));
+        final FieldDefinition groupIdField = fieldWithNameTypeAndId("id", "UUID", true);
+        final ModelDefinition groupModel = model("Group", List.of(groupIdField));
+
+        final List<ModelDefinition> entities = List.of(tagModel, groupModel);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(mainFields, entities);
+
+        assertEquals(2, result.size());
+        assertEquals("final Set<Long> tagIds", result.get(0));
+        assertEquals("final Set<UUID> groupIds", result.get(1));
+    }
+
+    @Test
     @DisplayName("generateInputArgsExcludingId throws IllegalArgumentException when no ID field exists")
     void generateInputArgsExcludingId_shouldThrow_whenNoIdField() {
 
@@ -2337,6 +2429,32 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("generateInputArgsExcludingId(List) uses 'final Set<type> name' for unique OneToMany and ManyToMany relations")
+    void generateInputArgsExcludingIdSingleParam_shouldUseSetType_forUniqueToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+        tagsField.getRelation().setUniqueItems(true);
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+        groupsField.getRelation().setUniqueItems(true);
+
+        final List<FieldDefinition> fields = List.of(idField, tagsField, groupsField);
+
+        final List<String> result = FieldUtils.generateInputArgsExcludingId(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("final Set<Tag> tags", result.get(0));
+        assertEquals("final Set<Group> groups", result.get(1));
+    }
+
+    @Test
     @DisplayName("generateInputArgsExcludingId(List) throws IllegalArgumentException when no ID field exists")
     void generateInputArgsExcludingIdSingleParam_shouldThrow_whenNoIdField() {
 
@@ -2481,6 +2599,34 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("generates 'Set<idType> <name>Ids' for unique OneToMany/ManyToMany relations (entities variant)")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSetOfIds_forUniqueToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        idField.setRelation(null);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", RelationTypeEnum.ONE_TO_MANY.getKey(), "ALL", "EAGER"
+        );
+        tagsField.getRelation().setUniqueItems(true);
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", RelationTypeEnum.MANY_TO_MANY.getKey(), "ALL", "EAGER"
+        );
+        groupsField.getRelation().setUniqueItems(true);
+
+        final ModelDefinition tagModel = model("Tag", List.of(fieldWithNameTypeAndId("id", "Long", true)));
+        final ModelDefinition groupModel = model("Group", List.of(fieldWithNameTypeAndId("id", "UUID", true)));
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, tagsField, groupsField),
+                List.of(tagModel, groupModel)
+        );
+
+        assertEquals(List.of("Set<Long> tagsIds", "Set<UUID> groupsIds"), result);
+    }
+
+    @Test
     @DisplayName("uses '<resolvedType>TO <name>' for JSON fields (non-collection, entities variant)")
     void generateInputArgsWithoutFinalCreateInputTO_shouldUseTOType_forJsonFields() {
 
@@ -2598,6 +2744,29 @@ class FieldUtilsTest {
         );
 
         assertEquals(List.of("List<TagInputTO> tags", "List<CommentInputTO> comments"), result);
+    }
+
+    @Test
+    @DisplayName("generates 'Set<<Relation>InputTO> <name>' for unique OneToMany/ManyToMany relations (no-entities variant)")
+    void generateInputArgsWithoutFinalCreateInputTO_shouldGenerateSetOfInputTO_forUniqueToManyRelations() {
+
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", RelationTypeEnum.MANY_TO_MANY.getKey(), "ALL", "EAGER"
+        );
+        tagsField.getRelation().setUniqueItems(true);
+
+        final FieldDefinition commentsField = fieldWithNameTypeAndRelation(
+                "comments", "Comment", RelationTypeEnum.ONE_TO_MANY.getKey(), "ALL", "LAZY"
+        );
+        commentsField.getRelation().setUniqueItems(true);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinalCreateInputTO(
+                List.of(idField, tagsField, commentsField)
+        );
+
+        assertEquals(List.of("Set<TagInputTO> tags", "Set<CommentInputTO> comments"), result);
     }
 
     @Test
@@ -3055,6 +3224,29 @@ class FieldUtilsTest {
         assertEquals(2, result.size());
         assertEquals("List<TagTO> tags", result.get(0));
         assertEquals("List<GroupTO> groups", result.get(1));
+    }
+
+    @Test
+    @DisplayName("generateInputArgsWithoutFinal uses 'Set<typeTO> name' for unique OneToMany and ManyToMany relations")
+    void generateInputArgsWithoutFinal_shouldUseSetType_forUniqueToManyRelations() {
+
+        final FieldDefinition tagsField = fieldWithNameTypeAndRelation(
+                "tags", "Tag", "OneToMany", "ALL", "EAGER"
+        );
+        tagsField.getRelation().setUniqueItems(true);
+
+        final FieldDefinition groupsField = fieldWithNameTypeAndRelation(
+                "groups", "Group", "ManyToMany", "ALL", "EAGER"
+        );
+        groupsField.getRelation().setUniqueItems(true);
+
+        final List<FieldDefinition> fields = List.of(tagsField, groupsField);
+
+        final List<String> result = FieldUtils.generateInputArgsWithoutFinal(fields);
+
+        assertEquals(2, result.size());
+        assertEquals("Set<TagTO> tags", result.get(0));
+        assertEquals("Set<GroupTO> groups", result.get(1));
     }
 
     @Test

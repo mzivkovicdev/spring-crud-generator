@@ -47,6 +47,8 @@ public class FieldUtils {
     private static final String LOCAL_DATE = "LocalDate";
     private static final String LOCAL_DATE_TIME = "LocalDateTime";
     private static final String ENUM = "Enum";
+    private static final String LIST = "List";
+    private static final String SET = "Set";
 
     private static final Pattern jsonPattern = Pattern.compile("^JSONB?<(.+)>$");
     private static final Pattern collectionPattern = Pattern.compile("^(List|Set)<\\s*(.+?)\\s*>$");
@@ -148,6 +150,89 @@ public class FieldUtils {
                 .map(FieldDefinition::getRelation)
                 .map(RelationDefinition::getType)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Determines whether the given field is a collection relation (OneToMany or ManyToMany).
+     *
+     * @param field the field to inspect
+     * @return true if the field is a collection relation, false otherwise
+     */
+    public static boolean isCollectionRelation(final FieldDefinition field) {
+
+        if (Objects.isNull(field) || Objects.isNull(field.getRelation())) {
+            return false;
+        }
+
+        return RelationTypeEnum.ONE_TO_MANY.getKey().equalsIgnoreCase(field.getRelation().getType()) ||
+                RelationTypeEnum.MANY_TO_MANY.getKey().equalsIgnoreCase(field.getRelation().getType());
+    }
+
+    /**
+     * Determines whether the given field is a collection relation with unique items enabled.
+     *
+     * @param field the field to inspect
+     * @return true if the relation is a collection relation with uniqueItems=true
+     */
+    public static boolean isUniqueCollectionRelation(final FieldDefinition field) {
+
+        return isCollectionRelation(field) &&
+                Boolean.TRUE.equals(field.getRelation().getUniqueItems());
+    }
+
+    /**
+     * Determines whether the given field is a collection relation that should use a List.
+     *
+     * @param field the field to inspect
+     * @return true if the relation is a collection relation with uniqueItems unset/false
+     */
+    public static boolean isListCollectionRelation(final FieldDefinition field) {
+
+        return isCollectionRelation(field) && !isUniqueCollectionRelation(field);
+    }
+
+    /**
+     * Determines whether any relation collection in the given fields should use a Set.
+     *
+     * @param fields the fields to inspect
+     * @return true if any collection relation has uniqueItems=true
+     */
+    public static boolean isAnyRelationCollectionSet(final List<FieldDefinition> fields) {
+
+        return fields.stream().anyMatch(FieldUtils::isUniqueCollectionRelation);
+    }
+
+    /**
+     * Determines whether any relation collection in the given fields should use a List.
+     *
+     * @param fields the fields to inspect
+     * @return true if any collection relation has uniqueItems unset/false
+     */
+    public static boolean isAnyRelationCollectionList(final List<FieldDefinition> fields) {
+
+        return fields.stream().anyMatch(FieldUtils::isListCollectionRelation);
+    }
+
+    /**
+     * Resolves the collection interface type for a relation field.
+     *
+     * @param field the relation field
+     * @return "Set" for unique collection relations, otherwise "List"
+     */
+    public static String resolveRelationCollectionType(final FieldDefinition field) {
+
+        return isUniqueCollectionRelation(field) ? SET : LIST;
+    }
+
+    /**
+     * Resolves the collection implementation type for a relation field.
+     *
+     * @param field the relation field
+     * @return "HashSet" for unique collection relations, otherwise "ArrayList"
+     */
+    public static String resolveRelationCollectionImpl(final FieldDefinition field) {
+
+        return isUniqueCollectionRelation(field) ? "HashSet" : "ArrayList";
     }
 
     /**
@@ -548,11 +633,7 @@ public class FieldUtils {
                 .filter(field -> includeRelations || Objects.isNull(field.getRelation()))
                 .map(field -> {
                     if (includeRelations && Objects.nonNull(field.getRelation())) {
-                        final boolean toMany =
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey());
-
-                        return toMany
+                        return isCollectionRelation(field)
                                 ? String.format("input.%sIds()", field.getName())
                                 : String.format("input.%sId()", field.getName());
                     }
@@ -668,8 +749,7 @@ public class FieldUtils {
         return fields.stream()
                 .map(field -> {
                     if (field.getRelation() != null) {
-                        if (field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                                field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.MANY_TO_MANY.getKey())) {
+                        if (isCollectionRelation(field)) {
                             return null;
                         }
                     }
@@ -693,9 +773,7 @@ public class FieldUtils {
         
         return modelDefinition.getFields().stream()
                 .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                        field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.MANY_TO_MANY.getKey())
-                )
+                .filter(FieldUtils::isCollectionRelation)
                 .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
     }
@@ -713,9 +791,7 @@ public class FieldUtils {
         return entities.stream()
                 .flatMap(entity -> entity.getFields().stream())
                 .filter(field -> Objects.nonNull(field.getRelation()))
-                .filter(field -> field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                        field.getRelation().getType().equalsIgnoreCase(RelationTypeEnum.MANY_TO_MANY.getKey())
-                )
+                .filter(FieldUtils::isCollectionRelation)
                 .anyMatch(field -> field.getType().equals(modelDefinition.getName()));
     }
 
@@ -801,9 +877,9 @@ public class FieldUtils {
                         final String modelName = StringUtils.uncapitalize(
                                 ModelNameUtils.stripSuffix(modelDefinition.getName())
                         );
-                        if (field.getRelation().getType().equals(RelationTypeEnum.MANY_TO_MANY.getKey()) ||
-                                field.getRelation().getType().equals(RelationTypeEnum.ONE_TO_MANY.getKey())) {
-                            return String.format("final List<%s> %s", relationId.getType(), String.format("%sIds", modelName));
+                        if (isCollectionRelation(field)) {
+                            return String.format("final %s<%s> %s", resolveRelationCollectionType(field), relationId.getType(),
+                                    String.format("%sIds", modelName));
                         } else {
                             return String.format("final %s %s", relationId.getType(), String.format("%sId", modelName));
                         }
@@ -867,11 +943,8 @@ public class FieldUtils {
         return fields.stream()
                 .filter(field -> !field.getName().equals(id.getName()))
                 .map(field -> {
-                    if (Objects.nonNull(field.getRelation()) &&
-                        (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) || 
-                        Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())
-                    )) {
-                        return String.format("final List<%s> %s", field.getResolvedType(), field.getName());
+                    if (isCollectionRelation(field)) {
+                        return String.format("final %s<%s> %s", resolveRelationCollectionType(field), field.getResolvedType(), field.getName());
                     }
                     return String.format("final %s %s", field.getResolvedType(), field.getName());
                 })
@@ -959,13 +1032,9 @@ public class FieldUtils {
                     if (Objects.nonNull(field.getRelation())) {
                         final String baseType = relationBaseTypeResolver.apply(field);
 
-                        final boolean toMany =
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey());
-
-                        if (toMany) {
+                        if (isCollectionRelation(field)) {
                             final String name = relationUsesIdSuffix ? field.getName() + "Ids" : field.getName();
-                            return String.format("List<%s> %s", baseType, name);
+                            return String.format("%s<%s> %s", resolveRelationCollectionType(field), baseType, name);
                         } else {
                             final String name = relationUsesIdSuffix ? field.getName() + "Id" : field.getName();
                             return String.format("%s %s", baseType, name);
@@ -1071,10 +1140,10 @@ public class FieldUtils {
 
                     if (Objects.nonNull(field.getRelation())) {
                         final String inputArg;
-                        if (Objects.equals(field.getRelation().getType(), RelationTypeEnum.ONE_TO_MANY.getKey()) ||
-                                Objects.equals(field.getRelation().getType(), RelationTypeEnum.MANY_TO_MANY.getKey())) {
+                        if (isCollectionRelation(field)) {
                             inputArg = String.format(
-                                "%sList<%sTO> %s", annotations, ModelNameUtils.stripSuffix(field.getType()), field.getName()
+                                "%s%s<%sTO> %s", annotations, resolveRelationCollectionType(field),
+                                ModelNameUtils.stripSuffix(field.getType()), field.getName()
                             );
                         } else {
                             inputArg = String.format("%s%sTO %s", annotations, ModelNameUtils.stripSuffix(field.getType()), field.getName());
