@@ -25,6 +25,7 @@ public class RelationDefinition {
     private String fetch;
     private String cascade;
     private Boolean orphanRemoval;
+    private Boolean uniqueItems;
     private JoinTableDefinition joinTable;
     
     public RelationDefinition() {
@@ -33,10 +34,17 @@ public class RelationDefinition {
 
     public RelationDefinition(final String type, final String joinColumn,
             final String fetch, final String cascade, final JoinTableDefinition joinTable) {
+        this(type, joinColumn, fetch, cascade, null, joinTable);
+    }
+
+    public RelationDefinition(final String type, final String joinColumn,
+            final String fetch, final String cascade, final Boolean uniqueItems,
+            final JoinTableDefinition joinTable) {
         this.type = type;
         this.joinColumn = joinColumn;
         this.fetch = fetch;
         this.cascade = cascade;
+        this.uniqueItems = uniqueItems;
         this.joinTable = joinTable;
     }
 
@@ -89,6 +97,19 @@ public class RelationDefinition {
         return this;
     }
 
+    public Boolean getUniqueItems() {
+        return this.uniqueItems;
+    }
+
+    public Boolean isUniqueItems() {
+        return this.uniqueItems;
+    }
+
+    public RelationDefinition setUniqueItems(final Boolean uniqueItems) {
+        this.uniqueItems = uniqueItems;
+        return this;
+    }
+
     public JoinTableDefinition getJoinTable() {
         return this.joinTable;
     }
@@ -111,12 +132,13 @@ public class RelationDefinition {
                 Objects.equals(fetch, relationDefinition.fetch) &&
                 Objects.equals(cascade, relationDefinition.cascade) &&
                 Objects.equals(orphanRemoval, relationDefinition.orphanRemoval) &&
+                Objects.equals(uniqueItems, relationDefinition.uniqueItems) &&
                 Objects.equals(joinTable, relationDefinition.joinTable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, joinColumn, fetch, cascade, orphanRemoval, joinTable);
+        return Objects.hash(type, joinColumn, fetch, cascade, orphanRemoval, uniqueItems, joinTable);
     }
 
     @Override
@@ -127,6 +149,7 @@ public class RelationDefinition {
             ", fetch='" + getFetch() + "'" +
             ", cascade='" + getCascade() + "'" +
             ", orphanRemoval='" + isOrphanRemoval() + "'" +
+            ", uniqueItems='" + isUniqueItems() + "'" +
             ", joinTable='" + getJoinTable() + "'" +
             "}";
     }
