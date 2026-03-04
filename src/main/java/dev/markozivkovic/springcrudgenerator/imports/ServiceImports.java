@@ -69,10 +69,11 @@ public class ServiceImports {
 
         ImportCommon.importListAndSetForSimpleCollection(modelDefinition, imports);
         
-        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                FieldUtils.isAnyRelationManyToMany(fields);
+        final boolean hasRelationLists = FieldUtils.isAnyRelationCollectionList(fields);
+        final boolean hasRelationSets = FieldUtils.isAnyRelationCollectionSet(fields);
 
-        ImportCommon.addIf(hasLists || importList, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationLists || importList, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))

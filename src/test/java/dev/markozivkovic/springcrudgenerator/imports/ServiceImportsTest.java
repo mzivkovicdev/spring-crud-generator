@@ -48,8 +48,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet())).thenAnswer(inv -> null);
             importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
                             eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
@@ -85,8 +85,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
                             eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
                     .thenAnswer(inv -> null);
@@ -115,6 +115,46 @@ class ServiceImportsTest {
     }
 
     @Test
+    @DisplayName("getBaseImport: should import Set when unique relation collections are present")
+    void getBaseImport_uniqueRelationCollections_importsSet() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        Mockito.when(model.getFields()).thenReturn(List.of(new FieldDefinition()));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(true);
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                            eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.importListAndSetForSimpleCollection(eq(model), anySet()))
+                    .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                    .thenAnswer(inv -> {
+                        final boolean cond = inv.getArgument(0);
+                        @SuppressWarnings("unchecked")
+                        final Set<String> set = (Set<String>) inv.getArgument(1);
+                        final String value = inv.getArgument(2);
+                        if (cond) set.add(value);
+                        return null;
+                    });
+
+            final String result = ServiceImports.getBaseImport(model, false);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import");
+            assertFalse(result.contains("import " + ImportConstants.Java.LIST + ";"),
+                    "List import should not be present for unique-only relation collections");
+        }
+    }
+
+    @Test
     @DisplayName("getBaseImport: should import only List when importList=true and no relations")
     void getBaseImport_importListFlagForcesListImport() {
 
@@ -129,8 +169,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
                             eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
                     .thenAnswer(inv -> null);
@@ -169,8 +209,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
                     .thenAnswer(inv -> {
                         final boolean cond = inv.getArgument(0);
@@ -216,8 +256,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
 
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
                     .thenAnswer(inv -> {
@@ -263,8 +303,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
                     .thenAnswer(inv -> {
                         final boolean cond = inv.getArgument(0);
@@ -308,8 +348,8 @@ class ServiceImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
                     .thenAnswer(inv -> {
                         final boolean cond = inv.getArgument(0);
