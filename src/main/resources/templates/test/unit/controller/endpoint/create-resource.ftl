@@ -19,8 +19,12 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-<#if hasCollectionRelations>
+<#if hasListCollectionRelations>
 import java.util.List;
+
+</#if><#t>
+<#if hasSetCollectionRelations>
+import java.util.Set;
 
 </#if><#t>
 ${testImports}
@@ -94,11 +98,11 @@ class ${className} {
         <#list inputFields?filter(f -> f.isRelation) as rel>
         <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "InputTO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
         <#if rel.isCollection>
-        final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
+        final ${rel.collectionType}<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()
                     <#if !swagger>.map(${relationTransferObject}::${rel.relationIdField})<#else>.map(${relationTransferObject}::get${rel.relationIdField?cap_first})</#if>
-                    .toList() : 
-                List.of();
+                    .collect(java.util.stream.Collectors.${rel.collectMethod}()) : 
+                ${rel.emptyCollection};
         <#else>
         final ${rel.relationIdType} ${rel.field}Id = <#if !swagger>body.${rel.field}() != null ? body.${rel.field}().id() : null;<#else>body.get${rel.field?cap_first}() != null ? body.get${rel.field?cap_first}().getId() : null;</#if>
         </#if>

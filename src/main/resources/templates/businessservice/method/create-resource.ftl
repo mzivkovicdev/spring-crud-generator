@@ -12,7 +12,7 @@
         <#assign relationClassName = rel.relationClassName>
         <#assign relationField = rel.strippedRelationClassName?uncap_first>
         <#if rel.isCollection?? && rel.isCollection>
-        final List<${relationClassName}> ${rel.relationClassName?uncap_first}s = this.${relationServiceClass}.getAllByIds(${relationField}Ids);
+        final ${rel.collectionType}<${relationClassName}> ${rel.relationClassName?uncap_first}s = <#if rel.collectionType == "Set">new ${rel.collectionImpl}<>(this.${relationServiceClass}.getAllByIds(${relationField}Ids.stream().toList()))<#else>this.${relationServiceClass}.getAllByIds(${relationField}Ids)</#if>;
         <#else>
         final ${relationClassName} ${rel.relationClassName?uncap_first} = ${relationField}Id != null ?
                 this.${relationServiceClass}.getById(${relationField}Id) :

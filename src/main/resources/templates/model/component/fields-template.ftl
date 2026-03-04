@@ -34,7 +34,7 @@
     </#if>
     <#if field.relation??><#include "relation-field.ftl"></#if><#t>
     <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")><#t>
-    private List<${field.resolvedType}> ${field.name};
+    private ${relationCollectionType(field.relation)}<${field.resolvedType}> ${field.name};
     <#else>
     <#assign isJsonField = field.type?matches("^JSONB?<.+>$")>
     <#if isJsonField>

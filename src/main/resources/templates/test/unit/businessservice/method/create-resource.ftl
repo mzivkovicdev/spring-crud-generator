@@ -11,10 +11,13 @@
         <#list relations as rel>
         <#assign relationField = rel.strippedRelationClassName?uncap_first>
         <#if rel.isCollection?? && rel.isCollection>
-        final List<${rel.relationClassName}> ${rel.relationClassName?uncap_first}s = ${modelName?uncap_first}.get${rel.elementParam?cap_first}();
-        final List<${rel.relationIdType}> ${relationField}Ids = ${rel.relationClassName?uncap_first}s.stream()
+        final ${rel.collectionType}<${rel.relationClassName}> ${rel.relationClassName?uncap_first}s = ${modelName?uncap_first}.get${rel.elementParam?cap_first}();
+        final ${rel.collectionType}<${rel.relationIdType}> ${relationField}Ids = ${rel.relationClassName?uncap_first}s.stream()
                 .map(${rel.relationClassName}::get${rel.relationIdField?cap_first})
-                .toList();
+                .collect(java.util.stream.Collectors.${rel.collectMethod}());
+        <#if rel.collectionType == "Set">
+        final java.util.List<${rel.relationClassName}> ${rel.relationClassName?uncap_first}List = ${rel.relationClassName?uncap_first}s.stream().toList();
+        </#if>
         <#else>
         final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${modelName?uncap_first}.get${rel.elementParam?cap_first}();
         final ${rel.relationIdType} ${relationField}Id = ${rel.relationClassName?uncap_first}.get${rel.relationIdField?cap_first}();
@@ -29,7 +32,7 @@
         <#assign relationClassName = rel.relationClassName>
         <#assign relationField = rel.strippedRelationClassName?uncap_first>
         <#if rel.isCollection?? && rel.isCollection>
-        when(this.${relationServiceClass}.getAllByIds(${relationField}Ids)).thenReturn(${rel.relationClassName?uncap_first}s);
+        when(this.${relationServiceClass}.getAllByIds(<#if rel.collectionType == "Set">${relationField}Ids.stream().toList()<#else>${relationField}Ids</#if>)).thenReturn(<#if rel.collectionType == "Set">${rel.relationClassName?uncap_first}List<#else>${rel.relationClassName?uncap_first}s</#if>);
         <#else>
         when(this.${relationServiceClass}.getById(${relationField}Id)).thenReturn(${rel.relationClassName?uncap_first});
         </#if>
@@ -43,7 +46,7 @@
         <#assign relationClassName = rel.relationClassName>
         <#assign relationField = rel.strippedRelationClassName?uncap_first>
         <#if rel.isCollection?? && rel.isCollection>
-        verify(this.${relationServiceClass}).getAllByIds(${relationField}Ids);
+        verify(this.${relationServiceClass}).getAllByIds(<#if rel.collectionType == "Set">${relationField}Ids.stream().toList()<#else>${relationField}Ids</#if>);
         <#else>
         verify(this.${relationServiceClass}).getById(${relationField}Id);
         </#if>

@@ -28,6 +28,13 @@
   <#return false>
 </#function>
 
+<#function relationCollectionType relation>
+  <#if relation?? && relation.uniqueItems?? && relation.uniqueItems>
+    <#return "Set">
+  </#if>
+  <#return "List">
+</#function>
+
 <#function toSnakeCase s>
   <#if !s??>
     <#return "">

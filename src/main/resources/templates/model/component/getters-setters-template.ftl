@@ -1,10 +1,11 @@
+<#include "_common.ftl">
 <#list fields as field>
     <#if field.relation?? && (field.relation.type == "OneToMany" || field.relation.type == "ManyToMany")>
-    public List<${field.resolvedType}> get${field.name?cap_first}() {
+    public ${relationCollectionType(field.relation)}<${field.resolvedType}> get${field.name?cap_first}() {
         return this.${field.name};
     }
 
-    public ${className} set${field.name?cap_first}(final List<${field.resolvedType}> ${field.name}) {
+    public ${className} set${field.name?cap_first}(final ${relationCollectionType(field.relation)}<${field.resolvedType}> ${field.name}) {
         this.${field.name} = ${field.name};
         return this;
     }
