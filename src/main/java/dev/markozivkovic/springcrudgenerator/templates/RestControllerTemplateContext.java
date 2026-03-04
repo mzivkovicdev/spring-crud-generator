@@ -89,6 +89,7 @@ public class RestControllerTemplateContext {
 
                 final boolean isRelation = Objects.nonNull(field.getRelation());
                 final boolean isCollection = isRelation && (manyToManyFields.contains(field) || oneToManyFields.contains(field));
+                final boolean isUniqueRelationCollection = isCollection && FieldUtils.isUniqueCollectionRelation(field);
                 final boolean isJsonField = FieldUtils.isJsonField(field);
                 final String type;
                 
@@ -106,6 +107,9 @@ public class RestControllerTemplateContext {
                     TemplateContextConstants.FIELD_TYPE, type,
                     TemplateContextConstants.STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(field.getType()),
                     TemplateContextConstants.IS_COLLECTION, isCollection,
+                    TemplateContextConstants.COLLECTION_TYPE, isUniqueRelationCollection ? "Set" : "List",
+                    TemplateContextConstants.COLLECT_METHOD, isUniqueRelationCollection ? "toSet" : "toList",
+                    TemplateContextConstants.EMPTY_COLLECTION, isUniqueRelationCollection ? "Set.of()" : "List.of()",
                     TemplateContextConstants.IS_RELATION, isRelation,
                     TemplateContextConstants.IS_JSON_FIELD, isJsonField,
                     TemplateContextConstants.IS_ENUM, FieldUtils.isFieldEnum(field)
