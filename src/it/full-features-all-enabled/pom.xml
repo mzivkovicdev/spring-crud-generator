@@ -17,7 +17,7 @@
     <name>spring-crud-generator-it-full-features-app</name>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <swagger-annotations.version>2.2.21</swagger-annotations.version>
         <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
