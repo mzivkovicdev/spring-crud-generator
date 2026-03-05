@@ -33,11 +33,6 @@ public class RelationDefinition {
     }
 
     public RelationDefinition(final String type, final String joinColumn,
-            final String fetch, final String cascade, final JoinTableDefinition joinTable) {
-        this(type, joinColumn, fetch, cascade, null, joinTable);
-    }
-
-    public RelationDefinition(final String type, final String joinColumn,
             final String fetch, final String cascade, final Boolean uniqueItems,
             final JoinTableDefinition joinTable) {
         this.type = type;
