@@ -299,6 +299,13 @@ public class SpecificationValidator {
                         field.getName(), model.getName()
                 ));
             }
+
+            if (Boolean.TRUE.equals(relation.getUniqueItems()) && !FieldUtils.isCollectionRelation(field)) {
+                errors.add(String.format(
+                        "uniqueItems is supported only for OneToMany or ManyToMany relations. Field %s in model %s has relation type %s.",
+                        field.getName(), model.getName(), relationType.getKey()
+                ));
+            }
         }
     }
 
