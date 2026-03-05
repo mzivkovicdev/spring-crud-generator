@@ -47,8 +47,6 @@ public class FieldUtils {
     private static final String LOCAL_DATE = "LocalDate";
     private static final String LOCAL_DATE_TIME = "LocalDateTime";
     private static final String ENUM = "Enum";
-    private static final String LIST = "List";
-    private static final String SET = "Set";
 
     private static final Pattern jsonPattern = Pattern.compile("^JSONB?<(.+)>$");
     private static final Pattern collectionPattern = Pattern.compile("^(List|Set)<\\s*(.+?)\\s*>$");
@@ -95,7 +93,7 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> RelationTypeEnum.ONE_TO_ONE.getKey().equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.ONE_TO_ONE.getKey().equals(relation));
     }
 
     /**
@@ -108,7 +106,7 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> RelationTypeEnum.ONE_TO_MANY.getKey().equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.ONE_TO_MANY.getKey().equals(relation));
     }
 
     /**
@@ -121,7 +119,7 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> RelationTypeEnum.MANY_TO_ONE.getKey().equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.MANY_TO_ONE.getKey().equals(relation));
     }
 
     /**
@@ -134,7 +132,7 @@ public class FieldUtils {
 
         final List<String> relations = extractRelationTypes(fields);
 
-        return relations.stream().anyMatch(relation -> RelationTypeEnum.MANY_TO_MANY.getKey().equalsIgnoreCase(relation));
+        return relations.stream().anyMatch(relation -> RelationTypeEnum.MANY_TO_MANY.getKey().equals(relation));
     }
 
     /**
@@ -164,8 +162,8 @@ public class FieldUtils {
             return false;
         }
 
-        return RelationTypeEnum.ONE_TO_MANY.getKey().equalsIgnoreCase(field.getRelation().getType()) ||
-                RelationTypeEnum.MANY_TO_MANY.getKey().equalsIgnoreCase(field.getRelation().getType());
+        return RelationTypeEnum.ONE_TO_MANY.getKey().equals(field.getRelation().getType()) ||
+                RelationTypeEnum.MANY_TO_MANY.getKey().equals(field.getRelation().getType());
     }
 
     /**
@@ -221,7 +219,7 @@ public class FieldUtils {
      */
     public static String resolveRelationCollectionType(final FieldDefinition field) {
 
-        return isUniqueCollectionRelation(field) ? SET : LIST;
+        return isUniqueCollectionRelation(field) ? SpecialTypeEnum.SET.getKey() : SpecialTypeEnum.LIST.getKey();
     }
 
     /**

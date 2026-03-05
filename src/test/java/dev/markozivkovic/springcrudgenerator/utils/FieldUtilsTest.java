@@ -244,17 +244,6 @@ class FieldUtilsTest {
     }
 
     @Test
-    @DisplayName("isAnyRelationOneToOne ignores case in relation type")
-    void isAnyRelationOneToOne_shouldIgnoreCase() {
-        
-        final List<FieldDefinition> fields = List.of(
-                fieldWithRelation("onetoone", null, null)
-        );
-
-        assertTrue(FieldUtils.isAnyRelationOneToOne(fields));
-    }
-
-    @Test
     @DisplayName("isAnyRelationOneToMany returns false when there are no relations")
     void isAnyRelationOneToMany_shouldReturnFalse_whenNoRelations() {
         final List<FieldDefinition> fields = List.of(
@@ -284,17 +273,6 @@ class FieldUtilsTest {
         final List<FieldDefinition> fields = List.of(
                 fieldWithRelation("ManyToOne", null, null),
                 fieldWithRelation("OneToMany", null, null)
-        );
-
-        assertTrue(FieldUtils.isAnyRelationOneToMany(fields));
-    }
-
-    @Test
-    @DisplayName("isAnyRelationOneToMany ignores case in relation type")
-    void isAnyRelationOneToMany_shouldIgnoreCase() {
-        
-        final List<FieldDefinition> fields = List.of(
-                fieldWithRelation("onetomany", null, null)
         );
 
         assertTrue(FieldUtils.isAnyRelationOneToMany(fields));
@@ -337,17 +315,6 @@ class FieldUtilsTest {
     }
 
     @Test
-    @DisplayName("isAnyRelationManyToOne ignores case in relation type")
-    void isAnyRelationManyToOne_shouldIgnoreCase() {
-        
-        final List<FieldDefinition> fields = List.of(
-                fieldWithRelation("manytoone", null, null)
-        );
-
-        assertTrue(FieldUtils.isAnyRelationManyToOne(fields));
-    }
-
-    @Test
     @DisplayName("isAnyRelationManyToMany returns false when there are no relations")
     void isAnyRelationManyToMany_shouldReturnFalse_whenNoRelations() {
         
@@ -378,17 +345,6 @@ class FieldUtilsTest {
         final FieldDefinition f1 = fieldWithRelation("OneToMany", null, null);
         final FieldDefinition f2 = fieldWithRelation("ManyToMany", null, null);
         final List<FieldDefinition> fields = List.of(f1, f2);
-
-        assertTrue(FieldUtils.isAnyRelationManyToMany(fields));
-    }
-
-    @Test
-    @DisplayName("isAnyRelationManyToMany ignores case in relation type")
-    void isAnyRelationManyToMany_shouldIgnoreCase() {
-        
-        final List<FieldDefinition> fields = List.of(
-                fieldWithRelation("manytomany", null, null)
-        );
 
         assertTrue(FieldUtils.isAnyRelationManyToMany(fields));
     }
