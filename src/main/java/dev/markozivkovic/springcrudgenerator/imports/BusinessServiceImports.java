@@ -29,6 +29,7 @@ import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants.GeneratorContextKeys;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
+import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon.CollectionImplImportsMode;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -78,6 +79,7 @@ public class BusinessServiceImports {
         ImportCommon.addIf(hasRelationLists || importList, imports, ImportConstants.Java.LIST);
         ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
         ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.HASH_SET);
+        ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INTERFACES_ONLY);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
@@ -119,6 +121,7 @@ public class BusinessServiceImports {
 
         ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.LIST);
         ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
+        ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INTERFACES_ONLY);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
