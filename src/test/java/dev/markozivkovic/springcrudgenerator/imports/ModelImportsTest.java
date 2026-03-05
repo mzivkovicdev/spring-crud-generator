@@ -66,8 +66,8 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             final String result = ModelImports.getBaseImport(model, false, false);
 
@@ -107,8 +107,8 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             final String result = ModelImports.getBaseImport(model, false, false);
 
@@ -159,8 +159,8 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             final String result = ModelImports.getBaseImport(model, false, false);
 
@@ -209,8 +209,8 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.INSTANT)).thenReturn("java.time.Instant");
 
             final String result = ModelImports.getBaseImport(model, true, true);
@@ -221,6 +221,46 @@ class ModelImportsTest {
             assertTrue(result.contains("import " + ImportConstants.Java.LIST), "List import missing");
             assertTrue(result.contains("import java.time.Instant;"), "Auditing import missing");
             assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport: unique relation collections import Set and skip List")
+    void getBaseImport_uniqueRelationCollections_importSet() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(Collections.emptyList());
+        model.setAudit(null);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<AuditUtils> auditUtils = Mockito.mockStatic(AuditUtils.class);
+             final MockedStatic<ImportCommon> importCommon = Mockito.mockStatic(ImportCommon.class)) {
+
+            importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
+                    any(ModelDefinition.class), anySet(), any(ImportCommon.CollectionImplImportsMode.class)))
+                .thenAnswer(inv -> null);
+            importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
+                .thenAnswer(inv -> {
+                    final boolean cond = inv.getArgument(0);
+                    final Set<String> set = inv.getArgument(1);
+                    final String value = inv.getArgument(2);
+                    if (cond) set.add(value);
+                    return null;
+                });
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldSimpleCollection(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(true);
+
+            final String result = ModelImports.getBaseImport(model, false, false);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Set import missing");
+            assertFalse(result.contains("import " + ImportConstants.Java.LIST + ";"), "List import should be absent");
         }
     }
 
@@ -255,8 +295,8 @@ class ModelImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             auditUtils.when(() -> AuditUtils.resolveAuditingImport(AuditTypeEnum.INSTANT)).thenReturn("java.time.Instant");
 
             final String result = ModelImports.getBaseImport(model, false, false);

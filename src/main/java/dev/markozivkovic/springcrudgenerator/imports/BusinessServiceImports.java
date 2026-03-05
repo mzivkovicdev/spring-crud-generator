@@ -29,6 +29,7 @@ import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants.GeneratorContextKeys;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon;
+import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon.CollectionImplImportsMode;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -72,10 +73,13 @@ public class BusinessServiceImports {
         }
         ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
         
-        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                FieldUtils.isAnyRelationManyToMany(fields);
+        final boolean hasRelationLists = FieldUtils.isAnyRelationCollectionList(fields);
+        final boolean hasRelationSets = FieldUtils.isAnyRelationCollectionSet(fields);
 
-        ImportCommon.addIf(hasLists || importList, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationLists || importList, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
+        ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.HASH_SET);
+        ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INTERFACES_ONLY);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
@@ -112,10 +116,12 @@ public class BusinessServiceImports {
         ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
         ImportCommon.importListAndSetForSimpleCollection(modelDefinition, imports);
         
-        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                FieldUtils.isAnyRelationManyToMany(fields);
+        final boolean hasRelationLists = FieldUtils.isAnyRelationCollectionList(fields);
+        final boolean hasRelationSets = FieldUtils.isAnyRelationCollectionSet(fields);
 
-        ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
+        ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INTERFACES_ONLY);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))

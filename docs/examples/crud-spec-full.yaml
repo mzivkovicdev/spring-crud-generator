@@ -87,6 +87,7 @@ entities:
       - name: users
         type: UserEntity
         relation:
+          uniqueItems: true
           type: OneToMany
           fetch: LAZY
           cascade: MERGE

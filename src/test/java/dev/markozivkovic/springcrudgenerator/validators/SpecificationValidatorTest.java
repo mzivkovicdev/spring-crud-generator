@@ -1083,6 +1083,106 @@ class SpecificationValidatorTest {
     }
 
     @Test
+    @DisplayName("Should throw when uniqueItems is enabled for many-to-one relation")
+    void validate_relationUniqueItemsManyToOne_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToOne");
+        relation.setJoinColumn("role_id");
+        relation.setUniqueItems(true);
+
+        final FieldDefinition roleField = newRelationField("role", "Role", relation);
+        user.setFields(List.of(userId, roleField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("uniqueItems is supported only for OneToMany or ManyToMany relations"));
+        assertTrue(ex.getMessage().contains("Field role in model User"));
+    }
+
+    @Test
+    @DisplayName("Should throw when uniqueItems is enabled for one-to-one relation")
+    void validate_relationUniqueItemsOneToOne_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("OneToOne");
+        relation.setJoinColumn("role_id");
+        relation.setUniqueItems(true);
+
+        final FieldDefinition roleField = newRelationField("role", "Role", relation);
+        user.setFields(List.of(userId, roleField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("uniqueItems is supported only for OneToMany or ManyToMany relations"));
+        assertTrue(ex.getMessage().contains("Field role in model User"));
+    }
+
+    @Test
+    @DisplayName("Should allow uniqueItems for one-to-many relation")
+    void validate_relationUniqueItemsOneToMany_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("OneToMany");
+        relation.setUniqueItems(true);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+        user.setFields(List.of(userId, rolesField));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow uniqueItems for many-to-many relation with join table")
+    void validate_relationUniqueItemsManyToMany_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final JoinTableDefinition joinTable = new JoinTableDefinition();
+        joinTable.setName("user_role");
+        joinTable.setJoinColumn("user_id");
+        joinTable.setInverseJoinColumn("role_id");
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+        relation.setJoinTable(joinTable);
+        relation.setUniqueItems(true);
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
+        user.setFields(List.of(userId, rolesField));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
     @DisplayName("Should allow valid many-to-one relation")
     void validate_validManyToOneRelation_ok() {
 

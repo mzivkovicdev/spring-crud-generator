@@ -261,6 +261,19 @@ Relationships are defined via the relation block. The type must be one of:
     cascade: MERGE
 ```
 
+Use `uniqueItems: true` when relation collection should be generated as `Set` (instead of `List`):
+
+```yaml
+- name: users
+  type: UserEntity
+  relation:
+    type: OneToMany
+    uniqueItems: true
+    joinColumn: product_id
+    fetch: LAZY
+    cascade: MERGE
+```
+
 ### Many-to-many
 
 ```yaml
@@ -268,6 +281,7 @@ Relationships are defined via the relation block. The type must be one of:
   type: UserEntity
   relation:
     type: ManyToMany
+    uniqueItems: true
     fetch: LAZY
     cascade: MERGE
     joinTable:
@@ -276,11 +290,17 @@ Relationships are defined via the relation block. The type must be one of:
       inverseJoinColumn: user_id
 ```
 
+`uniqueItems` can be used only with `OneToMany` and `ManyToMany`.
+- `uniqueItems: true` -> generator uses `Set`/`HashSet`
+- omitted or `false` -> generator uses `List`/`ArrayList`
+- for `OneToOne` and `ManyToOne`, validator reports an error
+
 | Property     | Type   | Description                                                                  |
 | ------------ | ------ | ---------------------------------------------------------------------------- |
 | `type`       | string | Relationship type (`OneToOne`, `OneToMany`, `ManyToOne`, `ManyToMany`)       |
 | `fetch`      | string | Fetch type (`EAGER`, `LAZY`)                                                 |
 | `cascade`    | string | Cascade type (e.g. `MERGE`, `ALL`, `PERSIST`, etc.)                          |
+| `uniqueItems`| boolean| Collection uniqueness for `OneToMany` / `ManyToMany` (`true` => `Set`, otherwise `List`) |
 | `joinColumn` | string | Join column name (for `OneToOne`, `OneToMany`, `ManyToOne` where applicable) |
 | `joinTable`  | object | Join table config (used in `ManyToMany`)                                     |
 

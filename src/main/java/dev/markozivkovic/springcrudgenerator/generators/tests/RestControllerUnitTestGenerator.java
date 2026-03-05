@@ -283,8 +283,8 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         context.put("className", className);
         context.put("strippedModelName", modelWithoutSuffix);
         context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
-        context.put("hasCollectionRelations", FieldUtils.isAnyRelationManyToMany(modelDefinition.getFields()) 
-                || FieldUtils.isAnyRelationOneToMany(modelDefinition.getFields()));
+        context.put("hasListCollectionRelations", FieldUtils.isAnyRelationCollectionList(modelDefinition.getFields()));
+        context.put("hasSetCollectionRelations", FieldUtils.isAnyRelationCollectionSet(modelDefinition.getFields()));
         context.put("swagger", swagger);
         context.put("testImports", RestControllerImports.computeUpdateEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()));
         context.put("projectImports", RestControllerImports.computeCreateEndpointTestProjectImports( 

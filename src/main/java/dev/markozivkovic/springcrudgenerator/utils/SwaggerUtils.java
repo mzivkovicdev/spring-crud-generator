@@ -187,7 +187,7 @@ public class SwaggerUtils {
                     break;
                 case ONE_TO_MANY:
                 case MANY_TO_MANY:
-                    schema = arrayOfRef(type, swaggerSchemaMode);
+                    schema = arrayOfRef(type, swaggerSchemaMode, Boolean.TRUE.equals(rel.getUniqueItems()));
                     break;
                 default:
                     schema = ref(type, swaggerSchemaMode);
@@ -400,6 +400,24 @@ public class SwaggerUtils {
         final Map<String, Object> m = new LinkedHashMap<>();
         m.put("type", "array");
         m.put("items", ref(targetSchemaName, swaggerSchemaMode));
+        return m;
+    }
+
+    /**
+     * Return a Swagger array type definition which references the given targetSchemaName and schema mode.
+     * The array type definition will also specify whether the array elements should be unique.
+     *
+     * @param targetSchemaName the name of the target schema
+     * @param swaggerSchemaMode the Swagger schema mode
+     * @param isUnique whether the array elements should be unique
+     * @return a Swagger array type definition
+     */
+    private static Map<String, Object> arrayOfRef(final String targetSchemaName, final SwaggerSchemaModeEnum swaggerSchemaMode,
+                final boolean isUnique) {
+        final Map<String, Object> m = arrayOfRef(targetSchemaName, swaggerSchemaMode);
+        if (isUnique) {
+            m.put("uniqueItems", true);
+        }
         return m;
     }
 

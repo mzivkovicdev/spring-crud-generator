@@ -37,10 +37,10 @@ class RestControllerImportsTest {
         final List<ModelDefinition> entities = Collections.emptyList();
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(false);
             FieldDefinition idField = new FieldDefinition();
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
                     .thenReturn(idField);
@@ -66,10 +66,10 @@ class RestControllerImportsTest {
         final FieldDefinition idField = new FieldDefinition();
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
                     .thenReturn(idField);
             fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
@@ -96,13 +96,11 @@ class RestControllerImportsTest {
         List<ModelDefinition> entities = Collections.emptyList();
 
         final FieldDefinition idField = new FieldDefinition();
-        final FieldDefinition m2mField = new FieldDefinition();
-
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(List.of(m2mField));
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
                     .thenReturn(idField);
@@ -118,6 +116,38 @@ class RestControllerImportsTest {
                     "List import should be present when there is a collection relation");
             assertTrue(result.contains("import " + ImportConstants.Java.COLLECTORS + ";"),
                     "Collectors import should be present when there is a collection relation");
+        }
+    }
+
+    @Test
+    @DisplayName("Unique collection relations → Set and Collectors imports are added")
+    void computeControllerBaseImports_uniqueCollectionRelations_addSetAndCollectors() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(List.of(new FieldDefinition()));
+        final List<ModelDefinition> entities = Collections.emptyList();
+        final FieldDefinition idField = new FieldDefinition();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                    .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+
+            final String result = RestControllerImports.computeControllerBaseImports(model, entities);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"),
+                    "Set import should be present when unique collection relation exists");
+            assertTrue(result.contains("import " + ImportConstants.Java.COLLECTORS + ";"),
+                    "Collectors import should be present when unique collection relation exists");
+            assertFalse(result.contains("import " + ImportConstants.Java.LIST + ";"),
+                    "List import should not be present when only unique collection relations exist");
         }
     }
 
@@ -141,10 +171,10 @@ class RestControllerImportsTest {
         final FieldDefinition idField = new FieldDefinition();
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
                     .thenReturn(idField);
@@ -180,10 +210,10 @@ class RestControllerImportsTest {
         final FieldDefinition idField = new FieldDefinition();
 
         try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);) {
-            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(model.getFields()))
-                    .thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(false);
 
             fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
                     .thenReturn(idField);

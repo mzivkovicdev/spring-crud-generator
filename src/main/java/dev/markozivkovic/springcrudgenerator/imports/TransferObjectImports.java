@@ -63,10 +63,11 @@ public class TransferObjectImports {
         
         ImportCommon.importListAndSetForSimpleCollection(modelDefinition, imports);
         
-        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                FieldUtils.isAnyRelationManyToMany(fields);
+        final boolean hasRelationLists = FieldUtils.isAnyRelationCollectionList(fields);
+        final boolean hasRelationSets = FieldUtils.isAnyRelationCollectionSet(fields);
 
-        ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
@@ -127,9 +128,10 @@ public class TransferObjectImports {
         }
         
         if (TransferObjectType.BASE.equals(type) || TransferObjectType.CREATE.equals(type)) {
-            final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                    FieldUtils.isAnyRelationManyToMany(fields);
-            ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
+            final boolean hasRelationLists = FieldUtils.isAnyRelationCollectionList(fields);
+            final boolean hasRelationSets = FieldUtils.isAnyRelationCollectionSet(fields);
+            ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.LIST);
+            ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
         }
 
         final String sortedImports = imports.stream()

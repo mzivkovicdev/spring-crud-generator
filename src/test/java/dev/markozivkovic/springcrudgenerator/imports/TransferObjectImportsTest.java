@@ -49,8 +49,8 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.getBaseImport(model);
 
@@ -71,14 +71,38 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.getBaseImport(model);
 
             assertTrue(result.contains("import " + ImportConstants.Java.BIG_DECIMAL), "Expected BigDecimal import");
             assertTrue(result.contains("import " + ImportConstants.Java.UUID), "Expected UUID import");
             assertTrue(result.contains("import " + ImportConstants.Java.LIST), "Expected List import");
+            assertTrue(result.endsWith("\n"));
+        }
+    }
+
+    @Test
+    @DisplayName("getBaseImport(model): unique relation collections → Set import")
+    void getBaseImport_simple_withUniqueRelationCollections() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(List.of(new FieldDefinition()));
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(true);
+
+            final String result = TransferObjectImports.getBaseImport(model);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.SET), "Expected Set import");
+            assertFalse(result.contains("import " + ImportConstants.Java.LIST), "List import should not be present");
             assertTrue(result.endsWith("\n"));
         }
     }
@@ -98,8 +122,8 @@ class TransferObjectImportsTest {
                 fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
                 fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
                 fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
                 importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
                         .thenAnswer(inv -> {
@@ -140,8 +164,8 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
                     eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
                 .thenAnswer(inv -> null);
@@ -196,8 +220,8 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields())).thenReturn(userIdField);
             fieldUtils.when(() -> FieldUtils.isIdFieldUUID(userIdField)).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
                     eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
                 .thenAnswer(inv -> null);
@@ -245,8 +269,8 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
                     eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
@@ -294,8 +318,8 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractIdField(userEntity.getFields())).thenReturn(userIdField);
             fieldUtils.when(() -> FieldUtils.isIdFieldUUID(userIdField)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
             importCommon.when(() -> ImportCommon.importListAndSetForJsonFields(
                     eq(model), anySet(), eq(ImportCommon.CollectionImplImportsMode.INTERFACES_ONLY)))
                 .thenAnswer(inv -> null);
@@ -339,8 +363,8 @@ class TransferObjectImportsTest {
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
             importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
                 .thenAnswer(inv -> {
@@ -394,8 +418,8 @@ class TransferObjectImportsTest {
                 fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
                 fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
 
-                fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(anyList())).thenReturn(false);
-                fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+                fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
 
                 importCommon.when(() -> ImportCommon.addIf(anyBoolean(), anySet(), anyString()))
                         .thenAnswer(inv -> {

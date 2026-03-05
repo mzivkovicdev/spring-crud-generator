@@ -332,6 +332,24 @@ class SwaggerUtilsTest {
     }
 
     @Test
+    @DisplayName("toSwaggerProperty: relation ONE_TO_MANY with uniqueItems=true should set uniqueItems=true")
+    void toSwaggerProperty_oneToManyRelation_withUniqueItems_setsUniqueItemsTrue() {
+        final RelationDefinition rel = new RelationDefinition();
+        rel.setType("OneToMany");
+        rel.setUniqueItems(true);
+
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("users");
+        field.setType("UserDto");
+        field.setRelation(rel);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field);
+
+        assertEquals("array", property.get("type"));
+        assertEquals(true, property.get("uniqueItems"));
+    }
+
+    @Test
     @DisplayName("toSwaggerProperty: relation MANY_TO_MANY should use array of $ref schema")
     void toSwaggerProperty_manyToManyRelation_usesArrayOfRef() {
         final RelationDefinition rel = new RelationDefinition();
@@ -347,6 +365,24 @@ class SwaggerUtilsTest {
         assertEquals("array", property.get("type"));
         final Map<String, Object> itemsMap = asMap(property.get("items"));
         assertTrue(itemsMap.containsKey("$ref"));
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty: relation MANY_TO_MANY without uniqueItems=true should not include uniqueItems key")
+    void toSwaggerProperty_manyToManyRelation_withoutUniqueItems_doesNotIncludeUniqueItems() {
+        final RelationDefinition rel = new RelationDefinition();
+        rel.setType("ManyToMany");
+        rel.setUniqueItems(false);
+
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("users");
+        field.setType("UserDto");
+        field.setRelation(rel);
+
+        final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field);
+
+        assertEquals("array", property.get("type"));
+        assertFalse(property.containsKey("uniqueItems"));
     }
 
     @Test
@@ -453,6 +489,27 @@ class SwaggerUtilsTest {
 
             assertEquals("users", property.get("name"));
             assertEquals("array", property.get("type"));
+            final Map<String, Object> itemsMap = asMap(property.get("items"));
+            assertEquals("./userInput.yaml", itemsMap.get("$ref"));
+        }
+    }
+
+    @Test
+    @DisplayName("toSwaggerProperty(INPUT): ONE_TO_MANY unique relation should include uniqueItems=true")
+    void toSwaggerProperty_inputMode_oneToMany_uniqueRelation_setsUniqueItemsTrue() {
+        final FieldDefinition field = new FieldDefinition();
+        field.setName("users");
+        field.setType("UserDto");
+        field.setRelation(new RelationDefinition().setType("OneToMany").setUniqueItems(true));
+
+        try (MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserDto")).thenReturn("User");
+
+            final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field, SwaggerSchemaModeEnum.INPUT);
+
+            assertEquals("users", property.get("name"));
+            assertEquals("array", property.get("type"));
+            assertEquals(true, property.get("uniqueItems"));
             final Map<String, Object> itemsMap = asMap(property.get("items"));
             assertEquals("./userInput.yaml", itemsMap.get("$ref"));
         }

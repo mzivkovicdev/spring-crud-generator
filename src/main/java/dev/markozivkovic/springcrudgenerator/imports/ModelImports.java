@@ -89,10 +89,11 @@ public class ModelImports {
         }
         ImportCommon.addIf(FieldUtils.isAnyFieldUUID(fields), imports, ImportConstants.Java.UUID);
         
-        final boolean hasLists = FieldUtils.isAnyRelationOneToMany(fields) ||
-                FieldUtils.isAnyRelationManyToMany(fields);
+        final boolean hasRelationLists = FieldUtils.isAnyRelationCollectionList(fields);
+        final boolean hasRelationSets = FieldUtils.isAnyRelationCollectionSet(fields);
 
-        ImportCommon.addIf(hasLists, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))

@@ -53,8 +53,6 @@ public class RestControllerImports {
 
         final Set<String> imports = new LinkedHashSet<>();
 
-        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
-        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
         final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
         final List<FieldDefinition> relations = FieldUtils.extractRelationFields(modelDefinition.getFields());
 
@@ -62,8 +60,14 @@ public class RestControllerImports {
             imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
         }
 
-        if (!manyToManyFields.isEmpty() || !oneToManyFields.isEmpty()) {
-            imports.add(String.format(IMPORT, ImportConstants.Java.LIST));
+        final boolean hasRelationCollections = FieldUtils.isAnyRelationCollectionList(modelDefinition.getFields()) ||
+                FieldUtils.isAnyRelationCollectionSet(modelDefinition.getFields());
+        final boolean hasRelationListCollections = FieldUtils.isAnyRelationCollectionList(modelDefinition.getFields());
+        final boolean hasRelationSetCollections = FieldUtils.isAnyRelationCollectionSet(modelDefinition.getFields());
+
+        if (hasRelationCollections) {
+            ImportCommon.addIf(hasRelationListCollections, imports, String.format(IMPORT, ImportConstants.Java.LIST));
+            ImportCommon.addIf(hasRelationSetCollections, imports, String.format(IMPORT, ImportConstants.Java.SET));
             imports.add(String.format(IMPORT, ImportConstants.Java.COLLECTORS));
         }
 

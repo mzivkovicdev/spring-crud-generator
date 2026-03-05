@@ -305,6 +305,10 @@ public class ServiceTemplateContext {
         relation.put(TemplateContextConstants.ELEMENT_PARAM, field.getName());
         relation.put(TemplateContextConstants.RELATION_FIELD, strippedFieldName);
         relation.put(TemplateContextConstants.IS_COLLECTION, manyToManyFields.contains(field) || oneToManyFields.contains(field));
+        relation.put(TemplateContextConstants.COLLECTION_TYPE, FieldUtils.resolveRelationCollectionType(field));
+        relation.put(TemplateContextConstants.COLLECTION_IMPL, FieldUtils.resolveRelationCollectionImpl(field));
+        relation.put(TemplateContextConstants.COLLECT_METHOD, FieldUtils.isUniqueCollectionRelation(field) ? "toSet" : "toList");
+        relation.put(TemplateContextConstants.EMPTY_COLLECTION, FieldUtils.isUniqueCollectionRelation(field) ? "Set.of()" : "List.of()");
         relation.put(TemplateContextConstants.JAVADOC_FIELDS, FieldUtils.computeJavadocForFields(idField, field));
         relation.put(TemplateContextConstants.METHOD_NAME, methodName);
 

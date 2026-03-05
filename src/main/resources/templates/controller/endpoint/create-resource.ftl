@@ -21,11 +21,11 @@
         <#list inputFields?filter(f -> f.isRelation) as rel>
         <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "InputTO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
         <#if rel.isCollection>
-        final List<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
+        final ${rel.collectionType}<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
                 body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()
                     <#if !swagger>.map(${relationTransferObject}::${rel.relationIdField})<#else>.map(${relationTransferObject}::get${rel.relationIdField?cap_first})</#if>
-                    .collect(Collectors.toList()) :
-                List.of();
+                    .collect(Collectors.${rel.collectMethod}()) :
+                ${rel.emptyCollection};
         <#else>
         final ${rel.relationIdType} ${rel.field}Id = <#if !swagger>body.${rel.field}() != null ? body.${rel.field}().id() : null;<#else>body.get${rel.field?cap_first}() != null ? body.get${rel.field?cap_first}().getId() : null;</#if>
         </#if>
