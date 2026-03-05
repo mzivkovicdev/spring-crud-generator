@@ -1,0 +1,59 @@
+import java.io.File;
+
+void requireFile(String relativePath) {
+    File file = new File(basedir, relativePath);
+    if (!file.isFile()) {
+        throw new RuntimeException("Expected file is missing: " + file.getAbsolutePath());
+    }
+}
+
+void requireDirectoryHasSqlFiles(String relativePath) {
+    File dir = new File(basedir, relativePath);
+    if (!dir.isDirectory()) {
+        throw new RuntimeException("Expected directory is missing: " + dir.getAbsolutePath());
+    }
+    File[] sqlFiles = dir.listFiles((d, name) -> name.endsWith(".sql"));
+    if (sqlFiles == null || sqlFiles.length == 0) {
+        throw new RuntimeException("Expected at least one SQL migration file in: " + dir.getAbsolutePath());
+    }
+}
+
+requireFile("generator-state.json");
+requireFile("migration-state.json");
+requireFile("Dockerfile");
+requireFile("docker-compose.yml");
+
+requireFile("src/main/resources/swagger/product-api.yaml");
+requireFile("src/main/resources/swagger/order-api.yaml");
+requireFile("src/main/resources/swagger/user-api.yaml");
+requireFile("src/main/resources/graphql/product.graphqls");
+requireFile("src/main/resources/graphql/order.graphqls");
+requireFile("src/main/resources/graphql/user.graphqls");
+requireFile("src/main/resources/graphql/scalars.graphqls");
+
+requireFile("src/main/java/com/example/fullfeatures/configuration/CacheConfiguration.java");
+requireFile("src/main/java/com/example/fullfeatures/configuration/HibernateLazyNullModule.java");
+requireFile("src/main/java/com/example/fullfeatures/configuration/GraphQlConfiguration.java");
+requireFile("src/main/java/com/example/fullfeatures/configuration/EnableRetryConfiguration.java");
+requireFile("src/main/java/com/example/fullfeatures/configuration/JacksonNullExclusionConfig.java");
+requireFile("src/main/java/com/example/fullfeatures/annotation/OptimisticLockingRetry.java");
+requireFile("src/main/java/com/example/fullfeatures/controller/ProductController.java");
+requireFile("src/main/java/com/example/fullfeatures/controller/OrderController.java");
+requireFile("src/main/java/com/example/fullfeatures/controller/UserController.java");
+requireFile("src/main/java/com/example/fullfeatures/graphql/ProductResolver.java");
+requireFile("src/main/java/com/example/fullfeatures/graphql/OrderResolver.java");
+requireFile("src/main/java/com/example/fullfeatures/graphql/UserResolver.java");
+requireFile("src/main/java/com/example/fullfeatures/generated/product/api/ProductsApi.java");
+requireFile("src/main/java/com/example/fullfeatures/generated/order/api/OrdersApi.java");
+requireFile("src/main/java/com/example/fullfeatures/generated/user/api/UsersApi.java");
+requireFile("src/test/java/com/example/fullfeatures/controller/ProductCreateMockMvcTest.java");
+requireFile("src/test/java/com/example/fullfeatures/controller/OrderCreateMockMvcTest.java");
+requireFile("src/test/java/com/example/fullfeatures/controller/UserGetMockMvcTest.java");
+
+requireDirectoryHasSqlFiles("src/main/resources/db/migration");
+
+requireFile("target/classes/com/example/fullfeatures/SpringCrudGeneratorFullFeaturesItApplication.class");
+requireFile("target/classes/com/example/fullfeatures/controller/ProductController.class");
+requireFile("target/classes/com/example/fullfeatures/controller/OrderController.class");
+requireFile("target/classes/com/example/fullfeatures/controller/UserController.class");
+requireFile("target/failsafe-reports/TEST-com.example.fullfeatures.FullFeaturesApiIT.xml");
