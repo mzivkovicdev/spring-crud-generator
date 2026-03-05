@@ -15,3 +15,9 @@ Contributions are welcome.
 - Keep changes small and focused
 - Include a short explanation of the problem and the approach
 - If you modify templates/generation logic, add/update relevant tests where possible
+
+## Test commands
+
+- Run unit tests: `mvn test`
+- Run integration tests (Maven Invoker scenarios in `src/it`): `mvn verify`
+- Skip integration tests when needed: `mvn verify -DskipITs=true`

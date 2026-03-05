@@ -87,6 +87,34 @@ class AdditionalPropertiesUtilsTest {
     }
 
     @Test
+    @DisplayName("Return value when only legacy 'rest.basepath' key is provided")
+    void resolveBasePath_shouldReturn_whenLegacyKeyIsPresent() {
+
+        final CrudConfiguration configuration = this.configurationWith(
+                Map.of(AdditionalConfigurationConstants.REST_BASEPATH_LEGACY, "/legacy")
+        );
+
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+
+        assertEquals("/legacy", basePath);
+    }
+
+    @Test
+    @DisplayName("Prefer 'rest.basePath' when both new and legacy keys are present")
+    void resolveBasePath_shouldPreferCurrentKey_whenBothCurrentAndLegacyKeysArePresent() {
+
+        final Map<String, Object> additionalProperties = new HashMap<>();
+        additionalProperties.put(AdditionalConfigurationConstants.REST_BASEPATH_LEGACY, "/legacy");
+        additionalProperties.put(AdditionalConfigurationConstants.REST_BASEPATH, "/current");
+
+        final CrudConfiguration configuration = this.configurationWith(additionalProperties);
+
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+
+        assertEquals("/current", basePath);
+    }
+
+    @Test
     @DisplayName("hasAnyRetryableConfigOverride: should return false when map is null")
     void hasAnyRetryableConfigOverride_nullMap_returnsFalse() {
         assertFalse(AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(null));

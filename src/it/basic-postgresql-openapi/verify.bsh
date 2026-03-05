@@ -1,0 +1,19 @@
+import java.io.File;
+
+void requireFile(String relativePath) {
+    File file = new File(basedir, relativePath);
+    if (!file.isFile()) {
+        throw new RuntimeException("Expected file is missing: " + file.getAbsolutePath());
+    }
+}
+
+requireFile("generator-state.json");
+requireFile("src/main/resources/swagger/product-api.yaml");
+requireFile("src/main/java/com/example/itapp/models/ProductModel.java");
+requireFile("src/main/java/com/example/itapp/repositories/ProductRepository.java");
+requireFile("src/main/java/com/example/itapp/services/ProductService.java");
+requireFile("src/main/java/com/example/itapp/controllers/ProductController.java");
+requireFile("src/main/java/com/example/itapp/generated/product/api/ProductsApi.java");
+requireFile("target/classes/com/example/itapp/SpringCrudGeneratorItApplication.class");
+requireFile("target/classes/com/example/itapp/models/ProductModel.class");
+requireFile("target/failsafe-reports/TEST-com.example.itapp.ProductApiIT.xml");

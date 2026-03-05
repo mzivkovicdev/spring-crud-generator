@@ -1,0 +1,202 @@
+configuration:
+  database: postgresql
+  javaVersion: 21
+  springBootVersion: 3 # valid formats are also 4.0.1 or 4.0
+  optimisticLocking: true
+  docker:
+    dockerfile: true
+    dockerCompose: true
+    app:
+      image: eclipse-temurin
+      port: 8080
+    db:
+      image: postgres
+      port: 5432
+      tag: latest
+  cache: 
+    enabled: true
+    type: REDIS
+    expiration: 5
+    # maxSize: 10000 use for CAFFEINE
+  openApi:
+    apiSpec: true
+    generateResources: true
+  graphql:
+    enabled: true
+    scalarConfig: true
+  errorResponse: simple
+  migrationScripts: true
+  tests:
+    unit: true
+    dataGenerator: instancio
+  additionalProperties:
+    rest.basePath: /api/v1
+    rest.response.excludeNull: true
+    optimisticLocking.retry.config: true
+    optimisticLocking.retry.maxAttempts: 5
+    optimisticLocking.backoff.delayMs: 100
+    optimisticLocking.backoff.multiplier: 2.0
+    optimisticLocking.backoff.maxDelayMs: 1000
+    spring.jpa.open-in-view: false
+packages:
+  annotations: annotation
+  businessservices: businessservice
+  configurations: configuration
+  controllers: controller
+  enums: myenums
+  exceptions: exception 
+  generated: generated
+  mappers: mapper
+  models: persistance.entity
+  resolvers: graphql
+  repositories: persistance.repository
+  services: persistance.service
+  transferobjects: transferobject
+entities:
+  - name: ProductModel
+    storageName: product_table
+    description: "Represents a product"
+    fields:
+      - name: id
+        type: Long
+        description: "The unique identifier for the product"
+        id:
+          strategy: TABLE
+      - name: name
+        description: "The name of the product"
+        type: String
+        column:
+          nullable: false
+          updateable: true
+          unique: true
+          length: 100
+        validation:
+          required: true
+          notBlank: true
+          minLength: 10
+          maxLength: 100
+      - name: price
+        description: "The price of the product"
+        type: Integer
+        column:
+          nullable: false
+        validation:
+          required: true
+          min: 1
+          max: 100
+      - name: users
+        type: UserEntity
+        relation:
+          type: OneToMany
+          fetch: LAZY
+          cascade: MERGE
+          joinColumn: product_id
+        validation:
+          required: true
+          minItems: 1
+          maxItems: 10
+      - name: uuid
+        description: "The unique identifier for the product"
+        type: UUID
+        column:
+          nullable: false
+        validation:
+          required: true
+      - name: releaseDate
+        description: "The release date of the product"
+        type: LocalDate
+      - name: details
+        type: JSON<List<ProductDetails>>
+      - name: status
+        description: "The status of the product"
+        type: Enum
+        values:
+          - ACTIVE
+          - INACTIVE
+  - name: OrderTable
+    storageName: order_table
+    description: "Represents an order"
+    fields:
+      - name: orderId
+        type: Long
+        description: "The unique identifier for the order"
+        id:
+          strategy: IDENTITY
+      - name: product
+        type: ProductModel
+        description: "Represents a product"
+        relation:
+          type: OneToOne
+          joinColumn: product_id
+          fetch: EAGER
+          cascade: MERGE
+          orphanRemoval: true
+        validation:
+          required: true
+      - name: quantity
+        type: Integer
+        column:
+          nullable: false
+        validation:
+          required: true
+          min: 1
+          max: 100
+      - name: users
+        type: UserEntity
+        relation:
+          type: ManyToMany
+          fetch: LAZY
+          cascade: MERGE
+          joinTable:
+            name: order_user_table
+            joinColumn: order_id
+            inverseJoinColumn: user_id
+        validation:
+          required: true
+          minItems: 1
+          maxItems: 5
+  - name: UserEntity
+    storageName: user_table
+    description: "Represents a user"
+    softDelete: true
+    fields:
+      - name: userId
+        type: Long
+        id:
+          strategy: AUTO
+      - name: username
+        type: String
+      - name: email
+        type: String
+        validation:
+          required: true
+          email: true
+      - name: password
+        type: String
+        validation:
+          required: true
+          pattern: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"
+      - name: details
+        type: JSON<Details>
+      - type: List<String>
+        name: roles
+      - type: List<String>
+        name: permissions
+        validation:
+          notEmpty: true
+  - name: Details
+    description: "Represents a user details"
+    fields:
+      - name: firstName
+        type: String
+      - name: lastName
+        type: String
+  - name: ProductDetails
+    description: "Represents a product details"
+    fields:
+      - name: description
+        type: String
+      - name: weight
+        type: Double
+      - name: option
+        type: String

@@ -51,7 +51,7 @@ public class AdditionalPropertiesUtils {
     public static String resolveBasePath(final CrudConfiguration configuration) {
 
         return Optional.ofNullable(configuration.getAdditionalProperties())
-                .map(properties -> properties.get(AdditionalConfigurationConstants.REST_BASEPATH))
+                .map(AdditionalPropertiesUtils::extractBasePathProperty)
                 .map(value -> {
                     if (value instanceof String) {
                         return (String) value;
@@ -65,6 +65,24 @@ public class AdditionalPropertiesUtils {
                 })
                 .filter(StringUtils::isNotBlank)
                 .orElse("/api");
+    }
+
+    /**
+     * Resolves rest base path property from additional properties map.
+     * Supports both current key (rest.basePath) and legacy key (rest.basepath).
+     *
+     * @param properties additional properties map
+     * @return resolved value or null when not provided
+     */
+    private static Object extractBasePathProperty(final Map<String, Object> properties) {
+
+        final Object value = properties.get(AdditionalConfigurationConstants.REST_BASEPATH);
+
+        if (Objects.nonNull(value)) {
+            return value;
+        }
+
+        return properties.get(AdditionalConfigurationConstants.REST_BASEPATH_LEGACY);
     }
 
     /**
