@@ -16,7 +16,7 @@
                 .map(${rel.relationClassName}::get${rel.relationIdField?cap_first})
                 .collect(java.util.stream.Collectors.${rel.collectMethod}());
         <#if rel.collectionType == "Set">
-        final java.util.List<${rel.relationClassName}> ${rel.relationClassName?uncap_first}List = ${rel.relationClassName?uncap_first}s.stream().toList();
+        final List<${rel.relationClassName}> ${rel.relationClassName?uncap_first}List = ${rel.relationClassName?uncap_first}s.stream().toList();
         </#if>
         <#else>
         final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${modelName?uncap_first}.get${rel.elementParam?cap_first}();
