@@ -97,7 +97,8 @@ Add the following `profile` section to your `pom.xml`:
 
 ### Step 2: Create configuration file
 
-Create the configuration file at the location defined by `inputSpecFile`:
+Create the configuration file at the location defined by `inputSpecFile`.
+The file name is arbitrary. Only the extension matters: `.yaml`, `.yml`, or `.json`.
 
 ```
 src/main/resources/crud-spec.yaml
@@ -142,6 +143,28 @@ Note: the example above shows only a minimal subset (database + OpenAPI + tests 
 Both YAML (`.yaml/.yml`) and JSON (`.json`) formats are supported.
 
 > Full spec example: [`crud-spec-full.yaml`](docs/examples/crud-spec-full.yaml)
+> Schema for autocomplete/validation: [`crud-spec.schema.json`](docs/schema/crud-spec.schema.json)
+
+### Copilot + autocomplete for spec files
+
+For better completion in VS Code/Copilot, bind your spec to the schema:
+
+YAML (`*.yaml` / `*.yml`):
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json
+configuration:
+  database: postgresql
+```
+
+JSON (`*.json`):
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json",
+  "configuration": {
+    "database": "postgresql"
+  }
+}
+```
 
 ### Step 3: Run the generator
 

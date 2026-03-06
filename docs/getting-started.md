@@ -48,7 +48,8 @@ Add this `profile` section to your `pom.xml`:
 
 ## 2) Create the spec file
 
-Create the file defined by `inputSpecFile`:
+Create the file defined by `inputSpecFile`.
+The file name is arbitrary. Only the extension is required: `.yaml`, `.yml`, or `.json`.
 
 ```yaml
 configuration:
@@ -80,7 +81,35 @@ entities:
           length: 10000
 ```
 
-Full example spec: [docs/examples/crud-spec-full.yaml](./examples/crud-spec-full.yaml)
+Full example spec: [crud-spec-full.yaml](./examples/crud-spec-full.yaml)  
+Schema for validation and editor autocomplete: [crud-spec.schema.json](./schema/crud-spec.schema.json)
+
+### Schema-based autocomplete and validation
+
+Schema hints are optional, but recommended.
+
+They are the easiest way to enable validation and autocomplete for spec files with arbitrary names. If your editor is already configured to associate these files with `crud-spec.schema.json`, you do not need to add the schema hint manually.
+
+For YAML files, add a schema hint comment:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json
+configuration:
+  database: postgresql
+```
+
+For JSON files, use the `$schema` property:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json",
+  "configuration": {
+    "database": "postgresql"
+  }
+}
+```
+
+Works in editors that support JSON Schema, including YAML editors that use `yaml-language-server`.
 
 ## 3) Run generation
 

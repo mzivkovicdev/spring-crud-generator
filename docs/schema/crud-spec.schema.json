@@ -1,0 +1,646 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json",
+  "title": "Spring CRUD Generator Specification",
+  "description": "Schema for Spring CRUD Generator YAML/JSON specification files.",
+  "type": "object",
+  "required": [
+    "configuration",
+    "entities"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "configuration": {
+      "$ref": "#/$defs/configuration"
+    },
+    "packages": {
+      "$ref": "#/$defs/packages"
+    },
+    "entities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    }
+  },
+  "$defs": {
+    "configuration": {
+      "type": "object",
+      "description": "Global generator configuration.",
+      "required": [
+        "database"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "database": {
+          "type": "string",
+          "description": "Database engine. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "MYSQL",
+            "MARIADB",
+            "POSTGRESQL",
+            "MSSQL",
+            "mysql",
+            "mariadb",
+            "postgresql",
+            "mssql"
+          ]
+        },
+        "javaVersion": {
+          "type": "integer",
+          "minimum": 17,
+          "maximum": 25,
+          "description": "Supported range is 17-25. If omitted, generator defaults to 17."
+        },
+        "springBootVersion": {
+          "type": "string",
+          "description": "Optional explicit Spring Boot version (examples: 4, 4.0, 4.0.1).",
+          "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "optimisticLocking": {
+          "type": "boolean"
+        },
+        "docker": {
+          "$ref": "#/$defs/docker"
+        },
+        "cache": {
+          "$ref": "#/$defs/cache"
+        },
+        "openApi": {
+          "$ref": "#/$defs/openApi"
+        },
+        "graphql": {
+          "$ref": "#/$defs/graphql"
+        },
+        "errorResponse": {
+          "type": "string",
+          "description": "Error response style. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "DETAILED",
+            "SIMPLE",
+            "MINIMAL",
+            "NONE",
+            "detailed",
+            "simple",
+            "minimal",
+            "none"
+          ]
+        },
+        "migrationScripts": {
+          "type": "boolean"
+        },
+        "tests": {
+          "$ref": "#/$defs/tests"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/additionalProperties"
+        }
+      }
+    },
+    "docker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dockerfile": {
+          "type": "boolean"
+        },
+        "dockerCompose": {
+          "type": "boolean"
+        },
+        "app": {
+          "$ref": "#/$defs/dockerApp"
+        },
+        "db": {
+          "$ref": "#/$defs/dockerDb"
+        }
+      }
+    },
+    "dockerApp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "dockerDb": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "description": "Cache type. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "REDIS",
+            "CAFFEINE",
+            "SIMPLE",
+            "HAZELCAST",
+            "redis",
+            "caffeine",
+            "simple",
+            "hazelcast"
+          ]
+        },
+        "maxSize": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Used only for CAFFEINE cache."
+        },
+        "expiration": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Cache expiration in minutes."
+        }
+      }
+    },
+    "openApi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "apiSpec": {
+          "type": "boolean"
+        },
+        "generateResources": {
+          "type": "boolean"
+        }
+      }
+    },
+    "graphql": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "scalarConfig": {
+          "type": "boolean"
+        }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unit": {
+          "type": "boolean"
+        },
+        "integration": {
+          "type": "boolean"
+        },
+        "dataGenerator": {
+          "type": "string",
+          "description": "Used when tests.unit=true. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "PODAM",
+            "INSTANCIO",
+            "podam",
+            "instancio"
+          ]
+        }
+      }
+    },
+    "additionalProperties": {
+      "type": "object",
+      "description": "Additional feature flags and tuning options. Unknown keys are allowed.",
+      "properties": {
+        "rest.basePath": {
+          "type": "string",
+          "description": "Base path prefix for generated REST controllers (example: /api/v1)."
+        },
+        "rest.basepath": {
+          "type": "string",
+          "description": "Deprecated alias for rest.basePath."
+        },
+        "rest.response.excludeNull": {
+          "type": "boolean"
+        },
+        "optimisticLocking.retry.config": {
+          "type": "boolean"
+        },
+        "optimisticLocking.retry.maxAttempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "optimisticLocking.backoff.delayMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optimisticLocking.backoff.maxDelayMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optimisticLocking.backoff.multiplier": {
+          "type": "number",
+          "minimum": 0
+        },
+        "spring.jpa.open-in-view": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "integer",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "packages": {
+      "type": "object",
+      "description": "Optional package customization.",
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "businessservices": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "configurations": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "controllers": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "enums": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "exceptions": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "generated": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "mappers": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "models": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "resolvers": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "repositories": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "services": {
+          "$ref": "#/$defs/packagePath"
+        },
+        "transferobjects": {
+          "$ref": "#/$defs/packagePath"
+        }
+      }
+    },
+    "packagePath": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"
+    },
+    "entity": {
+      "type": "object",
+      "required": [
+        "name",
+        "fields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Model class name (for example ProductModel)."
+        },
+        "storageName": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Database table name in lower_snake_case. Optional for models used only as JSON inner objects."
+        },
+        "description": {
+          "type": "string"
+        },
+        "ignore": {
+          "type": "boolean"
+        },
+        "softDelete": {
+          "type": "boolean"
+        },
+        "audit": {
+          "$ref": "#/$defs/audit"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/field"
+          }
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "INSTANT",
+            "LOCALDATE",
+            "LOCALDATETIME",
+            "instant",
+            "localdate",
+            "localdatetime"
+          ]
+        }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": [
+        "name",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/fieldType"
+        },
+        "description": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "values": {
+          "type": "array",
+          "description": "Required when type is Enum.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "relation": {
+          "$ref": "#/$defs/relation"
+        },
+        "column": {
+          "$ref": "#/$defs/column"
+        },
+        "validation": {
+          "$ref": "#/$defs/validation"
+        }
+      }
+    },
+    "fieldType": {
+      "type": "string",
+      "description": "Supported: basic Java type, Enum, JSON<...>, List<basicType>, Set<basicType>, or another model name.",
+      "examples": [
+        "String",
+        "Long",
+        "Character",
+        "Integer",
+        "Boolean",
+        "Double",
+        "Float",
+        "Short",
+        "Byte",
+        "UUID",
+        "BigDecimal",
+        "BigInteger",
+        "LocalDate",
+        "LocalDateTime",
+        "OffsetDateTime",
+        "Instant",
+        "Enum",
+        "List<String>",
+        "Set<String>",
+        "JSON<Long>",
+        "JSON<String>",
+        "CustomerModel",
+        "Customer"
+      ]
+    },
+    "id": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "ID generation strategy. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "TABLE",
+            "SEQUENCE",
+            "UUID",
+            "IDENTITY",
+            "AUTO"
+          ]
+        },
+        "generatorName": {
+          "type": "string"
+        },
+        "allocationSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "initialValue": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pkColumnName": {
+          "type": "string"
+        },
+        "valueColumnName": {
+          "type": "string"
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "OneToOne",
+            "OneToMany",
+            "ManyToOne",
+            "ManyToMany"
+          ]
+        },
+        "joinColumn": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fetch": {
+          "type": "string",
+          "enum": [
+            "EAGER",
+            "LAZY"
+          ]
+        },
+        "cascade": {
+          "type": "string",
+          "description": "JPA cascade type (for example: ALL, PERSIST, MERGE, REMOVE, REFRESH, DETACH)."
+        },
+        "orphanRemoval": {
+          "type": "boolean"
+        },
+        "uniqueItems": {
+          "type": "boolean",
+          "description": "Supported for OneToMany and ManyToMany only."
+        },
+        "joinTable": {
+          "$ref": "#/$defs/joinTable"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ManyToMany"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "joinTable"
+            ]
+          }
+        }
+      ]
+    },
+    "joinTable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "joinColumn",
+        "inverseJoinColumn"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "joinColumn": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "inverseJoinColumn": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        }
+      }
+    },
+    "column": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unique": {
+          "type": "boolean"
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "insertable": {
+          "type": "boolean"
+        },
+        "updateable": {
+          "type": "boolean"
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "notBlank": {
+          "type": "boolean"
+        },
+        "notEmpty": {
+          "type": "boolean"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "minItems": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "email": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
