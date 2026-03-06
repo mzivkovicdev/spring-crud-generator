@@ -12,6 +12,7 @@ Spring CRUD Generator is a Maven plugin that generates production-ready Spring B
 
 - Getting started: [Getting started](getting-started.md)
 - Configuration reference: [Configuration reference](configuration.md)
+- Spec schema (autocomplete/validation): [crud-spec.schema.json](schema/crud-spec.schema.json)
 - Package configuration: [Packages configuration](packages.md)
 - Entity schema: [Entities & fields](entities.md)
 - Migrations: [Migrations](migrations.md)
