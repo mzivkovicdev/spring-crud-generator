@@ -1,22 +1,28 @@
-# Spring CRUD Generator
+# Documentation
 
 Spring CRUD Generator is a Maven plugin that generates production-ready Spring Boot CRUD layers (REST + optional GraphQL), database migrations, Docker resources, tests, API docs, and more — from a single YAML/JSON specification file.
 
-## What is it good for?
+This directory contains the full project documentation.
 
-- Starting a new backend fast without copy/pasting boilerplate
-- Keeping generation deterministic and transparent (your spec → your code)
-- Iterating safely with incremental generation and migration tracking
+## Start here
 
-## Quick links
+- New to the project? → [Getting started](./getting-started.md)
+- Looking for all available options? → [Configuration reference](./configuration.md)
+- Working with entities and fields? → [Entities & fields](./entities.md)
+- Need package customization? → [Packages configuration](./packages.md)
+- Want migration behavior explained? → [Migrations](./migrations.md)
+- Need incremental generation details? → [Incremental generation](./incremental-generation.md)
+- Want autocomplete/validation? → [crud-spec.schema.json](./schema/crud-spec.schema.json)
+- Need a complete example? → [crud-spec-full.yaml](./examples/crud-spec-full.yaml)
 
-- Getting started: [Getting started](getting-started.md)
-- Configuration reference: [Configuration reference](configuration.md)
-- Spec schema (autocomplete/validation): [crud-spec.schema.json](schema/crud-spec.schema.json)
-- Package configuration: [Packages configuration](packages.md)
-- Entity schema: [Entities & fields](entities.md)
-- Migrations: [Migrations](migrations.md)
-- Incremental generation/state: [Incremental generation](incremental-generation.md)
+## What you will find here
+
+- Setup and first run instructions
+- Full configuration reference
+- Entity and field schema
+- Package customization
+- Migration and incremental generation behavior
+- Schema and example specs
 
 ## Minimal example
 
@@ -38,4 +44,6 @@ entities:
           unique: true
 ```
 
-See the full example spec: [docs/examples/crud-spec-full.yaml](./examples/crud-spec-full.yaml)
+See the full example spec: [crud-spec-full.yaml](./examples/crud-spec-full.yaml)
+
+Back to the main project page: [README](../Readme.MD)
