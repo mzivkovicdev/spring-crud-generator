@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat)](https://opensource.org/licenses/Apache-2.0)
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success?style=flat)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.markozivkovic/spring-crud-generator.svg)](https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator)
+[![Docs](https://img.shields.io/badge/Docs-Available-blue?style=flat)](./docs/README.md)
 
 ![Java](https://img.shields.io/badge/Java-17--25-blue?style=flat&logo=openjdk&logoColor=white)
 ![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat&logo=springboot&logoColor=white)
@@ -16,11 +17,23 @@
 ![Redis](https://img.shields.io/badge/Redis-DD0031?style=flat&logo=redis&logoColor=white)
 ![Hazelcast](https://img.shields.io/badge/Hazelcast-Real--time%20Data%20Platform-0A0A0A?style=flat&logo=hazelcast&logoColor=white)
 
-Spring CRUD Generator is an open-source **Maven plugin** that accelerates backend development with **Spring Boot** by generating production-ready CRUD layers, database migrations, API documentation, Docker resources, tests, and more — directly from a single YAML or JSON configuration file.
+Spring CRUD Generator is an open-source **Maven plugin** that accelerates backend development with **Spring Boot** by generating production-ready CRUD layers, migrations, API documentation, Docker resources, tests, and more — from a single YAML or JSON configuration file.
 
-This project aims to eliminate repetitive boilerplate code while keeping full control and transparency over the generated output.
+## Documentation
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.4.0`
+Full documentation is available in [`/docs`](./docs/README.md).
+
+- [Getting started](./docs/getting-started.md)
+- [Configuration reference](./docs/configuration.md)
+- [Packages configuration](./docs/packages.md)
+- [Entities and fields](./docs/entities.md)
+- [Migrations](./docs/migrations.md)
+- [Incremental generation](./docs/incremental-generation.md)
+- [Full spec example](./docs/examples/crud-spec-full.yaml)
+- [JSON Schema](./docs/schema/crud-spec.schema.json)
+
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.4.0`  
+> Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 ---
 
@@ -36,17 +49,24 @@ From one spec file, the generator can produce:
 - **OpenAPI/Swagger specs + resources** (optional)
 - **Flyway migrations** (optional)
 - **Dockerfile + docker-compose** (optional)
-- **Unit tests + test data generation** (Instancio / Podam) - (optional)
-- **Caching** (Redis, Caffeine, Hazelcast or Simple) - (optional)
+- **Unit tests + test data generation** (optional)
+- **Caching** (Redis, Caffeine, Hazelcast or Simple) (optional)
 - **Optimistic locking support** (optional)
 
-> ⚠️ Table deletion is **not** supported by the generator (must be handled manually).
+> ⚠️ Table deletion is **not** supported by the generator and must be handled manually.
 
 ---
 
-## Supported Java versions
+## Start here
 
-- Java **17** – Java **25**
+Choose what you need:
+
+- New user? → [Getting started](./docs/getting-started.md)
+- Need all available options? → [Configuration reference](./docs/configuration.md)
+- Working with entities and fields? → [Entities and fields](./docs/entities.md)
+- Need package customization? → [Packages configuration](./docs/packages.md)
+- Need a complete example? → [Full spec example](./docs/examples/crud-spec-full.yaml)
+- Want autocomplete/validation? → [JSON Schema](./docs/schema/crud-spec.schema.json)
 
 ---
 
@@ -97,12 +117,13 @@ Add the following `profile` section to your `pom.xml`:
 
 ### Step 2: Create configuration file
 
-Create the configuration file at the location defined by `inputSpecFile`.
+Create the configuration file at the location defined by `inputSpecFile`.  
 The file name is arbitrary. Only the extension matters: `.yaml`, `.yml`, or `.json`.
 
-```
+```text
 src/main/resources/crud-spec.yaml
 ```
+
 ```yaml
 configuration:
   database: postgresql
@@ -134,22 +155,21 @@ entities:
 ```
 
 This spec file can define:
+
 - global generator configuration (database, OpenAPI, Docker, tests, caching, migration scripts, etc.)
 - entities, fields, constraints, and relationships
-- additional features like optimistic locking, base path etc.
+- additional features like optimistic locking, base path, and more
 
 Note: the example above shows only a minimal subset (database + OpenAPI + tests + one entity).
 
 Both YAML (`.yaml/.yml`) and JSON (`.json`) formats are supported.
 
-> Full spec example: [`crud-spec-full.yaml`](docs/examples/crud-spec-full.yaml)
-> Schema for autocomplete/validation: [`crud-spec.schema.json`](docs/schema/crud-spec.schema.json)
-
 ### Copilot + autocomplete for spec files
 
-For better completion in VS Code/Copilot, bind your spec to the schema:
+For better completion in VS Code/Copilot, bind your spec to the schema.
 
 YAML (`*.yaml` / `*.yml`):
+
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json
 configuration:
@@ -157,6 +177,7 @@ configuration:
 ```
 
 JSON (`*.json`):
+
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json",
@@ -175,37 +196,33 @@ mvn clean install -Pgenerate-resources
 ```
 
 After execution:
+
 - source code is generated into the directory defined by `outputDir`
 - Flyway migration scripts are generated (if enabled)
 - Swagger/OpenAPI resources are generated (if enabled)
 - Docker and Docker Compose files are generated (if enabled)
 
-### Step 4: Configuration Parameters
+### Step 4: Configuration parameters
 
-| Parameter           | Description                                                           |
-| ------------------- | --------------------------------------------------------------------- |
-| `inputSpecFile`     | Path to the YAML/JSON configuration file                              |
-| `outputDir`         | Directory where generated source code is written                      |
+| Parameter | Description |
+| --- | --- |
+| `inputSpecFile` | Path to the YAML/JSON configuration file |
+| `outputDir` | Directory where generated source code is written |
 | `forceRegeneration` | Forces regeneration of all non-ignored entities, ignoring state files |
 
 ### Important notes
 
 Incremental generation is enabled by default:
+
 - Generator state is stored in: `generator-state.json` and `migration-state.json`
 - Setting `forceRegeneration=true` ignores these files
 - Database tables are never dropped automatically
 
 ---
 
-## Documentation
+## Supported Java versions
 
-The README is intentionally short. Full documentation lives in **`/docs`**:
-
-- **Getting started:** [`docs/getting-started.md`](./docs/getting-started.md)
-- **Configuration reference:** [`docs/configuration.md`](./docs/configuration.md)
-- **Packages configuration:** [`docs/packages.md`](./docs/packages.md)
-- **Entity & field schema:** [`docs/entities.md`](./docs/entities.md)
-- **Migrations & incremental generation:** [`docs/migrations.md`](./docs/migrations.md), [`docs/incremental-generation.md`](./docs/incremental-generation.md)
+- Java **17** – **25**
 
 ---
 
