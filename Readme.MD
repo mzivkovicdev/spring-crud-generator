@@ -187,7 +187,15 @@ JSON (`*.json`):
 }
 ```
 
-### Step 3: Run the generator
+### Step 3: Validate spec (dry-run, optional)
+
+Use the `validate` goal to check whether the spec file is valid before generating code:
+
+```bash
+mvn spring-crud-generator:validate -DinputSpecFile=src/main/resources/crud-spec.yaml
+```
+
+### Step 4: Run the generator
 
 Run the generator using the Maven profile:
 
@@ -202,13 +210,15 @@ After execution:
 - Swagger/OpenAPI resources are generated (if enabled)
 - Docker and Docker Compose files are generated (if enabled)
 
-### Step 4: Configuration parameters
+### Step 5: Configuration parameters
 
 | Parameter | Description |
 | --- | --- |
 | `inputSpecFile` | Path to the YAML/JSON configuration file |
 | `outputDir` | Directory where generated source code is written |
 | `forceRegeneration` | Forces regeneration of all non-ignored entities, ignoring state files |
+
+For the `validate` goal, only `inputSpecFile` is required.
 
 ### Important notes
 

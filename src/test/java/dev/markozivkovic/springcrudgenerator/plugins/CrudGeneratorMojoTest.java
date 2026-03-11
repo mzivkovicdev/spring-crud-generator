@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +28,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import dev.markozivkovic.springcrudgenerator.models.GeneratorState;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.utils.CrudMojoUtils;
 import dev.markozivkovic.springcrudgenerator.utils.GeneratorStateUtils;
 
 class CrudGeneratorMojoTest {
@@ -44,16 +44,6 @@ class CrudGeneratorMojoTest {
             f.set(target, value);
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private ObjectMapper invokeCreateSpecMapper(CrudGeneratorMojo mojo, String fileName) throws Exception {
-        try {
-            final Method m = CrudGeneratorMojo.class.getDeclaredMethod("createSpecMapper", String.class);
-            m.setAccessible(true);
-            return (ObjectMapper) m.invoke(mojo, fileName);
-        } catch (final InvocationTargetException e) {
-            throw new IllegalArgumentException(e);
         }
     }
 
@@ -116,33 +106,25 @@ class CrudGeneratorMojoTest {
     }
 
     @Test
-    void createSpecMapper_yamlExtension_returnsYamlMapper() throws Exception {
-        
-        final CrudGeneratorMojo mojo = newMojo();
-
-        final ObjectMapper mapper1 = invokeCreateSpecMapper(mojo, "spec.yaml");
-        final ObjectMapper mapper2 = invokeCreateSpecMapper(mojo, "SPEC.YML");
+    void createSpecMapper_yamlExtension_returnsYamlMapper() {
+        final ObjectMapper mapper1 = CrudMojoUtils.createSpecMapper("spec.yaml");
+        final ObjectMapper mapper2 = CrudMojoUtils.createSpecMapper("SPEC.YML");
 
         assertInstanceOf(YAMLMapper.class, mapper1);
         assertInstanceOf(YAMLMapper.class, mapper2);
     }
 
     @Test
-    void createSpecMapper_jsonExtension_returnsJsonMapper() throws Exception {
-        
-        final CrudGeneratorMojo mojo = newMojo();
-
-        final ObjectMapper mapper = invokeCreateSpecMapper(mojo, "spec.json");
+    void createSpecMapper_jsonExtension_returnsJsonMapper() {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("spec.json");
 
         assertInstanceOf(JsonMapper.class, mapper);
     }
 
     @Test
-    void createSpecMapper_configuresCommonFeatures_forYamlAndJson() throws Exception {
-        final CrudGeneratorMojo mojo = newMojo();
-
-        final ObjectMapper yaml = invokeCreateSpecMapper(mojo, "spec.yaml");
-        final ObjectMapper json = invokeCreateSpecMapper(mojo, "spec.json");
+    void createSpecMapper_configuresCommonFeatures_forYamlAndJson() {
+        final ObjectMapper yaml = CrudMojoUtils.createSpecMapper("spec.yaml");
+        final ObjectMapper json = CrudMojoUtils.createSpecMapper("spec.json");
 
         assertFalse(yaml.getDeserializationConfig().isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
         assertFalse(json.getDeserializationConfig().isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
