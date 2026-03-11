@@ -32,7 +32,7 @@ Full documentation is available in [`/docs`](./docs/README.md).
 - [Full spec example](./docs/examples/crud-spec-full.yaml)
 - [JSON Schema](./docs/schema/crud-spec.schema.json)
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.4.0`  
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.5.0`  
 > Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 ---
@@ -76,7 +76,7 @@ Generate a fully functional Spring Boot CRUD application in minutes using a sing
 
 ### Step 1: Add Maven Profile
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.4.0`  
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.5.0`  
 > Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 Add the following `profile` section to your `pom.xml`:
@@ -90,7 +90,7 @@ Add the following `profile` section to your `pom.xml`:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.4.0</version>
+                    <version>1.5.0</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>
