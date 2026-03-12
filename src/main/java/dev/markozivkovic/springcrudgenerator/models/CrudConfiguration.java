@@ -32,6 +32,7 @@ public class CrudConfiguration {
     private GraphQLDefinition graphql;
     private ErrorResponse errorResponse;
     private Boolean migrationScripts;
+    private Boolean dependencyCheck = false;
     private TestConfiguration tests;
     private Map<String, Object> additionalProperties = new HashMap<>();
     
@@ -42,7 +43,8 @@ public class CrudConfiguration {
     public CrudConfiguration(final DatabaseType database, final Integer javaVersion, final String springBootVersion,
             final Boolean optimisticLocking, final DockerConfiguration docker, final CacheConfiguration cache,
             final OpenApiDefinition openApi, final GraphQLDefinition graphql, final ErrorResponse errorResponse,
-            final Boolean migrationScripts, final TestConfiguration tests, final Map<String, Object> additionalProperties) {
+            final Boolean migrationScripts, final Boolean dependencyCheck, final TestConfiguration tests,
+            final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.springBootVersion = springBootVersion;
@@ -53,6 +55,7 @@ public class CrudConfiguration {
         this.graphql = graphql;
         this.errorResponse = errorResponse;
         this.migrationScripts = migrationScripts;
+        this.dependencyCheck = dependencyCheck;
         this.tests = tests;
         this.additionalProperties = additionalProperties;
     }
@@ -151,6 +154,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public Boolean getDependencyCheck() {
+        return this.dependencyCheck;
+    }
+
+    public CrudConfiguration setDependencyCheck(final Boolean dependencyCheck) {
+        this.dependencyCheck = dependencyCheck;
+        return this;
+    }
+
     public TestConfiguration getTests() {
         return this.tests;
     }
@@ -187,6 +199,7 @@ public class CrudConfiguration {
                 Objects.equals(graphql, crudConfiguration.graphql) &&
                 Objects.equals(errorResponse, crudConfiguration.errorResponse) &&
                 Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
+                Objects.equals(dependencyCheck, crudConfiguration.dependencyCheck) &&
                 Objects.equals(tests, crudConfiguration.tests) &&
                 Objects.equals(additionalProperties, crudConfiguration.additionalProperties);
     }
@@ -195,7 +208,7 @@ public class CrudConfiguration {
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, springBootVersion, optimisticLocking, docker, cache, openApi,
-            graphql, errorResponse, migrationScripts, tests, additionalProperties
+            graphql, errorResponse, migrationScripts, dependencyCheck, tests, additionalProperties
         );
     }
 
@@ -212,6 +225,7 @@ public class CrudConfiguration {
             ", graphql='" + getGraphql() + "'" +
             ", errorResponse='" + getErrorResponse() + "'" +
             ", migrationScripts='" + isMigrationScripts() + "'" +
+            ", dependencyCheck='" + getDependencyCheck() + "'" +
             ", tests='" + getTests() + "'" +
             ", additionalProperties='" + getAdditionalProperties() + "'" +
             "}";
