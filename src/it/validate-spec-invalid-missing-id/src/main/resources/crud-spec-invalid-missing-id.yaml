@@ -1,0 +1,10 @@
+configuration:
+  database: postgresql
+entities:
+  - name: ProductModel
+    storageName: products
+    fields:
+      - name: id
+        type: Long
+      - name: name
+        type: String

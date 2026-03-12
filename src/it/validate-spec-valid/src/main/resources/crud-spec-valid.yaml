@@ -1,0 +1,14 @@
+configuration:
+  database: postgresql
+  openApi:
+    apiSpec: true
+entities:
+  - name: ProductModel
+    storageName: products
+    fields:
+      - name: id
+        type: Long
+        id:
+          strategy: TABLE
+      - name: name
+        type: String

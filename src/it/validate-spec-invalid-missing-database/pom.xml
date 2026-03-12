@@ -1,0 +1,38 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>spring-crud-generator-it-validate-invalid-missing-database</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>spring-crud-generator-it-validate-invalid-missing-database</name>
+    <packaging>pom</packaging>
+
+    <profiles>
+        <profile>
+            <id>validate-spec</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>dev.markozivkovic</groupId>
+                        <artifactId>spring-crud-generator</artifactId>
+                        <version>@project.version@</version>
+                        <executions>
+                            <execution>
+                                <id>validate-crud-spec</id>
+                                <goals>
+                                    <goal>validate</goal>
+                                </goals>
+                                <configuration>
+                                    <inputSpecFile>${project.basedir}/src/main/resources/crud-spec-invalid-missing-database.yaml</inputSpecFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
