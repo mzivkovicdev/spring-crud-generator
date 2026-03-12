@@ -38,7 +38,6 @@ public final class CrudMojoUtils {
     /**
      * Prints a banner to the console with information about the plugin version, input CRUD spec file and output directory.
      *
-     * @param logger the logger to print banner with
      * @param pluginDescriptor maven plugin descriptor
      * @param inputSpecFile the spec file location
      * @param outputDir output directory for generate goal (or informational value for other goals)
