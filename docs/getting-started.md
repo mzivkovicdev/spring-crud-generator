@@ -111,7 +111,15 @@ For JSON files, use the `$schema` property:
 
 Works in editors that support JSON Schema, including YAML editors that use `yaml-language-server`.
 
-## 3) Run generation
+## 3) Validate spec (dry-run, optional)
+
+Use the `validate` goal to verify spec correctness before generation:
+
+```bash
+mvn spring-crud-generator:validate -DinputSpecFile=src/main/resources/crud-spec.yaml
+```
+
+## 4) Run generation
 
 ```bash
 mvn clean install -Pgenerate-resources -DskipTests
@@ -124,6 +132,8 @@ After execution:
 - Swagger/OpenAPI resources are generated (if enabled)
 - Docker and Docker Compose files are generated (if enabled)
 - Graphql resources (schema, resolvers, mappers etc.) are generated (if enabled)
+
+For the `validate` goal, only `inputSpecFile` is required.
 
 ## Notes
 

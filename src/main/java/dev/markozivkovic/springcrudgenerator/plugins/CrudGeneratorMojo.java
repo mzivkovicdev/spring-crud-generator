@@ -35,11 +35,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import dev.markozivkovic.springcrudgenerator.generators.SpringCrudGenerator;
 import dev.markozivkovic.springcrudgenerator.generators.tests.SpringCrudTestGenerator;
@@ -47,7 +43,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 import dev.markozivkovic.springcrudgenerator.models.GeneratorState;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
-import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
+import dev.markozivkovic.springcrudgenerator.utils.CrudMojoUtils;
 import dev.markozivkovic.springcrudgenerator.utils.GeneratorStateUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.validators.PackageConfigurationValidator;
@@ -93,8 +89,8 @@ public class CrudGeneratorMojo extends AbstractMojo {
         }
         
         try {
-            this.printBanner();
-            final ObjectMapper mapper = this.createSpecMapper(inputSpecFile);
+            CrudMojoUtils.printBanner(pluginDescriptor, inputSpecFile, outputDir);
+            final ObjectMapper mapper = CrudMojoUtils.createSpecMapper(inputSpecFile);
             final Path specPath = Paths.get(inputSpecFile).toAbsolutePath().normalize();
 
             LOGGER.info("Generator started for file: {}", specPath);
@@ -143,21 +139,6 @@ public class CrudGeneratorMojo extends AbstractMojo {
     }
 
     /**
-     * Prints a banner to the console with information about the plugin version, the input CRUD spec file, and the output directory.
-     */
-    private void printBanner() {
-        
-        final String version = Objects.nonNull(pluginDescriptor) ? pluginDescriptor.getVersion() : "dev";
-        final Map<String, Object> context = Map.of(
-                "version", version,
-                "specPath", inputSpecFile,
-                "outputDir", outputDir
-        );
-
-        LOGGER.info(FreeMarkerTemplateProcessorUtils.processTemplate("banner.ftl", context));
-    }
-
-    /**
      * Computes the list of entities to generate based on the provided active entities and the generator state.
      * If forceRegeneration is true, all active entities are included in the list.
      * Otherwise, only entities with a changed fingerprint are included in the list.
@@ -193,36 +174,6 @@ public class CrudGeneratorMojo extends AbstractMojo {
         }
 
         return entitiesToGenerate;
-    }
-
-    /**
-     * Creates an {@link ObjectMapper} based on the file extension of the inputSpecFile.
-     * Supported file formats are: .yaml, .yml, .json
-     *
-     * @param inputSpecFile the input spec file
-     * @return an {@link ObjectMapper} based on the file extension of the inputSpecFile
-     * @throws IllegalArgumentException if the file format is not supported
-     */
-    private ObjectMapper createSpecMapper(final String inputSpecFile) {
-
-        final String specFile = inputSpecFile.toLowerCase().trim();
-
-        if (specFile.endsWith(".yaml") || specFile.endsWith(".yml")) {
-            return YAMLMapper.builder()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
-                    .build();
-        } else if (specFile.endsWith(".json")) {
-            return JsonMapper.builder()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
-                    .build();
-        } else {
-            throw new IllegalArgumentException(String.format(
-                    "Unsupported file format: %s. Supported file formats are: .yaml, .yml, .json",
-                    specFile
-            ));
-        }
     }
 
 }

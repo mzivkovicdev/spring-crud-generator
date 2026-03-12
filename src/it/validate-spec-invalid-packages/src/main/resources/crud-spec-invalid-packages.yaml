@@ -1,0 +1,16 @@
+configuration:
+  database: postgresql
+  graphql:
+    enabled: true
+packages:
+  models: com.example.models
+entities:
+  - name: ProductModel
+    storageName: products
+    fields:
+      - name: id
+        type: Long
+        id:
+          strategy: TABLE
+      - name: name
+        type: String
