@@ -17,7 +17,17 @@
 ![Redis](https://img.shields.io/badge/Redis-DD0031?style=flat&logo=redis&logoColor=white)
 ![Hazelcast](https://img.shields.io/badge/Hazelcast-Real--time%20Data%20Platform-0A0A0A?style=flat&logo=hazelcast&logoColor=white)
 
-Spring CRUD Generator is an open-source **Maven plugin** that accelerates backend development with **Spring Boot** by generating production-ready CRUD layers, migrations, API documentation, Docker resources, tests, and more — from a single YAML or JSON configuration file.
+Generate production-ready Spring Boot backend boilerplate from a single YAML or JSON spec.
+
+A Maven plugin for bootstrapping consistent, inspectable Spring Boot backends with generated CRUD layers, migrations, API docs, tests, and more.
+
+## Best for
+- Starting new Spring Boot backends faster
+- Teams that want a consistent backend baseline
+- Developers who want inspectable generated code, not a black box
+
+## Try a full generated example
+See the demo project generated from a real spec: [Spring Crud Demo](https://github.com/mzivkovicdev/spring-crud-generator-demo)
 
 ## Documentation
 
@@ -39,25 +49,31 @@ Full documentation is available in [`/docs`](./docs/README.md).
 
 ## What you get
 
-From one spec file, the generator can produce:
+### Core backend
+- Entities
+- Repositories
+- Services
+- DTOs and mappers
+- REST controllers
 
-- **JPA/Hibernate entity models**
-- **Repositories**, **Services**, **Business services**
-- **TOs & mappers**
-- **REST controllers**
-- **GraphQL schemas + resolvers** (optional)
-- **OpenAPI/Swagger specs + resources** (optional)
-- **Flyway migrations** (optional)
-- **Dockerfile + docker-compose** (optional)
-- **Unit tests + test data generation** (optional)
-- **Caching** (Redis, Caffeine, Hazelcast or Simple) (optional)
-- **Optimistic locking support** (optional)
+### Optional platform features
+- Flyway migrations
+- OpenAPI resources
+- GraphQL
+- Docker resources
+- Caching
+- Optimistic locking
+
+### Developer experience
+- Unit tests
+- JSON Schema validation
+- Incremental generation
 
 > ⚠️ Table deletion is **not** supported by the generator and must be handled manually.
 
 ---
 
-## Start here
+## Documentation guide
 
 Choose what you need:
 
@@ -75,9 +91,6 @@ Choose what you need:
 Generate a fully functional Spring Boot CRUD application in minutes using a single YAML or JSON configuration file.
 
 ### Step 1: Add Maven Profile
-
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.5.0`  
-> Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 Add the following `profile` section to your `pom.xml`:
 
@@ -244,7 +257,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICE
 
 ## Contact
 
-For questions, ideas, or commercial usage of this project, feel free to reach out:
+For questions, feedback, collaboration, or support, feel free to reach out::
 
 - Email: **mzivkovic.dev@gmail.com**
 - LinkedIn: [Marko Zivkovic](https://www.linkedin.com/in/marko-zivkovic-84547017a/)
