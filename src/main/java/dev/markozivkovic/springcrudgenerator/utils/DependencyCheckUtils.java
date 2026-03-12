@@ -78,7 +78,7 @@ public final class DependencyCheckUtils {
      * Computes missing dependencies for the given configuration by scanning dependencies declared on MavenProject.
      *
      * @param configuration project CRUD configuration
-     * @param project Maven project model injected by plugin
+     * @param project       Maven project model injected by plugin
      * @return list of warning messages for missing dependencies
      */
     public static List<String> findMissingDependencies(final CrudConfiguration configuration, final MavenProject project) {
@@ -98,6 +98,12 @@ public final class DependencyCheckUtils {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Returns a string that identifies the given MavenProject.
+     * 
+     * @param project the Maven project to identify
+     * @return a string that identifies the given Maven project
+     */
     private static String resolveProjectLabel(final MavenProject project) {
 
         if (Objects.nonNull(project.getFile())) {
@@ -111,6 +117,14 @@ public final class DependencyCheckUtils {
         return "unknown project";
     }
 
+    /**
+     * Computes set of dependencies declared on the given MavenProject.
+     * It considers both the dependencies declared directly on the project and those declared on the project's model (if available).
+     * Each dependency is represented as a string in the format "groupId:artifactId".
+     * 
+     * @param project the Maven project to resolve dependencies for
+     * @return set of declared dependencies
+     */
     private static Set<String> resolveDeclaredDependencies(final MavenProject project) {
 
         final Set<String> dependencies = new HashSet<>();
@@ -136,6 +150,15 @@ public final class DependencyCheckUtils {
         return dependencies;
     }
 
+    /**
+     * Computes a warning message for the given dependency requirement.
+     * The message is of the format "Missing dependency for <scenario>: <expected dependencies>".
+     * <scenario> is the scenario for which the dependency is required, and
+     * <expected dependencies> is a comma-separated list of the expected dependencies.
+     * 
+     * @param requirement the dependency requirement to compute the warning message for
+     * @return the computed warning message
+     */
     private static String toWarningMessage(final DependencyRequirement requirement) {
 
         final String expectedDependencies = requirement.alternatives().stream()
@@ -145,6 +168,16 @@ public final class DependencyCheckUtils {
         return String.format("Missing dependency for %s: %s", requirement.scenario(), expectedDependencies);
     }
 
+    /**
+     * Computes a list of dependency requirements for the given configuration.
+     * The method resolves the list of required dependencies based on the configuration options.
+     * It checks if the configuration has enabled core CRUD generation, openApi resources, graphql, caching,
+     * migration scripts, unit tests, and optimistic locking retry configuration.
+     * For each enabled feature, it adds a dependency requirement to the list.
+     * 
+     * @param configuration the CRUD configuration
+     * @return list of dependency requirements
+     */
     private static List<DependencyRequirement> resolveRequiredDependencies(final CrudConfiguration configuration) {
 
         final List<DependencyRequirement> requirements = new ArrayList<>();
@@ -224,24 +257,61 @@ public final class DependencyCheckUtils {
         return requirements;
     }
 
+    /**
+     * Returns true if the OpenAPI resources are enabled in the given configuration.
+     * OpenAPI resources are enabled if the OpenAPI configuration is not null and both
+     * the API specification and resource generation are enabled.
+     * 
+     * @param configuration the Crud configuration
+     * @return true if the OpenAPI resources are enabled, false otherwise
+     */
     private static boolean isOpenApiResourcesEnabled(final CrudConfiguration configuration) {
         return Objects.nonNull(configuration.getOpenApi())
                 && Boolean.TRUE.equals(configuration.getOpenApi().getApiSpec())
                 && Boolean.TRUE.equals(configuration.getOpenApi().getGenerateResources());
     }
 
+    /**
+     * Returns true if the GraphQL feature is enabled in the given configuration.
+     * GraphQL is enabled if the GraphQL configuration is not null and the enabled flag is true.
+     * 
+     * @param configuration the Crud configuration
+     * @return true if the GraphQL feature is enabled, false otherwise
+     */
     private static boolean isGraphQlEnabled(final CrudConfiguration configuration) {
         return Objects.nonNull(configuration.getGraphql()) && Boolean.TRUE.equals(configuration.getGraphql().getEnabled());
     }
 
+    /**
+     * Returns true if the cache feature is enabled in the given configuration.
+     * Cache is enabled if the cache configuration is not null and the enabled flag is true.
+     * 
+     * @param configuration the Crud configuration
+     * @return true if the cache feature is enabled, false otherwise
+     */
     private static boolean isCacheEnabled(final CrudConfiguration configuration) {
         return Objects.nonNull(configuration.getCache()) && Boolean.TRUE.equals(configuration.getCache().getEnabled());
     }
 
+    /**
+     * Returns true if unit tests are enabled in the given configuration, false otherwise.
+     * Unit tests are enabled if the tests configuration is not null and the unit flag is true.
+     * 
+     * @param configuration the Crud configuration
+     * @return true if unit tests are enabled, false otherwise
+     */
     private static boolean isUnitTestsEnabled(final CrudConfiguration configuration) {
         return Objects.nonNull(configuration.getTests()) && Boolean.TRUE.equals(configuration.getTests().getUnit());
     }
 
+    /**
+     * Returns true if the given configuration requires the Spring Retry dependency.
+     * Spring Retry is required if optimistic locking is enabled and either the retry configuration flag
+     * or any of the retryable configuration overrides are present.
+     *
+     * @param configuration the configuration to check
+     * @return true if Spring Retry is required, false otherwise
+     */
     private static boolean requiresSpringRetry(final CrudConfiguration configuration) {
 
         if (!Boolean.TRUE.equals(configuration.getOptimisticLocking())) {
@@ -260,6 +330,12 @@ public final class DependencyCheckUtils {
         return hasRetryConfigurationFlag || AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(additionalProperties);
     }
 
+    /**
+     * Adds database dependency requirements for the given database type to the given list of requirements.
+     * 
+     * @param requirements the list of dependency requirements to add to
+     * @param databaseType the database type to add the dependency requirement for
+     */
     private static void addDatabaseRequirements(final List<DependencyRequirement> requirements, final DatabaseType databaseType) {
 
         switch (databaseType) {
@@ -275,6 +351,14 @@ public final class DependencyCheckUtils {
         }
     }
 
+    /**
+     * Adds cache-related dependency requirements to the list based on the given configuration.
+     * The added requirements are based on the cache type and are used to determine the required dependencies
+     * for a given project.
+     *
+     * @param requirements the list to which the requirements are added
+     * @param configuration the configuration used to determine the cache type and added requirements
+     */
     private static void addCacheRequirements(final List<DependencyRequirement> requirements, final CrudConfiguration configuration) {
 
         final CacheTypeEnum cacheType = Objects.nonNull(configuration.getCache().getType())
@@ -294,6 +378,13 @@ public final class DependencyCheckUtils {
         }
     }
 
+    /**
+     * Adds a dependency requirement to the list based on the data generator configuration.
+     * The requirement is added if the data generator is set to INSTANCIO or PODAM.
+     *
+     * @param requirements the list of dependency requirements to add to
+     * @param configuration the CRUD configuration to resolve the data generator from
+     */
     private static void addTestDataGeneratorRequirement(final List<DependencyRequirement> requirements,
             final CrudConfiguration configuration) {
 
@@ -305,20 +396,43 @@ public final class DependencyCheckUtils {
                     coordinate("org.instancio", "instancio-core"));
             case PODAM -> addRequirement(requirements, "tests.dataGenerator=PODAM",
                     coordinate("uk.co.jemos.podam", "podam"));
-            default -> { }
+            default -> {}
         }
     }
 
+    /**
+     * Add a dependency requirement to the given list of requirements.
+     * 
+     * @param requirements the list of dependency requirements to add the new requirement to
+     * @param scenario     the scenario for which the dependency is required
+     * @param alternatives the list of dependency coordinates that are expected to be present in the project if the scenario is true
+     */
     private static void addRequirement(final List<DependencyRequirement> requirements, final String scenario,
             final DependencyCoordinate... alternatives) {
+
         requirements.add(new DependencyRequirement(scenario, List.of(alternatives)));
     }
 
+    /**
+     * Create a dependency coordinate object.
+     * 
+     * @param groupId    the group id of the dependency
+     * @param artifactId the artifact id of the dependency
+     * @return a dependency coordinate object
+     */
     private static DependencyCoordinate coordinate(final String groupId, final String artifactId) {
         return new DependencyCoordinate(groupId, artifactId);
     }
 
+    /**
+     * Normalize a dependency coordinate by trimming and lowercasing the group id and artifact id.
+     * 
+     * @param groupId the group id
+     * @param artifactId the artifact id
+     * @return the normalized coordinate or null if either the group id or artifact id is blank
+     */
     private static String normalizeCoordinate(final String groupId, final String artifactId) {
+        
         if (StringUtils.isBlank(groupId) || StringUtils.isBlank(artifactId)) {
             return null;
         }
