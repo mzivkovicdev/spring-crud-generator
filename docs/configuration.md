@@ -142,6 +142,7 @@ Advanced and feature-specific configuration options.
 | `optimisticLocking.backoff.multiplier` | number  | `0.0`   | Backoff multiplier. `0.0` means no exponential backoff (constant delay) unless explicitly overridden  |
 | `optimisticLocking.backoff.maxDelayMs` | number  | `0`     | Maximum backoff delay in milliseconds. `0` means “no explicit max”, only `delay * multiplier` applies |
 | `spring.jpa.open-in-view`              | boolean | `false` | Enables/disables OSIV. The generator always supports explicit fetch plans via `EntityGraph` and when this property is false it treats them as the default approach for loading LAZY relations to avoid `LazyInitializationException` during DTO mapping. |
+| `github.actions`                       | boolean | `false` | Generates a basic GitHub Actions CI workflow file at `.github/workflows/ci.yml` (checkout, setup Java, Maven cache, build, test). |
 
 > The retry configuration is generated only if **optimisticLocking** is enabled. Custom retry annotation is genereted if at least one of the `optimisticLocking.retry.*` / `optimisticLocking.backoff.*` properties is provided. Any missing values fall back to the defaults listed above.  
 > Enables/disables OSIV. When `false`, the generator uses `EntityGraph` as the default fetch strategy for `LAZY` relations to avoid `LazyInitializationException` during DTO mapping.
