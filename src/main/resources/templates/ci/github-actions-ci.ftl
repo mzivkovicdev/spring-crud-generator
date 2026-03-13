@@ -18,15 +18,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '${javaVersion}'
-
-      - name: Cache Maven repository
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          cache: 'maven'
 
       - name: Build & run tests
         run: mvn -B verify
