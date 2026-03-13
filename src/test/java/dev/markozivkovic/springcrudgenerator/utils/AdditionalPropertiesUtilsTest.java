@@ -439,4 +439,61 @@ class AdditionalPropertiesUtilsTest {
         assertFalse(result);
     }
 
+    @Test
+    @DisplayName("isGithubActionsEnabled: returns false when additionalProperties is null")
+    void isGithubActionsEnabled_nullMap_returnsFalse() {
+        assertFalse(AdditionalPropertiesUtils.isGithubActionsEnabled(null));
+    }
+
+    @Test
+    @DisplayName("isGithubActionsEnabled: returns false when key is missing")
+    void isGithubActionsEnabled_missingKey_returnsFalse() {
+        assertFalse(AdditionalPropertiesUtils.isGithubActionsEnabled(Map.of()));
+    }
+
+    @Test
+    @DisplayName("isGithubActionsEnabled: returns true when value is Boolean.TRUE")
+    void isGithubActionsEnabled_true_returnsTrue() {
+        assertTrue(AdditionalPropertiesUtils.isGithubActionsEnabled(
+                Map.of(AdditionalConfigurationConstants.GITHUB_ACTIONS, Boolean.TRUE)
+        ));
+    }
+
+    @Test
+    @DisplayName("isGithubActionsEnabled: returns false when value is Boolean.FALSE")
+    void isGithubActionsEnabled_false_returnsFalse() {
+        assertFalse(AdditionalPropertiesUtils.isGithubActionsEnabled(
+                Map.of(AdditionalConfigurationConstants.GITHUB_ACTIONS, Boolean.FALSE)
+        ));
+    }
+
+    @Test
+    @DisplayName("isGithubActionsEnabled: throws when value is not boolean")
+    void isGithubActionsEnabled_nonBoolean_throws() {
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> AdditionalPropertiesUtils.isGithubActionsEnabled(
+                        Map.of(AdditionalConfigurationConstants.GITHUB_ACTIONS, "true")
+                )
+        );
+
+        assertTrue(ex.getMessage().contains(AdditionalConfigurationConstants.GITHUB_ACTIONS));
+        assertTrue(ex.getMessage().contains("Expected Boolean"));
+    }
+
+    @Test
+    @DisplayName("isGithubActionsEnabled: throws when value is null")
+    void isGithubActionsEnabled_nullValue_throws() {
+        final Map<String, Object> props = new HashMap<>();
+        props.put(AdditionalConfigurationConstants.GITHUB_ACTIONS, null);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> AdditionalPropertiesUtils.isGithubActionsEnabled(props)
+        );
+
+        assertTrue(ex.getMessage().contains(AdditionalConfigurationConstants.GITHUB_ACTIONS));
+        assertTrue(ex.getMessage().contains("Expected Boolean"));
+    }
+
 }
