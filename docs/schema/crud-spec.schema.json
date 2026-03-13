@@ -265,6 +265,10 @@
         },
         "spring.jpa.open-in-view": {
           "type": "boolean"
+        },
+        "github.actions": {
+          "type": "boolean",
+          "description": "Generate a basic GitHub Actions CI workflow under .github/workflows/ci.yml."
         }
       },
       "additionalProperties": {

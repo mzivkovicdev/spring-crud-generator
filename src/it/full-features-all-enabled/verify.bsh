@@ -22,6 +22,7 @@ requireFile("generator-state.json");
 requireFile("migration-state.json");
 requireFile("Dockerfile");
 requireFile("docker-compose.yml");
+requireFile(".github/workflows/ci.yml");
 
 requireFile("src/main/resources/swagger/product-api.yaml");
 requireFile("src/main/resources/swagger/order-api.yaml");
