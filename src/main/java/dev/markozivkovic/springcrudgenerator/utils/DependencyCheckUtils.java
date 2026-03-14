@@ -238,6 +238,13 @@ public final class DependencyCheckUtils {
                     coordinate("org.springframework.boot", "spring-boot-starter-test"));
             addTestDataGeneratorRequirement(requirements, configuration);
 
+            if (isSpringBoot4) {
+                addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test exclusions)",
+                        coordinate("org.springframework.boot", "spring-boot-starter-oauth2-client"));
+                addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test exclusions)",
+                        coordinate("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"));
+            }
+
             if (isGraphQlEnabled) {
                 if (isSpringBoot4) {
                     addRequirement(requirements, "tests.unit=true with graphql.enabled=true (Spring Boot 4)",
