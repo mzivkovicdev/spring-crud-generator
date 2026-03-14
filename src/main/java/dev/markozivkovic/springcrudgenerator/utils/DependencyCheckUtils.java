@@ -244,9 +244,9 @@ public final class DependencyCheckUtils {
             }
 
             if (isSpringBoot4) {
-                addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test exclusions)",
+                addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test support)",
                         coordinate("org.springframework.boot", "spring-boot-starter-oauth2-client"));
-                addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test exclusions)",
+                addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test support)",
                         coordinate("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"));
                 addRequirement(requirements, "tests.unit=true with Spring Boot 4",
                         coordinate("org.springframework.boot", "spring-boot-starter-data-jpa-test"));
