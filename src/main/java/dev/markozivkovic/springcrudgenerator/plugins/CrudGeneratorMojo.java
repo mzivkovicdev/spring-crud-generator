@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.maven.project.MavenProject;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -44,6 +45,7 @@ import dev.markozivkovic.springcrudgenerator.models.GeneratorState;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.utils.CrudMojoUtils;
+import dev.markozivkovic.springcrudgenerator.utils.DependencyCheckUtils;
 import dev.markozivkovic.springcrudgenerator.utils.GeneratorStateUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.validators.PackageConfigurationValidator;
@@ -77,6 +79,9 @@ public class CrudGeneratorMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${plugin}", readonly = true)
     private PluginDescriptor pluginDescriptor;
+
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    private MavenProject project;
 
     public void execute() throws MojoExecutionException {
 
@@ -114,6 +119,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
             );
 
             if (entitiesToGenerate.isEmpty()) {
+                DependencyCheckUtils.warnMissingDependencies(spec.getConfiguration(), project);
                 LOGGER.info("No changes detected in CRUD spec. Skipping code generation.");
                 return;
             }
@@ -131,6 +137,7 @@ public class CrudGeneratorMojo extends AbstractMojo {
                 GeneratorStateUtils.updateFingerprint(generatorState, entity.getName(), fingerprints.get(entity.getName()), configurationFingerprints)
             );
             GeneratorStateUtils.save(projectMetadata.getProjectBaseDir(), generatorState);
+            DependencyCheckUtils.warnMissingDependencies(spec.getConfiguration(), project);
 
             LOGGER.info("Generator finished for file: {}", inputSpecFile);
         } catch (final Exception e) {

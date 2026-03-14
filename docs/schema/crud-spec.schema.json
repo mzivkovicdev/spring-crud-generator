@@ -90,6 +90,10 @@
         "migrationScripts": {
           "type": "boolean"
         },
+        "dependencyCheck": {
+          "type": "boolean",
+          "description": "When true, generator scans project pom.xml and warns about missing dependencies required by enabled features."
+        },
         "tests": {
           "$ref": "#/$defs/tests"
         },

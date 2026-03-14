@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
+import org.apache.maven.project.MavenProject;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -33,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 import dev.markozivkovic.springcrudgenerator.utils.CrudMojoUtils;
+import dev.markozivkovic.springcrudgenerator.utils.DependencyCheckUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.validators.PackageConfigurationValidator;
 import dev.markozivkovic.springcrudgenerator.validators.SpecificationValidator;
@@ -47,6 +49,9 @@ public class CrudValidateMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.parent.version}", readonly = true)
     private String parentVersion;
+
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    private MavenProject project;
 
     @Parameter(defaultValue = "${plugin}", readonly = true)
     private PluginDescriptor pluginDescriptor;
@@ -71,6 +76,7 @@ public class CrudValidateMojo extends AbstractMojo {
             SpecificationValidator.validate(spec);
             PackageConfigurationValidator.validate(spec.getPackages(), spec.getConfiguration());
             SpringBootVersionUtils.resolveAndSetSpringBootMajor(spec, parentVersion);
+            DependencyCheckUtils.warnMissingDependencies(spec.getConfiguration(), project);
 
             LOGGER.info("Spec file is valid for generation: {}", specPath);
         } catch (final Exception e) {
