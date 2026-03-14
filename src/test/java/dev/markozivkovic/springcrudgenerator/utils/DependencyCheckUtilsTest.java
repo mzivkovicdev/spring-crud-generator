@@ -184,6 +184,7 @@ class DependencyCheckUtilsTest {
                 dep("org.springframework.boot", "spring-boot-starter-test"),
                 dep("org.springframework.boot", "spring-boot-starter-oauth2-client"),
                 dep("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa-test"),
                 dep("org.springframework.boot", "spring-boot-starter-graphql-test"),
                 dep("org.instancio", "instancio-core")
         );
@@ -236,6 +237,7 @@ class DependencyCheckUtilsTest {
         assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-oauth2-client"));
         assertTrue(containsDependency(missingDependencies,
                 "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server"));
+        assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-jpa-test"));
     }
 
     private Dependency dep(final String groupId, final String artifactId) {
