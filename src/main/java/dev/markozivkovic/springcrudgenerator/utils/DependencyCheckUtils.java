@@ -238,6 +238,11 @@ public final class DependencyCheckUtils {
                     coordinate("org.springframework.boot", "spring-boot-starter-test"));
             addTestDataGeneratorRequirement(requirements, configuration);
 
+            if (isRedisCacheEnabled(configuration)) {
+                addRequirement(requirements, "tests.unit=true with cache.type=REDIS",
+                        coordinate("org.springframework.boot", "spring-boot-starter-data-redis-test"));
+            }
+
             if (isSpringBoot4) {
                 addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test exclusions)",
                         coordinate("org.springframework.boot", "spring-boot-starter-oauth2-client"));
@@ -245,6 +250,12 @@ public final class DependencyCheckUtils {
                         coordinate("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"));
                 addRequirement(requirements, "tests.unit=true with Spring Boot 4",
                         coordinate("org.springframework.boot", "spring-boot-starter-data-jpa-test"));
+
+                if (Boolean.TRUE.equals(configuration.isMigrationScripts())) {
+                    addRequirement(requirements, "tests.unit=true with migrationScripts=true (Spring Boot 4)",
+                            coordinate("org.springframework.boot", "spring-boot-starter-flyway-test"));
+                }
+
             }
 
             if (isGraphQlEnabled) {
@@ -300,6 +311,16 @@ public final class DependencyCheckUtils {
      */
     private static boolean isCacheEnabled(final CrudConfiguration configuration) {
         return Objects.nonNull(configuration.getCache()) && Boolean.TRUE.equals(configuration.getCache().getEnabled());
+    }
+
+    /**
+     * Returns true if Redis cache is explicitly enabled in the given configuration.
+     *
+     * @param configuration the Crud configuration
+     * @return true if Redis cache is enabled, false otherwise
+     */
+    private static boolean isRedisCacheEnabled(final CrudConfiguration configuration) {
+        return isCacheEnabled(configuration) && CacheTypeEnum.REDIS.equals(configuration.getCache().getType());
     }
 
     /**

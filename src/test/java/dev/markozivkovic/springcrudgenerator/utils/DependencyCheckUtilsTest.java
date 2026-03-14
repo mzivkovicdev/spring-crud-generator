@@ -55,6 +55,7 @@ class DependencyCheckUtilsTest {
                 dep("com.graphql-java", "graphql-java-extended-scalars"),
                 dep("org.springframework.boot", "spring-boot-starter-cache"),
                 dep("org.springframework.boot", "spring-boot-starter-data-redis"),
+                dep("org.springframework.boot", "spring-boot-starter-data-redis-test"),
                 dep("org.flywaydb", "flyway-core"),
                 dep("org.springframework.boot", "spring-boot-starter-test"),
                 dep("org.instancio", "instancio-core"),
@@ -94,6 +95,7 @@ class DependencyCheckUtilsTest {
         assertTrue(containsDependency(missingDependencies, "org.flywaydb:flyway-core"));
         assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-graphql"));
         assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-redis"));
+        assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-redis-test"));
         assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-test"));
         assertTrue(containsDependency(missingDependencies, "uk.co.jemos.podam:podam"));
         assertTrue(containsDependency(missingDependencies, "org.springframework.retry:spring-retry"));
@@ -170,6 +172,7 @@ class DependencyCheckUtilsTest {
                 .setSpringBootVersion("4")
                 .setGraphql(new GraphQLDefinition(true, true))
                 .setMigrationScripts(true)
+                .setCache(new CacheConfiguration().setEnabled(true).setType(CacheTypeEnum.REDIS))
                 .setTests(new TestConfiguration().setUnit(true).setDataGenerator(DataGeneratorEnum.INSTANCIO));
 
         final MavenProject project = createProjectWithDependencies(
@@ -180,11 +183,15 @@ class DependencyCheckUtilsTest {
                 dep("org.postgresql", "postgresql"),
                 dep("org.springframework.boot", "spring-boot-starter-graphql"),
                 dep("com.graphql-java", "graphql-java-extended-scalars"),
+                dep("org.springframework.boot", "spring-boot-starter-cache"),
+                dep("org.springframework.boot", "spring-boot-starter-data-redis"),
                 dep("org.springframework.boot", "spring-boot-starter-flyway"),
                 dep("org.springframework.boot", "spring-boot-starter-test"),
                 dep("org.springframework.boot", "spring-boot-starter-oauth2-client"),
                 dep("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"),
                 dep("org.springframework.boot", "spring-boot-starter-data-jpa-test"),
+                dep("org.springframework.boot", "spring-boot-starter-data-redis-test"),
+                dep("org.springframework.boot", "spring-boot-starter-flyway-test"),
                 dep("org.springframework.boot", "spring-boot-starter-graphql-test"),
                 dep("org.instancio", "instancio-core")
         );
@@ -238,6 +245,61 @@ class DependencyCheckUtilsTest {
         assertTrue(containsDependency(missingDependencies,
                 "org.springframework.boot:spring-boot-starter-security-oauth2-resource-server"));
         assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-jpa-test"));
+    }
+
+    @Test
+    void findMissingDependencies_springBoot4_unitTestsMissingRedisAndFlywayTestDependencies_returnsWarnings() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.POSTGRESQL)
+                .setSpringBootVersion("4")
+                .setMigrationScripts(true)
+                .setCache(new CacheConfiguration().setEnabled(true).setType(CacheTypeEnum.REDIS))
+                .setTests(new TestConfiguration().setUnit(true).setDataGenerator(DataGeneratorEnum.INSTANCIO));
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-webmvc"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.mapstruct", "mapstruct"),
+                dep("org.postgresql", "postgresql"),
+                dep("org.springframework.boot", "spring-boot-starter-cache"),
+                dep("org.springframework.boot", "spring-boot-starter-data-redis"),
+                dep("org.springframework.boot", "spring-boot-starter-flyway"),
+                dep("org.springframework.boot", "spring-boot-starter-test"),
+                dep("org.springframework.boot", "spring-boot-starter-oauth2-client"),
+                dep("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa-test"),
+                dep("org.instancio", "instancio-core")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-redis-test"));
+        assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-flyway-test"));
+    }
+
+    @Test
+    void findMissingDependencies_redisCacheWithoutUnitTests_doesNotRequireRedisTestStarter() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.POSTGRESQL)
+                .setSpringBootVersion("3")
+                .setCache(new CacheConfiguration().setEnabled(true).setType(CacheTypeEnum.REDIS));
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-web"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.mapstruct", "mapstruct"),
+                dep("org.postgresql", "postgresql"),
+                dep("org.springframework.boot", "spring-boot-starter-cache"),
+                dep("org.springframework.boot", "spring-boot-starter-data-redis")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-redis-test"));
     }
 
     private Dependency dep(final String groupId, final String artifactId) {
