@@ -27,6 +27,7 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
@@ -387,7 +388,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(false);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(false);
+            final String result = ServiceImports.computeJpaServiceBaseImport(false, null);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER), "LOGGER import missing");
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY), "LOGGER_FACTORY import missing");
@@ -412,7 +413,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(false);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(true);
+            final String result = ServiceImports.computeJpaServiceBaseImport(true, null);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER));
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY));
@@ -427,6 +428,27 @@ class ServiceImportsTest {
     }
 
     @Test
+    @DisplayName("computeJpaServiceBaseImport: when sort is configured it includes Sort imports")
+    void computeJpaServiceBaseImport_sortConfigured_includesSortImports() {
+
+        final ModelDefinition model = new ModelDefinition()
+                .setSort(new SortDefinition()
+                        .setAllowedFields(List.of("name"))
+                        .setDefaultField("name"));
+
+        try (final MockedStatic<GeneratorContext> genContext = Mockito.mockStatic(GeneratorContext.class)) {
+
+            genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            final String result = ServiceImports.computeJpaServiceBaseImport(false, model);
+
+            assertTrue(result.contains("import " + ImportConstants.SpringData.SORT));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.SORT_DIRECTION));
+        }
+    }
+
+    @Test
     @DisplayName("computeJpaServiceBaseImport: cache=true and retryable annotation IS generated → no @Transactional, but has cache imports")
     void computeJpaServiceBaseImport_cacheEnabled_retryGenerated_noTransactionalButCacheImports() {
         
@@ -435,7 +457,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(true);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(true);
+            final String result = ServiceImports.computeJpaServiceBaseImport(true, null);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER));
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY));
@@ -461,7 +483,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(true);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(false);
+            final String result = ServiceImports.computeJpaServiceBaseImport(false, null);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER));
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY));
