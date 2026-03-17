@@ -37,6 +37,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -129,6 +130,7 @@ class RestControllerUnitTestGeneratorTest {
              final MockedStatic<RestControllerTemplateContext> templateCtx = mockStatic(RestControllerTemplateContext.class);
              final MockedStatic<RestControllerImports> imports = mockStatic(RestControllerImports.class);
              final MockedStatic<DataGeneratorTemplateContext> dataCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<SortUtils> sortUtils = mockStatic(SortUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> ftl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class)) {
 
@@ -187,6 +189,7 @@ class RestControllerUnitTestGeneratorTest {
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignDeleteByIdMockMvcTest"), anyString()));
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignUpdateByIdMockMvcTest"), anyString()));
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignCreateMockMvcTest"), anyString()));
+            sortUtils.verify(() -> SortUtils.contributeSortContext(eq(model), anyMap()), times(1));
 
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), startsWith("CampaignAdd"), anyString()), never());
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), startsWith("CampaignRemove"), anyString()), never());
@@ -229,6 +232,7 @@ class RestControllerUnitTestGeneratorTest {
              final MockedStatic<RestControllerTemplateContext> templateCtx = mockStatic(RestControllerTemplateContext.class);
              final MockedStatic<RestControllerImports> imports = mockStatic(RestControllerImports.class);
              final MockedStatic<DataGeneratorTemplateContext> dataCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<SortUtils> sortUtils = mockStatic(SortUtils.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> ftl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class)) {
 
@@ -302,6 +306,7 @@ class RestControllerUnitTestGeneratorTest {
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignCreateMockMvcTest"), anyString()));
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignAddUserMockMvcTest"), anyString()));
             fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignRemoveUserMockMvcTest"), anyString()));
+            sortUtils.verify(() -> SortUtils.contributeSortContext(eq(model), anyMap()), times(1));
         }
     }
 
