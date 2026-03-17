@@ -365,6 +365,9 @@
         "audit": {
           "$ref": "#/$defs/audit"
         },
+        "sort": {
+          "$ref": "#/$defs/sort"
+        },
         "fields": {
           "type": "array",
           "minItems": 1,
@@ -391,6 +394,36 @@
             "localdate",
             "localdatetime"
           ]
+        }
+      }
+    },
+    "sortDirection": {
+      "type": "string",
+      "enum": [
+        "ASC",
+        "DESC",
+        "asc",
+        "desc"
+      ]
+    },
+    "sort": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowedFields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "defaultField": {
+          "type": "string",
+          "minLength": 1
+        },
+        "defaultDirection": {
+          "$ref": "#/$defs/sortDirection"
         }
       }
     },
