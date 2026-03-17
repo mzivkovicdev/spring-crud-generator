@@ -30,6 +30,7 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SwaggerUtils;
 
@@ -66,6 +67,7 @@ public class SwaggerTemplateContext {
         final Map<String, Object> context = new HashMap<>(
                 Map.of("strippedModelName", strippedModelName)
         );
+        SortUtils.contributeSortContext(modelDefinition, context);
 
         return context;
     }

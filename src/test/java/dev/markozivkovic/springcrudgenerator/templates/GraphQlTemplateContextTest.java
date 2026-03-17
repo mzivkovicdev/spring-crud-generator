@@ -38,6 +38,8 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorResponse;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
@@ -436,6 +438,11 @@ class GraphQlTemplateContextTest {
 
         final List<FieldDefinition> fields = List.of(idField);
         final ModelDefinition model = newModel("InvoiceEntity", fields);
+        final SortDefinition sort = new SortDefinition()
+                .setAllowedFields(List.of("name", "createdAt"))
+                .setDefaultField("name")
+                .setDefaultDirection(SortDirection.ASC);
+        when(model.getSort()).thenReturn(sort);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
@@ -452,6 +459,10 @@ class GraphQlTemplateContextTest {
             assertEquals("InvoiceEntity", ctx.get(TemplateContextConstants.MODEL_NAME));
             assertEquals("Invoice", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
             assertEquals("java.util.UUID", ctx.get(TemplateContextConstants.ID_TYPE));
+            assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
+            assertEquals(List.of("name", "createdAt"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
+            assertEquals("name", ctx.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
+            assertEquals("ASC", ctx.get(TemplateContextConstants.SORT_DEFAULT_DIRECTION));
         }
     }
 

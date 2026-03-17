@@ -28,6 +28,8 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
@@ -99,6 +101,11 @@ class SwaggerTemplateContextTest {
     void computeBaseContext_shouldReturnStrippedModelNameOnly() {
 
         final ModelDefinition model = newModel("OrderEntity", List.of());
+        final SortDefinition sort = new SortDefinition()
+                .setAllowedFields(List.of("name"))
+                .setDefaultField("name")
+                .setDefaultDirection(SortDirection.ASC);
+        when(model.getSort()).thenReturn(sort);
 
         try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
 
@@ -108,6 +115,9 @@ class SwaggerTemplateContextTest {
             final Map<String, Object> ctx = SwaggerTemplateContext.computeBaseContext(model);
 
             assertEquals("Order", ctx.get("strippedModelName"));
+            assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
+            assertEquals(List.of("name"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
+            assertEquals("name", ctx.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
         }
     }
 

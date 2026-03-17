@@ -32,6 +32,8 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextBuilder;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
@@ -709,6 +711,29 @@ class RestControllerTemplateContextTest {
 
             assertEquals("CustomerEntity", ctx.get(TemplateContextConstants.MODEL_NAME));
             assertEquals("Customer", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
+        }
+    }
+
+    @Test
+    void computeGetAllEndpointContext_shouldIncludeSortContextWhenEnabled() {
+        final ModelDefinition model = newModel("CustomerEntity", new ArrayList<>());
+        final SortDefinition sort = new SortDefinition()
+                .setAllowedFields(List.of("name", "createdAt"))
+                .setDefaultField("name")
+                .setDefaultDirection(SortDirection.ASC);
+        when(model.getSort()).thenReturn(sort);
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("CustomerEntity"))
+                     .thenReturn("Customer");
+
+            final Map<String, Object> ctx = RestControllerTemplateContext.computeGetAllEndpointContext(model);
+
+            assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
+            assertEquals(List.of("name", "createdAt"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
+            assertEquals("name", ctx.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
+            assertEquals("ASC", ctx.get(TemplateContextConstants.SORT_DEFAULT_DIRECTION));
         }
     }
 
