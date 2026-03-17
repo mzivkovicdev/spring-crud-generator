@@ -30,6 +30,7 @@ import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
@@ -43,10 +44,13 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
 
     private final CrudConfiguration configuration;
     private final PackageConfiguration packageConfiguration;
+    private final ProjectMetadata projectMetadata;
 
-    public AdditionalPropertyGenerator(final CrudConfiguration configuration, final PackageConfiguration packageConfiguration) {
+    public AdditionalPropertyGenerator(final CrudConfiguration configuration, final PackageConfiguration packageConfiguration,
+            final ProjectMetadata projectMetadata) {
         this.configuration = configuration;
         this.packageConfiguration = packageConfiguration;
+        this.projectMetadata = projectMetadata;
     }
 
     @Override
@@ -63,6 +67,7 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
         this.generateOptimisticLockingRetryConfiguration(outputDir);
         this.generateRetryableAnnotationConfiguration(outputDir);
         this.generateExclusionNullConfiguration(outputDir);
+        this.generateGithubActionsWorkflow();
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG);
     }
@@ -178,6 +183,35 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY);
+    }
+
+    /**
+     * Generates a basic GitHub Actions workflow for Maven CI.
+     * The workflow is generated only when additional property 'github.actions' is enabled.
+     */
+    private void generateGithubActionsWorkflow() {
+
+        if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GITHUB_ACTIONS_WORKFLOW)) return;
+
+        if (!AdditionalPropertiesUtils.isGithubActionsEnabled(this.configuration.getAdditionalProperties())) return;
+
+        LOGGER.info("Generating GitHub Actions workflow");
+
+        final Integer javaVersion = this.configuration.getJavaVersion() == null ? 17 : this.configuration.getJavaVersion();
+        final Map<String, Object> context = Map.of(
+                "javaVersion", javaVersion
+        );
+
+        final String workflowContent = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "ci/github-actions-ci.ftl", context
+        );
+
+        final String workflowDir = String.format("%s/.github/workflows", this.projectMetadata.getProjectBaseDir());
+        FileWriterUtils.writeToFile(workflowDir, "ci.yml", workflowContent);
+
+        LOGGER.info("GitHub Actions workflow generated");
+
+        GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GITHUB_ACTIONS_WORKFLOW);
     }
     
 }

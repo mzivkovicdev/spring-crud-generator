@@ -8,11 +8,13 @@ import static org.mockito.Mockito.mockStatic;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
@@ -171,6 +173,36 @@ class SpecificationValidatorTest {
         spec.getConfiguration().setJavaVersion(null);
 
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow github.actions when value is boolean")
+    void validate_githubActionsBoolean_allowed() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        spec.getConfiguration().setAdditionalProperties(
+                Map.of(AdditionalConfigurationConstants.GITHUB_ACTIONS, Boolean.TRUE)
+        );
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should throw when github.actions is not boolean")
+    void validate_githubActionsNonBoolean_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        spec.getConfiguration().setAdditionalProperties(
+                Map.of(AdditionalConfigurationConstants.GITHUB_ACTIONS, "true")
+        );
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains(AdditionalConfigurationConstants.GITHUB_ACTIONS));
+        assertTrue(ex.getMessage().contains("must be boolean"));
     }
 
     @Test

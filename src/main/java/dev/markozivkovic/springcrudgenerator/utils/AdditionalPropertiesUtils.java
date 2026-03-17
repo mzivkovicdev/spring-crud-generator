@@ -199,5 +199,35 @@ public class AdditionalPropertiesUtils {
                         .orElse(false)
         );
     }
+
+    /**
+     * Returns true only when the 'github.actions' additional property is explicitly set to Boolean.TRUE.
+     * If the property is present with any non-boolean type, an IllegalArgumentException is thrown.
+     *
+     * @param additionalProperties map of additional properties
+     * @return true when GitHub Actions workflow generation is enabled, false when disabled or absent
+     */
+    public static boolean isGithubActionsEnabled(final Map<String, Object> additionalProperties) {
+
+        if (Objects.isNull(additionalProperties)
+                || !additionalProperties.containsKey(AdditionalConfigurationConstants.GITHUB_ACTIONS)) {
+            return false;
+        }
+
+        final Object value = additionalProperties.get(AdditionalConfigurationConstants.GITHUB_ACTIONS);
+
+        if (!(value instanceof Boolean)) {
+            final String actualType = Objects.isNull(value) ? "null" : value.getClass().getSimpleName();
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Invalid type for '%s'. Expected Boolean, but got: %s",
+                            AdditionalConfigurationConstants.GITHUB_ACTIONS,
+                            actualType
+                    )
+            );
+        }
+
+        return Boolean.TRUE.equals(value);
+    }
     
 }

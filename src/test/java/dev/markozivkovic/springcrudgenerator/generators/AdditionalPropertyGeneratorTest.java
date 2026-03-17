@@ -26,6 +26,7 @@ import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
@@ -38,6 +39,7 @@ class AdditionalPropertyGeneratorTest {
     private static class Env {
         CrudConfiguration config;
         PackageConfiguration pkgConfig;
+        ProjectMetadata metadata;
         Map<String, Object> additionalProps;
         AdditionalPropertyGenerator generator;
     }
@@ -46,12 +48,14 @@ class AdditionalPropertyGeneratorTest {
         final Env env = new Env();
         env.config = mock(CrudConfiguration.class);
         env.pkgConfig = mock(PackageConfiguration.class);
+        env.metadata = mock(ProjectMetadata.class);
         env.additionalProps = new HashMap<>();
 
         when(env.config.getAdditionalProperties()).thenReturn(env.additionalProps);
         when(env.config.getOptimisticLocking()).thenReturn(false);
+        when(env.metadata.getProjectBaseDir()).thenReturn("/tmp/project");
 
-        env.generator = new AdditionalPropertyGenerator(env.config, env.pkgConfig);
+        env.generator = new AdditionalPropertyGenerator(env.config, env.pkgConfig, env.metadata);
         return env;
     }
 
@@ -594,6 +598,158 @@ class AdditionalPropertyGeneratorTest {
 
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG), never());
+        }
+    }
+
+    @Test
+    @DisplayName("generate: should generate GitHub Actions workflow when github.actions is true")
+    void generate_shouldGenerateGithubActionsWorkflow_whenEnabled() {
+
+        final Env env = prepareEnv();
+        env.additionalProps.put(AdditionalConfigurationConstants.GITHUB_ACTIONS, Boolean.TRUE);
+        when(env.config.getJavaVersion()).thenReturn(21);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+        final List<InvocationOnMock> writerInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                    FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                        templateInvocations.add(invocation);
+                        if ("processTemplate".equals(invocation.getMethod().getName())) {
+                            return "TEMPLATE-" + invocation.getArgument(0, String.class);
+                        }
+                        return null;
+                    });
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                writerInvocations.add(invocation);
+                return null;
+            })) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GITHUB_ACTIONS_WORKFLOW))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            env.generator.generate("out");
+
+            final boolean ciTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "ci/github-actions-ci.ftl".equals(inv.getArgument(0)));
+            assertTrue(ciTemplateUsed, "GitHub Actions CI template should be used");
+
+            final boolean wroteCiWorkflow = writerInvocations.stream()
+                    .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
+                            && "/tmp/project/.github/workflows".equals(inv.getArgument(0))
+                            && "ci.yml".equals(inv.getArgument(1)));
+            assertTrue(wroteCiWorkflow, "GitHub Actions workflow should be written to .github/workflows/ci.yml");
+
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GITHUB_ACTIONS_WORKFLOW));
+            genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG));
+        }
+    }
+
+    @Test
+    @DisplayName("generate: should NOT generate GitHub Actions workflow when github.actions is absent")
+    void generate_shouldNotGenerateGithubActionsWorkflow_whenAbsent() {
+
+        final Env env = prepareEnv();
+        env.additionalProps.put("some.key", true);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+        final List<InvocationOnMock> writerInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                    FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                        templateInvocations.add(invocation);
+                        return null;
+                    });
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                writerInvocations.add(invocation);
+                return null;
+            })) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GITHUB_ACTIONS_WORKFLOW))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            env.generator.generate("out");
+
+            final boolean ciTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "ci/github-actions-ci.ftl".equals(inv.getArgument(0)));
+            final boolean wroteCiWorkflow = writerInvocations.stream()
+                    .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
+                            && "ci.yml".equals(inv.getArgument(1)));
+
+            assertFalse(ciTemplateUsed, "GitHub Actions CI template should NOT be used when key is absent");
+            assertFalse(wroteCiWorkflow, "GitHub Actions workflow should NOT be written when key is absent");
+        }
+    }
+
+    @Test
+    @DisplayName("generate: should NOT generate GitHub Actions workflow when github.actions is false")
+    void generate_shouldNotGenerateGithubActionsWorkflow_whenDisabled() {
+
+        final Env env = prepareEnv();
+        env.additionalProps.put(AdditionalConfigurationConstants.GITHUB_ACTIONS, Boolean.FALSE);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+        final List<InvocationOnMock> writerInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+            final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+            final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                    FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                        templateInvocations.add(invocation);
+                        return null;
+                    });
+            final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> {
+                writerInvocations.add(invocation);
+                return null;
+            })) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.ADDITIONAL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.GITHUB_ACTIONS_WORKFLOW))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.EXCLUSION_NULL_CONFIG))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.OPTIMISTIC_LOCKING_RETRY))
+                    .thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            env.generator.generate("out");
+
+            final boolean ciTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "ci/github-actions-ci.ftl".equals(inv.getArgument(0)));
+            final boolean wroteCiWorkflow = writerInvocations.stream()
+                    .anyMatch(inv -> "writeToFile".equals(inv.getMethod().getName())
+                            && "ci.yml".equals(inv.getArgument(1)));
+
+            assertFalse(ciTemplateUsed, "GitHub Actions CI template should NOT be used when key is false");
+            assertFalse(wroteCiWorkflow, "GitHub Actions workflow should NOT be written when key is false");
         }
     }
 }

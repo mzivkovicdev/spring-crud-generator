@@ -1,7 +1,7 @@
 configuration:
   database: postgresql
   javaVersion: 21
-  springBootVersion: 3 # valid formats are also 4.0.1 or 4.0
+  springBootVersion: "3" # valid formats are also 4.0.1 or 4.0
   optimisticLocking: true
   docker:
     dockerfile: true
@@ -38,6 +38,7 @@ configuration:
     optimisticLocking.backoff.multiplier: 2.0
     optimisticLocking.backoff.maxDelayMs: 1000
     spring.jpa.open-in-view: false
+    github.actions: true
 packages:
   annotations: annotation
   businessservices: businessservice

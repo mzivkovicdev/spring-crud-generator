@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
+import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
@@ -36,6 +37,7 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.RegexUtils;
@@ -73,6 +75,7 @@ public class SpecificationValidator {
 
         validateJavaVersion(specification.getConfiguration(), errors);
         validateDatabase(specification.getConfiguration().getDatabase(), errors);
+        validateAdditionalProperties(specification.getConfiguration(), errors);
 
         try {
             DockerConfigurationValidator.validate(specification.getConfiguration().getDocker());
@@ -152,6 +155,25 @@ public class SpecificationValidator {
             errors.add(String.format(
                     "Java version %d is not supported. Maximum supported version is %d.",
                     configuration.getJavaVersion(), MAX_SUPPORTED_JAVA
+            ));
+        }
+    }
+
+    /**
+     * Validates typed additional property values that are consumed by the generator.
+     *
+     * @param configuration configuration holding additional properties
+     * @param errors collected validation errors
+     */
+    private static void validateAdditionalProperties(final CrudConfiguration configuration, final List<String> errors) {
+
+        try {
+            AdditionalPropertiesUtils.isGithubActionsEnabled(configuration.getAdditionalProperties());
+        } catch (final IllegalArgumentException e) {
+            errors.add(String.format(
+                    "Additional property '%s' must be boolean. %s",
+                    AdditionalConfigurationConstants.GITHUB_ACTIONS,
+                    e.getMessage()
             ));
         }
     }
