@@ -15,6 +15,29 @@ get:
         required: true
         schema:
           type: integer
+      <#if sortEnabled?? && sortEnabled>
+      - in: query
+        name: sortBy
+        description: Sort field. Allowed values are ${sortAllowedFieldsCsv}.
+        required: false
+        schema:
+          type: string
+          enum:
+          <#list sortAllowedFields as sortField>
+            - ${sortField}
+          </#list>
+          default: ${sortDefaultField}
+      - in: query
+        name: sortDirection
+        description: Sort direction. Allowed values are ASC and DESC.
+        required: false
+        schema:
+          type: string
+          enum:
+            - ASC
+            - DESC
+          default: ${sortDefaultDirection}
+      </#if>
       
       summary: Get the ${uncapModelName}s
       tags:

@@ -12,9 +12,15 @@
 
     @QueryMapping
     public PageTO<${transferObjectClass}> ${uncapModelName}sPage(@Argument final Integer pageNumber,
-                                    @Argument final Integer pageSize) {
+                                    @Argument final Integer pageSize<#if sortEnabled?? && sortEnabled>,
+                                    @Argument final java.util.Map<String, Object> sort</#if>) {
         
-        final Page<${modelName?cap_first}> pageObject = this.${serviceField}.getAll(pageNumber, pageSize);
+        final Page<${modelName?cap_first}> pageObject = this.${serviceField}.getAll(
+                pageNumber,
+                pageSize<#if sortEnabled?? && sortEnabled>,
+                extractSortValue(sort, "sortBy"),
+                extractSortValue(sort, "sortDirection")</#if>
+        );
 
         return new PageTO<>(
             pageObject.getTotalPages(),

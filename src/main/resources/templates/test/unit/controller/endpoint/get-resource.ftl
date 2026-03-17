@@ -112,12 +112,20 @@ class ${className} {
         final Page<${modelName}> page${modelName}s = new PageImpl<>(${modelName?uncap_first}s);
         final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
+        <#if sortEnabled?? && sortEnabled>
+        final String sortBy = "${sortDefaultField}";
+        final String sortDirection = "${sortDefaultDirection}";
+        </#if>
 
-        when(this.${serviceField}.getAll(pageNumber, pageSize)).thenReturn(page${modelName}s);
+        when(this.${serviceField}.getAll(
+                pageNumber, pageSize<#if sortEnabled?? && sortEnabled>, sortBy, sortDirection</#if>
+        )).thenReturn(page${modelName}s);
 
         final ResultActions resultActions = this.mockMvc.perform(get("${basePath}/${uncapModelName}s")
                                 .queryParam("pageNumber", String.format("%s", pageNumber))
-                                .queryParam("pageSize", String.format("%s", pageSize)))
+                                .queryParam("pageSize", String.format("%s", pageSize))<#if sortEnabled?? && sortEnabled>
+                                .queryParam("sortBy", sortBy)
+                                .queryParam("sortDirection", sortDirection)</#if>)
                         .andExpect(status().isOk());
 
         <#if !swagger>
@@ -153,7 +161,9 @@ class ${className} {
             </#if>
         });
 
-        verify(this.${serviceField}).getAll(pageNumber, pageSize);
+        verify(this.${serviceField}).getAll(
+                pageNumber, pageSize<#if sortEnabled?? && sortEnabled>, sortBy, sortDirection</#if>
+        );
     }
 
     @Test
