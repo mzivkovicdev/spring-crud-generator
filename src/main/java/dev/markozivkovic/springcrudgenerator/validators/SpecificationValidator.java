@@ -18,6 +18,7 @@ package dev.markozivkovic.springcrudgenerator.validators;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -37,6 +38,7 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
@@ -221,6 +223,116 @@ public class SpecificationValidator {
             validateRegexPattern(model, field, errors);
             validateRelations(model, field, modelNames, errors);
         });
+
+        validateSort(model, errors);
+    }
+
+    /**
+     * Validates sorting configuration for a model.
+     *
+     * @param model  model definition that contains sort settings
+     * @param errors collected validation errors
+     */
+    private static void validateSort(final ModelDefinition model, final List<String> errors) {
+
+        final SortDefinition sort = model.getSort();
+        if (Objects.isNull(sort)) {
+            return;
+        }
+
+        if (ContainerUtils.isEmpty(sort.getAllowedFields())) {
+            errors.add(String.format(
+                    "Sort configuration for model %s must define a non-empty allowedFields list.",
+                    model.getName()
+            ));
+            return;
+        }
+
+        if (StringUtils.isBlank(sort.getDefaultField())) {
+            errors.add(String.format(
+                    "Sort configuration for model %s must define defaultField.",
+                    model.getName()
+            ));
+        }
+
+        if (Objects.isNull(sort.getDefaultDirection())) {
+            errors.add(String.format(
+                    "Sort configuration for model %s must define defaultDirection. Allowed values: ASC, DESC.",
+                    model.getName()
+            ));
+        }
+
+        final Map<String, FieldDefinition> fieldMap = model.getFields().stream()
+                .collect(Collectors.toMap(FieldDefinition::getName, field -> field, (left, right) -> left));
+        final Set<String> sortableTargets = new HashSet<>(fieldMap.keySet());
+
+        final boolean auditEnabled = Objects.nonNull(model.getAudit()) && Boolean.TRUE.equals(model.getAudit().getEnabled());
+        if (auditEnabled) {
+            sortableTargets.add("createdAt");
+            sortableTargets.add("updatedAt");
+        }
+
+        final Set<String> allowedFieldSet = new HashSet<>();
+        sort.getAllowedFields().forEach(allowedField -> {
+
+            if (StringUtils.isBlank(allowedField)) {
+                errors.add(String.format(
+                        "Sort allowedFields contains blank entry for model %s.",
+                        model.getName()
+                ));
+                return;
+            }
+
+            if (!allowedFieldSet.add(allowedField)) {
+                errors.add(String.format(
+                        "Sort allowedFields contains duplicate value '%s' for model %s.",
+                        allowedField, model.getName()
+                ));
+            }
+
+            if (!sortableTargets.contains(allowedField)) {
+                errors.add(String.format(
+                        "Sort field '%s' is not valid for model %s. It must match an existing field%s.",
+                        allowedField,
+                        model.getName(),
+                        auditEnabled ? " or generated audit field (createdAt, updatedAt)" : ""
+                ));
+                return;
+            }
+
+            final FieldDefinition field = fieldMap.get(allowedField);
+            if (Objects.isNull(field)) {
+                return;
+            }
+
+            if (FieldUtils.isSimpleCollectionField(field)) {
+                errors.add(String.format(
+                        "Sort field '%s' in model %s is not supported in v1: simple collection fields are not sortable.",
+                        allowedField, model.getName()
+                ));
+            }
+
+            if (FieldUtils.isJsonField(field)) {
+                errors.add(String.format(
+                        "Sort field '%s' in model %s is not supported in v1: JSON fields are not sortable.",
+                        allowedField, model.getName()
+                ));
+            }
+
+            if (Objects.nonNull(field.getRelation()) && FieldUtils.isCollectionRelation(field)) {
+                errors.add(String.format(
+                        "Sort field '%s' in model %s is not supported in v1: relation collections are not sortable.",
+                        allowedField, model.getName()
+                ));
+            }
+        });
+
+        if (StringUtils.isNotBlank(sort.getDefaultField()) && !allowedFieldSet.contains(sort.getDefaultField())) {
+            errors.add(String.format(
+                    "Sort defaultField '%s' for model %s must be one of allowedFields %s.",
+                    sort.getDefaultField(), model.getName(), sort.getAllowedFields()
+            ));
+        }
     }
 
     /**
