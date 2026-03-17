@@ -29,6 +29,7 @@ entities:
 | `storageName` | string  | ✅        | Database table name (storage name).                             |
 | `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable) |
 | `audit`       | object  | optional  | Audit configuration for `created_at` / `updated_at` columns     |
+| `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries      |
 | `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)          |
 | `fields`      | list    | ✅        | List of fields for the entity                                   |
 
@@ -74,6 +75,31 @@ Possible `type` values:
 - `Instant`
 - `LocalDate`
 - `LocalDateTime`
+
+---
+
+## Sort configuration
+
+Sorting can be configured per entity and is used by generated REST list endpoints, GraphQL page queries, and OpenAPI docs.
+
+```yaml
+sort:
+  allowedFields: [name, price, createdAt]
+  defaultField: name
+  defaultDirection: ASC
+```
+
+| Property           | Type    | Required | Description |
+| ------------------ | ------- | -------- | ----------- |
+| `allowedFields`    | list    | required | Fields allowed in `sortBy` |
+| `defaultField`     | string  | required | Default field used when `sortBy` is not provided |
+| `defaultDirection` | enum    | optional | Default direction (`ASC` or `DESC`, default: `ASC`) |
+
+Validation rules:
+- when `sort` is configured, `allowedFields` must not be empty
+- each `allowedFields` value must reference an entity field (or `createdAt`/`updatedAt` when audit is enabled)
+- `defaultField` must be one of `allowedFields`
+- unsupported sortable targets in are rejected: simple collections, JSON fields, relation collections
 
 ---
 
