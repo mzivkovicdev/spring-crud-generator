@@ -16,7 +16,6 @@
 
 package dev.markozivkovic.springcrudgenerator.utils;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,7 @@ public class SortUtils {
             return List.of();
         }
 
-        return Collections.unmodifiableList(new ArrayList<>(modelDefinition.getSort().getAllowedFields()));
+        return Collections.unmodifiableList(modelDefinition.getSort().getAllowedFields());
     }
 
     /**
