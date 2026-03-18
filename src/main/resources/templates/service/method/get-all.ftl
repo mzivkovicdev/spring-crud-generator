@@ -14,10 +14,13 @@
             final String sortBy, final String sortDirection</#if>) {
 
         <#if sortEnabled?? && sortEnabled>
-        final String resolvedSortBy = (sortBy == null || sortBy.isBlank()) ? "${sortDefaultField}" : sortBy;
-        if (!isAllowedSortField(resolvedSortBy)) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return repository.findAll(PageRequest.of(pageNumber, pageSize));
+        }
+
+        if (!isAllowedSortField(sortBy)) {
             throw new IllegalArgumentException(
-                "Invalid sortBy '" + resolvedSortBy + "' for ${modelName}. Allowed values are: ${sortAllowedFieldsCsv}."
+                "Invalid sortBy '" + sortBy + "' for ${modelName}. Allowed values are: ${sortAllowedFieldsCsv}."
             );
         }
 
@@ -32,7 +35,7 @@
             );
         }
 
-        final Sort sort = Sort.by(direction, resolvedSortBy);
+        final Sort sort = Sort.by(direction, sortBy);
         return repository.findAll(PageRequest.of(pageNumber, pageSize, sort));
         <#else>
         return repository.findAll(PageRequest.of(pageNumber, pageSize));

@@ -26,10 +26,9 @@ get:
           <#list sortAllowedFields as sortField>
             - ${sortField}
           </#list>
-          default: ${sortDefaultField}
       - in: query
         name: sortDirection
-        description: Sort direction. Allowed values are ASC and DESC.
+        description: Sort direction. Allowed values are ASC and DESC. Used only when sortBy is provided.
         required: false
         schema:
           type: string

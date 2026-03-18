@@ -113,7 +113,7 @@ class ${className} {
         final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         <#if sortEnabled?? && sortEnabled>
-        final String sortBy = "${sortDefaultField}";
+        final String sortBy = <#if sortAllowedFields?has_content>"${sortAllowedFields[0]}"<#else>"id"</#if>;
         final String sortDirection = "${sortDefaultDirection}";
         </#if>
 
