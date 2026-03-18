@@ -27,10 +27,19 @@ class SortUtilsTest {
     }
 
     @Test
-    @DisplayName("isSortEnabled should be true when sort config exists")
-    void isSortEnabled_shouldBeTrue_whenSortExists() {
+    @DisplayName("isSortEnabled should be false when sort exists without allowed fields")
+    void isSortEnabled_shouldBeFalse_whenAllowedFieldsMissing() {
         final ModelDefinition model = new ModelDefinition()
                 .setSort(new SortDefinition());
+
+        assertFalse(SortUtils.isSortEnabled(model));
+    }
+
+    @Test
+    @DisplayName("isSortEnabled should be true when sort config has allowed fields")
+    void isSortEnabled_shouldBeTrue_whenAllowedFieldsConfigured() {
+        final ModelDefinition model = new ModelDefinition()
+                .setSort(new SortDefinition().setAllowedFields(List.of("name")));
 
         assertTrue(SortUtils.isSortEnabled(model));
     }
@@ -61,11 +70,15 @@ class SortUtilsTest {
         assertEquals("ASC", SortUtils.resolveDefaultDirection(new ModelDefinition()));
 
         final ModelDefinition withNullDirection = new ModelDefinition()
-                .setSort(new SortDefinition().setDefaultDirection(null));
+                .setSort(new SortDefinition()
+                        .setAllowedFields(List.of("name"))
+                        .setDefaultDirection(null));
         assertEquals("ASC", SortUtils.resolveDefaultDirection(withNullDirection));
 
         final ModelDefinition withDesc = new ModelDefinition()
-                .setSort(new SortDefinition().setDefaultDirection(SortDirection.DESC));
+                .setSort(new SortDefinition()
+                        .setAllowedFields(List.of("name"))
+                        .setDefaultDirection(SortDirection.DESC));
         assertEquals("DESC", SortUtils.resolveDefaultDirection(withDesc));
     }
 

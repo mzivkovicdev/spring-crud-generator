@@ -117,7 +117,7 @@ class ${className} {
         final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         <#if sortEnabled?? && sortEnabled>
         final Map<String, Object> sort = Map.of(
-                "sortBy", <#if sortAllowedFields?has_content>"${sortAllowedFields[0]}"<#else>"id"</#if>,
+                "sortBy", "${sortAllowedFields[0]}",
                 "sortDirection", "${sortDefaultDirection}"
         );
         </#if>

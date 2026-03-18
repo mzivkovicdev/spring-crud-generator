@@ -45,7 +45,7 @@
     void getAll_withSortByOnly_usesDefaultDirection() {
         final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
-        final String sortBy = <#if sortAllowedFields?has_content>"${sortAllowedFields[0]}"<#else>"id"</#if>;
+        final String sortBy = "${sortAllowedFields[0]}";
         final String sortDirection = null;
         final Sort sort = Sort.by(Direction.fromString("${sortDefaultDirection}"), sortBy);
         final Page<${modelName}> page${strippedModelName?cap_first} = new PageImpl<>(List.of());
@@ -65,7 +65,7 @@
     void getAll_withSortByAndSortDirection() {
         final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
-        final String sortBy = <#if sortAllowedFields?has_content>"${sortAllowedFields[0]}"<#else>"id"</#if>;
+        final String sortBy = "${sortAllowedFields[0]}";
         final String sortDirection = "DESC";
         final Sort sort = Sort.by(Direction.fromString(sortDirection), sortBy);
         final Page<${modelName}> page${strippedModelName?cap_first} = new PageImpl<>(List.of());

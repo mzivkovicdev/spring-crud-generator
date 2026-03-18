@@ -34,12 +34,14 @@ public class SortUtils {
      * Checks whether sorting is enabled for the given model.
      *
      * @param modelDefinition model definition to inspect
-     * @return true when model has sort enabled, false otherwise
+     * @return true when model has sort enabled with non-empty allowed fields, false otherwise
      */
     public static boolean isSortEnabled(final ModelDefinition modelDefinition) {
 
         return Objects.nonNull(modelDefinition)
-                && Objects.nonNull(modelDefinition.getSort());
+                && Objects.nonNull(modelDefinition.getSort())
+                && Objects.nonNull(modelDefinition.getSort().getAllowedFields())
+                && !modelDefinition.getSort().getAllowedFields().isEmpty();
     }
 
     /**

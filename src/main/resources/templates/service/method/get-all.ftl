@@ -44,10 +44,6 @@
     <#if sortEnabled?? && sortEnabled>
 
     private boolean isAllowedSortField(final String sortField) {
-        <#if sortAllowedFields?has_content>
         return <#list sortAllowedFields as allowedField>"${allowedField}".equals(sortField)<#if allowedField_has_next> || </#if></#list>;
-        <#else>
-        return false;
-        </#if>
     }
     </#if><#t>
