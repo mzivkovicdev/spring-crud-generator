@@ -37,6 +37,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 
 public class JpaServiceGenerator implements CodeGenerator {
 
@@ -68,6 +69,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
         final String className = String.format("%sService", modelWithoutSuffix);
+        final boolean sortEnabled = SortUtils.isSortEnabled(modelDefinition);
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeServicePackage(packagePath, packageConfiguration)));
@@ -77,7 +79,7 @@ public class JpaServiceGenerator implements CodeGenerator {
         
         sb.append(ServiceImports.computeJpaServiceBaseImport(
                     Objects.nonNull(configuration.getCache()) && Boolean.TRUE.equals(configuration.getCache().getEnabled()),
-                    modelDefinition)
+                    sortEnabled)
                 )
                 .append(System.lineSeparator())
                 .append(ServiceImports.computeModelsEnumsAndRepositoryImports(modelDefinition, outputDir, ServiceImportScope.SERVICE, packageConfiguration))

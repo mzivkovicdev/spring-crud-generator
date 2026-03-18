@@ -124,7 +124,7 @@ class JpaServiceGeneratorTest {
 
             svcImports.when(() -> ServiceImports.getBaseImport(model, false))
                     .thenReturn("//BASE_IMPORTS\n");
-            svcImports.when(() -> ServiceImports.computeJpaServiceBaseImport(false, model))
+            svcImports.when(() -> ServiceImports.computeJpaServiceBaseImport(false, false))
                     .thenReturn("//JPA_BASE_IMPORTS\n");
             svcImports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
                     eq(model), eq(outputDir), eq(ServiceImportScope.SERVICE), eq(pkgCfg)))
@@ -245,7 +245,7 @@ class JpaServiceGeneratorTest {
 
             svcImports.when(() -> ServiceImports.getBaseImport(model, false))
                     .thenReturn("//BASE_IMPORTS\n");
-            svcImports.when(() -> ServiceImports.computeJpaServiceBaseImport(true, model))
+            svcImports.when(() -> ServiceImports.computeJpaServiceBaseImport(true, false))
                     .thenReturn("//JPA_BASE_IMPORTS_CACHE\n");
             svcImports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
                     eq(model), eq(outputDir), eq(ServiceImportScope.SERVICE), eq(pkgCfg)))
