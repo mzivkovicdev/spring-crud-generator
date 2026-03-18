@@ -60,7 +60,6 @@ entities:
     description: "Represents a product"
     sort:
       allowedFields: [name, price, releaseDate]
-      defaultField: name
       defaultDirection: ASC
     fields:
       - name: id

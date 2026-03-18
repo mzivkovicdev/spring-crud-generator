@@ -85,21 +85,23 @@ Sorting can be configured per entity and is used by generated REST list endpoint
 ```yaml
 sort:
   allowedFields: [name, price, createdAt]
-  defaultField: name
   defaultDirection: ASC
 ```
 
 | Property           | Type    | Required | Description |
 | ------------------ | ------- | -------- | ----------- |
 | `allowedFields`    | list    | required | Fields allowed in `sortBy` |
-| `defaultField`     | string  | required | Default field used when `sortBy` is not provided |
 | `defaultDirection` | enum    | optional | Default direction (`ASC` or `DESC`, default: `ASC`) |
 
 Validation rules:
 - when `sort` is configured, `allowedFields` must not be empty
 - each `allowedFields` value must reference an entity field (or `createdAt`/`updatedAt` when audit is enabled)
-- `defaultField` must be one of `allowedFields`
-- unsupported sortable targets in are rejected: simple collections, JSON fields, relation collections
+- unsupported sortable targets are rejected: simple collections, JSON fields, relation collections
+
+Runtime behavior:
+- when `sortBy` is not provided, no sorting is applied
+- when `sortBy` is provided, it must be one of `allowedFields`
+- when `sortBy` is provided and `sortDirection` is omitted, `defaultDirection` is used
 
 ---
 
