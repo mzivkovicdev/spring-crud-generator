@@ -22,20 +22,15 @@ import java.util.Objects;
 public class SortDefinition {
     
     private List<String> allowedFields;
-    private String defaultField;
     private SortDirection defaultDirection = SortDirection.ASC;
-    private Boolean allowMultiple = Boolean.FALSE;
 
     public SortDefinition() {
 
     }
 
-    public SortDefinition(final List<String> allowedFields, final String defaultField,
-            final SortDirection defaultDirection, final Boolean allowMultiple) {
+    public SortDefinition(final List<String> allowedFields, final SortDirection defaultDirection) {
         this.allowedFields = allowedFields;
-        this.defaultField = defaultField;
         this.defaultDirection = defaultDirection;
-        this.allowMultiple = allowMultiple;
     }
 
     public List<String> getAllowedFields() {
@@ -44,15 +39,6 @@ public class SortDefinition {
 
     public SortDefinition setAllowedFields(final List<String> allowedFields) {
         this.allowedFields = allowedFields;
-        return this;
-    }
-
-    public String getDefaultField() {
-        return this.defaultField;
-    }
-
-    public SortDefinition setDefaultField(final String defaultField) {
-        this.defaultField = defaultField;
         return this;
     }
 
@@ -65,15 +51,6 @@ public class SortDefinition {
         return this;
     }
 
-    public Boolean getAllowMultiple() {
-        return this.allowMultiple;
-    }
-
-    public SortDefinition setAllowMultiple(final Boolean allowMultiple) {
-        this.allowMultiple = allowMultiple;
-        return this;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -83,23 +60,19 @@ public class SortDefinition {
         }
         final SortDefinition sortDefinition = (SortDefinition) o;
         return Objects.equals(allowedFields, sortDefinition.allowedFields) &&
-                Objects.equals(defaultField, sortDefinition.defaultField) &&
-                Objects.equals(defaultDirection, sortDefinition.defaultDirection) &&
-                Objects.equals(allowMultiple, sortDefinition.allowMultiple);
+                Objects.equals(defaultDirection, sortDefinition.defaultDirection);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(allowedFields, defaultField, defaultDirection, allowMultiple);
+        return Objects.hash(allowedFields, defaultDirection);
     }
 
     @Override
     public String toString() {
         return "{" +
             " allowedFields='" + getAllowedFields() + "'" +
-            ", defaultField='" + getDefaultField() + "'" +
             ", defaultDirection='" + getDefaultDirection() + "'" +
-            ", allowMultiple='" + getAllowMultiple() + "'" +
             "}";
     }    
 }

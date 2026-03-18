@@ -719,7 +719,6 @@ class RestControllerTemplateContextTest {
         final ModelDefinition model = newModel("CustomerEntity", new ArrayList<>());
         final SortDefinition sort = new SortDefinition()
                 .setAllowedFields(List.of("name", "createdAt"))
-                .setDefaultField("name")
                 .setDefaultDirection(SortDirection.ASC);
         when(model.getSort()).thenReturn(sort);
 
@@ -732,7 +731,6 @@ class RestControllerTemplateContextTest {
 
             assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
             assertEquals(List.of("name", "createdAt"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
-            assertEquals("name", ctx.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
             assertEquals("ASC", ctx.get(TemplateContextConstants.SORT_DEFAULT_DIRECTION));
         }
     }

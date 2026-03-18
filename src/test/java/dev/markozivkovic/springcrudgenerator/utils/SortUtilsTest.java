@@ -2,7 +2,6 @@ package dev.markozivkovic.springcrudgenerator.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,16 +56,6 @@ class SortUtilsTest {
     }
 
     @Test
-    @DisplayName("resolveDefaultField should return null when sort missing and configured value when present")
-    void resolveDefaultField_shouldReturnExpectedValue() {
-        assertNull(SortUtils.resolveDefaultField(new ModelDefinition()));
-
-        final ModelDefinition model = new ModelDefinition()
-                .setSort(new SortDefinition().setDefaultField("name"));
-        assertEquals("name", SortUtils.resolveDefaultField(model));
-    }
-
-    @Test
     @DisplayName("resolveDefaultDirection should return ASC when missing and configured value when present")
     void resolveDefaultDirection_shouldReturnExpectedValue() {
         assertEquals("ASC", SortUtils.resolveDefaultDirection(new ModelDefinition()));
@@ -81,28 +70,12 @@ class SortUtilsTest {
     }
 
     @Test
-    @DisplayName("isAllowMultiple should return true only when allowMultiple is true and sort exists")
-    void isAllowMultiple_shouldReturnExpectedValue() {
-        assertFalse(SortUtils.isAllowMultiple(new ModelDefinition()));
-
-        final ModelDefinition falseModel = new ModelDefinition()
-                .setSort(new SortDefinition().setAllowMultiple(false));
-        assertFalse(SortUtils.isAllowMultiple(falseModel));
-
-        final ModelDefinition trueModel = new ModelDefinition()
-                .setSort(new SortDefinition().setAllowMultiple(true));
-        assertTrue(SortUtils.isAllowMultiple(trueModel));
-    }
-
-    @Test
-    @DisplayName("contributeSortContext should populate all sort context keys")
-    void contributeSortContext_shouldPopulateAllKeys() {
+    @DisplayName("contributeSortContext should populate sort context keys")
+    void contributeSortContext_shouldPopulateKeys() {
         final ModelDefinition model = new ModelDefinition()
                 .setSort(new SortDefinition()
                         .setAllowedFields(List.of("name", "price"))
-                        .setDefaultField("name")
-                        .setDefaultDirection(SortDirection.DESC)
-                        .setAllowMultiple(true));
+                        .setDefaultDirection(SortDirection.DESC));
 
         final Map<String, Object> context = new HashMap<>();
         SortUtils.contributeSortContext(model, context);
@@ -110,8 +83,6 @@ class SortUtilsTest {
         assertEquals(true, context.get(TemplateContextConstants.SORT_ENABLED));
         assertEquals(List.of("name", "price"), context.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
         assertEquals("name, price", context.get(TemplateContextConstants.SORT_ALLOWED_FIELDS_CSV));
-        assertEquals("name", context.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
         assertEquals("DESC", context.get(TemplateContextConstants.SORT_DEFAULT_DIRECTION));
-        assertEquals(true, context.get(TemplateContextConstants.SORT_ALLOW_MULTIPLE));
     }
 }

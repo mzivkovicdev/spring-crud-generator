@@ -248,20 +248,6 @@ public class SpecificationValidator {
             return;
         }
 
-        if (StringUtils.isBlank(sort.getDefaultField())) {
-            errors.add(String.format(
-                    "Sort configuration for model %s must define defaultField.",
-                    model.getName()
-            ));
-        }
-
-        if (Objects.isNull(sort.getDefaultDirection())) {
-            errors.add(String.format(
-                    "Sort configuration for model %s must define defaultDirection. Allowed values: ASC, DESC.",
-                    model.getName()
-            ));
-        }
-
         final Map<String, FieldDefinition> fieldMap = model.getFields().stream()
                 .collect(Collectors.toMap(FieldDefinition::getName, field -> field, (left, right) -> left));
         final Set<String> sortableTargets = new HashSet<>(fieldMap.keySet());
@@ -327,12 +313,6 @@ public class SpecificationValidator {
             }
         });
 
-        if (StringUtils.isNotBlank(sort.getDefaultField()) && !allowedFieldSet.contains(sort.getDefaultField())) {
-            errors.add(String.format(
-                    "Sort defaultField '%s' for model %s must be one of allowedFields %s.",
-                    sort.getDefaultField(), model.getName(), sort.getAllowedFields()
-            ));
-        }
     }
 
     /**

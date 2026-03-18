@@ -440,7 +440,6 @@ class GraphQlTemplateContextTest {
         final ModelDefinition model = newModel("InvoiceEntity", fields);
         final SortDefinition sort = new SortDefinition()
                 .setAllowedFields(List.of("name", "createdAt"))
-                .setDefaultField("name")
                 .setDefaultDirection(SortDirection.ASC);
         when(model.getSort()).thenReturn(sort);
 
@@ -461,7 +460,6 @@ class GraphQlTemplateContextTest {
             assertEquals("java.util.UUID", ctx.get(TemplateContextConstants.ID_TYPE));
             assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
             assertEquals(List.of("name", "createdAt"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
-            assertEquals("name", ctx.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
             assertEquals("ASC", ctx.get(TemplateContextConstants.SORT_DEFAULT_DIRECTION));
         }
     }

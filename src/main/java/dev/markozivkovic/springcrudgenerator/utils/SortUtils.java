@@ -59,21 +59,6 @@ public class SortUtils {
     }
 
     /**
-     * Resolves default sort field for the given model.
-     *
-     * @param modelDefinition model definition to inspect
-     * @return default field when sorting is enabled, otherwise null
-     */
-    public static String resolveDefaultField(final ModelDefinition modelDefinition) {
-
-        if (!isSortEnabled(modelDefinition)) {
-            return null;
-        }
-
-        return modelDefinition.getSort().getDefaultField();
-    }
-
-    /**
      * Resolves default sort direction for the given model.
      *
      * @param modelDefinition model definition to inspect
@@ -94,18 +79,6 @@ public class SortUtils {
     }
 
     /**
-     * Resolves allowMultiple flag for sort configuration.
-     *
-     * @param modelDefinition model definition to inspect
-     * @return true if allowMultiple=true and sorting is enabled
-     */
-    public static boolean isAllowMultiple(final ModelDefinition modelDefinition) {
-
-        return isSortEnabled(modelDefinition)
-                && Boolean.TRUE.equals(modelDefinition.getSort().getAllowMultiple());
-    }
-
-    /**
      * Contributes sort-related keys to the provided template context map.
      *
      * @param modelDefinition model definition to inspect
@@ -117,8 +90,6 @@ public class SortUtils {
         context.put(TemplateContextConstants.SORT_ENABLED, isSortEnabled(modelDefinition));
         context.put(TemplateContextConstants.SORT_ALLOWED_FIELDS, allowedFields);
         context.put(TemplateContextConstants.SORT_ALLOWED_FIELDS_CSV, String.join(", ", allowedFields));
-        context.put(TemplateContextConstants.SORT_DEFAULT_FIELD, resolveDefaultField(modelDefinition));
         context.put(TemplateContextConstants.SORT_DEFAULT_DIRECTION, resolveDefaultDirection(modelDefinition));
-        context.put(TemplateContextConstants.SORT_ALLOW_MULTIPLE, isAllowMultiple(modelDefinition));
     }
 }

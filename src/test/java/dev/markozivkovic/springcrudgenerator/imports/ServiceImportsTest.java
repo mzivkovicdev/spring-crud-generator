@@ -433,8 +433,7 @@ class ServiceImportsTest {
 
         final ModelDefinition model = new ModelDefinition()
                 .setSort(new SortDefinition()
-                        .setAllowedFields(List.of("name"))
-                        .setDefaultField("name"));
+                        .setAllowedFields(List.of("name")));
 
         try (final MockedStatic<GeneratorContext> genContext = Mockito.mockStatic(GeneratorContext.class)) {
 

@@ -108,10 +108,9 @@ class SpecificationValidatorTest {
         return model.getFields().get(0);
     }
 
-    private static SortDefinition newSort(final List<String> allowedFields, final String defaultField) {
+    private static SortDefinition newSort(final List<String> allowedFields) {
         return new SortDefinition()
                 .setAllowedFields(allowedFields)
-                .setDefaultField(defaultField)
                 .setDefaultDirection(SortDirection.ASC);
     }
 
@@ -510,14 +509,13 @@ class SpecificationValidatorTest {
 
     @Test
     @DisplayName("Should throw when sort is configured and allowedFields is empty")
-    void validate_sortEnabledWithoutAllowedFields_throwsIllegalArgumentException() {
+    void validate_sortWithoutAllowedFields_throwsIllegalArgumentException() {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
 
         model.setSort(new SortDefinition()
                 .setAllowedFields(List.of())
-                .setDefaultField("name")
                 .setDefaultDirection(SortDirection.ASC));
 
         final IllegalArgumentException ex = assertThrows(
@@ -530,21 +528,22 @@ class SpecificationValidatorTest {
     }
 
     @Test
-    @DisplayName("Should throw when sort defaultField is not in allowedFields")
-    void validate_sortDefaultFieldNotInAllowedFields_throwsIllegalArgumentException() {
+    @DisplayName("Should throw when sort is configured and allowedFields is missing")
+    void validate_sortWithMissingAllowedFields_throwsIllegalArgumentException() {
 
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
 
-        model.setSort(newSort(List.of("name"), "price"));
+        model.setSort(new SortDefinition()
+                .setDefaultDirection(SortDirection.ASC));
 
         final IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
                 () -> SpecificationValidator.validate(spec)
         );
 
-        assertTrue(ex.getMessage().contains("Sort defaultField 'price'"));
-        assertTrue(ex.getMessage().contains("must be one of allowedFields"));
+        assertTrue(ex.getMessage().contains("Sort configuration for model User"));
+        assertTrue(ex.getMessage().contains("non-empty allowedFields list"));
     }
 
     @Test
@@ -554,7 +553,7 @@ class SpecificationValidatorTest {
         final CrudSpecification spec = buildValidSpecification();
         final ModelDefinition model = spec.getEntities().get(0);
 
-        model.setSort(newSort(List.of("unknownField"), "unknownField"));
+        model.setSort(newSort(List.of("unknownField")));
 
         final IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
@@ -572,7 +571,21 @@ class SpecificationValidatorTest {
         final ModelDefinition model = spec.getEntities().get(0);
 
         model.setAudit(new AuditDefinition().setEnabled(true).setType(AuditTypeEnum.INSTANT));
-        model.setSort(newSort(List.of("createdAt", "updatedAt"), "createdAt"));
+        model.setSort(newSort(List.of("createdAt", "updatedAt")));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow sort when defaultDirection is null (runtime fallback to ASC)")
+    void validate_sortWithNullDefaultDirection_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        model.setSort(new SortDefinition()
+                .setAllowedFields(List.of("name"))
+                .setDefaultDirection(null));
 
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
     }
@@ -608,7 +621,7 @@ class SpecificationValidatorTest {
                 .setRelation(manyToMany);
 
         user.setFields(List.of(idField, jsonField, collectionField, relationCollectionField));
-        user.setSort(newSort(List.of("metadata", "tags", "roles"), "metadata"));
+        user.setSort(newSort(List.of("metadata", "tags", "roles")));
 
         final IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,

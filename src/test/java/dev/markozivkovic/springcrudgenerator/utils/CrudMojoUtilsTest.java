@@ -70,7 +70,6 @@ class CrudMojoUtilsTest {
                         type: String
                     sort:
                       allowedFields: [name]
-                      defaultField: name
                       defaultDirection: ASC
                 """;
 
@@ -79,9 +78,33 @@ class CrudMojoUtilsTest {
         assertNotNull(spec.getEntities());
         assertNotNull(spec.getEntities().get(0).getSort());
         assertEquals(List.of("name"), spec.getEntities().get(0).getSort().getAllowedFields());
-        assertEquals("name", spec.getEntities().get(0).getSort().getDefaultField());
         assertEquals(SortDirection.ASC, spec.getEntities().get(0).getSort().getDefaultDirection());
-        assertEquals(false, spec.getEntities().get(0).getSort().getAllowMultiple());
+    }
+
+    @Test
+    void createSpecMapper_yaml_sortDefaultDirectionDefaultsToAsc() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                    sort:
+                      allowedFields: [name]
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertNotNull(spec.getEntities().get(0).getSort());
+        assertEquals(SortDirection.ASC, spec.getEntities().get(0).getSort().getDefaultDirection());
     }
 
     @Test

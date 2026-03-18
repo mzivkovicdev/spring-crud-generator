@@ -103,7 +103,6 @@ class SwaggerTemplateContextTest {
         final ModelDefinition model = newModel("OrderEntity", List.of());
         final SortDefinition sort = new SortDefinition()
                 .setAllowedFields(List.of("name"))
-                .setDefaultField("name")
                 .setDefaultDirection(SortDirection.ASC);
         when(model.getSort()).thenReturn(sort);
 
@@ -117,7 +116,6 @@ class SwaggerTemplateContextTest {
             assertEquals("Order", ctx.get("strippedModelName"));
             assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
             assertEquals(List.of("name"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
-            assertEquals("name", ctx.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
         }
     }
 

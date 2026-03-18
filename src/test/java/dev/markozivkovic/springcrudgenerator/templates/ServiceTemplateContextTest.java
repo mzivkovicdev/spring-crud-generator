@@ -141,9 +141,7 @@ class ServiceTemplateContextTest {
         final ModelDefinition model = newModel("InvoiceEntity", List.of(idField));
         final SortDefinition sort = new SortDefinition()
                 .setAllowedFields(List.of("name", "createdAt"))
-                .setDefaultField("name")
-                .setDefaultDirection(SortDirection.ASC)
-                .setAllowMultiple(false);
+                .setDefaultDirection(SortDirection.ASC);
         when(model.getSort()).thenReturn(sort);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
@@ -159,7 +157,6 @@ class ServiceTemplateContextTest {
 
             assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
             assertEquals(List.of("name", "createdAt"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
-            assertEquals("name", ctx.get(TemplateContextConstants.SORT_DEFAULT_FIELD));
             assertEquals("ASC", ctx.get(TemplateContextConstants.SORT_DEFAULT_DIRECTION));
         }
     }
