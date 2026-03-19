@@ -34,6 +34,7 @@ import dev.markozivkovic.springcrudgenerator.templates.common.ValidationContextB
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
@@ -61,6 +62,7 @@ public class GraphQlTemplateContext {
         context.put(TemplateContextConstants.CLASS_NAME, String.format("%sResolver", strippedModelName));
         context.put(TemplateContextConstants.JSON_FIELDS, jsonFields);
         context.put(TemplateContextConstants.RELATIONS, !FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty());
+        SortUtils.contributeSortContext(modelDefinition, context);
         
         return context;
     }
@@ -103,6 +105,7 @@ public class GraphQlTemplateContext {
             context.put(TemplateContextConstants.AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
             context.put(TemplateContextConstants.AUDIT_ENABLED, true);
         }
+        SortUtils.contributeSortContext(modelDefinition, context);
 
         return context;
     }
@@ -165,6 +168,7 @@ public class GraphQlTemplateContext {
         context.put(TemplateContextConstants.MODEL_NAME, modelDefinition.getName());
         context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
         context.put(TemplateContextConstants.ID_TYPE, idField.getType());
+        SortUtils.contributeSortContext(modelDefinition, context);
 
         return context;
     }

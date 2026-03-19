@@ -35,6 +35,7 @@ import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SpringBootVersionUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
@@ -250,6 +251,7 @@ public class RestControllerTemplateContext {
         final Map<String, Object> context = new HashMap<>();
         context.put(TemplateContextConstants.MODEL_NAME, modelDefinition.getName());
         context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, strippedModelName);
+        SortUtils.contributeSortContext(modelDefinition, context);
 
         return context;
     }

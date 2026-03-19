@@ -37,4 +37,13 @@ public class ${className} {
     }
     ${queries}
     ${mutations}
+    <#if sortEnabled?? && sortEnabled>
+
+    private String extractSortValue(final java.util.Map<String, Object> sort, final String key) {
+        if (sort == null || !sort.containsKey(key) || sort.get(key) == null) {
+            return null;
+        }
+        return String.valueOf(sort.get(key));
+    }
+    </#if><#t>
 }

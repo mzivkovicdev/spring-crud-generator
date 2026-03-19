@@ -13,6 +13,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+<#if sortEnabled?? && sortEnabled>
+import java.util.Map;
+</#if><#t>
 
 ${testImports}
 ${projectImports}
@@ -112,12 +115,21 @@ class ${className} {
         final Page<${modelName}> pageObject = new PageImpl<>(${modelName?uncap_first}s);
         final Integer pageNumber = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
         final Integer pageSize = ${generatorFieldName}.${singleObjectMethodName}(Integer.class);
+        <#if sortEnabled?? && sortEnabled>
+        final Map<String, Object> sort = Map.of(
+                "sortBy", "${sortAllowedFields[0]}",
+                "sortDirection", "${sortDefaultDirection}"
+        );
+        </#if>
 
-        when(${serviceField}.getAll(pageNumber, pageSize)).thenReturn(pageObject);
+        when(${serviceField}.getAll(
+                pageNumber, pageSize<#if sortEnabled?? && sortEnabled>,
+                String.valueOf(sort.get("sortBy")), String.valueOf(sort.get("sortDirection"))</#if>
+        )).thenReturn(pageObject);
 
         final String query = """
-            query($pageNumber: Int!, $pageSize: Int!) {
-            ${uncapModelName}sPage(pageNumber: $pageNumber, pageSize: $pageSize) {
+            query($pageNumber: Int!, $pageSize: Int!<#if sortEnabled?? && sortEnabled>, $sort: ${strippedModelName?cap_first}SortInput</#if>) {
+            ${uncapModelName}sPage(pageNumber: $pageNumber, pageSize: $pageSize<#if sortEnabled?? && sortEnabled>, sort: $sort</#if>) {
                 totalPages
                 totalElements
                 size
@@ -130,6 +142,9 @@ class ${className} {
         final PageTO<${transferObjectClass}> result = this.graphQlTester.document(query)
                 .variable("pageNumber", pageNumber)
                 .variable("pageSize", pageSize)
+                <#if sortEnabled?? && sortEnabled>
+                .variable("sort", sort)
+                </#if><#t>
                 .execute()
                 .path("${uncapModelName}sPage")
                 .entity(new ParameterizedTypeReference<PageTO<${transferObjectClass}>>() {})
@@ -152,7 +167,10 @@ class ${className} {
             verify${strippedModelName}(item, src);
         });
 
-        verify(${serviceField}).getAll(pageNumber, pageSize);
+        verify(${serviceField}).getAll(
+                pageNumber, pageSize<#if sortEnabled?? && sortEnabled>,
+                String.valueOf(sort.get("sortBy")), String.valueOf(sort.get("sortDirection"))</#if>
+        );
     }
 
     @Test

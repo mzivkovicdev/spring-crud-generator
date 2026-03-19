@@ -47,6 +47,10 @@ public final class TemplateContextConstants {
     public static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     public static final String AUDIT_ENABLED = "auditEnabled";
     public static final String AUDIT_TYPE = "auditType";
+    public static final String SORT_ENABLED = "sortEnabled";
+    public static final String SORT_ALLOWED_FIELDS = "sortAllowedFields";
+    public static final String SORT_ALLOWED_FIELDS_CSV = "sortAllowedFieldsCsv";
+    public static final String SORT_DEFAULT_DIRECTION = "sortDefaultDirection";
     public static final String SOFT_DELETE_ENABLED = "softDeleteEnabled";
     public static final String SERVICE_CLASSES = "serviceClasses";
     public static final String MODEL_NAME = "modelName";

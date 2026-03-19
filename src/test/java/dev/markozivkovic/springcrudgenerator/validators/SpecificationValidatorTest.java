@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
@@ -27,7 +28,10 @@ import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
+import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 
 class SpecificationValidatorTest {
 
@@ -102,6 +106,12 @@ class SpecificationValidatorTest {
 
     private static FieldDefinition getFirstField(final ModelDefinition model) {
         return model.getFields().get(0);
+    }
+
+    private static SortDefinition newSort(final List<String> allowedFields) {
+        return new SortDefinition()
+                .setAllowedFields(allowedFields)
+                .setDefaultDirection(SortDirection.ASC);
     }
 
     @Test
@@ -495,6 +505,132 @@ class SpecificationValidatorTest {
 
         final CrudSpecification spec = buildValidSpecification();
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should throw when sort is configured and allowedFields is empty")
+    void validate_sortWithoutAllowedFields_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        model.setSort(new SortDefinition()
+                .setAllowedFields(List.of())
+                .setDefaultDirection(SortDirection.ASC));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Sort configuration for model User"));
+        assertTrue(ex.getMessage().contains("non-empty allowedFields list"));
+    }
+
+    @Test
+    @DisplayName("Should throw when sort is configured and allowedFields is missing")
+    void validate_sortWithMissingAllowedFields_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        model.setSort(new SortDefinition()
+                .setDefaultDirection(SortDirection.ASC));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Sort configuration for model User"));
+        assertTrue(ex.getMessage().contains("non-empty allowedFields list"));
+    }
+
+    @Test
+    @DisplayName("Should throw when sort allowed field does not exist")
+    void validate_sortAllowedFieldNotExisting_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        model.setSort(newSort(List.of("unknownField")));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("Sort field 'unknownField' is not valid for model User"));
+    }
+
+    @Test
+    @DisplayName("Should allow sort by generated audit fields when audit is enabled")
+    void validate_sortAuditFieldsAllowedWhenAuditEnabled_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        model.setAudit(new AuditDefinition().setEnabled(true).setType(AuditTypeEnum.INSTANT));
+        model.setSort(newSort(List.of("createdAt", "updatedAt")));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow sort when defaultDirection is null (runtime fallback to ASC)")
+    void validate_sortWithNullDefaultDirection_ok() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition model = spec.getEntities().get(0);
+
+        model.setSort(new SortDefinition()
+                .setAllowedFields(List.of("name"))
+                .setDefaultDirection(null));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should throw when sorting targets unsupported fields in v1")
+    void validate_sortUnsupportedTargets_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        addRoleModel(spec);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition idField = getFirstField(user);
+
+        final FieldDefinition jsonField = new FieldDefinition()
+                .setName("metadata")
+                .setType("JSON<String>");
+
+        final FieldDefinition collectionField = new FieldDefinition()
+                .setName("tags")
+                .setType("List<String>");
+
+        final RelationDefinition manyToMany = new RelationDefinition()
+                .setType("ManyToMany")
+                .setJoinTable(new JoinTableDefinition()
+                        .setName("user_role")
+                        .setJoinColumn("user_id")
+                        .setInverseJoinColumn("role_id"));
+
+        final FieldDefinition relationCollectionField = new FieldDefinition()
+                .setName("roles")
+                .setType("Role")
+                .setRelation(manyToMany);
+
+        user.setFields(List.of(idField, jsonField, collectionField, relationCollectionField));
+        user.setSort(newSort(List.of("metadata", "tags", "roles")));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("JSON fields are not sortable"));
+        assertTrue(ex.getMessage().contains("simple collection fields are not sortable"));
+        assertTrue(ex.getMessage().contains("relation collections are not sortable"));
     }
 
     @Test

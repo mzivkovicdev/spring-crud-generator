@@ -79,10 +79,23 @@ type ${name}Page {
   number: Int!
   content: [${name}!]!
 }
+<#if sortEnabled?? && sortEnabled>
+
+enum ${name}SortField {
+  <#list sortAllowedFields as allowedField>
+  ${allowedField}
+  </#list>
+}
+
+input ${name}SortInput {
+  sortBy: ${name}SortField
+  sortDirection: SortDirection
+}
+</#if>
 
 extend type Query {
   ${name?uncap_first}ById(id: ID!): ${name}
-  ${name?uncap_first}sPage(pageNumber: Int = 0, pageSize: Int = 20): ${name}Page!
+  ${name?uncap_first}sPage(pageNumber: Int = 0, pageSize: Int = 20<#if sortEnabled?? && sortEnabled>, sort: ${name}SortInput</#if>): ${name}Page!
 }
 
 extend type Mutation {

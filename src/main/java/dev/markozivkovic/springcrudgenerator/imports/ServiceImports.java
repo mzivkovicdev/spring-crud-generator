@@ -36,6 +36,7 @@ import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 
 public class ServiceImports {
@@ -93,9 +94,10 @@ public class ServiceImports {
      * Computes the base import statements for a JPA service.
      *
      * @param cache Whether to include the Spring caching annotations.
+     * @param sortEnabled whether sort imports should be included
      * @return A string containing the necessary import statements for the base JPA service.
      */
-    public static String computeJpaServiceBaseImport(final boolean cache) {
+    public static String computeJpaServiceBaseImport(final boolean cache, final boolean sortEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -104,6 +106,10 @@ public class ServiceImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
         imports.add(String.format(IMPORT, ImportConstants.SpringStereotype.SERVICE));
+        if (sortEnabled) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringData.SORT));
+            imports.add(String.format(IMPORT, ImportConstants.SpringData.SORT_DIRECTION));
+        }
         if (!GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION)) {
             imports.add(String.format(IMPORT, ImportConstants.SpringTransaction.TRANSACTIONAL));
         }
@@ -191,6 +197,10 @@ public class ServiceImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_IMPL));
         imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE_REQUEST));
+        if (SortUtils.isSortEnabled(modelDefinition)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringData.SORT));
+            imports.add(String.format(IMPORT, ImportConstants.SpringData.SORT_DIRECTION));
+        }
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.SPRING_EXTENSION));
 
         ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));

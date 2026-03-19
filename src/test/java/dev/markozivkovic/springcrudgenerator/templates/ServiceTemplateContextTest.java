@@ -17,8 +17,10 @@ import dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 
@@ -127,6 +129,35 @@ class ServiceTemplateContextTest {
             assertEquals("invoice", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
             assertEquals("id", ctx.get(TemplateContextConstants.ID_FIELD));
             assertEquals("Long", ctx.get(TemplateContextConstants.ID_TYPE));
+        }
+    }
+
+    @Test
+    void computeGetAllContext_shouldIncludeSortContextWhenEnabled() {
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("Long");
+        when(idField.getName()).thenReturn("id");
+
+        final ModelDefinition model = newModel("InvoiceEntity", List.of(idField));
+        final SortDefinition sort = new SortDefinition()
+                .setAllowedFields(List.of("name", "createdAt"))
+                .setDefaultDirection(SortDirection.ASC);
+        when(model.getSort()).thenReturn(sort);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                      .thenReturn(idField);
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("InvoiceEntity"))
+                     .thenReturn("Invoice");
+
+            final Map<String, Object> ctx = ServiceTemplateContext.computeGetAllContext(model);
+
+            assertEquals(true, ctx.get(TemplateContextConstants.SORT_ENABLED));
+            assertEquals(List.of("name", "createdAt"), ctx.get(TemplateContextConstants.SORT_ALLOWED_FIELDS));
+            assertEquals("ASC", ctx.get(TemplateContextConstants.SORT_DEFAULT_DIRECTION));
         }
     }
 

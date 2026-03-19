@@ -7,3 +7,8 @@ scalar Date
 scalar DateTime
 scalar BigDecimal
 scalar JSON
+
+enum SortDirection {
+  ASC
+  DESC
+}

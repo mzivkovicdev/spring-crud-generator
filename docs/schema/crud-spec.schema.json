@@ -365,6 +365,10 @@
         "audit": {
           "$ref": "#/$defs/audit"
         },
+        "sort": {
+          "$ref": "#/$defs/sort",
+          "description": "Optional entity-level sorting configuration for REST list endpoints and GraphQL list queries."
+        },
         "fields": {
           "type": "array",
           "minItems": 1,
@@ -391,6 +395,39 @@
             "localdate",
             "localdatetime"
           ]
+        }
+      }
+    },
+    "sortDirection": {
+      "type": "string",
+      "description": "Sort direction used when sortBy is provided and request does not provide direction.",
+      "enum": [
+        "ASC",
+        "DESC",
+        "asc",
+        "desc"
+      ]
+    },
+    "sort": {
+      "type": "object",
+      "description": "Defines sortable fields and default sorting behavior for one entity.",
+      "additionalProperties": false,
+      "required": [
+        "allowedFields"
+      ],
+      "properties": {
+        "allowedFields": {
+          "type": "array",
+          "description": "List of entity fields that can be used in sortBy.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "defaultDirection": {
+          "$ref": "#/$defs/sortDirection",
+          "description": "Default direction used when sortBy is present but sortDirection is not provided."
         }
       }
     },

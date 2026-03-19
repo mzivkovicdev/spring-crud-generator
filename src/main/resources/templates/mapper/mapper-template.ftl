@@ -7,11 +7,12 @@ import java.util.List;
 <#if helperMapper?? && helperMapper>
 import java.util.Set;
 </#if>
+<#assign hasMappingFields = (lazyFields?? && lazyFields?has_content) || (eagerFields?? && eagerFields?has_content)>
 
 <#if openInViewEnabled?? && !openInViewEnabled>
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
-<#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+<#if hasMappingFields>
 import org.mapstruct.Mapping;
 </#if><#t>
 import org.mapstruct.Named;
@@ -23,7 +24,7 @@ ${projectImports}
 @Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 
-    <#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+    <#if openInViewEnabled?? && !openInViewEnabled && hasMappingFields>
     <#list lazyFields as lazyField>
     <#if baseCollectionFields?? && !baseCollectionFields?seq_contains(lazyField)>
     @Mapping(target = "${lazyField}", source = "${lazyField}", qualifiedByName = "simple")
@@ -35,7 +36,7 @@ public interface ${mapperName} {
     </#if><#t>
     ${transferObjectName} map${modelName}To${transferObjectName}(final ${modelName} model);
 
-    <#if openInViewEnabled?? && !openInViewEnabled && lazyFields?? && lazyFields?has_content>
+    <#if openInViewEnabled?? && !openInViewEnabled && hasMappingFields>
     <#list lazyFields as lazyField>
     <#if baseCollectionFields?? && !baseCollectionFields?seq_contains(lazyField)>
     @Mapping(target = "${lazyField}", qualifiedByName = "simple")

@@ -7,9 +7,15 @@
 <#assign openApiModel = strippedModelName + "Payload">
 
     <#if swagger>@Override<#else>@GetMapping</#if>
-    public ResponseEntity<<#if !swagger>PageTO<${transferObjectClass}><#else>${responseClass}</#if>> ${uncapModelName}sGet(<#if !swagger>@RequestParam </#if>final Integer pageNumber, <#if !swagger>@RequestParam </#if>final Integer pageSize) {
+    public ResponseEntity<<#if !swagger>PageTO<${transferObjectClass}><#else>${responseClass}</#if>> ${uncapModelName}sGet(
+            <#if !swagger>@RequestParam </#if>final Integer pageNumber,
+            <#if !swagger>@RequestParam </#if>final Integer pageSize<#if sortEnabled?? && sortEnabled>,
+            <#if !swagger>@RequestParam(required = false) </#if>final String sortBy,
+            <#if !swagger>@RequestParam(required = false) </#if>final String sortDirection</#if>) {
 
-        final Page<${modelName?cap_first}> pageObject = this.${serviceField}.getAll(pageNumber, pageSize);
+        final Page<${modelName?cap_first}> pageObject = this.${serviceField}.getAll(
+                pageNumber, pageSize<#if sortEnabled?? && sortEnabled>, sortBy, sortDirection</#if>
+        );
         <#if !swagger>
         return ResponseEntity.ok().body(
             new PageTO<>(

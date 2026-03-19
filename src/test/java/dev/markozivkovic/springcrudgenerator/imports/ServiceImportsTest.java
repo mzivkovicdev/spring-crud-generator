@@ -387,7 +387,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(false);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(false);
+            final String result = ServiceImports.computeJpaServiceBaseImport(false, false);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER), "LOGGER import missing");
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY), "LOGGER_FACTORY import missing");
@@ -412,7 +412,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(false);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(true);
+            final String result = ServiceImports.computeJpaServiceBaseImport(true, false);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER));
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY));
@@ -427,6 +427,22 @@ class ServiceImportsTest {
     }
 
     @Test
+    @DisplayName("computeJpaServiceBaseImport: when sort is configured it includes Sort imports")
+    void computeJpaServiceBaseImport_sortConfigured_includesSortImports() {
+
+        try (final MockedStatic<GeneratorContext> genContext = Mockito.mockStatic(GeneratorContext.class)) {
+
+            genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            final String result = ServiceImports.computeJpaServiceBaseImport(false, true);
+
+            assertTrue(result.contains("import " + ImportConstants.SpringData.SORT));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.SORT_DIRECTION));
+        }
+    }
+
+    @Test
     @DisplayName("computeJpaServiceBaseImport: cache=true and retryable annotation IS generated → no @Transactional, but has cache imports")
     void computeJpaServiceBaseImport_cacheEnabled_retryGenerated_noTransactionalButCacheImports() {
         
@@ -435,7 +451,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(true);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(true);
+            final String result = ServiceImports.computeJpaServiceBaseImport(true, false);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER));
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY));
@@ -461,7 +477,7 @@ class ServiceImportsTest {
             genContext.when(() -> GeneratorContext.isGenerated(GeneratorContextKeys.RETRYABLE_ANNOTATION))
                     .thenReturn(true);
 
-            final String result = ServiceImports.computeJpaServiceBaseImport(false);
+            final String result = ServiceImports.computeJpaServiceBaseImport(false, false);
 
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER));
             assertTrue(result.contains("import " + ImportConstants.Logger.LOGGER_FACTORY));

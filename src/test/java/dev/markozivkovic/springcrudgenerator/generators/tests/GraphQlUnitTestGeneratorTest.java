@@ -42,6 +42,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils;
 import dev.markozivkovic.springcrudgenerator.utils.UnitTestUtils.TestDataGeneratorConfig;
 
@@ -173,6 +174,7 @@ class GraphQlUnitTestGeneratorTest {
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
              final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<SortUtils> sortUtils = mockStatic(SortUtils.class);
              final MockedStatic<GraphQlTemplateContext> gqlCtx = mockStatic(GraphQlTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
@@ -225,6 +227,7 @@ class GraphQlUnitTestGeneratorTest {
             gqlCtx.verify(() -> GraphQlTemplateContext.computeMutationUnitTestContext(
                     eq(user), eq(cfg), eq(pkgCfg), anyList(), eq(outputDir), eq(testOutputDir)
             ), times(1));
+            sortUtils.verify(() -> SortUtils.contributeSortContext(eq(user), anyMap()), times(1));
         }
     }
 
@@ -265,6 +268,7 @@ class GraphQlUnitTestGeneratorTest {
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<ResolverImports> resolverImports = mockStatic(ResolverImports.class);
              final MockedStatic<DataGeneratorTemplateContext> dgCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<SortUtils> sortUtils = mockStatic(SortUtils.class);
              final MockedStatic<GraphQlTemplateContext> gqlCtx = mockStatic(GraphQlTemplateContext.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
@@ -310,6 +314,7 @@ class GraphQlUnitTestGeneratorTest {
             resolverImports.verify(() ->
                     ResolverImports.computeProjectImportsForQueryUnitTests(outputDir, user, pkgCfg, false)
             );
+            sortUtils.verify(() -> SortUtils.contributeSortContext(eq(user), anyMap()), times(1));
         }
     }
 

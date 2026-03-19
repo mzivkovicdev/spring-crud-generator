@@ -30,6 +30,7 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
+import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
 
 public class ServiceTemplateContext {
@@ -86,6 +87,7 @@ public class ServiceTemplateContext {
         context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         context.put(TemplateContextConstants.ID_FIELD, idField.getName());
         context.put(TemplateContextConstants.ID_TYPE, idField.getType());
+        SortUtils.contributeSortContext(modelDefinition, context);
         
         return context;
     }

@@ -28,6 +28,7 @@ public class ModelDefinition {
     private List<FieldDefinition> fields; 
     private AuditDefinition audit;
     private Boolean softDelete = Boolean.FALSE;
+    private SortDefinition sort;
 
     public ModelDefinition() {
 
@@ -35,7 +36,7 @@ public class ModelDefinition {
 
     public ModelDefinition(final String name, final String storageName, final String description,
             final Boolean ignore, final List<FieldDefinition> fields, final AuditDefinition audit,
-            final Boolean softDelete) {
+            final Boolean softDelete, final SortDefinition sort) {
         this.name = name;
         this.storageName = storageName;
         this.description = description;
@@ -43,6 +44,7 @@ public class ModelDefinition {
         this.fields = fields;
         this.audit = audit;
         this.softDelete = softDelete;
+        this.sort = sort;
     }
 
     public String getName() {
@@ -108,6 +110,15 @@ public class ModelDefinition {
         return this;
     }
 
+    public SortDefinition getSort() {
+        return this.sort;
+    }
+
+    public ModelDefinition setSort(final SortDefinition sort) {
+        this.sort = sort;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -122,12 +133,13 @@ public class ModelDefinition {
                 Objects.equals(ignore, modelDefinition.ignore) &&
                 Objects.equals(fields, modelDefinition.fields) &&
                 Objects.equals(audit, modelDefinition.audit) &&
-                Objects.equals(softDelete, modelDefinition.softDelete);
+                Objects.equals(softDelete, modelDefinition.softDelete) &&
+                Objects.equals(sort, modelDefinition.sort);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, storageName, description, ignore, fields, audit, softDelete);
+        return Objects.hash(name, storageName, description, ignore, fields, audit, softDelete, sort);
     }
 
     @Override
@@ -140,6 +152,7 @@ public class ModelDefinition {
             ", fields='" + getFields() + "'" +
             ", audit='" + getAudit() + "'" +
             ", softDelete='" + getSoftDelete() + "'" +
+            ", sort='" + getSort() + "'" +
             "}";
     }    
 

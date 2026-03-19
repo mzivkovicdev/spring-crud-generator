@@ -1,10 +1,14 @@
 package dev.markozivkovic.springcrudgenerator.utils;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.junit.jupiter.api.Test;
@@ -14,6 +18,9 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
+import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 
 class CrudMojoUtilsTest {
 
@@ -43,6 +50,61 @@ class CrudMojoUtilsTest {
 
         assertTrue(yaml.getDeserializationConfig().isEnabled(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS));
         assertTrue(json.getDeserializationConfig().isEnabled(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS));
+    }
+
+    @Test
+    void createSpecMapper_yaml_canDeserializeEntitySortConfiguration() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                    sort:
+                      allowedFields: [name]
+                      defaultDirection: ASC
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertNotNull(spec.getEntities());
+        assertNotNull(spec.getEntities().get(0).getSort());
+        assertEquals(List.of("name"), spec.getEntities().get(0).getSort().getAllowedFields());
+        assertEquals(SortDirection.ASC, spec.getEntities().get(0).getSort().getDefaultDirection());
+    }
+
+    @Test
+    void createSpecMapper_yaml_sortDefaultDirectionDefaultsToAsc() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                    sort:
+                      allowedFields: [name]
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertNotNull(spec.getEntities().get(0).getSort());
+        assertEquals(SortDirection.ASC, spec.getEntities().get(0).getSort().getDefaultDirection());
     }
 
     @Test

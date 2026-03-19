@@ -153,6 +153,8 @@ public final class ImportConstants {
         public static final String PAGE = "org.springframework.data.domain.Page";
         public static final String PAGE_IMPL = "org.springframework.data.domain.PageImpl";
         public static final String PAGE_REQUEST = "org.springframework.data.domain.PageRequest";
+        public static final String SORT = "org.springframework.data.domain.Sort";
+        public static final String SORT_DIRECTION = "org.springframework.data.domain.Sort.Direction";
         public static final String CREATED_DATE = "org.springframework.data.annotation.CreatedDate";
         public static final String LAST_MODIFIED_DATE = "org.springframework.data.annotation.LastModifiedDate";
         public static final String AUDITING_ENTITY_LISTENER = "org.springframework.data.jpa.domain.support.AuditingEntityListener";
