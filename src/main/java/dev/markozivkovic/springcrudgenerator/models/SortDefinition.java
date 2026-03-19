@@ -19,6 +19,8 @@ package dev.markozivkovic.springcrudgenerator.models;
 import java.util.List;
 import java.util.Objects;
 
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
+
 public class SortDefinition {
     
     private List<String> allowedFields;

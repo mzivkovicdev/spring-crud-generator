@@ -21,6 +21,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.enums.SwaggerObjectModeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SwaggerSchemaModeEnum;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
@@ -29,7 +30,6 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
-import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;

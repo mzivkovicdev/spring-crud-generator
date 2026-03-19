@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
@@ -28,7 +29,6 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
 import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
-import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;

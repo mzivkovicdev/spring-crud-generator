@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
-import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 
 class CrudMojoUtilsTest {
 

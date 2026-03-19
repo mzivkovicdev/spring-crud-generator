@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.imports.ResolverImports;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
@@ -39,7 +40,6 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorRespo
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
-import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;

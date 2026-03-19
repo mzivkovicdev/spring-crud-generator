@@ -13,9 +13,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
-import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 
 class SortUtilsTest {
 

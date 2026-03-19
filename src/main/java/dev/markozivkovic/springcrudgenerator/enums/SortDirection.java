@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dev.markozivkovic.springcrudgenerator.models;
+package dev.markozivkovic.springcrudgenerator.enums;
 
 public enum SortDirection {
     ASC,

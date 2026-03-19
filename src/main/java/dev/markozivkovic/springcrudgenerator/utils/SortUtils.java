@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
+import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
-import dev.markozivkovic.springcrudgenerator.models.SortDirection;
 
 public class SortUtils {
 
