@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json
+configuration:
+  database: mariadb
+  javaVersion: 21
+  springBootVersion: "4"
+  docker:
+    dockerfile: true
+    dockerCompose: true
+  openApi:
+    apiSpec: true
+    generateResources: true
+  graphql:
+    enabled: true
+    scalarConfig: true
+  errorResponse: simple
+  migrationScripts: true
+entities:
+  - name: GroupModel
+    storageName: group_table
+    description: "Represents a group"
+    fields:
+      - name: id
+        type: Long
+        description: "The unique identifier for the group"
+        id:
+          strategy: IDENTITY
+      - name: name
+        description: "The name of the group"
+        type: String
+  - name: ProductModel
+    storageName: product_table
+    description: "Represents a product"
+    fields:
+      - name: id
+        type: Long
+        description: "The unique identifier for the product"
+        id:
+          strategy: IDENTITY
+      - name: name
+        description: "The name of the product"
+        type: String
+        column:
+          nullable: false
+          length: 100
+        validation:
+          required: true
+          notBlank: true
+          minLength: 3
+          maxLength: 100
+      - name: price
+        description: "The price of the product"
+        type: Integer
+      - name: group
+        description: "The group of the product"
+        type: GroupModel
+        validation:
+          required: true
+        relation:
+          type: ManyToOne
+          joinColumn: group_id

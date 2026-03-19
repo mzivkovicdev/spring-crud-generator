@@ -21,6 +21,10 @@ Generate production-ready Spring Boot backend boilerplate from a single YAML or 
 
 A Maven plugin for bootstrapping consistent, inspectable Spring Boot backends with generated CRUD layers, migrations, API docs, tests, and more.
 
+## Demo video
+
+Watch the demo on YouTube: [Spring CRUD Generator Demo](https://www.youtube.com/watch?v=jwVINP_YxSk)
+
 ## Best for
 - Starting new Spring Boot backends faster
 - Teams that want a consistent backend baseline
