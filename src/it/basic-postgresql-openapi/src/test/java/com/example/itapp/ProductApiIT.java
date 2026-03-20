@@ -38,6 +38,22 @@ class ProductApiIT {
         assertTrue(productId > 0, "Expected generated ID to be > 0");
         assertEquals("Product From IT", created.path("name").asText());
 
+        final HttpResponse<String> bulkCreateResponse = send(
+                "/api/products/bulk",
+                "POST",
+                """
+                [
+                  { "name": "Bulk Product One" },
+                  { "name": "Bulk Product Two" }
+                ]
+                """
+        );
+        assertEquals(200, bulkCreateResponse.statusCode());
+
+        final JsonNode bulkCreated = OBJECT_MAPPER.readTree(bulkCreateResponse.body());
+        assertTrue(bulkCreated.isArray(), "Expected bulk create response to be an array");
+        assertEquals(2, bulkCreated.size(), "Expected two created products in bulk response");
+
         final HttpResponse<String> getAllResponse = send("/api/products?pageNumber=0&pageSize=20", "GET", null);
         assertEquals(200, getAllResponse.statusCode());
 

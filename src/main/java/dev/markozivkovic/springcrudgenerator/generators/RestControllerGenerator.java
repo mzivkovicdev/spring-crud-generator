@@ -105,6 +105,7 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put("basePath", basePath);
         context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger, packageConfiguration));
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger));
+        context.put("createBulkResource", generateCreateBulkResourceEndpoint(modelDefinition, swagger));
         context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger));
         context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition, swagger));
         context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition, swagger));
@@ -130,6 +131,25 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-resource.ftl", context);
+    }
+
+    /**
+     * Generates the REST endpoint for creating multiple resources in a single request.
+     *
+     * @param modelDefinition The model definition for which the bulk create resource endpoint is generated.
+     * @param swagger Indicates whether Swagger generator is enabled.
+     * @return A string representation of the bulk create resource endpoint method, or null when disabled.
+     */
+    private String generateCreateBulkResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+
+        if (!modelDefinition.isBulkCreateEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entities);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-bulk-resource.ftl", context);
     }
 
     /**
