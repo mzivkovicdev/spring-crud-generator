@@ -11,6 +11,9 @@ entities:
   - name: ProductModel
     storageName: product_table
     description: "Represents a product"
+    bulk:
+      create:
+        enabled: true
     fields:
       - name: id
         type: Long

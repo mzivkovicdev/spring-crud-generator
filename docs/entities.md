@@ -29,6 +29,7 @@ entities:
 | `storageName` | string  | ✅        | Database table name (storage name).                             |
 | `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable) |
 | `audit`       | object  | optional  | Audit configuration for `created_at` / `updated_at` columns     |
+| `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create) |
 | `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries      |
 | `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)          |
 | `fields`      | list    | ✅        | List of fields for the entity                                   |
@@ -102,6 +103,22 @@ Runtime behavior:
 - when `sortBy` is not provided, no sorting is applied
 - when `sortBy` is provided, it must be one of `allowedFields`
 - when `sortBy` is provided and `sortDirection` is omitted, `defaultDirection` is used
+
+---
+
+## Bulk create configuration
+
+Bulk create is opt-in per entity and generates `POST /{entity-path}/bulk`.
+
+Preferred shape:
+
+```yaml
+bulk:
+  create:
+    enabled: true
+```
+
+If `bulk` is absent, bulk create generation is disabled for that entity.
 
 ---
 
