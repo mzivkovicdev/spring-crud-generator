@@ -35,7 +35,7 @@ public class BulkDefinition {
     }
 
     public BulkDefinition setCreate(final BulkCreateDefinition create) {
-        this.create = create == null ? new BulkCreateDefinition() : create;
+        this.create = create;
         return this;
     }
 
