@@ -64,12 +64,14 @@ public class RestControllerImports {
                 FieldUtils.isAnyRelationCollectionSet(modelDefinition.getFields());
         final boolean hasRelationListCollections = FieldUtils.isAnyRelationCollectionList(modelDefinition.getFields());
         final boolean hasRelationSetCollections = FieldUtils.isAnyRelationCollectionSet(modelDefinition.getFields());
+        final boolean bulkCreateEnabled = modelDefinition.isBulkCreateEnabled();
 
         if (hasRelationCollections) {
             ImportCommon.addIf(hasRelationListCollections, imports, String.format(IMPORT, ImportConstants.Java.LIST));
             ImportCommon.addIf(hasRelationSetCollections, imports, String.format(IMPORT, ImportConstants.Java.SET));
             imports.add(String.format(IMPORT, ImportConstants.Java.COLLECTORS));
         }
+        ImportCommon.addIf(bulkCreateEnabled, imports, String.format(IMPORT, ImportConstants.Java.LIST));
 
         relations.forEach(realtionField -> {
 
@@ -136,6 +138,10 @@ public class RestControllerImports {
                     IMPORT,
                     PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), String.format("%sInput", relationModel))
                 ));
+            }
+
+            if (modelDefinition.isBulkCreateEnabled()) {
+                imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), field.getType())));
             }
         });
 

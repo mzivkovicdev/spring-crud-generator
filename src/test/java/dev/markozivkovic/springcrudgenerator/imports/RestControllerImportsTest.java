@@ -17,6 +17,8 @@ import org.mockito.Mockito;
 
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
+import dev.markozivkovic.springcrudgenerator.models.BulkCreateDefinition;
+import dev.markozivkovic.springcrudgenerator.models.BulkDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -52,6 +54,36 @@ class RestControllerImportsTest {
             final String result = RestControllerImports.computeControllerBaseImports(model, entities);
 
             assertEquals("", result);
+        }
+    }
+
+    @Test
+    @DisplayName("Bulk create enabled without relation collections → List import is added")
+    void computeControllerBaseImports_bulkCreateEnabled_addsListImport() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(Collections.emptyList());
+        model.setBulk(new BulkDefinition().setCreate(new BulkCreateDefinition().setEnabled(true)));
+
+        final List<ModelDefinition> entities = Collections.emptyList();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(false);
+            final FieldDefinition idField = new FieldDefinition();
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                    .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+
+            final String result = RestControllerImports.computeControllerBaseImports(model, entities);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"),
+                    "List import should be present when bulk create is enabled");
         }
     }
 
