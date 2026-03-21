@@ -18,6 +18,8 @@ package dev.markozivkovic.springcrudgenerator.models;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class IdDefinition {
     
     private IdStrategyEnum strategy;
@@ -26,6 +28,8 @@ public class IdDefinition {
     private Integer initialValue;
     private String pkColumnName;
     private String valueColumnName;
+    @JsonIgnore
+    private boolean markerOnly;
 
     public IdDefinition() {
 
@@ -93,6 +97,15 @@ public class IdDefinition {
         return this;
     }
 
+    public boolean isMarkerOnly() {
+        return markerOnly;
+    }
+
+    public IdDefinition setMarkerOnly(final boolean markerOnly) {
+        this.markerOnly = markerOnly;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -106,13 +119,14 @@ public class IdDefinition {
                 Objects.equals(allocationSize, idGenerationDefinition.allocationSize) &&
                 Objects.equals(initialValue, idGenerationDefinition.initialValue) &&
                 Objects.equals(pkColumnName, idGenerationDefinition.pkColumnName) &&
-                Objects.equals(valueColumnName, idGenerationDefinition.valueColumnName);
+                Objects.equals(valueColumnName, idGenerationDefinition.valueColumnName) &&
+                markerOnly == idGenerationDefinition.markerOnly;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                strategy, generatorName, allocationSize, initialValue, pkColumnName, valueColumnName
+                strategy, generatorName, allocationSize, initialValue, pkColumnName, valueColumnName, markerOnly
         );
     }
 
@@ -125,6 +139,7 @@ public class IdDefinition {
             ", initialValue='" + getInitialValue() + "'" +
             ", pkColumnName='" + getPkColumnName() + "'" +
             ", valueColumnName='" + getValueColumnName() + "'" +
+            ", markerOnly='" + isMarkerOnly() + "'" +
             "}";
     }    
 

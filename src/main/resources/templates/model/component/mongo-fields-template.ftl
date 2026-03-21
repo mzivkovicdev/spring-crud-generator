@@ -1,6 +1,6 @@
 <#include "_common.ftl">
 <#list fields as field>
-    <#if field.id?has_content || field.name?lower_case == "id">
+    <#if field.id?has_content>
     @Id
     </#if><#t>
     <#if field.relation??>
