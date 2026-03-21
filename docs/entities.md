@@ -174,7 +174,14 @@ Example:
 
 ---
 
-## Primary key: `id.strategy`
+## Primary key: `id`
+
+Use one of two explicit forms:
+
+- SQL/JPA databases: `id` as object with `strategy`
+- MongoDB/NoSQL databases: `id: true` marker
+
+### SQL/JPA example
 
 ```yaml
 - name: id
@@ -182,6 +189,15 @@ Example:
   description: "The unique identifier for the entity"
   id:
     strategy: IDENTITY
+```
+
+### MongoDB/NoSQL example
+
+```yaml
+- name: id
+  type: String
+  id: true
+  description: "Mongo document id"
 ```
 
 Supported strategies:
