@@ -24,6 +24,107 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "configuration": {
+            "properties": {
+              "database": {
+                "not": {
+                  "enum": [
+                    "MONGODB",
+                    "mongodb"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "database"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "entities": {
+            "items": {
+              "properties": {
+                "fields": {
+                  "items": {
+                    "properties": {
+                      "id": {
+                        "$ref": "#/$defs/idDefinition"
+                      },
+                      "relation": {
+                        "allOf": [
+                          {
+                            "if": {
+                              "properties": {
+                                "type": {
+                                  "const": "ManyToMany"
+                                }
+                              },
+                              "required": [
+                                "type"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "joinTable"
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "configuration": {
+            "properties": {
+              "database": {
+                "enum": [
+                  "MONGODB",
+                  "mongodb"
+                ]
+              }
+            },
+            "required": [
+              "database"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "entities": {
+            "items": {
+              "properties": {
+                "fields": {
+                  "items": {
+                    "properties": {
+                      "id": {
+                        "$ref": "#/$defs/idBoolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "configuration": {
       "type": "object",
@@ -505,7 +606,24 @@
       ]
     },
     "id": {
+      "description": "ID declaration. Use id: true as a lightweight marker (MongoDB/NoSQL), or use object form with strategy for SQL/JPA.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/idBoolean"
+        },
+        {
+          "$ref": "#/$defs/idDefinition"
+        }
+      ]
+    },
+    "idBoolean": {
+      "type": "boolean"
+    },
+    "idDefinition": {
       "type": "object",
+      "required": [
+        "strategy"
+      ],
       "additionalProperties": false,
       "properties": {
         "strategy": {
@@ -576,26 +694,7 @@
         "joinTable": {
           "$ref": "#/$defs/joinTable"
         }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "type": {
-                "const": "ManyToMany"
-              }
-            },
-            "required": [
-              "type"
-            ]
-          },
-          "then": {
-            "required": [
-              "joinTable"
-            ]
-          }
-        }
-      ]
+      }
     },
     "joinTable": {
       "type": "object",
