@@ -235,7 +235,16 @@ public class CrudConfiguration {
         MYSQL,
         MARIADB,
         POSTGRESQL,
-        MSSQL;
+        MSSQL,
+        MONGODB;
+
+        public boolean isSql() {
+            return this != MONGODB;
+        }
+
+        public boolean isMongo() {
+            return this == MONGODB;
+        }
     }
 
     public enum ErrorResponse {
