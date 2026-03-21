@@ -25,6 +25,8 @@ services:
             SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=${artifactId};encrypt=false
             SPRING_DATASOURCE_USERNAME: app
             SPRING_DATASOURCE_PASSWORD: App!Passw0rd
+            <#elseif dbType == "mongodb">
+            SPRING_DATA_MONGODB_URI: mongodb://database:27017/${artifactId}
             </#if>
             <#if cacheType?? && cacheType?lower_case == "redis">
             SPRING_DATA_REDIS_HOST: redis
@@ -137,9 +139,21 @@ services:
             timeout: 5s
             retries: 30
             start_period: 45s
+        <#elseif dbType == "mongodb">
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
+        container_name: ${artifactId}-mongodb-db
+        restart: unless-stopped
+        ports:
+            - "${dbPort}:27017"
+        healthcheck:
+            test: ["CMD-SHELL", "mongosh --quiet --eval \"db.runCommand({ ping: 1 }).ok\" | grep 1"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
         </#if>
         volumes:
-            - db_data:/var/<#if dbType == "mssql">opt<#else>lib</#if>/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql" || dbType == "mariadb">mysql<#elseif dbType == "mssql">mssql</#if>
+            - db_data:/var/<#if dbType == "mssql">opt<#else>lib</#if>/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql" || dbType == "mariadb">mysql<#elseif dbType == "mssql">mssql<#elseif dbType == "mongodb">mongodb</#if>
         networks:
             - ${artifactId}-network
     <#if cacheType?? && cacheType?lower_case == "redis">

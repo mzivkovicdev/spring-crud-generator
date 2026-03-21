@@ -121,7 +121,9 @@ public class CacheConfiguration {
     ObjectMapper redisObjectMapper() {
         
         final ObjectMapper objectMapper = JsonMapper.builder()
+                <#if includeHibernateLazyNullModule?? && includeHibernateLazyNullModule>
                 .addModule(new HibernateLazyNullModule())
+                </#if><#t>
                 .addModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 <#if excludeNull?? && excludeNull>
@@ -146,7 +148,9 @@ public class CacheConfiguration {
                 .changeDefaultVisibility(v -> v.withFieldVisibility(
                     com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY
                 ))
+                <#if includeHibernateLazyNullModule?? && includeHibernateLazyNullModule>
                 .addModule(new HibernateLazyNullModule())
+                </#if><#t>
                 .build();
     }
     </#if>
