@@ -190,7 +190,11 @@ public final class DependencyCheckUtils {
             addRequirement(requirements, "core CRUD generation (Spring Boot 3)",
                     coordinate("org.springframework.boot", "spring-boot-starter-web"));
         }
-        addRequirement(requirements, "core CRUD generation", coordinate("org.springframework.boot", "spring-boot-starter-data-jpa"));
+        if (DatabaseType.MONGODB.equals(configuration.getDatabase())) {
+            addRequirement(requirements, "core CRUD generation", coordinate("org.springframework.boot", "spring-boot-starter-data-mongodb"));
+        } else {
+            addRequirement(requirements, "core CRUD generation", coordinate("org.springframework.boot", "spring-boot-starter-data-jpa"));
+        }
         addRequirement(requirements, "core CRUD generation", coordinate("org.springframework.boot", "spring-boot-starter-validation"));
         addRequirement(requirements, "core CRUD generation", coordinate("org.mapstruct", "mapstruct"));
 
@@ -248,8 +252,10 @@ public final class DependencyCheckUtils {
                         coordinate("org.springframework.boot", "spring-boot-starter-oauth2-client"));
                 addRequirement(requirements, "tests.unit=true with Spring Boot 4 (WebMvc OAuth2 test support)",
                         coordinate("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"));
-                addRequirement(requirements, "tests.unit=true with Spring Boot 4",
-                        coordinate("org.springframework.boot", "spring-boot-starter-data-jpa-test"));
+                if (!DatabaseType.MONGODB.equals(configuration.getDatabase())) {
+                    addRequirement(requirements, "tests.unit=true with Spring Boot 4",
+                            coordinate("org.springframework.boot", "spring-boot-starter-data-jpa-test"));
+                }
 
                 if (Boolean.TRUE.equals(configuration.isMigrationScripts())) {
                     addRequirement(requirements, "tests.unit=true with migrationScripts=true (Spring Boot 4)",
@@ -377,6 +383,7 @@ public final class DependencyCheckUtils {
                 addRequirement(requirements, "database=mariadb", coordinate("org.mariadb.jdbc", "mariadb-java-client"));
             case MSSQL ->
                 addRequirement(requirements, "database=mssql", coordinate("com.microsoft.sqlserver", "mssql-jdbc"));
+            case MONGODB -> { }
             default -> { }
         }
     }

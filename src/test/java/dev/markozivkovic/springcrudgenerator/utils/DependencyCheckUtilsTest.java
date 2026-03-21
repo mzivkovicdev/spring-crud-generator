@@ -302,6 +302,69 @@ class DependencyCheckUtilsTest {
         assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-redis-test"));
     }
 
+    @Test
+    void findMissingDependencies_mongodb_requiresMongoStarterAndNotJpaStarter() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.MONGODB)
+                .setSpringBootVersion("3");
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-web"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.mapstruct", "mapstruct")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-mongodb"));
+        assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-jpa"));
+    }
+
+    @Test
+    void findMissingDependencies_mongodbWithMongoStarter_hasNoCoreMongoMissingDependencies() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.MONGODB)
+                .setSpringBootVersion("3");
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-web"),
+                dep("org.springframework.boot", "spring-boot-starter-data-mongodb"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.mapstruct", "mapstruct")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-mongodb"));
+        assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-jpa"));
+    }
+
+    @Test
+    void findMissingDependencies_springBoot4_mongodb_unitTestsDoesNotRequireJpaTestStarter() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.MONGODB)
+                .setSpringBootVersion("4")
+                .setTests(new TestConfiguration().setUnit(true).setDataGenerator(DataGeneratorEnum.INSTANCIO));
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-webmvc"),
+                dep("org.springframework.boot", "spring-boot-starter-data-mongodb"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.mapstruct", "mapstruct"),
+                dep("org.springframework.boot", "spring-boot-starter-test"),
+                dep("org.springframework.boot", "spring-boot-starter-oauth2-client"),
+                dep("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"),
+                dep("org.instancio", "instancio-core")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-data-jpa-test"));
+    }
+
     private Dependency dep(final String groupId, final String artifactId) {
         final Dependency dependency = new Dependency();
         dependency.setGroupId(groupId);
