@@ -66,6 +66,36 @@ class SpecificationValidatorTest {
         return spec;
     }
 
+    private CrudSpecification buildValidMongoSpecification() {
+        final CrudSpecification spec = new CrudSpecification();
+
+        final CrudConfiguration config = new CrudConfiguration();
+        config.setJavaVersion(17);
+        config.setDocker(null);
+        config.setCache(null);
+        config.setDatabase(DatabaseType.MONGODB);
+        spec.setConfiguration(config);
+
+        final ModelDefinition user = new ModelDefinition();
+        user.setName("User");
+        user.setStorageName("users");
+
+        final FieldDefinition idField = new FieldDefinition();
+        idField.setName("id");
+        idField.setType("String");
+        idField.setId(new IdDefinition().setMarkerOnly(true));
+
+        final FieldDefinition nameField = new FieldDefinition();
+        nameField.setName("name");
+        nameField.setType("String");
+        nameField.setValidation(new ValidationDefinition().setPattern("^[A-Za-z]+$"));
+
+        user.setFields(new ArrayList<>(List.of(idField, nameField)));
+        spec.setEntities(new ArrayList<>(List.of(user)));
+
+        return spec;
+    }
+
     private static FieldDefinition newIdField(final String name, final String type) {
         final FieldDefinition id = new FieldDefinition();
         id.setName(name);
@@ -1394,6 +1424,172 @@ class SpecificationValidatorTest {
 
         final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
 
+        user.setFields(List.of(userId, rolesField));
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should allow valid MongoDB specification with explicit id metadata")
+    void validate_mongodbBasicSpec_ok() {
+
+        final CrudSpecification spec = buildValidMongoSpecification();
+
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
+    }
+
+    @Test
+    @DisplayName("Should throw when migration scripts are enabled in MongoDB mode")
+    void validate_mongodbMigrationScriptsEnabled_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidMongoSpecification();
+        spec.getConfiguration().setMigrationScripts(true);
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("migrationScripts"));
+        assertTrue(ex.getMessage().contains("mongodb"));
+    }
+
+    @Test
+    @DisplayName("Should throw when SQL id strategy is used in MongoDB mode")
+    void validate_mongodbSqlIdStrategy_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidMongoSpecification();
+        final ModelDefinition user = getModel(spec, "User");
+
+        user.getFields().set(0, new FieldDefinition()
+                .setName("id")
+                .setType("String")
+                .setId(new IdDefinition().setStrategy(IdStrategyEnum.IDENTITY)));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("id.strategy"));
+        assertTrue(ex.getMessage().contains("MongoDB mode"));
+    }
+
+    @Test
+    @DisplayName("Should throw when empty id object is used in MongoDB mode")
+    void validate_mongodbEmptyIdObject_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidMongoSpecification();
+        final ModelDefinition user = getModel(spec, "User");
+
+        user.getFields().set(0, new FieldDefinition()
+                .setName("id")
+                .setType("String")
+                .setId(new IdDefinition()));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("id: {}"));
+        assertTrue(ex.getMessage().contains("id: true"));
+    }
+
+    @Test
+    @DisplayName("Should throw when boolean id marker is used in SQL mode")
+    void validate_sqlBooleanIdMarker_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidSpecification();
+        final ModelDefinition user = getModel(spec, "User");
+
+        user.getFields().set(0, new FieldDefinition()
+                .setName("id")
+                .setType("Long")
+                .setId(new IdDefinition().setMarkerOnly(true)));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("id: true"));
+        assertTrue(ex.getMessage().contains("SQL mode"));
+    }
+
+    @Test
+    @DisplayName("Should throw when SQL column options are used in MongoDB mode")
+    void validate_mongodbColumnOptions_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidMongoSpecification();
+        final ModelDefinition user = getModel(spec, "User");
+        user.getFields().get(1).setColumn(new dev.markozivkovic.springcrudgenerator.models.ColumnDefinition().setLength(20));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("column.* options"));
+        assertTrue(ex.getMessage().contains("MongoDB mode"));
+    }
+
+    @Test
+    @DisplayName("Should throw when SQL relation join column is used in MongoDB mode")
+    void validate_mongodbRelationJoinColumn_throwsIllegalArgumentException() {
+
+        final CrudSpecification spec = buildValidMongoSpecification();
+        final List<ModelDefinition> entities = new ArrayList<>(spec.getEntities());
+        entities.add(new ModelDefinition()
+                .setName("Role")
+                .setStorageName("roles")
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition().setMarkerOnly(true)),
+                        new FieldDefinition().setName("name").setType("String")
+                )));
+        spec.setEntities(entities);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToOne");
+        relation.setJoinColumn("role_id");
+
+        final FieldDefinition roleField = newRelationField("role", "Role", relation);
+        user.setFields(List.of(userId, roleField));
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> SpecificationValidator.validate(spec)
+        );
+
+        assertTrue(ex.getMessage().contains("relation.joinColumn"));
+        assertTrue(ex.getMessage().contains("MongoDB mode"));
+    }
+
+    @Test
+    @DisplayName("Should allow many-to-many relation without join table in MongoDB mode")
+    void validate_mongodbManyToManyWithoutJoinTable_ok() {
+
+        final CrudSpecification spec = buildValidMongoSpecification();
+        final List<ModelDefinition> entities = new ArrayList<>(spec.getEntities());
+        entities.add(new ModelDefinition()
+                .setName("Role")
+                .setStorageName("roles")
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition().setMarkerOnly(true)),
+                        new FieldDefinition().setName("name").setType("String")
+                )));
+        spec.setEntities(entities);
+
+        final ModelDefinition user = getModel(spec, "User");
+        final FieldDefinition userId = getFirstField(user);
+
+        final RelationDefinition relation = new RelationDefinition();
+        relation.setType("ManyToMany");
+
+        final FieldDefinition rolesField = newRelationField("roles", "Role", relation);
         user.setFields(List.of(userId, rolesField));
 
         assertDoesNotThrow(() -> SpecificationValidator.validate(spec));

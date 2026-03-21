@@ -35,6 +35,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
+import dev.markozivkovic.springcrudgenerator.models.IdDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
@@ -74,9 +75,11 @@ public class SpecificationValidator {
         }
 
         final List<String> errors = new ArrayList<>();
+        final DatabaseType database = specification.getConfiguration().getDatabase();
 
         validateJavaVersion(specification.getConfiguration(), errors);
-        validateDatabase(specification.getConfiguration().getDatabase(), errors);
+        validateDatabase(database, errors);
+        validateDatabaseSpecificConfiguration(specification.getConfiguration(), errors);
         validateAdditionalProperties(specification.getConfiguration(), errors);
 
         try {
@@ -97,7 +100,7 @@ public class SpecificationValidator {
             errors.add(e.getMessage());
         }
 
-        specification.getEntities().forEach(model -> validateModel(model, specification.getEntities(), errors));
+        specification.getEntities().forEach(model -> validateModel(model, specification.getEntities(), database, errors));
 
         if (!ContainerUtils.isEmpty(errors)) {
             final String errorMessages = errors.stream()
@@ -122,6 +125,23 @@ public class SpecificationValidator {
         
         if (Objects.isNull(database)) {
             errors.add("Database must not be null or empty");
+        }
+    }
+
+    /**
+     * Validates configuration values that depend on selected database.
+     *
+     * @param configuration CRUD configuration
+     * @param errors        collected validation errors
+     */
+    private static void validateDatabaseSpecificConfiguration(final CrudConfiguration configuration, final List<String> errors) {
+
+        if (Objects.isNull(configuration.getDatabase())) {
+            return;
+        }
+
+        if (DatabaseType.MONGODB.equals(configuration.getDatabase()) && Boolean.TRUE.equals(configuration.isMigrationScripts())) {
+            errors.add("configuration.migrationScripts is not supported for database=mongodb.");
         }
     }
 
@@ -192,9 +212,10 @@ public class SpecificationValidator {
      * @param errors the list to collect validation error messages
      * @throws IllegalArgumentException if the model definition is invalid
      */
-    private static void validateModel(final ModelDefinition model, final List<ModelDefinition> models, final List<String> errors) {
+    private static void validateModel(final ModelDefinition model, final List<ModelDefinition> models, final DatabaseType database,
+            final List<String> errors) {
 
-        validateModelBasics(model, models, errors);
+        validateModelBasics(model, models, database, errors);
 
         if (ContainerUtils.isEmpty(model.getFields())) {
             return;
@@ -221,7 +242,8 @@ public class SpecificationValidator {
             validateEnumValues(model, field, errors);
             validateJsonType(model, field, modelNames, errors);
             validateRegexPattern(model, field, errors);
-            validateRelations(model, field, modelNames, errors);
+            validateFieldDatabaseSpecificOptions(model, field, database, errors);
+            validateRelations(model, field, modelNames, database, errors);
         });
 
         validateSort(model, errors);
@@ -323,8 +345,8 @@ public class SpecificationValidator {
      * @param modelNames the set of names of all models in the CRUD specification
      * @param errors     the list to collect validation error messages
      */
-    private static void validateRelations(final ModelDefinition model, final FieldDefinition field,
-                final Set<String> modelNames, final List<String> errors) {
+    private static void validateRelations(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames,
+            final DatabaseType database, final List<String> errors) {
         
         if (Objects.nonNull(field.getRelation())) {
 
@@ -342,6 +364,19 @@ public class SpecificationValidator {
                         "Target model %s in relation for field %s in model %s does not exist",
                         field.getType(), field.getName(), model.getName()
                 ));
+            }
+
+            if (!isSqlDatabase(database)) {
+                validateMongoRelationOptions(model, field, relation, errors);
+
+                if (Boolean.TRUE.equals(relation.getUniqueItems()) && !FieldUtils.isCollectionRelation(field)) {
+                    errors.add(String.format(
+                            "uniqueItems is supported only for OneToMany or ManyToMany relations. Field %s in model %s has relation type %s.",
+                            field.getName(), model.getName(), relationType.getKey()
+                    ));
+                }
+
+                return;
             }
 
             if (Objects.nonNull(relation.getJoinTable())) {
@@ -424,6 +459,53 @@ public class SpecificationValidator {
     }
 
     /**
+     * Validates relation options for MongoDB mode.
+     *
+     * @param model    model definition
+     * @param field    field definition
+     * @param relation relation definition
+     * @param errors   collected validation errors
+     */
+    private static void validateMongoRelationOptions(final ModelDefinition model, final FieldDefinition field,
+            final RelationDefinition relation, final List<String> errors) {
+
+        if (Objects.nonNull(relation.getJoinTable())) {
+            errors.add(String.format(
+                    "relation.joinTable is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (StringUtils.isNotBlank(relation.getJoinColumn())) {
+            errors.add(String.format(
+                    "relation.joinColumn is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (StringUtils.isNotBlank(relation.getFetch())) {
+            errors.add(String.format(
+                    "relation.fetch is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (StringUtils.isNotBlank(relation.getCascade())) {
+            errors.add(String.format(
+                    "relation.cascade is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (Boolean.TRUE.equals(relation.getOrphanRemoval())) {
+            errors.add(String.format(
+                    "relation.orphanRemoval is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+    }
+
+    /**
      * Validates the regex pattern for a field in a model definition.
      * If the regex pattern is not null or empty, it checks if the pattern is valid.
      * If the pattern is invalid, it throws an IllegalArgumentException.
@@ -460,7 +542,8 @@ public class SpecificationValidator {
      * @param errors the list to collect validation error messages
      * @throws IllegalArgumentException if the model definition is invalid
      */
-    private static void validateModelBasics(final ModelDefinition model, final List<ModelDefinition> models, final List<String> errors) {
+    private static void validateModelBasics(final ModelDefinition model, final List<ModelDefinition> models,
+            final DatabaseType database, final List<String> errors) {
 
         if (StringUtils.isBlank(model.getName())) {
             errors.add("Model name must not be null or empty");
@@ -473,7 +556,7 @@ public class SpecificationValidator {
         }
 
         if (StringUtils.isNotBlank(model.getStorageName()) && !model.getStorageName().matches(LOWER_SNAKE_CASE_REGEX)) {
-            errors.add(String.format("Invalid storageName '%s'. Table names should be lower_snake_case.", model.getStorageName()));
+            errors.add(String.format("Invalid storageName '%s'. Storage names should be lower_snake_case.", model.getStorageName()));
         }
 
         if (ContainerUtils.isEmpty(model.getFields())) {
@@ -506,6 +589,77 @@ public class SpecificationValidator {
                 errors.add(String.format("Model %s must have only one id field defined", model.getName()));
             }
         }
+    }
+
+    /**
+     * Validates field options that are SQL-specific in MongoDB mode.
+     *
+     * @param model    model definition
+     * @param field    field definition
+     * @param database selected database
+     * @param errors   collected validation errors
+     */
+    private static void validateFieldDatabaseSpecificOptions(final ModelDefinition model, final FieldDefinition field,
+            final DatabaseType database, final List<String> errors) {
+
+        if (isSqlDatabase(database)) {
+            if (Objects.nonNull(field.getId()) && field.getId().isMarkerOnly()) {
+                errors.add(String.format(
+                        "Boolean id marker (id: true) is not supported in SQL mode. Field %s in model %s must define id.strategy.",
+                        field.getName(), model.getName()
+                ));
+            }
+
+            if (Objects.nonNull(field.getId()) && Objects.isNull(field.getId().getStrategy())) {
+                errors.add(String.format(
+                        "id.strategy must be defined in SQL mode. Field %s in model %s.",
+                        field.getName(), model.getName()
+                ));
+            }
+
+            return;
+        }
+
+        if (Objects.nonNull(field.getColumn())) {
+            errors.add(String.format(
+                    "column.* options are SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (Objects.nonNull(field.getId()) && isMongoEmptyIdObject(field.getId())) {
+            errors.add(String.format(
+                    "Empty id object (id: {}) is not supported in MongoDB mode. Use id: true. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (Objects.nonNull(field.getId()) && hasAnySqlIdOptions(field.getId())) {
+
+            errors.add(String.format(
+                    "id.strategy and related SQL id options are not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+    }
+
+    private static boolean isSqlDatabase(final DatabaseType database) {
+        return Objects.isNull(database) || database.isSql();
+    }
+
+    private static boolean hasAnySqlIdOptions(final IdDefinition idDefinition) {
+
+        return Objects.nonNull(idDefinition.getStrategy())
+                || StringUtils.isNotBlank(idDefinition.getGeneratorName())
+                || Objects.nonNull(idDefinition.getAllocationSize())
+                || Objects.nonNull(idDefinition.getInitialValue())
+                || StringUtils.isNotBlank(idDefinition.getPkColumnName())
+                || StringUtils.isNotBlank(idDefinition.getValueColumnName());
+    }
+
+    private static boolean isMongoEmptyIdObject(final IdDefinition idDefinition) {
+
+        return !idDefinition.isMarkerOnly() && !hasAnySqlIdOptions(idDefinition);
     }
 
     /**
