@@ -64,6 +64,13 @@ public class FlywayUtils {
     }
 
     /**
+     * Throws an {@link IllegalStateException} with a message indicating that Flyway SQL migration utilities do not support database=mongodb.
+     */
+    private static IllegalStateException unsupportedMongoDbForSqlMigrations() {
+        return new IllegalStateException("Flyway SQL migration utilities do not support database=mongodb.");
+    }
+
+    /**
      * Return the VARCHAR or TEXT type to use based on the given {@link DatabaseType} and length.
      * <p>
      * The returned type is:
@@ -83,6 +90,7 @@ public class FlywayUtils {
             case MYSQL -> String.format("VARCHAR(%d)", length);
             case MARIADB -> String.format("VARCHAR(%d)", length);
             case MSSQL -> String.format("NVARCHAR(%d)", length);
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
     /**
@@ -105,6 +113,7 @@ public class FlywayUtils {
             case MYSQL -> "DATETIME(6)";
             case MARIADB -> "DATETIME(6)";
             case MSSQL -> "DATETIME2(6)";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
     
@@ -128,6 +137,7 @@ public class FlywayUtils {
             case MYSQL -> "DATETIME(6)";
             case MARIADB -> "DATETIME(6)";
             case MSSQL -> "DATETIME2(6)";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
@@ -151,6 +161,7 @@ public class FlywayUtils {
             case MYSQL -> "DECIMAL(19,2)";
             case MARIADB -> "DECIMAL(19,2)";
             case MSSQL -> "DECIMAL(19,2)";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
@@ -174,6 +185,7 @@ public class FlywayUtils {
             case MYSQL -> "DECIMAL(65,0)";
             case MARIADB -> "DECIMAL(65,0)";
             case MSSQL -> "DECIMAL(38,0)";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
@@ -197,6 +209,7 @@ public class FlywayUtils {
             case MYSQL -> "JSON";
             case MARIADB -> "JSON";
             case MSSQL -> "NVARCHAR(MAX)";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
@@ -220,6 +233,7 @@ public class FlywayUtils {
             case MYSQL -> "BINARY(16)";
             case MARIADB -> "CHAR(36)";
             case MSSQL -> "UNIQUEIDENTIFIER";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
@@ -250,6 +264,7 @@ public class FlywayUtils {
                 case MYSQL -> "DATETIME(6)";
                 case MARIADB -> "DATETIME(6)";
                 case MSSQL -> "DATETIMEOFFSET(6)";
+                case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
             };
         }
         return switch (database) {
@@ -257,6 +272,7 @@ public class FlywayUtils {
             case MYSQL -> "DATETIME(6)";
             case MARIADB -> "DATETIME(6)";
             case MSSQL -> "DATETIME2(6)";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
@@ -273,6 +289,7 @@ public class FlywayUtils {
             case MYSQL -> "CURRENT_TIMESTAMP(6)";
             case MARIADB -> "CURRENT_TIMESTAMP(6)";
             case MSSQL -> "SYSUTCDATETIME()";
+            case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
@@ -347,6 +364,7 @@ public class FlywayUtils {
                     case MYSQL -> "BIGINT AUTO_INCREMENT";
                     case MARIADB -> "BIGINT AUTO_INCREMENT";
                     case MSSQL -> "BIGINT IDENTITY(1,1)";
+                    case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
                 };
             case AUTO:
                 return switch (databaseType) {
@@ -354,10 +372,12 @@ public class FlywayUtils {
                     case MYSQL -> "BIGINT AUTO_INCREMENT";
                     case MARIADB -> "BIGINT AUTO_INCREMENT";
                     case MSSQL -> "BIGINT";
+                    case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
                 };
             case SEQUENCE:
                 return switch (databaseType) {
                     case POSTGRESQL, MSSQL, MYSQL, MARIADB -> "BIGINT";
+                    case MONGODB -> throw unsupportedMongoDbForSqlMigrations();
                 };
             case TABLE:
             default:
@@ -400,6 +420,7 @@ public class FlywayUtils {
             case MSSQL      -> "NEXT VALUE FOR " + seq;
             case MYSQL      -> null;
             case MARIADB    -> null;
+            case MONGODB    -> throw unsupportedMongoDbForSqlMigrations();
         };
     }
 
