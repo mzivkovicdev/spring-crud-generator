@@ -19,13 +19,13 @@ package dev.markozivkovic.springcrudgenerator.generators;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
@@ -36,7 +36,9 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     
     private static final String ENUM = "enum";
     private static final String JPA_MODEL = "jpa-model";
+    private static final String MONGO_MODEL = "mongo-model";
     private static final String JPA_REPOSITORY = "jpa-repository";
+    private static final String MONGO_REPOSITORY = "mongo-repository";
     private static final String EXCEPTION = "exception";
     private static final String EXCEPTION_HANDLER = "exception-handler";
     private static final String ADDITIONAL_PROPERTY = "additional-property";
@@ -58,28 +60,24 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entities,
             final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
 
-        this.ARTIFACT_GENERATORS = Stream.of(
-            Map.entry(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration, projectMetadata)),
-            Map.entry(CACHE, new CacheGenerator(crudConfiguration, packageConfiguration, entities)),
-            Map.entry(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata)),
-            Map.entry(EXCEPTION, new ExceptionGenerator(packageConfiguration)),
-            Map.entry(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entities, packageConfiguration)),
-            Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entities)),
-            Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration))
-        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+        this.ARTIFACT_GENERATORS = new LinkedHashMap<>();
+        this.ARTIFACT_GENERATORS.put(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration, projectMetadata));
+        this.ARTIFACT_GENERATORS.put(CACHE, new CacheGenerator(crudConfiguration, packageConfiguration, entities));
+        this.ARTIFACT_GENERATORS.put(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata));
+        this.ARTIFACT_GENERATORS.put(EXCEPTION, new ExceptionGenerator(packageConfiguration));
+        this.ARTIFACT_GENERATORS.put(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entities, packageConfiguration));
+        this.ARTIFACT_GENERATORS.put(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entities));
+        this.ARTIFACT_GENERATORS.put(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration));
 
-        this.GENERATORS = Stream.of(
-            Map.entry(ENUM, new EnumGenerator(packageConfiguration)),
-            Map.entry(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entities, packageConfiguration)),
-            Map.entry(JPA_REPOSITORY, new JpaRepositoryGenerator(crudConfiguration, packageConfiguration)),
-            Map.entry(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entities, packageConfiguration)),
-            Map.entry(BUSINESS_SERVICE, new BusinessServiceGenerator(entities, packageConfiguration)),
-            Map.entry(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entities, packageConfiguration)),
-            Map.entry(MAPPER, new MapperGenerator(crudConfiguration, entities, packageConfiguration)),
-            Map.entry(CONTROLLER, new RestControllerGenerator(crudConfiguration, entities, packageConfiguration)),
-            Map.entry(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration)),
-            Map.entry(MIGRATION_SCRIPT, new MigrationScriptGenerator(crudConfiguration, projectMetadata, entities))
-        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+        this.GENERATORS = new LinkedHashMap<>();
+        this.GENERATORS.put(ENUM, new EnumGenerator(packageConfiguration));
+        this.registerDatabaseGenerators(crudConfiguration, entities, projectMetadata, packageConfiguration);
+        this.GENERATORS.put(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entities, packageConfiguration));
+        this.GENERATORS.put(BUSINESS_SERVICE, new BusinessServiceGenerator(entities, packageConfiguration));
+        this.GENERATORS.put(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entities, packageConfiguration));
+        this.GENERATORS.put(MAPPER, new MapperGenerator(crudConfiguration, entities, packageConfiguration));
+        this.GENERATORS.put(CONTROLLER, new RestControllerGenerator(crudConfiguration, entities, packageConfiguration));
+        this.GENERATORS.put(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration));
     }
 
     @Override
@@ -100,5 +98,61 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         
         LOGGER.info("Generator finished for model: {}", modelDefinition.getName());
     }
-    
+
+    /**
+     * Registers database specific generators based on the provided configuration.
+     * 
+     * @param crudConfiguration The configuration containing the database type.
+     * @param entities The list of model definitions.
+     * @param projectMetadata The project metadata containing the project name and version.
+     * @param packageConfiguration The package configuration containing the base package name.
+     */
+    private void registerDatabaseGenerators(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entities,
+            final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
+
+        final DatabaseType database = crudConfiguration.getDatabase();
+
+        if (database.isSql()) {
+            registerSqlDatabaseGenerators(this.GENERATORS, crudConfiguration, entities, projectMetadata, packageConfiguration);
+            return;
+        }
+
+        switch (database) {
+            case MONGODB -> registerMongoDatabaseGenerators(this.GENERATORS, crudConfiguration, entities, projectMetadata, packageConfiguration);
+            default -> throw new IllegalStateException(String.format("Unsupported NoSQL database for generation: %s", database));
+        }
+    }
+
+    /**
+     * Registers database specific generators based on the provided configuration.
+     * 
+     * @param generators The map of generators to register.
+     * @param crudConfiguration The configuration containing the database type.
+     * @param entities The list of model definitions.
+     * @param projectMetadata The project metadata containing the project name and version.
+     * @param packageConfiguration The package configuration containing the base package name.
+     */
+    private static void registerSqlDatabaseGenerators(final Map<String, CodeGenerator> generators, final CrudConfiguration crudConfiguration,
+            final List<ModelDefinition> entities, final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
+
+        generators.put(JPA_MODEL, new JpaEntityGenerator(crudConfiguration, entities, packageConfiguration));
+        generators.put(JPA_REPOSITORY, new JpaRepositoryGenerator(crudConfiguration, packageConfiguration));
+        generators.put(MIGRATION_SCRIPT, new MigrationScriptGenerator(crudConfiguration, projectMetadata, entities));
+    }
+
+    /**
+     * Registers MongoDB specific generators.
+     * 
+     * @param generators The map of generators to register.
+     * @param crudConfiguration The configuration containing the database type.
+     * @param entities The list of model definitions.
+     * @param projectMetadata The project metadata containing the project name and version.
+     * @param packageConfiguration The package configuration containing the base package name.
+     */
+    private static void registerMongoDatabaseGenerators(final Map<String, CodeGenerator> generators, final CrudConfiguration crudConfiguration,
+            final List<ModelDefinition> entities, final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
+
+        generators.put(MONGO_MODEL, new MongoEntityGenerator(crudConfiguration, entities, packageConfiguration));
+        generators.put(MONGO_REPOSITORY, new MongoRepositoryGenerator(packageConfiguration));
+    }
 }
