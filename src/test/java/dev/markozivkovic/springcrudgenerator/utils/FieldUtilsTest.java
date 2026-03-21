@@ -1214,6 +1214,23 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("extractIdField throws when field is named id but id metadata is missing")
+    void extractIdField_shouldThrowWhenFieldNamedIdButIdMetadataMissing() {
+
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameTypeAndId("id", "String", false),
+                fieldWithNameTypeAndId("name", "String", false)
+        );
+
+        final IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> FieldUtils.extractIdField(fields)
+        );
+
+        assertTrue(ex.getMessage().contains("No ID field found"));
+    }
+
+    @Test
     @DisplayName("extractIdField throws IllegalArgumentException when no ID field is found")
     void extractIdField_shouldThrow_whenNoIdFieldFound() {
         
@@ -3343,6 +3360,20 @@ class FieldUtilsTest {
         final boolean result = FieldUtils.isAnyFieldId(fields);
 
         assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldId returns false when field is named id but id metadata is missing")
+    void isAnyFieldId_shouldReturnFalse_whenFieldNameIsIdWithoutMetadata() {
+
+        final FieldDefinition f1 = fieldWithNameTypeAndId("id", "String", false);
+        final FieldDefinition f2 = fieldWithNameTypeAndId("name", "String", false);
+
+        final List<FieldDefinition> fields = List.of(f1, f2);
+
+        final boolean result = FieldUtils.isAnyFieldId(fields);
+
+        assertFalse(result);
     }
 
     @Test

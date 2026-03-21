@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import dev.markozivkovic.springcrudgenerator.enums.SortDirection;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 
 class CrudMojoUtilsTest {
@@ -105,6 +106,34 @@ class CrudMojoUtilsTest {
         assertNotNull(spec);
         assertNotNull(spec.getEntities().get(0).getSort());
         assertEquals(SortDirection.ASC, spec.getEntities().get(0).getSort().getDefaultDirection());
+    }
+
+    @Test
+    void createSpecMapper_yaml_canDeserializeMongoDatabaseAndBooleanIdMarker() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: mongodb
+                entities:
+                  - name: ProductModel
+                    storageName: products
+                    fields:
+                      - name: id
+                        type: String
+                        id: true
+                      - name: name
+                        type: String
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertEquals(DatabaseType.MONGODB, spec.getConfiguration().getDatabase());
+        assertEquals("id", spec.getEntities().get(0).getFields().get(0).getName());
+        assertEquals("String", spec.getEntities().get(0).getFields().get(0).getType());
+        assertNotNull(spec.getEntities().get(0).getFields().get(0).getId());
+        assertTrue(spec.getEntities().get(0).getFields().get(0).getId().isMarkerOnly());
+        assertEquals(null, spec.getEntities().get(0).getFields().get(0).getId().getStrategy());
     }
 
     @Test
