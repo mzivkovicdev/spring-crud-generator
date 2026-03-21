@@ -255,6 +255,54 @@ class DockerGeneratorTest {
     }
 
     @Test
+    void generate_shouldGenerateDockerComposeWithDefaultsForMongoDb() {
+
+        final Env env = prepareEnv();
+
+        when(env.config.getDatabase()).thenReturn(DatabaseType.MONGODB);
+        when(env.config.getJavaVersion()).thenReturn(null);
+
+        when(env.dockerCfg.getDockerCompose()).thenReturn(true);
+        when(env.dockerCfg.getDb()).thenReturn(null);
+        when(env.dockerCfg.getApp()).thenReturn(null);
+        when(env.config.getCache()).thenReturn(null);
+
+        final List<Map<String, Object>> composeContexts = new ArrayList<>();
+
+        try (final MockedStatic<DockerUtils> dockerUtils = mockStatic(DockerUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            dockerUtils.when(() -> DockerUtils.isDockerfileEnabled(env.dockerCfg)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_FILE)).thenReturn(true);
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.DOCKER_COMPOSE)).thenReturn(false);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("docker/docker-compose-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        composeContexts.add(new HashMap<>(ctx));
+                        return "COMPOSE";
+                    });
+
+            writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            env.generator.generate("out");
+
+            assertEquals(1, composeContexts.size());
+            final Map<String, Object> dcCtx = composeContexts.get(0);
+
+            assertEquals("my-app", dcCtx.get("artifactId"));
+            assertEquals("mongodb", dcCtx.get("dbType"));
+            assertEquals("8080", dcCtx.get("appPort"));
+            assertEquals(27017, dcCtx.get("dbPort"));
+            assertEquals("mongo", dcCtx.get("dbImage"));
+            assertFalse(dcCtx.containsKey("dbTag"));
+            assertFalse(dcCtx.containsKey("cacheType"));
+        }
+    }
+
+    @Test
     void generate_shouldRespectCustomDbAndAppSettings() {
 
         final Env env = prepareEnv();

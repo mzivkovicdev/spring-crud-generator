@@ -73,6 +73,7 @@ public class DockerGenerator implements ProjectArtifactGenerator {
             case MYSQL -> 3306;
             case MARIADB -> 3306;
             case MSSQL -> 1433;
+            case MONGODB -> 27017;
         };
 
         final String defaultDbImage = switch (this.configuration.getDatabase()) {
@@ -80,6 +81,7 @@ public class DockerGenerator implements ProjectArtifactGenerator {
             case MYSQL -> "mysql";
             case MARIADB -> "mariadb";
             case MSSQL -> "mcr.microsoft.com/mssql/server";
+            case MONGODB -> "mongo";
         };
 
         final Map<String, Object> context = new HashMap<>(Map.of(
