@@ -41,10 +41,12 @@
             "MARIADB",
             "POSTGRESQL",
             "MSSQL",
+            "MONGODB",
             "mysql",
             "mariadb",
             "postgresql",
-            "mssql"
+            "mssql",
+            "mongodb"
           ]
         },
         "javaVersion": {

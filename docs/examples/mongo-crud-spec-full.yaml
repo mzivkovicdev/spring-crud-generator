@@ -1,0 +1,169 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mzivkovicdev/spring-crud-generator/main/docs/schema/crud-spec.schema.json
+configuration:
+  database: mongodb
+  javaVersion: 21
+  springBootVersion: "4"
+  docker:
+    dockerfile: true
+    dockerCompose: true
+    app:
+      image: eclipse-temurin
+      port: 8080
+    db:
+      image: mongo
+      port: 27017
+      tag: latest
+  cache:
+    enabled: true
+    type: REDIS
+    expiration: 5
+  openApi:
+    apiSpec: true
+    generateResources: true
+  graphql:
+    enabled: true
+    scalarConfig: true
+  errorResponse: simple
+  tests:
+    unit: true
+    dataGenerator: instancio
+  additionalProperties:
+    rest.basePath: /api/v1
+    rest.response.excludeNull: true
+    github.actions: true
+packages:
+  annotations: annotation
+  businessservices: businessservice
+  configurations: configuration
+  controllers: controller
+  enums: myenums
+  exceptions: exception
+  generated: generated
+  mappers: mapper
+  models: persistance.entity
+  resolvers: graphql
+  repositories: persistance.repository
+  services: persistance.service
+  transferobjects: transferobject
+entities:
+  - name: ProductModel
+    storageName: products
+    description: "Represents a product"
+    audit:
+      enabled: true
+      type: INSTANT
+    sort:
+      allowedFields: [name, price, releaseDate]
+      defaultDirection: ASC
+    fields:
+      - name: id
+        type: String
+        description: "Mongo document id"
+      - name: name
+        type: String
+        description: "The name of the product"
+        validation:
+          required: true
+          notBlank: true
+          minLength: 3
+          maxLength: 100
+      - name: price
+        type: BigDecimal
+        description: "The price of the product"
+        validation:
+          required: true
+      - name: users
+        type: UserEntity
+        relation:
+          type: OneToMany
+          uniqueItems: true
+        validation:
+          required: true
+          minItems: 1
+          maxItems: 20
+      - name: releaseDate
+        type: LocalDate
+      - name: details
+        type: JSON<List<ProductDetails>>
+      - name: status
+        type: Enum
+        values:
+          - ACTIVE
+          - INACTIVE
+
+  - name: OrderModel
+    storageName: orders
+    description: "Represents an order"
+    fields:
+      - name: id
+        type: String
+      - name: product
+        type: ProductModel
+        relation:
+          type: OneToOne
+        validation:
+          required: true
+      - name: quantity
+        type: Integer
+        validation:
+          required: true
+          min: 1
+          max: 100
+      - name: users
+        type: UserEntity
+        relation:
+          type: ManyToMany
+          uniqueItems: true
+        validation:
+          required: true
+          minItems: 1
+          maxItems: 10
+
+  - name: UserEntity
+    storageName: users
+    description: "Represents a user"
+    softDelete: true
+    fields:
+      - name: id
+        type: String
+      - name: username
+        type: String
+        validation:
+          required: true
+          notBlank: true
+      - name: email
+        type: String
+        validation:
+          required: true
+          email: true
+      - name: password
+        type: String
+        validation:
+          required: true
+          pattern: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"
+      - name: details
+        type: JSON<Details>
+      - name: roles
+        type: List<String>
+      - name: permissions
+        type: List<String>
+        validation:
+          notEmpty: true
+
+  - name: Details
+    description: "Represents user details"
+    fields:
+      - name: firstName
+        type: String
+      - name: lastName
+        type: String
+
+  - name: ProductDetails
+    description: "Represents product details"
+    fields:
+      - name: description
+        type: String
+      - name: weight
+        type: Double
+      - name: option
+        type: String
