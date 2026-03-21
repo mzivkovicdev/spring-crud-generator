@@ -73,5 +73,25 @@ public final class RepositoryImports {
             IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelName)
         );
     }
+
+    /**
+     * Computes imports required by a Mongo repository.
+     *
+     * @param packagePath          package path of generated sources
+     * @param packageConfiguration package configuration
+     * @param modelName            model name
+     * @return formatted import statements
+     */
+    public static String computeMongoRepositoryImports(final String packagePath, final PackageConfiguration packageConfiguration,
+            final String modelName) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+        imports.add(String.format(IMPORT, ImportConstants.SpringData.MONGO_REPOSITORY));
+        imports.add(computeProjectImports(packagePath, packageConfiguration, modelName));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
     
 }

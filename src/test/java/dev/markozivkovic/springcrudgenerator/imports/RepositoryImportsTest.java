@@ -156,4 +156,24 @@ class RepositoryImportsTest {
             pkg.verify(() -> PackageUtils.join("com.example.app.entity", modelName));
         }
     }
+
+    @Test
+    @DisplayName("computeMongoRepositoryImports includes MongoRepository and model import")
+    void computeMongoRepositoryImports_includesMongoAndModelImports() {
+
+        final String packagePath = "com.example.app";
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final String modelName = "UserEntity";
+
+        try (final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class)) {
+
+            pkg.when(() -> PackageUtils.computeEntityPackage(packagePath, pkgCfg)).thenReturn("com.example.app.models");
+            pkg.when(() -> PackageUtils.join("com.example.app.models", modelName)).thenReturn("com.example.app.models.UserEntity");
+
+            final String result = RepositoryImports.computeMongoRepositoryImports(packagePath, pkgCfg, modelName);
+
+            assertTrue(result.contains("import " + ImportConstants.SpringData.MONGO_REPOSITORY));
+            assertTrue(result.contains("import com.example.app.models.UserEntity"));
+        }
+    }
 }

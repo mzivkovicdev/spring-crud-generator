@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import dev.markozivkovic.springcrudgenerator.deserializers.IdDefinitionDeserializer;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 
 public class FieldDefinition {
@@ -27,6 +30,7 @@ public class FieldDefinition {
     private String name;
     private String type;
     private String description;
+    @JsonDeserialize(using = IdDefinitionDeserializer.class)
     private IdDefinition id;
     private List<String> values = new ArrayList<>();
     private RelationDefinition relation;
