@@ -138,4 +138,5 @@ public final class TemplateContextConstants {
     public static final String REMOVE_RELATION_METHOD = "removeRelationMethod";
 
     public static final String BASE_PACKAGE = "basePackage";
+    public static final String INCLUDE_HIBERNATE_LAZY_NULL_MODULE = "includeHibernateLazyNullModule";
 }
