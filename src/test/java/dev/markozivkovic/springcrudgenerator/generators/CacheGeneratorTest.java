@@ -25,6 +25,7 @@ import dev.markozivkovic.springcrudgenerator.imports.ConfigurationImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
@@ -509,6 +510,47 @@ class CacheGeneratorTest {
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("HazelcastJacksonGlobalSerializer.java"), anyString()));
 
             genCtx.verify(() -> GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION));
+        }
+    }
+
+    @Test
+    void generate_shouldNotGenerateHibernateLazyNullModule_forMongoDatabase() {
+
+        final CrudAndCache cc = prepareCrudWithCache();
+        when(cc.cacheConfig.getEnabled()).thenReturn(true);
+        when(cc.cacheConfig.getType()).thenReturn(CacheTypeEnum.REDIS);
+        when(cc.crudConfig.getDatabase()).thenReturn(DatabaseType.MONGODB);
+        when(cc.crudConfig.getSpringBootVersion()).thenReturn("3.2.0");
+        when(cc.crudConfig.getAdditionalProperties()).thenReturn(Collections.emptyMap());
+
+        final PackageConfiguration packageConfiguration = mock(PackageConfiguration.class);
+        final List<ModelDefinition> entities = List.of(model("Product", "products"));
+        final CacheGenerator generator = new CacheGenerator(cc.crudConfig, packageConfiguration, entities);
+
+        try (final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ConfigurationImports> imports = mockStatic(ConfigurationImports.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CACHE_CONFIGURATION)).thenReturn(false);
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.2.0")).thenReturn(true);
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.mongo");
+            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.mongo", packageConfiguration)).thenReturn("com.example.mongo.config");
+            pkg.when(() -> PackageUtils.computeConfigurationSubPackage(packageConfiguration)).thenReturn("config");
+            imports.when(() -> ConfigurationImports.getModelImports(eq("com.example.mongo"), eq(packageConfiguration), eq(List.of("Product"))))
+                    .thenReturn("// IMPORTS");
+            addProps.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(any())).thenReturn(false);
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("configuration/cache-configuration.ftl"), anyMap()))
+                    .thenReturn("// CACHE_TEMPLATE");
+
+            generator.generate("out");
+
+            writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("CacheConfiguration.java"), anyString()));
+            writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), eq("config"), eq("HibernateLazyNullModule.java"), anyString()), never());
         }
     }
 }

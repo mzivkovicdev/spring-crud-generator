@@ -33,6 +33,7 @@ import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.ConfigurationImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
@@ -100,6 +101,7 @@ public class CacheGenerator implements ProjectArtifactGenerator {
         context.put(
             TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.crudConfiguration.getAdditionalProperties())
         );
+        context.put(TemplateContextConstants.INCLUDE_HIBERNATE_LAZY_NULL_MODULE, isSqlDatabase(this.crudConfiguration.getDatabase()));
         context.put(TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.crudConfiguration.getSpringBootVersion()));
 
         final StringBuilder sb = new StringBuilder();
@@ -112,7 +114,9 @@ public class CacheGenerator implements ProjectArtifactGenerator {
             outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "CacheConfiguration.java", sb.toString()
         );
 
-        if (CacheTypeEnum.REDIS.equals(this.crudConfiguration.getCache().getType()) || CacheTypeEnum.HAZELCAST.equals(this.crudConfiguration.getCache().getType())) {
+        if ((CacheTypeEnum.REDIS.equals(this.crudConfiguration.getCache().getType())
+                || CacheTypeEnum.HAZELCAST.equals(this.crudConfiguration.getCache().getType()))
+                && isSqlDatabase(this.crudConfiguration.getDatabase())) {
             this.generateHibernateLazyNullModule(outputDir, packagePath);
         }
 
@@ -168,6 +172,24 @@ public class CacheGenerator implements ProjectArtifactGenerator {
         FileWriterUtils.writeToFile(
             outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "HazelcastJacksonGlobalSerializer.java", sb.toString()
         );
+    }
+
+    /**
+     * Checks if the given database type is null or if it is a SQL database type.
+     * <p>
+     * The following database types are considered as SQL database types:
+     * <ul>
+     *     <li>POSTGRESQL</li>
+     *     <li>MYSQL</li>
+     *     <li>MARIADB</li>
+     *     <li>MSSQL</li>
+     * </ul>
+     * 
+     * @param databaseType the database type to check
+     * @return true if the database type is null or if it is a SQL database type, false otherwise
+     */
+    private static boolean isSqlDatabase(final DatabaseType databaseType) {
+        return Objects.isNull(databaseType) || databaseType.isSql();
     }
 
 }
