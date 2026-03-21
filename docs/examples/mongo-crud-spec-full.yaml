@@ -58,6 +58,7 @@ entities:
     fields:
       - name: id
         type: String
+        id: true
         description: "Mongo document id"
       - name: name
         type: String
@@ -97,6 +98,7 @@ entities:
     fields:
       - name: id
         type: String
+        id: true
       - name: product
         type: ProductModel
         relation:
@@ -126,6 +128,7 @@ entities:
     fields:
       - name: id
         type: String
+        id: true
       - name: username
         type: String
         validation:
