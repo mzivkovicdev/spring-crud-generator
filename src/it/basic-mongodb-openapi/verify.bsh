@@ -22,6 +22,8 @@ requireFile("src/main/java/com/example/itmongo/services/ProductService.java");
 requireFile("src/main/java/com/example/itmongo/businessservices/ProductBusinessService.java");
 requireFile("src/main/java/com/example/itmongo/controllers/ProductController.java");
 requireFile("src/main/java/com/example/itmongo/generated/product/api/ProductsApi.java");
+requireFile("src/main/java/com/example/itmongo/migration/V001__Create_Products_Collection.java");
+requireFile("src/main/java/com/example/itmongo/migration/V002__Create_Users_Collection.java");
 requireFile("target/classes/com/example/itmongo/SpringCrudGeneratorMongoItApplication.class");
 requireFile("target/classes/com/example/itmongo/models/ProductModel.class");
 requireFile("target/failsafe-reports/TEST-com.example.itmongo.MongoGeneratedArtifactsIT.xml");

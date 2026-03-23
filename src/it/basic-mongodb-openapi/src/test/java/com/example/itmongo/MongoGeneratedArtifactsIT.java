@@ -111,11 +111,15 @@ class MongoGeneratedArtifactsIT {
         final Path repositoryFile = basedir.resolve("src/main/java/com/example/itmongo/repositories/ProductRepository.java");
         final Path swaggerFile = basedir.resolve("src/main/resources/swagger/product-api.yaml");
         final Path migrationDirectory = basedir.resolve("src/main/resources/db/migration");
+        final Path productsMigration = basedir.resolve("src/main/java/com/example/itmongo/migration/V001__Create_Products_Collection.java");
+        final Path usersMigration = basedir.resolve("src/main/java/com/example/itmongo/migration/V002__Create_Users_Collection.java");
 
         assertTrue(Files.isRegularFile(modelFile), "Mongo model must be generated");
         assertTrue(Files.isRegularFile(repositoryFile), "Mongo repository must be generated");
         assertTrue(Files.isRegularFile(swaggerFile), "OpenAPI YAML must be generated");
         assertFalse(Files.exists(migrationDirectory), "SQL migration directory must not be generated for MongoDB");
+        assertTrue(Files.isRegularFile(productsMigration), "Mongock create-products migration must be generated");
+        assertTrue(Files.isRegularFile(usersMigration), "Mongock create-users migration must be generated");
 
         final String modelContent = Files.readString(modelFile);
         assertTrue(modelContent.contains("@Document(collection = \"products\")"));
@@ -125,6 +129,15 @@ class MongoGeneratedArtifactsIT {
         final String repositoryContent = Files.readString(repositoryFile);
         assertTrue(repositoryContent.contains("extends MongoRepository<ProductModel, String>"));
         assertTrue(repositoryContent.contains("saveAndFlush"));
+
+        final String productsMigrationContent = Files.readString(productsMigration);
+        assertTrue(productsMigrationContent.contains("@ChangeUnit"));
+        assertTrue(productsMigrationContent.contains("mongoTemplate.createCollection(\"products\")"));
+
+        final String usersMigrationContent = Files.readString(usersMigration);
+        assertTrue(usersMigrationContent.contains("@ChangeUnit"));
+        assertTrue(usersMigrationContent.contains("mongoTemplate.createCollection(\"users\")"));
+        assertTrue(usersMigrationContent.contains("ensureIndex"));
     }
 
     private HttpResponse<String> send(final String path, final String method, final String body) throws Exception {

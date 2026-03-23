@@ -23,6 +23,7 @@
         <swagger-annotations-jakarta.version>2.2.38</swagger-annotations-jakarta.version>
         <instancio-core.version>5.5.0</instancio-core.version>
         <flapdoodle.version>4.20.0</flapdoodle.version>
+        <mongock.version>5.5.0</mongock.version>
     </properties>
 
     <dependencies>
@@ -58,6 +59,16 @@
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
             <version>${swagger-annotations-jakarta.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mongock</groupId>
+            <artifactId>mongock-springboot</artifactId>
+            <version>${mongock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mongock</groupId>
+            <artifactId>mongodb-springdata-v4-driver</artifactId>
+            <version>${mongock.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

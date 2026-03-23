@@ -4,6 +4,7 @@ configuration:
     apiSpec: true
     generateResources: true
   errorResponse: simple
+  migrationScripts: true
   tests:
     unit: true
     dataGenerator: instancio
