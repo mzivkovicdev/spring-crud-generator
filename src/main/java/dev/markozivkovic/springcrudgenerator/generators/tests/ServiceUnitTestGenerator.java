@@ -30,6 +30,7 @@ import dev.markozivkovic.springcrudgenerator.generators.CodeGenerator;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -51,12 +52,14 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
     private final PackageConfiguration packageConfiguration;
+    private final boolean isMongoDB;
 
     public ServiceUnitTestGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
                 final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entities;
         this.packageConfiguration = packageConfiguration;
+        this.isMongoDB = DatabaseType.MONGODB.equals(configuration.getDatabase());
     }
     
     @Override
@@ -207,6 +210,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateDeleteByIdMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = ServiceTemplateContext.computeDeleteByIdContext(modelDefinition);
+        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
@@ -253,6 +257,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateGetAllMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = ServiceTemplateContext.computeGetAllContext(modelDefinition);
+        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
@@ -268,6 +273,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateGetByIdMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = ServiceTemplateContext.computeGetByIdContext(modelDefinition);
+        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 

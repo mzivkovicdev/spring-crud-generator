@@ -1,5 +1,6 @@
 package dev.markozivkovic.springcrudgenerator.generators.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -9,8 +10,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -19,12 +22,14 @@ import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.DataGeneratorTemplateContext;
+import dev.markozivkovic.springcrudgenerator.templates.ServiceTemplateContext;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -168,5 +173,181 @@ class ServiceUnitTestGeneratorTest {
                     })
             ));
         }
+    }
+
+    @Test
+    void generate_shouldSetMongoSoftDeleteTrueInMethodContexts_whenMongoAndSoftDeleteEnabled() {
+
+        final CrudConfiguration cfg = cfgWithTestsEnabled();
+        when(cfg.getDatabase()).thenReturn(DatabaseType.MONGODB);
+        when(cfg.getSpringBootVersion()).thenReturn("3.1.0");
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("String");
+        when(idField.getName()).thenReturn("id");
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getName()).thenReturn("CampaignModel");
+        when(model.getFields()).thenReturn(List.of(idField));
+        when(model.getSoftDelete()).thenReturn(Boolean.TRUE);
+
+        final List<ModelDefinition> entities = List.of(model);
+        final ServiceUnitTestGenerator sut = new ServiceUnitTestGenerator(cfg, entities, pkgCfg);
+
+        final AtomicReference<Map<String, Object>> getByIdCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> getAllCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> deleteCtxRef = new AtomicReference<>();
+
+        try (final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<PackageUtils> pkgUtils = mockStatic(PackageUtils.class);
+             final MockedStatic<ServiceImports> imports = mockStatic(ServiceImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dataCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<ServiceTemplateContext> serviceCtx = mockStatic(ServiceTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> ftl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+
+            unitTestUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(false);
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractFieldNamesWithoutRelations(model.getFields())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(model)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNames(model.getFields())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.hasCollectionRelation(model, entities)).thenReturn(false);
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("CampaignModel")).thenReturn("Campaign");
+            pkgUtils.when(() -> PackageUtils.getPackagePathFromOutputDir(anyString())).thenReturn("com/acme");
+            pkgUtils.when(() -> PackageUtils.computeServicePackage("com/acme", pkgCfg)).thenReturn("com.acme.service");
+            pkgUtils.when(() -> PackageUtils.computeServiceSubPackage(pkgCfg)).thenReturn("service");
+
+            imports.when(() -> ServiceImports.getTestBaseImport(model)).thenReturn("import base;");
+            imports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
+                    eq(model), eq("/project/src/main/java/com/acme"), eq(ServiceImportScope.SERVICE_TEST), eq(pkgCfg)
+            )).thenReturn("import project;");
+            imports.when(() -> ServiceImports.computeTestServiceImports(eq(model), eq(entities), eq(false), eq(true)))
+                    .thenReturn("import test;");
+
+            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+
+            serviceCtx.when(() -> ServiceTemplateContext.computeGetByIdContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeGetAllContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeDeleteByIdContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeCreateContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeUpdateByIdContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.createAddRelationMethodContext(model)).thenReturn(Map.of());
+            serviceCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, entities)).thenReturn(Map.of());
+
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/get-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getByIdCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/get-all.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getAllCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/delete-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/create.ftl"), anyMap())).thenReturn("");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/update-by-id.ftl"), anyMap())).thenReturn("");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/service-test-class-template.ftl"), anyMap())).thenReturn("");
+            fileWriter.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            sut.generate(model, "/project/src/main/java/com/acme");
+        }
+
+        assertEquals(true, getByIdCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(true, getAllCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(true, deleteCtxRef.get().get("mongoSoftDelete"));
+    }
+
+    @Test
+    void generate_shouldSetMongoSoftDeleteFalseInMethodContexts_whenSqlDatabase() {
+
+        final CrudConfiguration cfg = cfgWithTestsEnabled();
+        when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(cfg.getSpringBootVersion()).thenReturn("3.1.0");
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("Long");
+        when(idField.getName()).thenReturn("id");
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getName()).thenReturn("CampaignModel");
+        when(model.getFields()).thenReturn(List.of(idField));
+        when(model.getSoftDelete()).thenReturn(Boolean.TRUE);
+
+        final List<ModelDefinition> entities = List.of(model);
+        final ServiceUnitTestGenerator sut = new ServiceUnitTestGenerator(cfg, entities, pkgCfg);
+
+        final AtomicReference<Map<String, Object>> getByIdCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> getAllCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> deleteCtxRef = new AtomicReference<>();
+
+        try (final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<PackageUtils> pkgUtils = mockStatic(PackageUtils.class);
+             final MockedStatic<ServiceImports> imports = mockStatic(ServiceImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dataCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<ServiceTemplateContext> serviceCtx = mockStatic(ServiceTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> ftl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+
+            unitTestUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(false);
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractFieldNamesWithoutRelations(model.getFields())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(model)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNames(model.getFields())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.hasCollectionRelation(model, entities)).thenReturn(false);
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("CampaignModel")).thenReturn("Campaign");
+            pkgUtils.when(() -> PackageUtils.getPackagePathFromOutputDir(anyString())).thenReturn("com/acme");
+            pkgUtils.when(() -> PackageUtils.computeServicePackage("com/acme", pkgCfg)).thenReturn("com.acme.service");
+            pkgUtils.when(() -> PackageUtils.computeServiceSubPackage(pkgCfg)).thenReturn("service");
+
+            imports.when(() -> ServiceImports.getTestBaseImport(model)).thenReturn("import base;");
+            imports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
+                    eq(model), eq("/project/src/main/java/com/acme"), eq(ServiceImportScope.SERVICE_TEST), eq(pkgCfg)
+            )).thenReturn("import project;");
+            imports.when(() -> ServiceImports.computeTestServiceImports(eq(model), eq(entities), eq(false), eq(true)))
+                    .thenReturn("import test;");
+
+            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any())).thenReturn(Map.of());
+
+            serviceCtx.when(() -> ServiceTemplateContext.computeGetByIdContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeGetAllContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeDeleteByIdContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeCreateContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.computeUpdateByIdContext(model)).thenReturn(new HashMap<>());
+            serviceCtx.when(() -> ServiceTemplateContext.createAddRelationMethodContext(model)).thenReturn(Map.of());
+            serviceCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, entities)).thenReturn(Map.of());
+
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/get-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getByIdCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/get-all.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getAllCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/delete-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/create.ftl"), anyMap())).thenReturn("");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/update-by-id.ftl"), anyMap())).thenReturn("");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/service-test-class-template.ftl"), anyMap())).thenReturn("");
+            fileWriter.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            sut.generate(model, "/project/src/main/java/com/acme");
+        }
+
+        assertEquals(false, getByIdCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(false, getAllCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(false, deleteCtxRef.get().get("mongoSoftDelete"));
     }
 }
