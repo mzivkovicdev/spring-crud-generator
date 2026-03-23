@@ -82,6 +82,7 @@ public class GeneratorConstants {
         public static final String JPA_AUDITING_CONFIG = "jpa-auditing-config";
         public static final String EXCLUSION_NULL_CONFIG = "exclusion-null-config";
         public static final String GITHUB_ACTIONS_WORKFLOW = "github-actions-workflow";
+        public static final String MONGOCK_MIGRATION_SCRIPT = "mongock-migration-script";
     }
 
 }
