@@ -22,7 +22,7 @@
         <jackson-databind-nullable.version>0.2.8</jackson-databind-nullable.version>
         <swagger-annotations-jakarta.version>2.2.38</swagger-annotations-jakarta.version>
         <instancio-core.version>5.5.0</instancio-core.version>
-        <flapdoodle.version>4.11.0</flapdoodle.version>
+        <flapdoodle.version>4.20.0</flapdoodle.version>
     </properties>
 
     <dependencies>
@@ -36,7 +36,7 @@
         </dependency>
         <dependency>
             <groupId>de.flapdoodle.embed</groupId>
-            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <artifactId>de.flapdoodle.embed.mongo.spring3x</artifactId>
             <version>${flapdoodle.version}</version>
             <scope>runtime</scope>
         </dependency>
