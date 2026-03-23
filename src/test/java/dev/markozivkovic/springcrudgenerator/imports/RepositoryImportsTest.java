@@ -158,8 +158,8 @@ class RepositoryImportsTest {
     }
 
     @Test
-    @DisplayName("computeMongoRepositoryImports includes MongoRepository and model import")
-    void computeMongoRepositoryImports_includesMongoAndModelImports() {
+    @DisplayName("computeMongoRepositoryImports: softDeleteEnabled=false -> includes only MongoRepository and model import")
+    void computeMongoRepositoryImports_softDeleteDisabled_includesOnlyBaseImports() {
 
         final String packagePath = "com.example.app";
         final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
@@ -170,10 +170,36 @@ class RepositoryImportsTest {
             pkg.when(() -> PackageUtils.computeEntityPackage(packagePath, pkgCfg)).thenReturn("com.example.app.models");
             pkg.when(() -> PackageUtils.join("com.example.app.models", modelName)).thenReturn("com.example.app.models.UserEntity");
 
-            final String result = RepositoryImports.computeMongoRepositoryImports(packagePath, pkgCfg, modelName);
+            final String result = RepositoryImports.computeMongoRepositoryImports(packagePath, pkgCfg, modelName, false);
 
             assertTrue(result.contains("import " + ImportConstants.SpringData.MONGO_REPOSITORY));
             assertTrue(result.contains("import com.example.app.models.UserEntity"));
+            assertFalse(result.contains("import " + ImportConstants.Java.OPTIONAL));
+            assertFalse(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
+            assertFalse(result.contains("import " + ImportConstants.SpringData.PAGEABLE));
+        }
+    }
+
+    @Test
+    @DisplayName("computeMongoRepositoryImports: softDeleteEnabled=true -> adds Optional, Page and Pageable imports")
+    void computeMongoRepositoryImports_softDeleteEnabled_addsSoftDeleteImports() {
+
+        final String packagePath = "com.example.app";
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final String modelName = "ProductModel";
+
+        try (final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class)) {
+
+            pkg.when(() -> PackageUtils.computeEntityPackage(packagePath, pkgCfg)).thenReturn("com.example.app.models");
+            pkg.when(() -> PackageUtils.join("com.example.app.models", modelName)).thenReturn("com.example.app.models.ProductModel");
+
+            final String result = RepositoryImports.computeMongoRepositoryImports(packagePath, pkgCfg, modelName, true);
+
+            assertTrue(result.contains("import " + ImportConstants.SpringData.MONGO_REPOSITORY));
+            assertTrue(result.contains("import com.example.app.models.ProductModel"));
+            assertTrue(result.contains("import " + ImportConstants.Java.OPTIONAL));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
+            assertTrue(result.contains("import " + ImportConstants.SpringData.PAGEABLE));
         }
     }
 }

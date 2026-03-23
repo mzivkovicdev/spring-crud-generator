@@ -47,6 +47,56 @@ class MongoRepositoryGeneratorTest {
     }
 
     @Test
+    void generate_shouldNotIncludeSoftDeleteMethodsWhenSoftDeleteDisabled() throws Exception {
+
+        final Path outputDir = tempDir.resolve("src/main/java/com/example/mongo-nosd");
+        Files.createDirectories(outputDir);
+
+        final ModelDefinition model = new ModelDefinition()
+                .setName("UserEntity")
+                .setSoftDelete(Boolean.FALSE)
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition()),
+                        new FieldDefinition().setName("email").setType("String")
+                ));
+
+        final MongoRepositoryGenerator generator = new MongoRepositoryGenerator(new PackageConfiguration());
+        generator.generate(model, outputDir.toAbsolutePath().toString());
+
+        final String content = Files.readString(outputDir.resolve("repositories/UserRepository.java"));
+        assertFalse(content.contains("findByIdAndDeletedFalse"));
+        assertFalse(content.contains("findAllByDeletedFalse"));
+        assertFalse(content.contains("import java.util.Optional"));
+        assertFalse(content.contains("import org.springframework.data.domain.Page;"));
+        assertFalse(content.contains("import org.springframework.data.domain.Pageable"));
+    }
+
+    @Test
+    void generate_shouldIncludeSoftDeleteMethodsWhenSoftDeleteEnabled() throws Exception {
+
+        final Path outputDir = tempDir.resolve("src/main/java/com/example/mongo-sd");
+        Files.createDirectories(outputDir);
+
+        final ModelDefinition model = new ModelDefinition()
+                .setName("UserEntity")
+                .setSoftDelete(Boolean.TRUE)
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition()),
+                        new FieldDefinition().setName("email").setType("String")
+                ));
+
+        final MongoRepositoryGenerator generator = new MongoRepositoryGenerator(new PackageConfiguration());
+        generator.generate(model, outputDir.toAbsolutePath().toString());
+
+        final String content = Files.readString(outputDir.resolve("repositories/UserRepository.java"));
+        assertTrue(content.contains("Optional<UserEntity> findByIdAndDeletedFalse(String id)"));
+        assertTrue(content.contains("Page<UserEntity> findAllByDeletedFalse(Pageable pageable)"));
+        assertTrue(content.contains("import java.util.Optional"));
+        assertTrue(content.contains("import org.springframework.data.domain.Page;"));
+        assertTrue(content.contains("import org.springframework.data.domain.Pageable"));
+    }
+
+    @Test
     void generate_shouldSkipWhenIdFieldMissing() throws Exception {
 
         final Path outputDir = tempDir.resolve("src/main/java/com/example/mongo-skip");

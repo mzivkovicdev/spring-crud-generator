@@ -80,14 +80,20 @@ public final class RepositoryImports {
      * @param packagePath          package path of generated sources
      * @param packageConfiguration package configuration
      * @param modelName            model name
+     * @param softDeleteEnabled    whether soft delete is enabled for this entity
      * @return formatted import statements
      */
     public static String computeMongoRepositoryImports(final String packagePath, final PackageConfiguration packageConfiguration,
-            final String modelName) {
+            final String modelName, final boolean softDeleteEnabled) {
 
         final Set<String> imports = new LinkedHashSet<>();
         imports.add(String.format(IMPORT, ImportConstants.SpringData.MONGO_REPOSITORY));
         imports.add(computeProjectImports(packagePath, packageConfiguration, modelName));
+        if (softDeleteEnabled) {
+            imports.add(String.format(IMPORT, ImportConstants.Java.OPTIONAL));
+            imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
+            imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGEABLE));
+        }
 
         return imports.stream()
                 .sorted()

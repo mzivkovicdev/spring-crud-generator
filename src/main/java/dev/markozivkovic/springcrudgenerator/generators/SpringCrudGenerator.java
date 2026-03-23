@@ -42,7 +42,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     private static final String EXCEPTION_HANDLER = "exception-handler";
     private static final String ADDITIONAL_PROPERTY = "additional-property";
     private static final String CACHE = "cache";
-    private static final String JPA_SERVICE = "jpa-service";
+    private static final String SERVICE = "service";
     private static final String BUSINESS_SERVICE = "business-service";
     private static final String TRANSFER_OBJECT = "transfer-object";
     private static final String MAPPER = "mapper";
@@ -72,7 +72,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.GENERATORS = new LinkedHashMap<>();
         this.GENERATORS.put(ENUM, new EnumGenerator(packageConfiguration));
         this.registerDatabaseGenerators(crudConfiguration, entities, projectMetadata, packageConfiguration);
-        this.GENERATORS.put(JPA_SERVICE, new JpaServiceGenerator(crudConfiguration, entities, packageConfiguration));
+        this.GENERATORS.put(SERVICE, new ServiceGenerator(crudConfiguration, entities, packageConfiguration));
         this.GENERATORS.put(BUSINESS_SERVICE, new BusinessServiceGenerator(entities, packageConfiguration));
         this.GENERATORS.put(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entities, packageConfiguration));
         this.GENERATORS.put(MAPPER, new MapperGenerator(crudConfiguration, entities, packageConfiguration));

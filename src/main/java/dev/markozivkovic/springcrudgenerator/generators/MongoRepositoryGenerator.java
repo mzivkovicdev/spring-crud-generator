@@ -62,13 +62,17 @@ public class MongoRepositoryGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeRepositoryPackage(packagePath, this.packageConfiguration)));
-        sb.append(RepositoryImports.computeMongoRepositoryImports(packagePath, this.packageConfiguration, modelDefinition.getName()));
+        sb.append(RepositoryImports.computeMongoRepositoryImports(packagePath, this.packageConfiguration, modelDefinition.getName(),
+                Boolean.TRUE.equals(modelDefinition.getSoftDelete())));
         sb.append(System.lineSeparator());
+
+        final boolean softDeleteEnabled = Boolean.TRUE.equals(modelDefinition.getSoftDelete());
 
         final Map<String, Object> context = Map.of(
                 "className", className,
                 "modelName", modelDefinition.getName(),
-                "idType", idField.getType()
+                "idType", idField.getType(),
+                "softDeleteEnabled", softDeleteEnabled
         );
 
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate("repository/mongo-repository-interface-template.ftl", context));

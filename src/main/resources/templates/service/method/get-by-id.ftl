@@ -9,7 +9,7 @@
     </#if><#t>
     public ${modelName} getById(final ${idType} ${idField}) {
 
-        return this.repository.findById(${idField})
+        return this.repository.<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField})
             .orElseThrow(() -> new ResourceNotFoundException(
                 String.format("${strippedModelName?cap_first} with id not found: %s", ${idField})
             ));

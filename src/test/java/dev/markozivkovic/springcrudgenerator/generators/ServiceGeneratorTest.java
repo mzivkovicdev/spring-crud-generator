@@ -23,6 +23,7 @@ import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -33,7 +34,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUt
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
-class JpaServiceGeneratorTest {
+class ServiceGeneratorTest {
 
     private ModelDefinition newModel(final String name, final List<FieldDefinition> fields) {
         
@@ -51,7 +52,7 @@ class JpaServiceGeneratorTest {
         final ModelDefinition model = newModel("UserEntity", List.of());
         final List<ModelDefinition> allEntities = List.of(model);
 
-        final JpaServiceGenerator generator = new JpaServiceGenerator(cfg, allEntities, pkgCfg);
+        final ServiceGenerator generator = new ServiceGenerator(cfg, allEntities, pkgCfg);
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
@@ -88,7 +89,7 @@ class JpaServiceGeneratorTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         final ModelDefinition model = newModel("UserEntity", List.of(idField));
         final List<ModelDefinition> allEntities = List.of(model);
-        final JpaServiceGenerator generator = new JpaServiceGenerator(cfg, allEntities, pkgCfg);
+        final ServiceGenerator generator = new ServiceGenerator(cfg, allEntities, pkgCfg);
 
         final String outputDir = "out";
 
@@ -212,7 +213,7 @@ class JpaServiceGeneratorTest {
         final FieldDefinition idField = mock(FieldDefinition.class);
         final ModelDefinition model = newModel("OrderEntity", List.of(idField));
         final List<ModelDefinition> allEntities = List.of(model);
-        final JpaServiceGenerator generator = new JpaServiceGenerator(cfg, allEntities, pkgCfg);
+        final ServiceGenerator generator = new ServiceGenerator(cfg, allEntities, pkgCfg);
         final String outputDir = "out";
 
         final AtomicReference<Map<String, Object>> createCtxRef = new AtomicReference<>();
@@ -323,5 +324,133 @@ class JpaServiceGeneratorTest {
         final Map<String, Object> createCtx = createCtxRef.get();
         assertNotNull(createCtx);
         assertEquals(true, createCtx.get("cache"), "Cache flag in create context should be true when cache is enabled");
+    }
+
+    @Test
+    void generate_shouldSetMongoSoftDeleteTrueWhenMongoDbAndSoftDeleteEnabled() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.getDatabase()).thenReturn(DatabaseType.MONGODB);
+        when(cfg.getCache()).thenReturn(null);
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final ModelDefinition model = newModel("UserEntity", List.of(idField));
+        when(model.getSoftDelete()).thenReturn(Boolean.TRUE);
+        final List<ModelDefinition> allEntities = List.of(model);
+        final ServiceGenerator generator = new ServiceGenerator(cfg, allEntities, pkgCfg);
+
+        final AtomicReference<Map<String, Object>> deleteCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> getByIdCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> getAllCtxRef = new AtomicReference<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<ServiceImports> svcImports = mockStatic(ServiceImports.class);
+             final MockedStatic<ServiceTemplateContext> svcCtx = mockStatic(ServiceTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.hasCollectionRelation(model, allEntities)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasRelation(model, allEntities)).thenReturn(false);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.example.app", pkgCfg)).thenReturn("com.example.app.service");
+            pkg.when(() -> PackageUtils.computeServiceSubPackage(pkgCfg)).thenReturn("service");
+            svcImports.when(() -> ServiceImports.getBaseImport(model, false)).thenReturn("");
+            svcImports.when(() -> ServiceImports.computeJpaServiceBaseImport(false, false)).thenReturn("");
+            svcImports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
+                    eq(model), eq("out"), eq(ServiceImports.ServiceImportScope.SERVICE), eq(pkgCfg))).thenReturn("");
+
+            svcCtx.when(() -> ServiceTemplateContext.computeGetByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeDeleteByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeGetAllContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeCreateContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeUpdateByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.createAddRelationMethodContext(model)).thenReturn(Collections.emptyMap());
+            svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, allEntities)).thenReturn(Collections.emptyMap());
+            svcCtx.when(() -> ServiceTemplateContext.createServiceClassContext(model)).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/delete-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getByIdCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-all.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getAllCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("");
+            writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            generator.generate(model, "out");
+        }
+
+        assertEquals(true, deleteCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be true in deleteById context for MongoDB + softDelete=true");
+        assertEquals(true, getByIdCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be true in getById context for MongoDB + softDelete=true");
+        assertEquals(true, getAllCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be true in getAll context for MongoDB + softDelete=true");
+    }
+
+    @Test
+    void generate_shouldSetMongoSoftDeleteFalseWhenSqlDatabaseEvenIfSoftDeleteEnabled() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.getDatabase()).thenReturn(DatabaseType.POSTGRESQL);
+        when(cfg.getCache()).thenReturn(null);
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final ModelDefinition model = newModel("UserEntity", List.of(idField));
+        when(model.getSoftDelete()).thenReturn(Boolean.TRUE);
+        final List<ModelDefinition> allEntities = List.of(model);
+        final ServiceGenerator generator = new ServiceGenerator(cfg, allEntities, pkgCfg);
+
+        final AtomicReference<Map<String, Object>> deleteCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> getByIdCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> getAllCtxRef = new AtomicReference<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<ServiceImports> svcImports = mockStatic(ServiceImports.class);
+             final MockedStatic<ServiceTemplateContext> svcCtx = mockStatic(ServiceTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.hasCollectionRelation(model, allEntities)).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasRelation(model, allEntities)).thenReturn(false);
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.example.app", pkgCfg)).thenReturn("com.example.app.service");
+            pkg.when(() -> PackageUtils.computeServiceSubPackage(pkgCfg)).thenReturn("service");
+            svcImports.when(() -> ServiceImports.getBaseImport(model, false)).thenReturn("");
+            svcImports.when(() -> ServiceImports.computeJpaServiceBaseImport(false, false)).thenReturn("");
+            svcImports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
+                    eq(model), eq("out"), eq(ServiceImports.ServiceImportScope.SERVICE), eq(pkgCfg))).thenReturn("");
+
+            svcCtx.when(() -> ServiceTemplateContext.computeGetByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeDeleteByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeGetAllContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeCreateContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeUpdateByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.createAddRelationMethodContext(model)).thenReturn(Collections.emptyMap());
+            svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, allEntities)).thenReturn(Collections.emptyMap());
+            svcCtx.when(() -> ServiceTemplateContext.createServiceClassContext(model)).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/delete-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getByIdCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-all.ftl"), anyMap()))
+                    .thenAnswer(inv -> { getAllCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("");
+            writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            generator.generate(model, "out");
+        }
+
+        assertEquals(false, deleteCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be false for SQL database even if softDelete=true");
+        assertEquals(false, getByIdCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be false for SQL database even if softDelete=true");
+        assertEquals(false, getAllCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be false for SQL database even if softDelete=true");
     }
 }

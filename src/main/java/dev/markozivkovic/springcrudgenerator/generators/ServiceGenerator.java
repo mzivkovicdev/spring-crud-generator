@@ -29,6 +29,7 @@ import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.ServiceTemplateContext;
@@ -39,19 +40,21 @@ import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 import dev.markozivkovic.springcrudgenerator.utils.SortUtils;
 
-public class JpaServiceGenerator implements CodeGenerator {
+public class ServiceGenerator implements CodeGenerator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JpaServiceGenerator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceGenerator.class);
 
     private final CrudConfiguration configuration;
     private final List<ModelDefinition> entities;
     private final PackageConfiguration packageConfiguration;
+    private final boolean isMongoDB;
 
-    public JpaServiceGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
+    public ServiceGenerator(final CrudConfiguration configuration, final List<ModelDefinition> entities,
                 final PackageConfiguration packageConfiguration) {
         this.configuration = configuration;
         this.entities = entities;
         this.packageConfiguration = packageConfiguration;
+        this.isMongoDB = DatabaseType.MONGODB.equals(configuration.getDatabase());
     }
     
     @Override
@@ -194,8 +197,9 @@ public class JpaServiceGenerator implements CodeGenerator {
      * @return A string representation of the getAll method.
      */
     private String generateGetAllMethod(final ModelDefinition modelDefinition) {
-        
+
         final Map<String, Object> context = ServiceTemplateContext.computeGetAllContext(modelDefinition);
+        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-all.ftl", context);
     }
@@ -240,6 +244,7 @@ public class JpaServiceGenerator implements CodeGenerator {
     private String generateDeleteByIdMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = ServiceTemplateContext.computeDeleteByIdContext(modelDefinition);
+        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/delete-by-id.ftl", context);
@@ -253,8 +258,9 @@ public class JpaServiceGenerator implements CodeGenerator {
      * @return A string representation of the getById method.
      */
     public String generateGetByIdMethod(final ModelDefinition modelDefinition) {
-        
+
         final Map<String, Object> context = ServiceTemplateContext.computeGetByIdContext(modelDefinition);
+        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-by-id.ftl", context);
