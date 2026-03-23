@@ -84,6 +84,7 @@ class ${className} {
         verify(this.${businessServiceField}).add${relationFieldModel}(${idField?uncap_first}, body.<#if swagger>get${relationIdField?cap_first}<#else>${relationIdField}</#if>());
     }
 
+    <#if idType != "String">
     @Test
     void ${methodName}_invalid${idField?cap_first}Format() throws Exception {
 
@@ -93,12 +94,13 @@ class ${className} {
         <#else>
         final ${strippedRelationClassName}InputTO body = ${generatorFieldName}.${singleObjectMethodName}(${strippedRelationClassName}InputTO.class);
         </#if>
-        
+
         this.mockMvc.perform(post("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s", ${idField?uncap_first})
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
+    </#if><#t>
 
     @Test
     void ${methodName}_noRequestBody() throws Exception {

@@ -106,6 +106,7 @@ class ${className} {
         verify(this.${serviceField}).updateById(${idField?uncap_first}, <#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>);
     }
 
+    <#if idType != "String">
     @Test
     void ${uncapModelName}sIdPut_invalid${idField?cap_first}Format() throws Exception {
 
@@ -121,6 +122,7 @@ class ${className} {
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
+    </#if><#t>
     <#if validationOverrides??>
 
     @Test

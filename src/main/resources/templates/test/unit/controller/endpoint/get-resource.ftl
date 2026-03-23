@@ -91,6 +91,7 @@ class ${className} {
         verify(this.${serviceField}).getById(${idField?uncap_first});
     }
 
+    <#if idType != "String">
     @Test
     void ${uncapModelName}sIdGet_invalid${idField?cap_first}Format() throws Exception {
 
@@ -99,6 +100,7 @@ class ${className} {
         this.mockMvc.perform(get("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isBadRequest());
     }
+    </#if><#t>
 
     @Test
     void ${uncapModelName}sGet() throws Exception {

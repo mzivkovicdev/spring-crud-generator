@@ -60,6 +60,7 @@ class ${className} {
         verify(this.${serviceField}).deleteById(${idField?uncap_first});
     }
 
+    <#if idType != "String">
     @Test
     void ${uncapModelName}sIdDelete_invalid${idField?cap_first}Format() throws Exception {
 
@@ -68,4 +69,5 @@ class ${className} {
         this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}", ${idField?uncap_first}))
                 .andExpect(status().isBadRequest());
     }
+    </#if><#t>
 }

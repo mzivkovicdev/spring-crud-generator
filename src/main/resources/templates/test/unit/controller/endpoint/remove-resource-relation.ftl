@@ -70,6 +70,7 @@ class ${className} {
         </#if>
     }
 
+    <#if idType != "String">
     @Test
     void ${methodName}_invalid${idField?cap_first}Format() throws Exception {
 
@@ -81,8 +82,9 @@ class ${className} {
         this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s<#if isCollection>/{relationId}</#if>", ${idField?uncap_first}<#if isCollection>, ${relationId}</#if>))
                 .andExpect(status().isBadRequest());
     }
+    </#if><#t>
 
-    <#if isCollection>
+    <#if isCollection && relIdType != "String">
     @Test
     void ${methodName}_invalid${relationId?cap_first}Format() throws Exception {
 
@@ -92,6 +94,6 @@ class ${className} {
         this.mockMvc.perform(delete("${basePath}/${uncapModelName}s/{id}/${strippedRelationClassName?uncap_first}s/{relationId}", ${idField?uncap_first}<#if isCollection>, ${relationId}</#if>))
                 .andExpect(status().isBadRequest());
     }
-    </#if>
+    </#if><#t>
 
 }
