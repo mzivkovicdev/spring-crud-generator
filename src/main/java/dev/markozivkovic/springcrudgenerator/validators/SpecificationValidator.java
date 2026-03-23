@@ -79,7 +79,6 @@ public class SpecificationValidator {
 
         validateJavaVersion(specification.getConfiguration(), errors);
         validateDatabase(database, errors);
-        validateDatabaseSpecificConfiguration(specification.getConfiguration(), errors);
         validateAdditionalProperties(specification.getConfiguration(), errors);
 
         try {
@@ -128,22 +127,6 @@ public class SpecificationValidator {
         }
     }
 
-    /**
-     * Validates configuration values that depend on selected database.
-     *
-     * @param configuration CRUD configuration
-     * @param errors        collected validation errors
-     */
-    private static void validateDatabaseSpecificConfiguration(final CrudConfiguration configuration, final List<String> errors) {
-
-        if (Objects.isNull(configuration.getDatabase())) {
-            return;
-        }
-
-        if (DatabaseType.MONGODB.equals(configuration.getDatabase()) && Boolean.TRUE.equals(configuration.isMigrationScripts())) {
-            errors.add("configuration.migrationScripts is not supported for database=mongodb.");
-        }
-    }
 
     /**
      * Validates the Java version set in the CRUD configuration.

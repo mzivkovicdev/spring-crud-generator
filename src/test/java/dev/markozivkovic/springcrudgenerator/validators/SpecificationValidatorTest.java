@@ -1439,19 +1439,13 @@ class SpecificationValidatorTest {
     }
 
     @Test
-    @DisplayName("Should throw when migration scripts are enabled in MongoDB mode")
-    void validate_mongodbMigrationScriptsEnabled_throwsIllegalArgumentException() {
+    @DisplayName("Should not throw when migration scripts are enabled in MongoDB mode (Mongock is supported)")
+    void validate_mongodbMigrationScriptsEnabled_doesNotThrow() {
 
         final CrudSpecification spec = buildValidMongoSpecification();
         spec.getConfiguration().setMigrationScripts(true);
 
-        final IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> SpecificationValidator.validate(spec)
-        );
-
-        assertTrue(ex.getMessage().contains("migrationScripts"));
-        assertTrue(ex.getMessage().contains("mongodb"));
+        assertDoesNotThrow(() -> SpecificationValidator.validate(spec));
     }
 
     @Test
