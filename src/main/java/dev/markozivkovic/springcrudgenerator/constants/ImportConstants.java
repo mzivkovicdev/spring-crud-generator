@@ -155,6 +155,7 @@ public final class ImportConstants {
         public static final String PAGE_REQUEST = "org.springframework.data.domain.PageRequest";
         public static final String SORT = "org.springframework.data.domain.Sort";
         public static final String SORT_DIRECTION = "org.springframework.data.domain.Sort.Direction";
+        public static final String PAGEABLE = "org.springframework.data.domain.Pageable";
         public static final String MONGO_DOCUMENT = "org.springframework.data.mongodb.core.mapping.Document";
         public static final String MONGO_DB_REF = "org.springframework.data.mongodb.core.mapping.DBRef";
         public static final String MONGO_ID = "org.springframework.data.annotation.Id";
