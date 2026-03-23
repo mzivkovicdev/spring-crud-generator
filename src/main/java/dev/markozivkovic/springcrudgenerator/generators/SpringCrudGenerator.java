@@ -52,6 +52,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
     private static final String GRAPHQL = "graphql";
     private static final String MIGRATION_SCRIPT = "migration-script";
+    private static final String MONGOCK_MIGRATION_SCRIPT = "mongock-migration-script";
     
     private final Map<String, ProjectArtifactGenerator> ARTIFACT_GENERATORS;
     private final Map<String, CodeGenerator> GENERATORS;
@@ -153,5 +154,6 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
 
         generators.put(MONGO_MODEL, new MongoEntityGenerator(crudConfiguration, entities, packageConfiguration));
         generators.put(MONGO_REPOSITORY, new MongoRepositoryGenerator(packageConfiguration));
+        generators.put(MONGOCK_MIGRATION_SCRIPT, new MongockMigrationGenerator(crudConfiguration, projectMetadata, entities));
     }
 }
