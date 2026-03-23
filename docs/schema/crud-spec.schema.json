@@ -449,6 +449,10 @@
         "description": {
           "type": "string"
         },
+        "example": {
+          "type": "string",
+          "description": "Example value used in generated OpenAPI schema."
+        },
         "id": {
           "$ref": "#/$defs/id"
         },
