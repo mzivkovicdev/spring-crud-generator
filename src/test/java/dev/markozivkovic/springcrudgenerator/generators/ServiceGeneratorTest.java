@@ -373,13 +373,13 @@ class ServiceGeneratorTest {
             svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, allEntities)).thenReturn(Collections.emptyMap());
             svcCtx.when(() -> ServiceTemplateContext.createServiceClassContext(model)).thenReturn(new HashMap<>());
 
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/delete-by-id.ftl"), anyMap()))
                     .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-by-id.ftl"), anyMap()))
                     .thenAnswer(inv -> { getByIdCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-all.ftl"), anyMap()))
                     .thenAnswer(inv -> { getAllCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("");
             writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
 
             generator.generate(model, "out");
@@ -437,13 +437,13 @@ class ServiceGeneratorTest {
             svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, allEntities)).thenReturn(Collections.emptyMap());
             svcCtx.when(() -> ServiceTemplateContext.createServiceClassContext(model)).thenReturn(new HashMap<>());
 
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/delete-by-id.ftl"), anyMap()))
                     .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-by-id.ftl"), anyMap()))
                     .thenAnswer(inv -> { getByIdCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("service/method/get-all.ftl"), anyMap()))
                     .thenAnswer(inv -> { getAllCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
-            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("");
             writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
 
             generator.generate(model, "out");
