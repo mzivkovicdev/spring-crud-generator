@@ -115,9 +115,10 @@ class GlobalExceptionHandlerGeneratorTest {
                          writerInvocations.add(invocation);
                          return null;
                      });
-             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+            final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList())).thenReturn(List.of("REL"));
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(anyList())).thenReturn(true);
             sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
@@ -171,6 +172,7 @@ class GlobalExceptionHandlerGeneratorTest {
         final Map<String, Object> restCtx = restCtxRef.get();
         assertNotNull(restCtx);
         assertEquals(true, restCtx.get("hasRelations"));
+        assertEquals(true, restCtx.get(TemplateContextConstants.HAS_VALIDATION));
         assertEquals("REST_IMPORTS", restCtx.get("projectImports"));
         assertEquals(true, restCtx.get("isDetailed"));
         assertEquals(true, restCtx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
@@ -236,9 +238,10 @@ class GlobalExceptionHandlerGeneratorTest {
                          writerInvocations.add(invocation);
                          return null;
                      });
-             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+            final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList())).thenReturn(Collections.emptyList());
+            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(anyList())).thenReturn(false);
             sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
@@ -279,6 +282,7 @@ class GlobalExceptionHandlerGeneratorTest {
         final Map<String, Object> restCtx = restCtxRef.get();
         assertNotNull(restCtx);
         assertEquals(false, restCtx.get("hasRelations"));
+        assertEquals(false, restCtx.get(TemplateContextConstants.HAS_VALIDATION));
         assertEquals("REST_IMPORTS_NO_REL", restCtx.get("projectImports"));
         assertEquals(false, restCtx.get("isDetailed"));
         assertEquals(true, restCtx.get(TemplateContextConstants.IS_SPRING_BOOT_3));
@@ -293,5 +297,41 @@ class GlobalExceptionHandlerGeneratorTest {
 
         assertFalse(usedGraphQlTemplate, "GraphQL exception handler template should NOT be used");
         assertFalse(wroteGraphQlHandler, "GlobalGraphQlExceptionHandler should NOT be written");
+    }
+
+    @Test
+    void restExceptionHandlerTemplate_shouldIncludeConstraintViolationException_whenValidationExists() {
+
+        final String result = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "exception/rest-exception-handler-template.ftl",
+                Map.of(
+                        TemplateContextConstants.PROJECT_IMPORTS, "",
+                        TemplateContextConstants.HAS_RELATIONS, false,
+                        TemplateContextConstants.HAS_VALIDATION, true,
+                        TemplateContextConstants.IS_DETAILED, false,
+                        TemplateContextConstants.IS_SPRING_BOOT_3, true
+                )
+        );
+
+        assertTrue(result.contains("import jakarta.validation.ConstraintViolationException;"));
+        assertTrue(result.contains("@ExceptionHandler(ConstraintViolationException.class)"));
+    }
+
+    @Test
+    void restExceptionHandlerTemplate_shouldExcludeConstraintViolationException_whenValidationDoesNotExist() {
+
+        final String result = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "exception/rest-exception-handler-template.ftl",
+                Map.of(
+                        TemplateContextConstants.PROJECT_IMPORTS, "",
+                        TemplateContextConstants.HAS_RELATIONS, false,
+                        TemplateContextConstants.HAS_VALIDATION, false,
+                        TemplateContextConstants.IS_DETAILED, false,
+                        TemplateContextConstants.IS_SPRING_BOOT_3, true
+                )
+        );
+
+        assertFalse(result.contains("import jakarta.validation.ConstraintViolationException;"));
+        assertFalse(result.contains("@ExceptionHandler(ConstraintViolationException.class)"));
     }
 }

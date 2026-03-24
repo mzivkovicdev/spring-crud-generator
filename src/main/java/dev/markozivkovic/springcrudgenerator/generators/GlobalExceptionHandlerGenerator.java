@@ -159,10 +159,12 @@ public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator
         final List<String> relationTypes = FieldUtils.extractRelationTypes(fields);
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final boolean hasRelations = !relationTypes.isEmpty();
+        final boolean hasValidation = FieldUtils.hasAnyFieldValidation(fields);
 
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/rest-exception-handler-template.ftl", Map.of(
                     TemplateContextConstants.HAS_RELATIONS, hasRelations,
+                    TemplateContextConstants.HAS_VALIDATION, hasValidation,
                     TemplateContextConstants.PROJECT_IMPORTS, ExceptionImports.computeGlobalRestExceptionHandlerProjectImports(hasRelations, outputDir, packageConfiguration),
                     TemplateContextConstants.IS_DETAILED, this.crudConfiguration.getErrorResponse().equals(ErrorResponse.DETAILED),
                     TemplateContextConstants.IS_SPRING_BOOT_3, SpringBootVersionUtils.isSpringBoot3(this.crudConfiguration.getSpringBootVersion())

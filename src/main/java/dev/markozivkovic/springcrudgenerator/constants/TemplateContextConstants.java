@@ -97,6 +97,7 @@ public final class TemplateContextConstants {
     public static final String IS_ENUM = "isEnum";
 
     public static final String HAS_RELATIONS = "hasRelations";
+    public static final String HAS_VALIDATION = "hasValidation";
     public static final String IS_DETAILED = "isDetailed";
 
     public static final String JSON_FIELDS = "jsonFields";

@@ -1,8 +1,10 @@
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+<#if hasValidation>
 import jakarta.validation.ConstraintViolationException;
 
+</#if><#t>
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
@@ -91,6 +93,7 @@ public class GlobalRestExceptionHandler {
         );
     }
 
+    <#if hasValidation>
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<HttpResponse> constraintViolationError(final ConstraintViolationException e) {
 
@@ -103,6 +106,7 @@ public class GlobalRestExceptionHandler {
         );
     }
 
+    </#if><#t>
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<HttpResponse> invalidArgumentError(final IllegalArgumentException e) {
 
