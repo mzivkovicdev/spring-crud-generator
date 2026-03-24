@@ -27,6 +27,7 @@ public class FieldDefinition {
     private String name;
     private String type;
     private String description;
+    private String example;
     private IdDefinition id;
     private List<String> values = new ArrayList<>();
     private RelationDefinition relation;
@@ -38,11 +39,12 @@ public class FieldDefinition {
     }
 
     public FieldDefinition(final String name, final String type, final String description,
-            final IdDefinition id, final List<String> values, final RelationDefinition relation,
+            final String example, final IdDefinition id, final List<String> values, final RelationDefinition relation,
             final ColumnDefinition column, final ValidationDefinition validation) {
         this.name = name;
         this.type = type;
         this.description = description;
+        this.example = example;
         this.id = id;
         this.values = values;
         this.relation = relation;
@@ -74,6 +76,15 @@ public class FieldDefinition {
 
     public FieldDefinition setDescription(final String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getExample() {
+        return this.example;
+    }
+
+    public FieldDefinition setExample(final String example) {
+        this.example = example;
         return this;
     }
 
@@ -137,6 +148,7 @@ public class FieldDefinition {
         return Objects.equals(name, fieldDefinition.name) &&
                 Objects.equals(type, fieldDefinition.type) &&
                 Objects.equals(description, fieldDefinition.description) &&
+                Objects.equals(example, fieldDefinition.example) &&
                 id == fieldDefinition.id &&
                 Objects.equals(values, fieldDefinition.values) &&
                 Objects.equals(relation, fieldDefinition.relation) &&
@@ -146,7 +158,7 @@ public class FieldDefinition {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, description, id, values, relation, column, validation);
+        return Objects.hash(name, type, description, example, id, values, relation, column, validation);
     }
 
     @Override
@@ -155,6 +167,7 @@ public class FieldDefinition {
             " name='" + getName() + "'" +
             ", type='" + getType() + "'" +
             ", description='" + getDescription() + "'" +
+            ", example='" + getExample() + "'" +
             ", id='" + getId() + "'" +
             ", values='" + getValues() + "'" +
             ", relation='" + getRelation() + "'" +

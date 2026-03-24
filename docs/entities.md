@@ -121,6 +121,7 @@ fields:
 | `name`        | string | ✅                  | Java field name                                                                                      |
 | `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, entity name for relations, or `List<BasicType>` / `Set<BasicType>`) |
 | `description` | string | optional            | Used for Javadoc and API documentation                                                               |
+| `example`     | string | optional            | Example value emitted in generated OpenAPI schema (`components/schemas/...`)                         |
 | `id`          | object | optional            | Marks the field as primary key and defines generation strategy                                       |
 | `column`      | object | optional            | Column constraints (unique, nullable, insertable, updateable, length etc.)                           |
 | `relation`    | object | optional            | Relationship definition (JPA-style)                                                                  |
