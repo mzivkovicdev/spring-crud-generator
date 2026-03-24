@@ -14,10 +14,7 @@
         final ${rel.collectionType}<${rel.relationClassName}> ${rel.relationClassName?uncap_first}s = ${modelName?uncap_first}.get${rel.elementParam?cap_first}();
         final ${rel.collectionType}<${rel.relationIdType}> ${relationField}Ids = ${rel.relationClassName?uncap_first}s.stream()
                 .map(${rel.relationClassName}::get${rel.relationIdField?cap_first})
-                .collect(java.util.stream.Collectors.${rel.collectMethod}());
-        <#if rel.collectionType == "Set">
-        final List<${rel.relationClassName}> ${rel.relationClassName?uncap_first}List = ${rel.relationClassName?uncap_first}s.stream().toList();
-        </#if>
+                .collect(Collectors.${rel.collectMethod}());
         <#else>
         final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${modelName?uncap_first}.get${rel.elementParam?cap_first}();
         final ${rel.relationIdType} ${relationField}Id = ${rel.relationClassName?uncap_first}.get${rel.relationIdField?cap_first}();
@@ -32,7 +29,7 @@
         <#assign relationClassName = rel.relationClassName>
         <#assign relationField = rel.strippedRelationClassName?uncap_first>
         <#if rel.isCollection?? && rel.isCollection>
-        when(this.${relationServiceClass}.getAllByIds(<#if rel.collectionType == "Set">${relationField}Ids.stream().toList()<#else>${relationField}Ids</#if>)).thenReturn(<#if rel.collectionType == "Set">${rel.relationClassName?uncap_first}List<#else>${rel.relationClassName?uncap_first}s</#if>);
+        when(this.${relationServiceClass}.getAllByIds(<#if rel.collectionType == "Set">${relationField}Ids.stream().toList()<#else>${relationField}Ids</#if>)).thenReturn(<#if rel.collectionType == "Set">${rel.relationClassName?uncap_first}s.stream().toList()<#else>${rel.relationClassName?uncap_first}s</#if>);
         <#else>
         when(this.${relationServiceClass}.getById(${relationField}Id)).thenReturn(${rel.relationClassName?uncap_first});
         </#if>
