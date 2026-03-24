@@ -1,6 +1,8 @@
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import jakarta.validation.ConstraintViolationException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
@@ -83,6 +85,18 @@ public class GlobalRestExceptionHandler {
         return new ResponseEntity<>(
                 new HttpResponse(
                         String.format(EXTENDED_MESSAGE_FORMAT, VALIDATION_FAILED_MESSAGE, details)<#if isDetailed>,
+                        HttpStatus.BAD_REQUEST</#if>
+                ),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<HttpResponse> constraintViolationError(final ConstraintViolationException e) {
+
+        return new ResponseEntity<>(
+                new HttpResponse(
+                        String.format(EXTENDED_MESSAGE_FORMAT, VALIDATION_FAILED_MESSAGE, e.getMessage())<#if isDetailed>,
                         HttpStatus.BAD_REQUEST</#if>
                 ),
                 HttpStatus.BAD_REQUEST
