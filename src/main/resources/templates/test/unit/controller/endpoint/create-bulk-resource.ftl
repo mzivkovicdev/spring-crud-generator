@@ -12,6 +12,7 @@
 <#assign responseModelName = strippedModelName?cap_first + "Payload">
 <#assign mockitoAnnotation = isSpringBoot3?then("@MockBean", "@MockitoBean")>
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;<#if hasRelations>
 import static org.mockito.Mockito.verifyNoInteractions;</#if>
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -19,16 +20,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-<#if hasListCollectionRelations>
-import java.util.List;
-import java.util.stream.Collectors;
-
-</#if><#t>
-<#if hasSetCollectionRelations>
-import java.util.Set;
-import java.util.stream.Collectors;
-
-</#if><#t>
 ${testImports}
 ${projectImports}
 <#if isSpringBoot3>import com.fasterxml.jackson.databind.ObjectMapper;<#else>import tools.jackson.databind.json.JsonMapper;</#if><#if dataGenerator == "PODAM">
@@ -49,11 +40,6 @@ class ${className} {
     
     </#if><#t>
     private final ${mapperClass} ${mapperField} = Mappers.getMapper(${mapperClass}.class);
-    <#list jsonFields as jsonField>
-    <#assign jsonFieldMapperClass = jsonField?cap_first + "RestMapper">
-    <#assign jsonFieldMapper = jsonField?cap_first + "Mapper">
-    private final ${jsonFieldMapperClass} ${jsonFieldMapper?uncap_first} = Mappers.getMapper(${jsonFieldMapperClass}.class);
-    </#list>
 
     ${mockitoAnnotation}
     private ${serviceClass?cap_first} ${serviceField};
@@ -80,87 +66,65 @@ class ${className} {
     }
 
     @Test
-    void ${uncapModelName}sPost() throws Exception {
+    void ${uncapModelName}sBulkPost() throws Exception {
 
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
+        final List<${modelName}> ${modelName?uncap_first}s = List.of(${modelName?uncap_first});
         <#if swagger>
-        final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
+        final ${requestModelName} bodyItem = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
         <#if validationOverrides??>
         <#list validationOverrides as ov>
-        body.${ov.field}(${ov.validValue});
+        bodyItem.${ov.field}(${ov.validValue});
         </#list>
         </#if>
+        final List<${requestModelName}> body = List.of(bodyItem);
         <#else>
         <#if validationOverrides??>
-        final ${createTransferObjectClass} body = generate${createTransferObjectClass}();
+        final List<${createTransferObjectClass}> body = List.of(generate${createTransferObjectClass}());
         <#else>
-        final ${createTransferObjectClass} body = ${generatorFieldName}.${singleObjectMethodName}(${createTransferObjectClass}.class);
+        final ${createTransferObjectClass} bodyItem = ${generatorFieldName}.${singleObjectMethodName}(${createTransferObjectClass}.class);
+        final List<${createTransferObjectClass}> body = List.of(bodyItem);
         </#if><#t>
         </#if><#t>
-        <#list inputFields?filter(f -> f.isRelation) as rel>
-        <#if !swagger><#assign relationTransferObject = rel.strippedModelName + "InputTO"><#else><#assign relationTransferObject = rel.strippedModelName + "Input"></#if>
-        <#if rel.isCollection>
-        final ${rel.collectionType}<${rel.relationIdType}> ${rel.field}Ids = <#if !swagger>(body.${rel.field}() != null && !body.${rel.field}().isEmpty())<#else>(body.get${rel.field?cap_first}() != null && !body.get${rel.field?cap_first}().isEmpty())</#if> ? 
-                body.<#if !swagger>${rel.field}<#else>get${rel.field?cap_first}</#if>().stream()
-                    <#if !swagger>.map(${relationTransferObject}::${rel.relationIdField})<#else>.map(${relationTransferObject}::get${rel.relationIdField?cap_first})</#if>
-                    .collect(Collectors.${rel.collectMethod}()) : 
-                ${rel.emptyCollection};
-        <#else>
-        final ${rel.relationIdType} ${rel.field}Id = <#if !swagger>body.${rel.field}() != null ? body.${rel.field}().id() : null;<#else>body.get${rel.field?cap_first}() != null ? body.get${rel.field?cap_first}().getId() : null;</#if>
-        </#if>
-        </#list>
-        <#list inputFields?filter(f -> f.isEnum) as rel>
-        <#if swagger>
-        final ${rel.fieldType} ${rel.field}Enum = body.get${rel.field?cap_first}() != null ?
-                ${rel.fieldType?cap_first}.valueOf(body.get${rel.field?cap_first}().name()) : null;
-        </#if>
-        </#list>
 
-        when(this.<#if hasRelations>${businessServiceField}<#else>${serviceField}</#if>.create(
-                <#if !swagger>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.${arg.field}())<#else>body.${arg.field}()</#if></#if><#if arg_has_next>, </#if></#list>
-                <#else>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
-                </#if>
-        )).thenReturn(${modelName?uncap_first});
+        when(this.<#if hasRelations>${businessServiceField}<#else>${serviceField}</#if>.bulkCreate(any()))
+                .thenReturn(${modelName?uncap_first}s);
 
-        final ResultActions resultActions = this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
+        final ResultActions resultActions = this.mockMvc.perform(post("${basePath}/${uncapModelName}s/bulk")
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
 
-        final <#if !swagger>${transferObjectClass}<#else>${responseModelName}</#if> result = this.mapper.readValue(
+        final <#if !swagger>${transferObjectClass}<#else>${responseModelName}</#if>[] results = this.mapper.readValue(
                 resultActions.andReturn().getResponse().getContentAsString(),
-                <#if !swagger>${transferObjectClass?cap_first}<#else>${responseModelName}</#if>.class
+                <#if !swagger>${transferObjectClass?cap_first}<#else>${responseModelName}</#if>[].class
         );
 
-        verify${strippedModelName}(result, ${modelName?uncap_first});
+        assertThat(results).isNotNull();
+        assertThat(results).hasSize(${modelName?uncap_first}s.size());
 
-        verify(this.<#if hasRelations>${businessServiceField}<#else>${serviceField}</#if>).create(
-                <#if !swagger>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.${arg.field}())<#else>body.${arg.field}()</#if></#if><#if arg_has_next>, </#if></#list>
-                <#else>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
-                </#if>
-        );
+        for (int i = 0; i < results.length; i++) {
+            verify${strippedModelName}(results[i], ${modelName?uncap_first}s.get(i));
+        }
+
+        verify(this.<#if hasRelations>${businessServiceField}<#else>${serviceField}</#if>).bulkCreate(any());
     }
     <#if validationOverrides??>
 
     @Test
-    void ${uncapModelName}sPost_validationFails() throws Exception {
+    void ${uncapModelName}sBulkPost_validationFails() throws Exception {
 
         <#if swagger>
-        final ${requestModelName} body = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
-        <#if validationOverrides??>
+        final ${requestModelName} bodyItem = ${generatorFieldName}.${singleObjectMethodName}(${requestModelName}.class);
         <#list validationOverrides as ov>
-        body.${ov.field}(${ov.invalidValue});
+        bodyItem.${ov.field}(${ov.invalidValue});
         </#list>
-        </#if>
+        final List<${requestModelName}> body = List.of(bodyItem);
         <#else>
-        final ${createTransferObjectClass} body = generateInvalid${createTransferObjectClass}();
+        final List<${createTransferObjectClass}> body = List.of(generateInvalid${createTransferObjectClass}());
         </#if><#t>
 
-        this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s/bulk")
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(this.mapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
@@ -168,9 +132,9 @@ class ${className} {
     </#if>
 
     @Test
-    void ${uncapModelName}sPost_noRequestBody() throws Exception {
+    void ${uncapModelName}sBulkPost_noRequestBody() throws Exception {
 
-        this.mockMvc.perform(post("${basePath}/${uncapModelName}s")
+        this.mockMvc.perform(post("${basePath}/${uncapModelName}s/bulk")
                     .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
     }
@@ -190,19 +154,6 @@ class ${className} {
         assertThat(result).isEqualTo(mapped${modelName?cap_first});
     }
 
-    <#if validationOverrides?? && hasGenerateList?? && hasGenerateList>
-    private static <T> java.util.List<T> generateList(final int n, final java.util.function.Supplier<T> supplier) {
-        if (n <= 0) {
-            return java.util.List.of();
-        }
-        final java.util.ArrayList<T> list = new java.util.ArrayList<>(n);
-        for (int i = 0; i < n; i++) {
-            list.add(supplier.get());
-        }
-        return list;
-    }
-    
-    </#if>
     <#if validationOverrides?? && !swagger>
 
     private static ${createTransferObjectClass} generate${createTransferObjectClass}() {
@@ -249,4 +200,18 @@ class ${className} {
                 .get();
     }
     </#if><#t>
+    <#if validationOverrides?? && hasGenerateList?? && hasGenerateList>
+
+    private static <T> List<T> generateList(final int n, final java.util.function.Supplier<T> supplier) {
+        if (n <= 0) {
+            return List.of();
+        }
+        final java.util.ArrayList<T> list = new java.util.ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            list.add(supplier.get());
+        }
+        return list;
+    }
+    
+    </#if>
 }

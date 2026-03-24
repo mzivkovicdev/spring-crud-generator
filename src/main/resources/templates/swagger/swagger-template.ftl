@@ -16,6 +16,11 @@ paths:
   /${uncapModelName}s:
     ${create}
     ${getAll}
+  <#if createBulk?? && createBulk?has_content>
+
+  /${uncapModelName}s/bulk:
+    ${createBulk}
+  </#if>
 
   /${uncapModelName}s/{${idField}}:
     parameters:

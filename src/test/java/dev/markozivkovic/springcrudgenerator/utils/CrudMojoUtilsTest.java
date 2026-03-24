@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
@@ -105,6 +106,78 @@ class CrudMojoUtilsTest {
         assertNotNull(spec);
         assertNotNull(spec.getEntities().get(0).getSort());
         assertEquals(SortDirection.ASC, spec.getEntities().get(0).getSort().getDefaultDirection());
+    }
+
+    @Test
+    void createSpecMapper_yaml_canDeserializeEntityBulkCreateConfiguration_nestedShape() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                    bulk:
+                      create:
+                        enabled: true
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertEquals(true, spec.getEntities().get(0).isBulkCreateEnabled());
+    }
+
+    @Test
+    void createSpecMapper_yaml_rejectsEntityBulkCreateConfiguration_legacyBooleanShape() {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                    bulk:
+                      create: true
+                """;
+
+        assertThrows(MismatchedInputException.class, () -> mapper.readValue(yaml, CrudSpecification.class));
+    }
+
+    @Test
+    void createSpecMapper_yaml_bulkCreateDisabledWhenBulkConfigurationMissing() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertEquals(false, spec.getEntities().get(0).isBulkCreateEnabled());
     }
 
     @Test

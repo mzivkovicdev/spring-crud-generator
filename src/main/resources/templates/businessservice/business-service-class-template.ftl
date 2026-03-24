@@ -13,6 +13,7 @@ public class ${className} {
         </#list>
     }
     <#if createResource?? && createResource?has_content>${createResource}</#if>
+    <#if createBulkResource?? && createBulkResource?has_content>${createBulkResource}</#if>
     <#if addRelationMethod?? && addRelationMethod?has_content>${addRelationMethod}</#if><#t>
     <#if removeRelationMethod?? && removeRelationMethod?has_content>${removeRelationMethod}</#if><#t>
 }

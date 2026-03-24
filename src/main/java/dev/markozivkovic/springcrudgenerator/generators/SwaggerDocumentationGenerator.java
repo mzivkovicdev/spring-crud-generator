@@ -234,6 +234,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         final Map<String, Object> context = SwaggerTemplateContext.computeSwaggerTemplateContext(e);
         context.put("id", idProperty);
         context.put("create", createEndpoint(e));
+        context.put("createBulk", createBulkEndpoint(e));
         context.put("getAll", getAllEndpoint(e));
         context.put("getById", getByIdEndpoint(e));
         context.put("deleteById", deleteByIdEndpoint(e));
@@ -337,6 +338,23 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         final Map<String, Object> context = SwaggerTemplateContext.computeBaseContext(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/create-endpoint.ftl", context);
+    }
+
+    /**
+     * Generates the bulk create endpoint for the given model definition and returns it as a string.
+     *
+     * @param modelDefinition The model definition for which the bulk create endpoint is generated.
+     * @return The bulk create endpoint as a string, or null when disabled.
+     */
+    private String createBulkEndpoint(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkCreateEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = SwaggerTemplateContext.computeBaseContext(modelDefinition);
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/create-bulk-endpoint.ftl", context);
     }
 
     /**

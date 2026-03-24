@@ -197,6 +197,96 @@ class RestControllerUnitTestGeneratorTest {
     }
 
     @Test
+    void generate_shouldWriteCreateBulkEndpointTest_whenBulkCreateEnabled() {
+
+        final CrudConfiguration cfg = cfgWithTestsEnabled(true);
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("Long");
+        when(idField.getName()).thenReturn("id");
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getName()).thenReturn("CampaignModel");
+        when(model.getFields()).thenReturn(List.of(idField));
+        when(model.isBulkCreateEnabled()).thenReturn(true);
+
+        final RestControllerUnitTestGenerator sut = new RestControllerUnitTestGenerator(cfg, List.of(), pkgCfg);
+
+        try (final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<PackageUtils> pkgUtils = mockStatic(PackageUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class);
+             final MockedStatic<RestControllerTemplateContext> templateCtx = mockStatic(RestControllerTemplateContext.class);
+             final MockedStatic<RestControllerImports> imports = mockStatic(RestControllerImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dataCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<SortUtils> sortUtils = mockStatic(SortUtils.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> ftl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class)) {
+
+            unitTestUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(false);
+            unitTestUtils.when(() -> UnitTestUtils.computeInvalidIdType(any())).thenReturn("invalid");
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(model.getFields())).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.isAnyRelationManyToMany(model.getFields())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationOneToMany(model.getFields())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractFieldNamesWithoudId(model.getFields())).thenReturn(List.of("name"));
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("CampaignModel")).thenReturn("Campaign");
+            pkgUtils.when(() -> PackageUtils.getPackagePathFromOutputDir(anyString())).thenReturn("com/acme");
+            pkgUtils.when(() -> PackageUtils.computeControllerPackage(anyString(), any())).thenReturn("com.acme.controller");
+            pkgUtils.when(() -> PackageUtils.computeControllerSubPackage(any())).thenReturn("controller");
+
+            addProps.when(() -> AdditionalPropertiesUtils.resolveBasePath(cfg)).thenReturn("/api");
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(any())).thenReturn(false);
+
+            templateCtx.when(() -> RestControllerTemplateContext.computeCreateTestEndpointContext(eq(model), eq(List.of())))
+                    .thenAnswer(inv -> new HashMap<>());
+            templateCtx.when(() -> RestControllerTemplateContext.computeUpdateByIdTestEndpointContext(
+                    eq(model), eq(cfg), eq(pkgCfg), anyBoolean(), anyBoolean(), anyString(), anyString(), anyString()
+            )).thenReturn(new HashMap<>());
+
+            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
+                    .thenReturn(Map.of(
+                            TemplateContextConstants.DATA_GENERATOR_FIELD_NAME, "gen",
+                            TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ, "one"
+                    ));
+
+            imports.when(() -> RestControllerImports.computeGetEndpointTestImports(false, cfg.getSpringBootVersion()))
+                    .thenReturn("// GET IMPORTS");
+            imports.when(() -> RestControllerImports.computeUpdateEndpointTestImports(false, cfg.getSpringBootVersion()))
+                    .thenReturn("// UPDATE IMPORTS");
+            imports.when(() -> RestControllerImports.computeCreateBulkEndpointTestImports(false, cfg.getSpringBootVersion()))
+                    .thenReturn("// BULK TEST IMPORTS");
+            imports.when(() -> RestControllerImports.computeDeleteEndpointTestImports(false, cfg.getSpringBootVersion()))
+                    .thenReturn("// DELETE IMPORTS");
+            imports.when(() -> RestControllerImports.computeControllerTestProjectImports(any(), anyString(), anyBoolean(), any(), any(), anyBoolean()))
+                    .thenReturn("// CONTROLLER TEST IMPORTS");
+            imports.when(() -> RestControllerImports.computeCreateEndpointTestProjectImports(any(), anyString(), anyBoolean(), any(), anyBoolean()))
+                    .thenReturn("// CREATE IMPORTS");
+            imports.when(() -> RestControllerImports.computeCreateBulkEndpointTestProjectImports(any(), anyString(), anyBoolean(), any(), anyBoolean()))
+                    .thenReturn("// BULK CREATE IMPORTS");
+
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap()))
+                    .thenReturn("//generated");
+
+            sut.generate(model, "/project/src/main/java/com/acme");
+
+            final String testOut = "/project/src/test/java/com/acme";
+            fileWriter.verify(() -> FileWriterUtils.writeToFile(eq(testOut), eq("controller"), eq("CampaignCreateBulkMockMvcTest"), anyString()));
+            ftl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/controller/endpoint/create-bulk-resource.ftl"), anyMap()), times(1));
+            templateCtx.verify(() -> RestControllerTemplateContext.computeCreateTestEndpointContext(eq(model), eq(List.of())), times(2));
+            sortUtils.verify(() -> SortUtils.contributeSortContext(eq(model), anyMap()), times(1));
+        }
+    }
+
+    @Test
     void generate_shouldAlsoWriteRelationEndpointTests_whenRelationsExist() {
 
         final CrudConfiguration cfg = cfgWithTestsEnabled(true);

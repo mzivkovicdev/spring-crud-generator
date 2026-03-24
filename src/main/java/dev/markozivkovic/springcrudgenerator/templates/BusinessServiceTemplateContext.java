@@ -187,6 +187,47 @@ public class BusinessServiceTemplateContext {
     }
 
     /**
+     * Computes a template context for the bulk create resource method of a model's service.
+     *
+     * @param modelDefinition the model definition containing the class and field details
+     * @param entities a list of model definitions representing entities related to the model
+     * @return a map representing the context for the bulk create resource method, or an empty map if no relation types are present
+     */
+    public static Map<String, Object> computeBulkCreateResourceMethodServiceContext(final ModelDefinition modelDefinition,
+            final List<ModelDefinition> entities) {
+
+        if (FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
+            return Map.of();
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final List<FieldDefinition> manyToManyFields = FieldUtils.extractManyToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> oneToManyFields = FieldUtils.extractOneToManyRelations(modelDefinition.getFields());
+        final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
+
+        final Map<String, Object> model = new HashMap<>();
+        final List<Map<String, Object>> relations = new ArrayList<>();
+
+        model.put(TemplateContextConstants.MODEL_NAME, modelDefinition.getName());
+        model.put(TemplateContextConstants.STRIPPED_MODEL_NAME, ModelNameUtils.stripSuffix(modelDefinition.getName()));
+        if (GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION)) {
+            model.put(TemplateContextConstants.TRANSACTIONAL_ANNOTATION, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
+        } else {
+            model.put(TemplateContextConstants.TRANSACTIONAL_ANNOTATION, AnnotationConstants.TRANSACTIONAL_ANNOTATION);
+        }
+        model.put(TemplateContextConstants.MODEL_SERVICE, ModelNameUtils.stripSuffix(modelDefinition.getName()) + "Service");
+
+        relationFields.forEach(field -> {
+            relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, true, entities));
+        });
+
+        return Map.of(
+            TemplateContextConstants.MODEL, model,
+            TemplateContextConstants.RELATIONS, relations
+        );
+    }
+
+    /**
      * Computes a template context for a relation field, given the original field
      * definition, the ID field definition, the many-to-many fields, the one-to-many
      * fields and whether the relation is an add or a remove relation.

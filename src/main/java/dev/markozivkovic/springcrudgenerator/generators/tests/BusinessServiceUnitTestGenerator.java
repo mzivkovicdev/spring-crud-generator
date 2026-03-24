@@ -106,6 +106,7 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
         );
         
         context.put(TemplateContextConstants.CREATE_RESOURCE, createResourceMethod(modelDefinition));
+        context.put(TemplateContextConstants.CREATE_BULK_RESOURCE, createBulkResourceMethod(modelDefinition));
         context.put(TemplateContextConstants.ADD_RELATION_METHOD, addRelationMethod(modelDefinition));
         context.put(TemplateContextConstants.REMOVE_RELATION_METHOD, removeRelationMethod(modelDefinition));
 
@@ -171,6 +172,33 @@ public class BusinessServiceUnitTestGenerator implements CodeGenerator {
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/businessservice/method/create-resource.ftl", context
+        );
+    }
+
+    /**
+     * Generates the bulk createResource method as a string for the given model definition.
+     *
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a string representation of the bulk createResource method unit test, or null when disabled
+     */
+    private String createBulkResourceMethod(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkCreateEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = new HashMap<>(
+                BusinessServiceTemplateContext.computeBulkCreateResourceMethodServiceContext(modelDefinition, entities)
+        );
+        if (context.isEmpty()) {
+            return null;
+        }
+
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/businessservice/method/create-bulk-resource.ftl", context
         );
     }
     

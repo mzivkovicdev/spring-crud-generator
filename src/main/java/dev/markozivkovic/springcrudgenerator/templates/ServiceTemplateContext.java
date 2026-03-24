@@ -125,6 +125,26 @@ public class ServiceTemplateContext {
     }
 
     /**
+     * Creates a template context for the bulk create method of a model.
+     *
+     * @param modelDefinition the model definition
+     * @return a template context for the bulk create method
+     */
+    public static Map<String, Object> computeBulkCreateContext(final ModelDefinition modelDefinition) {
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(TemplateContextConstants.MODEL_NAME, modelDefinition.getName());
+        if (GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION)) {
+            context.put(TemplateContextConstants.TRANSACTIONAL_ANNOTATION, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
+        } else {
+            context.put(TemplateContextConstants.TRANSACTIONAL_ANNOTATION, AnnotationConstants.TRANSACTIONAL_ANNOTATION);
+        }
+        context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
+
+        return context;
+    }
+
+    /**
      * Creates a template context for the updateById method of a model.
      * 
      * The generated context contains the model name, a list of input fields as strings, a list of field names

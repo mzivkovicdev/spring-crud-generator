@@ -365,6 +365,9 @@
         "audit": {
           "$ref": "#/$defs/audit"
         },
+        "bulk": {
+          "$ref": "#/$defs/bulk"
+        },
         "sort": {
           "$ref": "#/$defs/sort",
           "description": "Optional entity-level sorting configuration for REST list endpoints and GraphQL list queries."
@@ -395,6 +398,24 @@
             "localdate",
             "localdatetime"
           ]
+        }
+      }
+    },
+    "bulk": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "$ref": "#/$defs/bulkCreate"
+        }
+      }
+    },
+    "bulkCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
         }
       }
     },

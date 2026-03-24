@@ -28,6 +28,7 @@ public class ModelDefinition {
     private List<FieldDefinition> fields; 
     private AuditDefinition audit;
     private Boolean softDelete = Boolean.FALSE;
+    private BulkDefinition bulk;
     private SortDefinition sort;
 
     public ModelDefinition() {
@@ -36,7 +37,7 @@ public class ModelDefinition {
 
     public ModelDefinition(final String name, final String storageName, final String description,
             final Boolean ignore, final List<FieldDefinition> fields, final AuditDefinition audit,
-            final Boolean softDelete, final SortDefinition sort) {
+            final Boolean softDelete, final BulkDefinition bulk, final SortDefinition sort) {
         this.name = name;
         this.storageName = storageName;
         this.description = description;
@@ -44,6 +45,7 @@ public class ModelDefinition {
         this.fields = fields;
         this.audit = audit;
         this.softDelete = softDelete;
+        this.bulk = bulk;
         this.sort = sort;
     }
 
@@ -110,6 +112,21 @@ public class ModelDefinition {
         return this;
     }
 
+    public BulkDefinition getBulk() {
+        return this.bulk;
+    }
+
+    public ModelDefinition setBulk(final BulkDefinition bulk) {
+        this.bulk = bulk;
+        return this;
+    }
+
+    public boolean isBulkCreateEnabled() {
+        return Objects.nonNull(this.bulk)
+                && Objects.nonNull(this.bulk.getCreate())
+                && Boolean.TRUE.equals(this.bulk.getCreate().getEnabled());
+    }
+
     public SortDefinition getSort() {
         return this.sort;
     }
@@ -134,12 +151,13 @@ public class ModelDefinition {
                 Objects.equals(fields, modelDefinition.fields) &&
                 Objects.equals(audit, modelDefinition.audit) &&
                 Objects.equals(softDelete, modelDefinition.softDelete) &&
+                Objects.equals(bulk, modelDefinition.bulk) &&
                 Objects.equals(sort, modelDefinition.sort);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, storageName, description, ignore, fields, audit, softDelete, sort);
+        return Objects.hash(name, storageName, description, ignore, fields, audit, softDelete, bulk, sort);
     }
 
     @Override
@@ -152,6 +170,7 @@ public class ModelDefinition {
             ", fields='" + getFields() + "'" +
             ", audit='" + getAudit() + "'" +
             ", softDelete='" + getSoftDelete() + "'" +
+            ", bulk='" + getBulk() + "'" +
             ", sort='" + getSort() + "'" +
             "}";
     }    

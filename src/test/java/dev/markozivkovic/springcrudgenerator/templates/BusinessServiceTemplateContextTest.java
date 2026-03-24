@@ -506,4 +506,89 @@ class BusinessServiceTemplateContextTest {
             assertEquals("addRoles", relCtx.get(TemplateContextConstants.METHOD_NAME));
         }
     }
+
+    @Test
+    void computeBulkCreateResourceMethodServiceContext_shouldReturnEmptyMapWhenNoRelations() {
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final List<FieldDefinition> fields = List.of(idField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+        final List<ModelDefinition> entities = List.of(model);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields))
+                    .thenReturn(List.of());
+
+            final Map<String, Object> ctx =
+                    BusinessServiceTemplateContext.computeBulkCreateResourceMethodServiceContext(model, entities);
+
+            assertTrue(ctx.isEmpty());
+        }
+    }
+
+    @Test
+    void computeBulkCreateResourceMethodServiceContext_shouldBuildModelAndRelations() {
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getName()).thenReturn("id");
+        when(idField.getType()).thenReturn("Long");
+
+        final FieldDefinition relationField = mock(FieldDefinition.class);
+        when(relationField.getName()).thenReturn("roles");
+        when(relationField.getType()).thenReturn("RoleEntity");
+
+        final List<FieldDefinition> fields = List.of(idField, relationField);
+        final ModelDefinition mainModel = newModel("UserEntity", fields);
+
+        final FieldDefinition roleIdField = mock(FieldDefinition.class);
+        when(roleIdField.getName()).thenReturn("roleId");
+        when(roleIdField.getType()).thenReturn("java.util.UUID");
+        final ModelDefinition roleModel = newModel("RoleEntity", List.of(roleIdField));
+
+        final List<ModelDefinition> entities = List.of(mainModel, roleModel);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields))
+                    .thenReturn(List.of("ManyToMany"));
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields))
+                    .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields))
+                    .thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields))
+                    .thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields))
+                    .thenReturn(List.of(relationField));
+            fieldUtils.when(() -> FieldUtils.extractIdField(roleModel.getFields()))
+                    .thenReturn(roleIdField);
+            fieldUtils.when(() -> FieldUtils.computeJavadocForFields(idField, relationField))
+                    .thenReturn(List.of("id", "roles"));
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
+                    .thenReturn("User");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("RoleEntity"))
+                    .thenReturn("Role");
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("roles"))
+                    .thenReturn("roles");
+
+            genCtx.when(() -> GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            final Map<String, Object> ctx =
+                    BusinessServiceTemplateContext.computeBulkCreateResourceMethodServiceContext(mainModel, entities);
+
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> modelCtx = (Map<String, Object>) ctx.get(TemplateContextConstants.MODEL);
+            assertEquals("UserEntity", modelCtx.get(TemplateContextConstants.MODEL_NAME));
+            assertEquals("User", modelCtx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
+            assertEquals("UserService", modelCtx.get(TemplateContextConstants.MODEL_SERVICE));
+            assertEquals(AnnotationConstants.TRANSACTIONAL_ANNOTATION,
+                    modelCtx.get(TemplateContextConstants.TRANSACTIONAL_ANNOTATION));
+
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> relations = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.RELATIONS);
+            assertEquals(1, relations.size());
+            assertEquals("RoleEntity", relations.get(0).get(TemplateContextConstants.RELATION_CLASS_NAME));
+        }
+    }
 }

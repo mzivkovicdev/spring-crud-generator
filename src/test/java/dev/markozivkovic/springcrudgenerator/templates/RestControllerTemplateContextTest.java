@@ -235,6 +235,7 @@ class RestControllerTemplateContextTest {
             assertEquals(true, fCtx.get(TemplateContextConstants.IS_ENUM));
             assertEquals("java.util.UUID", fCtx.get(TemplateContextConstants.RELATION_ID_TYPE));
             assertEquals("addressId", fCtx.get(TemplateContextConstants.RELATION_ID_FIELD));
+            assertEquals("AddressEntity", fCtx.get(TemplateContextConstants.RELATION_CLASS_NAME));
         }
     }
 
