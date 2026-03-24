@@ -358,6 +358,51 @@ class BusinessServiceImportsTest {
     }
 
     @Test
+    @DisplayName("getTestBaseImport: collection relations should import Collectors")
+    void getTestBaseImport_collectionRelations_importCollectors() {
+        final ModelDefinition model = emptyModel();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
+
+            final String result = BusinessServiceImports.getTestBaseImport(model);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+            assertTrue(result.contains("import " + ImportConstants.Java.COLLECTORS + ";"));
+        }
+    }
+
+    @Test
+    @DisplayName("getTestBaseImport: bulk create should import List even without list relations")
+    void getTestBaseImport_bulkCreateEnabled_importsListWithoutListRelations() {
+        final ModelDefinition model = emptyModel();
+        Mockito.when(model.isBulkCreateEnabled()).thenReturn(true);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDateTime(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldUUID(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(anyList())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(anyList())).thenReturn(false);
+
+            final String result = BusinessServiceImports.getTestBaseImport(model);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+            assertFalse(result.contains("import " + ImportConstants.Java.COLLECTORS + ";"));
+        }
+    }
+
+    @Test
     @DisplayName("getTestBaseImport: should not add List import when there are no list relations")
     void getTestBaseImport_noListRelations_noListImport() {
         final ModelDefinition model = emptyModel();
@@ -397,6 +442,7 @@ class BusinessServiceImportsTest {
             final String result = BusinessServiceImports.getTestBaseImport(model);
 
             assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Expected Set import");
+            assertTrue(result.contains("import " + ImportConstants.Java.COLLECTORS + ";"), "Expected Collectors import");
             assertFalse(result.contains("import " + ImportConstants.Java.HASH_SET + ";"),
                     "HashSet should not be imported in test base imports");
             assertFalse(result.contains("import " + ImportConstants.Java.LIST + ";"),

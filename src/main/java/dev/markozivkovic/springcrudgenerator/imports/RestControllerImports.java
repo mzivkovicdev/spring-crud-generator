@@ -301,6 +301,41 @@ public class RestControllerImports {
     }
 
     /**
+     * Compute the necessary imports for a controller create-bulk endpoint test.
+     *
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @param springBootVersion  the Spring Boot version
+     * @return a string containing the necessary import statements for a controller create-bulk endpoint test
+     */
+    public static String computeCreateBulkEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.MapStruct.FACTORY_MAPPERS));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+
+        addOAuth2WebMvcTestImports(imports, springBootVersion);
+
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
+
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.Java.LIST));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
      * Compute the imports for a controller test.
      *
      * @param isInstancioEnabled whether instancio is enabled
@@ -509,6 +544,67 @@ public class RestControllerImports {
             imports.add(String.format(
                 IMPORT,
                 PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(modelWithoutSuffix))
+            ));
+        }
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));
+
+        if (isGlobalExceptionHandlerEnabled != null && isGlobalExceptionHandlerEnabled) {
+            imports.add(String.format(
+                IMPORT, 
+                PackageUtils.join(PackageUtils.computeExceptionHandlerPackage(packagePath, packageConfiguration), GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER)
+            ));
+        }
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Computes the necessary imports for the generated bulk create endpoint test.
+     *
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param swagger                         whether to include Swagger/OpenAPI imports
+     * @param packageConfiguration            the package configuration
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
+     * @return a string containing the necessary import statements for the generated bulk create endpoint test
+     */
+    public static String computeCreateBulkEndpointTestProjectImports(final ModelDefinition modelDefinition, final String outputDir,
+                final boolean swagger, final PackageConfiguration packageConfiguration, final Boolean isGlobalExceptionHandlerEnabled) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        final String modelWithoutSuffix = ModelNameUtils.stripSuffix(modelDefinition.getName());
+        final String unCapModelWithoutSuffix = StringUtils.uncapitalize(modelWithoutSuffix);
+
+        if (!FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty()) {
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration), String.format("%sBusinessService", modelWithoutSuffix))
+            ));
+        }
+
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
+        if (!swagger) {
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), String.format("%sTO", modelWithoutSuffix))
+            ));
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration), ModelNameUtils.computeCreateTOModelName(modelWithoutSuffix))
+            ));
+        } else {
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiModelName(modelWithoutSuffix))
+            ));
+            imports.add(String.format(
+                IMPORT,
+                PackageUtils.join(PackageUtils.computeGeneratedModelPackage(packagePath, packageConfiguration, unCapModelWithoutSuffix), ModelNameUtils.computeOpenApiCreateModelName(modelWithoutSuffix))
             ));
         }
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration), String.format("%sRestMapper", modelWithoutSuffix))));

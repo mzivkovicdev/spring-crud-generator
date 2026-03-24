@@ -120,9 +120,11 @@ public class BusinessServiceImports {
         
         final boolean hasRelationLists = FieldUtils.isAnyRelationCollectionList(fields);
         final boolean hasRelationSets = FieldUtils.isAnyRelationCollectionSet(fields);
+        final boolean hasRelationCollections = hasRelationLists || hasRelationSets;
 
-        ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.LIST);
+        ImportCommon.addIf(hasRelationLists || modelDefinition.isBulkCreateEnabled(), imports, ImportConstants.Java.LIST);
         ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
+        ImportCommon.addIf(hasRelationCollections, imports, ImportConstants.Java.COLLECTORS);
         ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INTERFACES_ONLY);
 
         final String sortedImports = imports.stream()
