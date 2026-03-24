@@ -134,6 +134,7 @@ public final class TemplateContextConstants {
     public static final String EXCLUDE_NULL = "excludeNull";
 
     public static final String CREATE_RESOURCE = "createResource";
+    public static final String CREATE_BULK_RESOURCE = "createBulkResource";
     public static final String ADD_RELATION_METHOD = "addRelationMethod";
     public static final String REMOVE_RELATION_METHOD = "removeRelationMethod";
 
