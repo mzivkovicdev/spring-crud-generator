@@ -58,6 +58,9 @@ entities:
   - name: ProductModel
     storageName: product_table
     description: "Represents a product"
+    bulk:
+      create:
+        enabled: true
     sort:
       allowedFields: [name, price, releaseDate]
       defaultDirection: ASC
@@ -65,11 +68,13 @@ entities:
       - name: id
         type: Long
         description: "The unique identifier for the product"
+        example: 1
         id:
           strategy: TABLE
       - name: name
         description: "The name of the product"
         type: String
+        example: "Gaming monitor"
         column:
           nullable: false
           updateable: true

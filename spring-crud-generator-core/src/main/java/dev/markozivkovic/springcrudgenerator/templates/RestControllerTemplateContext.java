@@ -117,6 +117,7 @@ public class RestControllerTemplateContext {
                 ));
 
                 if (isRelation) {
+                    fieldContext.put(TemplateContextConstants.RELATION_CLASS_NAME, field.getType());
                     final FieldDefinition relationId = entities.stream()
                             .filter(entity -> entity.getName().equals(field.getType()))
                             .findFirst()

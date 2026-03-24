@@ -9,11 +9,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -184,7 +186,101 @@ class BusinessServiceGeneratorTest {
             assertTrue(content.contains("//MODEL_IMPORTS"));
             assertTrue(content.contains("CLASS_BODY"));
             assertTrue(content.contains("java.util.UUID"));
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("businessservice/method/create-bulk-resource.ftl"), anyMap()
+            ), never());
         }
+    }
+
+    @Test
+    void generate_shouldGenerateBulkCreateBusinessMethodWhenBulkCreateEnabled() {
+
+        final ModelDefinition model = newModel("UserEntity");
+        when(model.isBulkCreateEnabled()).thenReturn(true);
+        final PackageConfiguration pkgConfig = mock(PackageConfiguration.class);
+
+        final List<ModelDefinition> allEntities = List.of(model);
+        final BusinessServiceGenerator generator =
+                new BusinessServiceGenerator(allEntities, pkgConfig);
+
+        final AtomicReference<Map<String, Object>> classContextRef = new AtomicReference<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<BusinessServiceImports> bsImports = mockStatic(BusinessServiceImports.class);
+             final MockedStatic<BusinessServiceTemplateContext> ctx = mockStatic(BusinessServiceTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(anyList()))
+                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList()))
+                    .thenReturn(List.of("REL"));
+            fieldUtils.when(() -> FieldUtils.hasCollectionRelation(eq(model), eq(allEntities)))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyIdFieldUUID(eq(model), eq(allEntities)))
+                    .thenReturn(false);
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
+                    .thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.example.app", pkgConfig))
+                    .thenReturn("com.example.app.service");
+            pkg.when(() -> PackageUtils.computeBusinessServiceSubPackage(pkgConfig))
+                    .thenReturn("service");
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
+                    .thenReturn("User");
+
+            bsImports.when(() -> BusinessServiceImports.getBaseImport(eq(model), eq(true)))
+                    .thenReturn("//BASE_IMPORTS\n");
+            bsImports.when(() -> BusinessServiceImports.computeModelsEnumsAndServiceImports(
+                    eq(model), eq("out"), eq(BusinessServiceImportScope.BUSINESS_SERVICE), eq(pkgConfig)
+            )).thenReturn("//MODEL_IMPORTS\n");
+
+            ctx.when(() -> BusinessServiceTemplateContext.computeBusinessServiceContext(eq(model)))
+                    .thenReturn(new HashMap<>());
+            ctx.when(() -> BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(eq(model), eq(allEntities)))
+                    .thenReturn(new HashMap<>());
+            ctx.when(() -> BusinessServiceTemplateContext.computeBulkCreateResourceMethodServiceContext(eq(model), eq(allEntities)))
+                    .thenReturn(new HashMap<>(Map.of("bulk", true)));
+            ctx.when(() -> BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(eq(model), eq(allEntities)))
+                    .thenReturn(new HashMap<>());
+            ctx.when(() -> BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(eq(model), eq(allEntities)))
+                    .thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("businessservice/method/create-resource.ftl"), anyMap()
+            )).thenReturn("CREATE_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("businessservice/method/create-bulk-resource.ftl"), anyMap()
+            )).thenReturn("CREATE_BULK_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("businessservice/method/add-relation.ftl"), anyMap()
+            )).thenReturn("ADD_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("businessservice/method/remove-relation.ftl"), anyMap()
+            )).thenReturn("REMOVE_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("businessservice/business-service-class-template.ftl"), anyMap()
+            )).thenAnswer(inv -> {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> classCtx = inv.getArgument(1, Map.class);
+                classContextRef.set(classCtx);
+                return "CLASS_BODY";
+            });
+
+            generator.generate(model, "out");
+        }
+
+        final Map<String, Object> classContext = classContextRef.get();
+        assertNotNull(classContext);
+        assertEquals("CREATE_BULK_METHOD", classContext.get("createBulkResource"));
     }
     
 }

@@ -74,7 +74,8 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration)));
-        sb.append(BusinessServiceImports.getBaseImport(modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities)));
+        sb.append(BusinessServiceImports.getBaseImport(modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities)
+                || modelDefinition.isBulkCreateEnabled()));
 
         if (FieldUtils.isAnyIdFieldUUID(modelDefinition, entities)) {
             sb.append(String.format(IMPORT, ImportConstants.Java.UUID));
@@ -106,6 +107,7 @@ public class BusinessServiceGenerator implements CodeGenerator {
 
         final Map<String, Object> context = BusinessServiceTemplateContext.computeBusinessServiceContext(modelDefinition);
         context.put("createResource", createResourceMethod(modelDefinition));
+        context.put("createBulkResource", createBulkResourceMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
         context.put("removeRelationMethod", removeRelationMethod(modelDefinition));
         
@@ -123,6 +125,26 @@ public class BusinessServiceGenerator implements CodeGenerator {
         final Map<String, Object> context = BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(modelDefinition, entities);
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/create-resource.ftl", context);
+    }
+
+    /**
+     * Generates the bulk createResource method as a string for the given model definition.
+     *
+     * @param modelDefinition the model definition
+     * @return a string representation of the bulk createResource method, or null when disabled
+     */
+    private String createBulkResourceMethod(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkCreateEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = BusinessServiceTemplateContext.computeBulkCreateResourceMethodServiceContext(modelDefinition, entities);
+        if (context.isEmpty()) {
+            return null;
+        }
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("businessservice/method/create-bulk-resource.ftl", context);
     }
 
     /**

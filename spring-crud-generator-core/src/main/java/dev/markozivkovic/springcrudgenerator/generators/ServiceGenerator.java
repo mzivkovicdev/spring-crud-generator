@@ -77,7 +77,7 @@ public class ServiceGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeServicePackage(packagePath, packageConfiguration)));
         sb.append(ServiceImports.getBaseImport(
-                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities))
+                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities) || modelDefinition.isBulkCreateEnabled())
         );
         
         sb.append(ServiceImports.computeJpaServiceBaseImport(
@@ -118,6 +118,7 @@ public class ServiceGenerator implements CodeGenerator {
         context.put("getByIdMethod", generateGetByIdMethod(modelDefinition));
         context.put("getAllMethod", generateGetAllMethod(modelDefinition));
         context.put("createMethod", generateCreateMethod(modelDefinition));
+        context.put("createBulkMethod", generateCreateBulkMethod(modelDefinition));
         context.put("updateMethod", generateUpdateByIdMethod(modelDefinition));
         context.put("deleteMethod", generateDeleteByIdMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
@@ -217,6 +218,24 @@ public class ServiceGenerator implements CodeGenerator {
         this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/create.ftl", context);
+    }
+
+    /**
+     * Generates the bulk create method as a string for the given model definition.
+     *
+     * @param modelDefinition The model definition for which the bulk create method is to be generated.
+     * @return A string representation of the bulk create method, or null when disabled.
+     */
+    public String generateCreateBulkMethod(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkCreateEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = ServiceTemplateContext.computeBulkCreateContext(modelDefinition);
+        this.putCacheFlagToContext(context);
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/create-bulk.ftl", context);
     }
 
     /**

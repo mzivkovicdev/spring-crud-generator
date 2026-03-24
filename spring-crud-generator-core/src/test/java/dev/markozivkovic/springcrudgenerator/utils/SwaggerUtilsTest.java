@@ -248,32 +248,36 @@ class SwaggerUtilsTest {
     }
 
     @Test
-    @DisplayName("toSwaggerProperty: should set name and description when description is not blank")
-    void toSwaggerProperty_setsNameAndDescription() {
+    @DisplayName("toSwaggerProperty: should set name, description and example when provided")
+    void toSwaggerProperty_setsNameDescriptionAndExample() {
         final FieldDefinition field = new FieldDefinition();
         field.setName("id");
         field.setDescription("Primary identifier");
+        field.setExample("123");
         field.setType("String");
 
         final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field);
 
         assertEquals("id", property.get("name"));
         assertEquals("Primary identifier", property.get("description"));
+        assertEquals("123", property.get("example"));
         assertEquals("string", property.get("type"));
     }
 
     @Test
-    @DisplayName("toSwaggerProperty: should not set description when description is blank")
-    void toSwaggerProperty_ignoresBlankDescription() {
+    @DisplayName("toSwaggerProperty: should not set description/example when they are blank")
+    void toSwaggerProperty_ignoresBlankDescriptionAndExample() {
         final FieldDefinition field = new FieldDefinition();
         field.setName("id");
         field.setDescription("   ");
+        field.setExample(" ");
         field.setType("String");
 
         final Map<String, Object> property = SwaggerUtils.toSwaggerProperty(field);
 
         assertEquals("id", property.get("name"));
         assertFalse(property.containsKey("description"));
+        assertFalse(property.containsKey("example"));
         assertEquals("string", property.get("type"));
     }
 

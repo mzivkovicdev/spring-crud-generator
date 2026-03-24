@@ -63,6 +63,9 @@ properties:
     <#if p.description??>
     description: ${p.description}
     </#if><#t>
+    <#if p.example??>
+    example: ${p.example}
+    </#if><#t>
 </#list>
   <#if auditEnabled?? && auditEnabled>
   createdAt:

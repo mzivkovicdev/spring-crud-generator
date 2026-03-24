@@ -166,6 +166,9 @@ public class SwaggerUtils {
         if (StringUtils.isNotBlank(fieldDefinition.getDescription())) {
             property.put("description", fieldDefinition.getDescription());
         }
+        if (StringUtils.isNotBlank(fieldDefinition.getExample())) {
+            property.put("example", fieldDefinition.getExample());
+        }
 
         if (Objects.nonNull(fieldDefinition.getColumn()) || Objects.nonNull(fieldDefinition.getValidation())) {
             property.putAll(applySwaggerValidation(fieldDefinition));

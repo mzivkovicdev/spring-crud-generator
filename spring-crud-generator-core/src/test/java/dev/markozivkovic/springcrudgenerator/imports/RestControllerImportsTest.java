@@ -17,6 +17,8 @@ import org.mockito.Mockito;
 
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
+import dev.markozivkovic.springcrudgenerator.models.BulkCreateDefinition;
+import dev.markozivkovic.springcrudgenerator.models.BulkDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -52,6 +54,36 @@ class RestControllerImportsTest {
             final String result = RestControllerImports.computeControllerBaseImports(model, entities);
 
             assertEquals("", result);
+        }
+    }
+
+    @Test
+    @DisplayName("Bulk create enabled without relation collections → List import is added")
+    void computeControllerBaseImports_bulkCreateEnabled_addsListImport() {
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setFields(Collections.emptyList());
+        model.setBulk(new BulkDefinition().setCreate(new BulkCreateDefinition().setEnabled(true)));
+
+        final List<ModelDefinition> entities = Collections.emptyList();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionList(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.isAnyRelationCollectionSet(model.getFields()))
+                    .thenReturn(false);
+            final FieldDefinition idField = new FieldDefinition();
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                    .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+
+            final String result = RestControllerImports.computeControllerBaseImports(model, entities);
+
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"),
+                    "List import should be present when bulk create is enabled");
         }
     }
 
@@ -1527,6 +1559,82 @@ class RestControllerImportsTest {
             assertFalse(result.contains("StatusEnum"));
 
             enumImports.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    @DisplayName("Create-bulk test imports should include List and core MVC test imports")
+    void computeCreateBulkEndpointTestImports_includesListAndMvcImports() {
+
+        final String result = RestControllerImports.computeCreateBulkEndpointTestImports(false, "4");
+
+        assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringHttp.MEDIA_TYPE + ";"));
+        assertTrue(result.contains("import " + ImportConstants.SpringTest.RESULT_ACTIONS + ";"));
+    }
+
+    @Test
+    @DisplayName("Create-bulk project imports (swagger) should avoid relation/json/helper/enum specific imports")
+    void computeCreateBulkEndpointTestProjectImports_swagger_withRelationsAndJson_excludesUnusedImports() {
+
+        final String outputDir = "/out/swagger";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final FieldDefinition relationField = new FieldDefinition();
+        relationField.setType("Child");
+        relationField.setRelation(new RelationDefinition());
+
+        final FieldDefinition jsonField = new FieldDefinition();
+        jsonField.setType("JSON<Map<String,Object>>");
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("Parent");
+        model.setFields(List.of(relationField, jsonField));
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir)).thenReturn("com.api");
+            names.when(() -> ModelNameUtils.stripSuffix("Parent")).thenReturn("Parent");
+            names.when(() -> ModelNameUtils.computeOpenApiModelName("Parent")).thenReturn("ParentPayload");
+            names.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Parent")).thenReturn("ParentCreatePayload");
+
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(model.getFields())).thenReturn(List.of(relationField));
+
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.api", packageConfiguration)).thenReturn("com.api.business");
+            pkg.when(() -> PackageUtils.join("com.api.business", "ParentBusinessService")).thenReturn("com.api.business.ParentBusinessService");
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.api", packageConfiguration)).thenReturn("com.api.entity");
+            pkg.when(() -> PackageUtils.join("com.api.entity", "Parent")).thenReturn("com.api.entity.Parent");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.api", packageConfiguration)).thenReturn("com.api.service");
+            pkg.when(() -> PackageUtils.join("com.api.service", "ParentService")).thenReturn("com.api.service.ParentService");
+            pkg.when(() -> PackageUtils.computeGeneratedModelPackage("com.api", packageConfiguration, "parent"))
+                    .thenReturn("com.api.generated.model.parent");
+            pkg.when(() -> PackageUtils.join("com.api.generated.model.parent", "ParentPayload"))
+                    .thenReturn("com.api.generated.model.parent.ParentPayload");
+            pkg.when(() -> PackageUtils.join("com.api.generated.model.parent", "ParentCreatePayload"))
+                    .thenReturn("com.api.generated.model.parent.ParentCreatePayload");
+            pkg.when(() -> PackageUtils.computeRestMapperPackage("com.api", packageConfiguration)).thenReturn("com.api.rest.mapper");
+            pkg.when(() -> PackageUtils.join("com.api.rest.mapper", "ParentRestMapper")).thenReturn("com.api.rest.mapper.ParentRestMapper");
+            pkg.when(() -> PackageUtils.computeExceptionHandlerPackage("com.api", packageConfiguration)).thenReturn("com.api.exception");
+            pkg.when(() -> PackageUtils.join("com.api.exception", GeneratorConstants.GLOBAL_REST_EXCEPTION_HANDLER))
+                    .thenReturn("com.api.exception.GlobalRestExceptionHandler");
+
+            final String result = RestControllerImports.computeCreateBulkEndpointTestProjectImports(
+                    model, outputDir, true, packageConfiguration, true
+            );
+
+            assertTrue(result.contains("import com.api.generated.model.parent.ParentPayload;"));
+            assertTrue(result.contains("import com.api.generated.model.parent.ParentCreatePayload;"));
+            assertTrue(result.contains("import com.api.business.ParentBusinessService;"));
+            assertTrue(result.contains("import com.api.rest.mapper.ParentRestMapper;"));
+            assertTrue(result.contains("import com.api.exception.GlobalRestExceptionHandler;"));
+
+            assertFalse(result.contains("ChildInput"), "Relation input model import is not needed for create-bulk test");
+            assertFalse(result.contains(".helpers."), "Helper mappers are not needed for create-bulk test");
+            assertFalse(result.contains("StatusEnum"), "Enum imports are not needed for create-bulk test");
+            assertFalse(result.contains("import " + ImportConstants.Java.LIST + ";"), "List import is resolved via test imports for create-bulk test");
+            assertFalse(result.contains(ImportConstants.Java.COLLECTORS), "Collectors import is not needed for create-bulk test");
         }
     }
 

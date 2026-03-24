@@ -12,6 +12,7 @@ public class ${className} {
     <#if getByIdMethod?? && getByIdMethod?has_content>${getByIdMethod}</#if>
     <#if getAllMethod?? && getAllMethod?has_content>${getAllMethod}</#if>
     <#if createMethod?? && createMethod?has_content>${createMethod}</#if>
+    <#if createBulkMethod?? && createBulkMethod?has_content>${createBulkMethod}</#if>
     <#if updateMethod?? && updateMethod?has_content>${updateMethod}</#if>
     <#if deleteMethod?? && deleteMethod?has_content>${deleteMethod}</#if>
     <#if addRelationMethod?? && addRelationMethod?has_content>${addRelationMethod}</#if><#if removeRelationMethod?? && removeRelationMethod?has_content>${removeRelationMethod}</#if><#if getAllByIds?? && getAllByIds?has_content>${getAllByIds}</#if>

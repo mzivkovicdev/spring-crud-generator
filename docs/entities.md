@@ -29,6 +29,7 @@ entities:
 | `storageName` | string  | ✅        | Database table name (storage name).                             |
 | `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable) |
 | `audit`       | object  | optional  | Audit configuration for `created_at` / `updated_at` columns     |
+| `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create) |
 | `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries      |
 | `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)          |
 | `fields`      | list    | ✅        | List of fields for the entity                                   |
@@ -105,6 +106,22 @@ Runtime behavior:
 
 ---
 
+## Bulk create configuration
+
+Bulk create is opt-in per entity and generates `POST /{entity-path}/bulk`.
+
+Preferred shape:
+
+```yaml
+bulk:
+  create:
+    enabled: true
+```
+
+If `bulk` is absent, bulk create generation is disabled for that entity.
+
+---
+
 ## Field schema
 
 ```yaml
@@ -121,6 +138,7 @@ fields:
 | `name`        | string | ✅                  | Java field name                                                                                      |
 | `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, entity name for relations, or `List<BasicType>` / `Set<BasicType>`) |
 | `description` | string | optional            | Used for Javadoc and API documentation                                                               |
+| `example`     | string | optional            | Example value emitted in generated OpenAPI schema (`components/schemas/...`)                         |
 | `id`          | object | optional            | Marks the field as primary key and defines generation strategy                                       |
 | `column`      | object | optional            | Column constraints (unique, nullable, insertable, updateable, length etc.)                           |
 | `relation`    | object | optional            | Relationship definition (JPA-style)                                                                  |
