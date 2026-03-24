@@ -314,7 +314,9 @@ class GlobalExceptionHandlerGeneratorTest {
         );
 
         assertTrue(result.contains("import jakarta.validation.ConstraintViolationException;"));
+        assertTrue(result.contains("import org.springframework.web.method.annotation.HandlerMethodValidationException;"));
         assertTrue(result.contains("@ExceptionHandler(ConstraintViolationException.class)"));
+        assertTrue(result.contains("@ExceptionHandler(HandlerMethodValidationException.class)"));
     }
 
     @Test
@@ -332,6 +334,8 @@ class GlobalExceptionHandlerGeneratorTest {
         );
 
         assertFalse(result.contains("import jakarta.validation.ConstraintViolationException;"));
+        assertFalse(result.contains("import org.springframework.web.method.annotation.HandlerMethodValidationException;"));
         assertFalse(result.contains("@ExceptionHandler(ConstraintViolationException.class)"));
+        assertFalse(result.contains("@ExceptionHandler(HandlerMethodValidationException.class)"));
     }
 }

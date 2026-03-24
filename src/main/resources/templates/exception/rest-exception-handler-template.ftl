@@ -17,6 +17,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+<#if hasValidation>
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+</#if><#t>
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 <#if isSpringBoot3>
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -96,6 +99,18 @@ public class GlobalRestExceptionHandler {
     <#if hasValidation>
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<HttpResponse> constraintViolationError(final ConstraintViolationException e) {
+
+        return new ResponseEntity<>(
+                new HttpResponse(
+                        String.format(EXTENDED_MESSAGE_FORMAT, VALIDATION_FAILED_MESSAGE, e.getMessage())<#if isDetailed>,
+                        HttpStatus.BAD_REQUEST</#if>
+                ),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<HttpResponse> handlerMethodValidationError(final HandlerMethodValidationException e) {
 
         return new ResponseEntity<>(
                 new HttpResponse(
