@@ -37,6 +37,7 @@ class ${className} {
     }
 
     <#if createResource?? && createResource?has_content>${createResource}</#if>
+    <#if createBulkResource?? && createBulkResource?has_content>${createBulkResource}</#if>
     <#if addRelationMethod?? && addRelationMethod?has_content>${addRelationMethod}</#if>
     <#if removeRelationMethod?? && removeRelationMethod?has_content>${removeRelationMethod}</#if>
 
