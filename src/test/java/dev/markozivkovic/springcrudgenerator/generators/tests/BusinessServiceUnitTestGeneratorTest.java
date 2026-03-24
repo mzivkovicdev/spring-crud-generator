@@ -245,4 +245,92 @@ class BusinessServiceUnitTestGeneratorTest {
             ));
         }
     }
+
+    @Test
+    void generate_shouldIncludeBulkCreateResourceMethod_whenBulkCreateEnabled() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final List<ModelDefinition> allEntities = List.of();
+        final BusinessServiceUnitTestGenerator gen = new BusinessServiceUnitTestGenerator(cfg, allEntities, pkgCfg);
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final FieldDefinition nonRelField = mock(FieldDefinition.class);
+        when(nonRelField.getRelation()).thenReturn(null);
+        final FieldDefinition relField = mock(FieldDefinition.class);
+        when(relField.getRelation()).thenReturn(mock(RelationDefinition.class));
+
+        final List<FieldDefinition> fields = List.of(idField, nonRelField, relField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+        when(model.isBulkCreateEnabled()).thenReturn(true);
+
+        final TestConfiguration testsCfg = mock(TestConfiguration.class);
+        when(cfg.getTests()).thenReturn(testsCfg);
+        when(testsCfg.getDataGenerator()).thenReturn(DataGeneratorEnum.PODAM);
+
+        final TestDataGeneratorConfig dgConfig = mock(TestDataGeneratorConfig.class);
+
+        final Map<String, Object> testContext = new HashMap<>(Map.of("tKey", "tVal"));
+        final Map<String, Object> createCtx = new HashMap<>(Map.of("createKey", "createVal"));
+        final Map<String, Object> bulkCtx = new HashMap<>(Map.of("bulkKey", "bulkVal"));
+        final Map<String, Object> addCtx = new HashMap<>(Map.of("addKey", "addVal"));
+        final Map<String, Object> removeCtx = new HashMap<>(Map.of("removeKey", "removeVal"));
+        final Map<String, Object> dgCtxMap = Map.of("dgKey", "dgVal");
+
+        try (final MockedStatic<UnitTestUtils> unitUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<BusinessServiceTemplateContext> bsTemplateCtx = mockStatic(BusinessServiceTemplateContext.class);
+             final MockedStatic<DataGeneratorTemplateContext> dgTemplateCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            unitUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(fields)).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(fields)).thenReturn(List.of("ManyToOne"));
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields)).thenReturn(idField);
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("src/main/java")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeBusinessServicePackage("com.example.app", pkgCfg)).thenReturn("com.example.app.service");
+            pkg.when(() -> PackageUtils.computeBusinessServiceSubPackage(pkgCfg)).thenReturn("service");
+
+            bsTemplateCtx.when(() -> BusinessServiceTemplateContext.computeBusinessServiceTestContext(model, cfg, pkgCfg, "src/main/java"))
+                    .thenReturn(testContext);
+            bsTemplateCtx.when(() -> BusinessServiceTemplateContext.computeCreateResourceMethodServiceContext(model, allEntities))
+                    .thenReturn(createCtx);
+            bsTemplateCtx.when(() -> BusinessServiceTemplateContext.computeBulkCreateResourceMethodServiceContext(model, allEntities))
+                    .thenReturn(bulkCtx);
+            bsTemplateCtx.when(() -> BusinessServiceTemplateContext.computeAddRelationMethodServiceContext(model, allEntities))
+                    .thenReturn(addCtx);
+            bsTemplateCtx.when(() -> BusinessServiceTemplateContext.computeRemoveRelationMethodServiceContext(model, allEntities))
+                    .thenReturn(removeCtx);
+
+            unitUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(DataGeneratorEnum.PODAM)).thenReturn(dgConfig);
+            dgTemplateCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(dgConfig)).thenReturn(dgCtxMap);
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/businessservice/method/create-resource.ftl"), anyMap()))
+                    .thenReturn("//create");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/businessservice/method/create-bulk-resource.ftl"), anyMap()))
+                    .thenReturn("//bulk");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/businessservice/method/add-relation.ftl"), anyMap()))
+                    .thenReturn("//add");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/businessservice/method/remove-relation.ftl"), anyMap()))
+                    .thenReturn("//remove");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/businessservice/businessservice-test-class-template.ftl"), anyMap()))
+                    .thenReturn("//class");
+
+            gen.generate(model, "src/main/java");
+
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/businessservice/method/create-bulk-resource.ftl"), anyMap()));
+            tpl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("test/unit/businessservice/businessservice-test-class-template.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return "//bulk".equals(map.get(TemplateContextConstants.CREATE_BULK_RESOURCE));
+                    })
+            ));
+        }
+    }
 }

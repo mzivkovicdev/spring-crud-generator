@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -167,6 +168,85 @@ class ServiceUnitTestGeneratorTest {
                         return Boolean.TRUE.equals(map.get(TemplateContextConstants.IS_SPRING_BOOT_3));
                     })
             ));
+        }
+    }
+
+    @Test
+    void generate_shouldIncludeBulkCreateMethod_whenBulkCreateEnabled() {
+
+        final CrudConfiguration cfg = cfgWithTestsEnabled();
+        when(cfg.getSpringBootVersion()).thenReturn("3.1.0");
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("Long");
+        when(idField.getName()).thenReturn("id");
+
+        final ModelDefinition model = mock(ModelDefinition.class);
+        when(model.getName()).thenReturn("CampaignModel");
+        when(model.getFields()).thenReturn(List.of(idField));
+        when(model.isBulkCreateEnabled()).thenReturn(true);
+
+        final ServiceUnitTestGenerator sut = new ServiceUnitTestGenerator(cfg, List.of(), pkgCfg);
+
+        try (final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> modelNameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<PackageUtils> pkgUtils = mockStatic(PackageUtils.class);
+             final MockedStatic<ServiceImports> imports = mockStatic(ServiceImports.class);
+             final MockedStatic<DataGeneratorTemplateContext> dataCtx = mockStatic(DataGeneratorTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> ftl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> fileWriter = mockStatic(FileWriterUtils.class);
+             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
+
+            unitTestUtils.when(() -> UnitTestUtils.isUnitTestsEnabled(cfg)).thenReturn(true);
+            unitTestUtils.when(() -> UnitTestUtils.isInstancioEnabled(cfg)).thenReturn(false);
+            unitTestUtils.when(() -> UnitTestUtils.resolveGeneratorConfig(any())).thenReturn(mock(TestDataGeneratorConfig.class));
+            sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractFieldNamesWithoutRelations(model.getFields())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.extractCollectionRelationNames(model)).thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNames(model.getFields())).thenReturn(List.of("name"));
+            fieldUtils.when(() -> FieldUtils.hasCollectionRelation(model, List.of())).thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasRelation(model, List.of())).thenReturn(false);
+
+            modelNameUtils.when(() -> ModelNameUtils.stripSuffix("CampaignModel")).thenReturn("Campaign");
+            pkgUtils.when(() -> PackageUtils.getPackagePathFromOutputDir(anyString())).thenReturn("com/acme");
+            pkgUtils.when(() -> PackageUtils.computeServicePackage("com/acme", pkgCfg)).thenReturn("com.acme.service");
+            pkgUtils.when(() -> PackageUtils.computeServiceSubPackage(pkgCfg)).thenReturn("service");
+
+            imports.when(() -> ServiceImports.getTestBaseImport(model)).thenReturn("import base;");
+            imports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
+                    eq(model), eq("/project/src/main/java/com/acme"), eq(ServiceImportScope.SERVICE_TEST), eq(pkgCfg)
+            )).thenReturn("import project;");
+            imports.when(() -> ServiceImports.computeTestServiceImports(eq(model), eq(List.of()), eq(false), eq(true)))
+                    .thenReturn("import test;");
+
+            dataCtx.when(() -> DataGeneratorTemplateContext.computeDataGeneratorContext(any()))
+                    .thenReturn(java.util.Map.of());
+
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/create.ftl"), anyMap()))
+                    .thenReturn("//create");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/create-bulk.ftl"), anyMap()))
+                    .thenReturn("//bulk");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/service-test-class-template.ftl"), anyMap()))
+                    .thenReturn("//class");
+
+            sut.generate(model, "/project/src/main/java/com/acme");
+
+            ftl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("test/unit/service/method/create-bulk.ftl"),
+                    anyMap()
+            ), times(1));
+            ftl.verify(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("test/unit/service/service-test-class-template.ftl"),
+                    argThat(ctx -> {
+                        final Map<String, Object> map = (Map<String, Object>) ctx;
+                        return "//bulk".equals(map.get("createBulkMethod"));
+                    })
+            ), times(1));
         }
     }
 }

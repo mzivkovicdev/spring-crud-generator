@@ -123,6 +123,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         context.put("getByIdMethod", this.generateGetByIdMethod(modelDefinition));
         context.put("getAllMethod", this.generateGetAllMethod(modelDefinition));
         context.put("createMethod", this.generateCreateMethod(modelDefinition));
+        context.put("createBulkMethod", this.generateCreateBulkMethod(modelDefinition));
         context.put("updateMethod", this.generateUpdateMethod(modelDefinition));
         context.put("deleteMethod", this.generateDeleteByIdMethod(modelDefinition));
         context.put("addRelationMethod", this.addRelationMethod(modelDefinition));
@@ -242,6 +243,25 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/create.ftl", context);
+    }
+
+    /**
+     * Generates the bulk create method as a string for the given model definition.
+     *
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a string representation of the bulk create method unit test, or null when disabled
+     */
+    private String generateCreateBulkMethod(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkCreateEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = ServiceTemplateContext.computeBulkCreateContext(modelDefinition);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/create-bulk.ftl", context);
     }
 
     /**

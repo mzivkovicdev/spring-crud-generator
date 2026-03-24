@@ -93,6 +93,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         this.generateDeleteByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, isGlobalExceptionHandlerEnabled);
         this.generateUpdateByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
         this.generateCreateEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
+        this.generateCreateBulkEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
         this.generateAddRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
         this.generateRemoveRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
     }
@@ -305,6 +306,64 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/create-resource.ftl",
+                context
+        ));
+
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
+    }
+
+    /**
+     * Generates a unit test for the bulk create endpoint of the REST controller
+     * for the given model definition.
+     *
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param swagger                         indicates if the swagger and open API generator is enabled
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
+     */
+    private void generateCreateBulkEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+            final String packagePath, final String modelWithoutSuffix, final Boolean swagger, final Boolean isGlobalExceptionHandlerEnabled) {
+
+        if (!modelDefinition.isBulkCreateEnabled()) {
+            return;
+        }
+
+        final StringBuilder sb = new StringBuilder();
+        final String className = String.format("%sCreateBulkMockMvcTest", modelWithoutSuffix);
+        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+
+        final Map<String, Object> context = RestControllerTemplateContext.computeCreateTestEndpointContext(modelDefinition, entities);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
+
+        context.put("basePath", basePath);
+        context.put("controllerClassName", controllerClassName);
+        context.put("className", className);
+        context.put("strippedModelName", modelWithoutSuffix);
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put("swagger", swagger);
+        context.put("testImports", RestControllerImports.computeCreateBulkEndpointTestImports(UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()));
+        context.put("projectImports", RestControllerImports.computeCreateBulkEndpointTestProjectImports(
+                modelDefinition, outputDir, swagger, packageConfiguration, isGlobalExceptionHandlerEnabled
+        ));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        context.put("fieldNames", FieldUtils.extractFieldNamesWithoudId(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
+
+        ValidationContextBuilder.contribute(
+            modelDefinition, context,
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_FIELD_NAME)),
+            String.format("%s", context.get(TemplateContextConstants.DATA_GENERATOR_SINGLE_OBJ).toString())
+        );
+
+        sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
+        sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/controller/endpoint/create-bulk-resource.ftl",
                 context
         ));
 
