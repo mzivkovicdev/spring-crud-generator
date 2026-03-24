@@ -2,6 +2,12 @@
 <#assign modelName = model.modelName>
 <#assign serviceClass = model.modelService>
 
+    /**
+     * Bulk creates new {@link ${modelName}}.
+     *
+     * @param models list of ${modelName?uncap_first} 
+     * @return the created {@link List} of {@link ${modelName}}
+     */
     ${transactionalAnnotation}
     public List<${modelName}> bulkCreate(final List<${modelName}> models) {
 
