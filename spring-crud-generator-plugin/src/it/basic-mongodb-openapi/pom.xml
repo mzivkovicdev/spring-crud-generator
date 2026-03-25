@@ -169,7 +169,6 @@
                                     <inputSpecFile>${project.basedir}/src/main/resources/crud-spec.yaml</inputSpecFile>
                                     <outputDir>${project.basedir}/src/main/java/com/example/itmongo</outputDir>
                                     <forceRegeneration>true</forceRegeneration>
-                                    <licenseKey>1234-1234-X123-X555</licenseKey>
                                 </configuration>
                             </execution>
                         </executions>
