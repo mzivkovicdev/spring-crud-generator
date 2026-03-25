@@ -12,6 +12,7 @@ This directory contains the full project documentation.
 - Need package customization? → [Packages configuration](./packages.md)
 - Want migration behavior explained? → [Migrations](./migrations.md)
 - Need incremental generation details? → [Incremental generation](./incremental-generation.md)
+- Need a neutral product comparison? → [Spring CRUD Generator vs Bootify](./comparison-with-bootify.md)
 - Want autocomplete/validation? → [crud-spec.schema.json](./schema/crud-spec.schema.json)
 - Need a complete example? → [crud-spec-full.yaml](./examples/crud-spec-full.yaml)
 
