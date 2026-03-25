@@ -11,13 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
@@ -3643,132 +3639,6 @@ class FieldUtilsTest {
     }
 
     @Test
-    @DisplayName("hasAnyColumnValidation returns false when no field has column validations")
-    void hasAnyColumnValidation_shouldReturnFalse_whenNoValidations() {
-
-        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
-        f1.setColumn(null);
-
-        final ColumnDefinition column = new ColumnDefinition();
-        column.setNullable(true);
-        column.setLength(null);
-        final FieldDefinition f2 = fieldWithNameAndType("age", "Integer");
-        f2.setColumn(column);
-
-        final List<FieldDefinition> fields = List.of(f1, f2);
-
-        final boolean result = FieldUtils.hasAnyColumnValidation(fields);
-
-        assertFalse(result);
-    }
-
-    @Test
-    @DisplayName("hasAnyColumnValidation returns true when any field has nullable=false")
-    void hasAnyColumnValidation_shouldReturnTrue_whenAnyFieldNonNullable() {
-
-        final ColumnDefinition column = new ColumnDefinition();
-        column.setNullable(false);
-        column.setLength(null);
-
-        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
-        f1.setColumn(column);
-
-        final List<FieldDefinition> fields = List.of(f1);
-
-        final boolean result = FieldUtils.hasAnyColumnValidation(fields);
-
-        assertTrue(result);
-    }
-
-    @Test
-    @DisplayName("hasAnyColumnValidation returns true when any field has length specified")
-    void hasAnyColumnValidation_shouldReturnTrue_whenAnyFieldHasLength() {
-
-        final ColumnDefinition column = new ColumnDefinition();
-        column.setNullable(true);
-        column.setLength(100);
-
-        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
-        f1.setColumn(column);
-
-        final List<FieldDefinition> fields = List.of(f1);
-
-        final boolean result = FieldUtils.hasAnyColumnValidation(fields);
-
-        assertTrue(result);
-    }
-
-    @Test
-    void hasAnyFieldValidation_shouldReturnFalse_forEmptyList() {
-        assertFalse(FieldUtils.hasAnyFieldValidation(List.of()));
-    }
-
-    @Test
-    void hasAnyFieldValidation_shouldReturnFalse_whenAllFieldsHaveNullValidation() {
-        
-        final List<FieldDefinition> fields = List.of(
-                fieldWithValidation(null),
-                fieldWithValidation(null)
-        );
-
-        assertFalse(FieldUtils.hasAnyFieldValidation(fields));
-    }
-
-    @Test
-    void hasAnyFieldValidation_shouldReturnFalse_whenValidationObjectExistsButAllFlagsNullOrFalse() {
-        final ValidationDefinition v = new ValidationDefinition();
-        v.setRequired(false);
-        v.setNotBlank(false);
-        v.setNotEmpty(false);
-        v.setEmail(false);
-
-        final List<FieldDefinition> fields = List.of(fieldWithValidation(v));
-
-        assertFalse(FieldUtils.hasAnyFieldValidation(fields));
-    }
-
-    private static Stream<Consumer<ValidationDefinition>> anySingleValidationEnabled() {
-        return Stream.of(
-                v -> v.setRequired(true),
-                v -> v.setNotBlank(true),
-                v -> v.setNotEmpty(true),
-                v -> v.setMinLength(1),
-                v -> v.setMaxLength(10),
-                v -> v.setMin(BigDecimal.ONE),
-                v -> v.setMax(new BigDecimal("999")),
-                v -> v.setMinItems(1),
-                v -> v.setMaxItems(5),
-                v -> v.setEmail(true)
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("anySingleValidationEnabled")
-    void hasAnyFieldValidation_shouldReturnTrue_whenAnyValidationIsDefined(final Consumer<ValidationDefinition> enable) {
-        final ValidationDefinition v = new ValidationDefinition();
-        enable.accept(v);
-
-        List<FieldDefinition> fields = List.of(fieldWithValidation(v));
-
-        assertTrue(FieldUtils.hasAnyFieldValidation(fields));
-    }
-
-    @Test
-    void hasAnyFieldValidation_shouldReturnTrue_whenOnlyOneFieldAmongManyHasValidation() {
-        
-        final FieldDefinition noVal1 = fieldWithValidation(null);
-        final FieldDefinition noVal2 = fieldWithValidation(null);
-
-        final ValidationDefinition v = new ValidationDefinition();
-        v.setMaxLength(250);
-        final FieldDefinition withVal = fieldWithValidation(v);
-
-        final List<FieldDefinition> fields = List.of(noVal1, noVal2, withVal);
-
-        assertTrue(FieldUtils.hasAnyFieldValidation(fields));
-    }
-
-    @Test
     @DisplayName("extractRequiredFields: returns only names of fields where validation.required = true")
     void extractRequiredFields_shouldReturnOnlyRequiredFieldNames() {
 
@@ -3885,44 +3755,6 @@ class FieldUtilsTest {
         final List<FieldDefinition> fields = List.of(f1);
 
         final boolean result = FieldUtils.isAnyFieldNonNullable(fields);
-
-        assertTrue(result);
-    }
-
-    @Test
-    @DisplayName("hasAnyFieldLengthValidation returns false when no field has length defined")
-    void hasAnyFieldLengthValidation_shouldReturnFalse_whenNoLengthDefined() {
-
-        final FieldDefinition f1 = fieldWithNameAndType("name", "String");
-        f1.setColumn(null);
-
-        final ColumnDefinition column = new ColumnDefinition();
-        column.setNullable(false);
-        column.setLength(null);
-        final FieldDefinition f2 = fieldWithNameAndType("description", "String");
-        f2.setColumn(column);
-
-        final List<FieldDefinition> fields = List.of(f1, f2);
-
-        final boolean result = FieldUtils.hasAnyFieldLengthValidation(fields);
-
-        assertFalse(result);
-    }
-
-    @Test
-    @DisplayName("hasAnyFieldLengthValidation returns true when at least one field has length defined")
-    void hasAnyFieldLengthValidation_shouldReturnTrue_whenAnyFieldHasLength() {
-
-        final ColumnDefinition column = new ColumnDefinition();
-        column.setNullable(true);
-        column.setLength(255);
-
-        final FieldDefinition f1 = fieldWithNameAndType("description", "String");
-        f1.setColumn(column);
-
-        final List<FieldDefinition> fields = List.of(f1);
-
-        final boolean result = FieldUtils.hasAnyFieldLengthValidation(fields);
 
         assertTrue(result);
     }

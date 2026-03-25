@@ -7,7 +7,9 @@ import java.util.Objects;
 import dev.markozivkovic.springcrudgenerator.constants.AnnotationConstants;
 import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
+import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 import dev.markozivkovic.springcrudgenerator.utils.RegexUtils;
 
 public final class FieldValidationResolver {
@@ -118,6 +120,76 @@ public final class FieldValidationResolver {
             default:
                 break;
         }
+    }
+
+    /**
+     * Checks if any of the fields in the given list have a column validation of type 'not null' or 'length'.
+     *
+     * @param fields The list of fields to check for column validations.
+     * @return True if any of the fields has a column validation of type 'not null' or 'length', false otherwise.
+     */
+    public static boolean hasAnyColumnValidation(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ColumnDefinition column = field.getColumn();
+                    return Objects.nonNull(column) && (Boolean.FALSE.equals(column.getNullable()) ||
+                            Objects.nonNull(column.getLength()));
+                });
+    }
+
+    /**
+     * Checks if any of the fields in the given list have any validation defined.
+     *
+     * A field is considered to have validation defined if it has any of the following defined:
+     * - required
+     * - notBlank
+     * - notEmpty
+     * - minLength
+     * - maxLength
+     * - min
+     * - max
+     * - minItems
+     * - maxItems
+     * - email
+     *
+     * @param fields The list of fields to check for validations.
+     * @return True if any of the fields has any validation defined, false otherwise.
+     */
+    public static boolean hasAnyFieldValidation(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ValidationDefinition validation = field.getValidation();
+                    final boolean isValidationDefined = Objects.nonNull(validation) && (
+                            Boolean.TRUE.equals(validation.isRequired()) ||
+                            Boolean.TRUE.equals(validation.isNotBlank()) ||
+                            Boolean.TRUE.equals(validation.isNotEmpty()) ||
+                            Objects.nonNull(validation.getMinLength()) ||
+                            Objects.nonNull(validation.getMaxLength()) ||
+                            Objects.nonNull(validation.getMin()) ||
+                            Objects.nonNull(validation.getMax()) ||
+                            Objects.nonNull(validation.getMinItems()) ||
+                            Objects.nonNull(validation.getMaxItems()) ||
+                            Boolean.TRUE.equals(validation.isEmail())
+                    );
+                    return isValidationDefined;
+                });
+    }
+
+    /**
+     * Checks if any of the fields in the given list have a column definition with length defined.
+     *
+     * @param fields The list of fields to check for length validations.
+     * @return True if any of the fields have a column definition with length defined, false otherwise.
+     */
+    public static boolean hasAnyFieldLengthValidation(final List<FieldDefinition> fields) {
+
+        return fields.stream()
+                .anyMatch(field -> {
+                    final ColumnDefinition column = field.getColumn();
+                    return Objects.nonNull(column) && Objects.nonNull(column.getLength());
+                });
     }
 
     /**

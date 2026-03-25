@@ -29,6 +29,7 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
@@ -43,7 +44,8 @@ class TransferObjectImportsTest {
         final ModelDefinition model = new ModelDefinition();
         model.setFields(Collections.emptyList());
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -65,7 +67,8 @@ class TransferObjectImportsTest {
         final ModelDefinition model = new ModelDefinition();
         model.setFields(List.of(new FieldDefinition()));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(true);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -90,7 +93,8 @@ class TransferObjectImportsTest {
         final ModelDefinition model = new ModelDefinition();
         model.setFields(List.of(new FieldDefinition()));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigDecimal(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldBigInteger(anyList())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.isAnyFieldLocalDate(anyList())).thenReturn(false);
@@ -454,9 +458,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(Collections.emptyList());
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -471,9 +476,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(new FieldDefinition()));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -490,9 +496,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(new FieldDefinition()));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(true);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(true);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -509,9 +516,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(new FieldDefinition()));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(true);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(true);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -535,9 +543,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -559,9 +568,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -583,9 +593,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -607,9 +618,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -631,9 +643,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -655,9 +668,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -679,9 +693,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -703,9 +718,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -727,9 +743,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -751,9 +768,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -775,9 +793,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -799,9 +818,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -823,9 +843,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -847,9 +868,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -871,9 +893,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
@@ -897,9 +920,10 @@ class TransferObjectImportsTest {
         final ModelDefinition modelDefinition = new ModelDefinition();
         modelDefinition.setFields(List.of(fieldDefinition));
 
-        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = Mockito.mockStatic(FieldValidationResolver.class)) {
             fieldUtils.when(() -> FieldUtils.isAnyFieldNonNullable(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldLengthValidation(anyList())).thenReturn(false);
 
             final String result = TransferObjectImports.computeValidationImport(modelDefinition);
 
