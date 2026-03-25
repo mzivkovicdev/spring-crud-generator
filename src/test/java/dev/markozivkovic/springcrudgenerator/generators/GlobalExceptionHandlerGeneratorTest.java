@@ -29,6 +29,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.GraphQLDef
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -104,6 +105,7 @@ class GlobalExceptionHandlerGeneratorTest {
 
         try (final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = mockStatic(FieldValidationResolver.class);
              final MockedStatic<ExceptionImports> exImports = mockStatic(ExceptionImports.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl =
                      mockStatic(FreeMarkerTemplateProcessorUtils.class, invocation -> {
@@ -118,8 +120,8 @@ class GlobalExceptionHandlerGeneratorTest {
             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList())).thenReturn(List.of("REL"));
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(anyList())).thenReturn(true);
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldValidation(anyList())).thenReturn(true);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyColumnValidation(anyList())).thenReturn(false);
             sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
@@ -228,6 +230,7 @@ class GlobalExceptionHandlerGeneratorTest {
 
         try (final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = mockStatic(FieldValidationResolver.class);
              final MockedStatic<ExceptionImports> exImports = mockStatic(ExceptionImports.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl =
                      mockStatic(FreeMarkerTemplateProcessorUtils.class, invocation -> {
@@ -242,8 +245,8 @@ class GlobalExceptionHandlerGeneratorTest {
             final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList())).thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyColumnValidation(anyList())).thenReturn(false);
             sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
@@ -324,14 +327,15 @@ class GlobalExceptionHandlerGeneratorTest {
 
         try (final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = mockStatic(FieldValidationResolver.class);
              final MockedStatic<ExceptionImports> exImports = mockStatic(ExceptionImports.class);
              final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
              final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
              final MockedStatic<SpringBootVersionUtils> sbv = mockStatic(SpringBootVersionUtils.class)) {
 
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(anyList())).thenReturn(Collections.emptyList());
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(anyList())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(anyList())).thenReturn(true);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldValidation(anyList())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyColumnValidation(anyList())).thenReturn(true);
             sbv.when(() -> SpringBootVersionUtils.isSpringBoot3("3.1.0")).thenReturn(true);
 
             pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out"))
