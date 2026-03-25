@@ -139,7 +139,7 @@ public class ModelImports {
         }
 
         final boolean hasAnyFieldColumn = FieldUtils.isAnyFieldJson(fields) || fields.stream()
-                .anyMatch(field -> Objects.nonNull(field.getColumn()));
+                .anyMatch(field -> Objects.nonNull(field.getColumn()) && Objects.isNull(field.getRelation()));
         final boolean isAuditingEnabled = Objects.nonNull(modelDefinition.getAudit()) && modelDefinition.getAudit().isEnabled();
         final boolean isSoftDeleteEnabled = Boolean.TRUE.equals(modelDefinition.getSoftDelete());
         final boolean isAnyFieldSimpleCollection = FieldUtils.isAnyFieldSimpleCollection(fields);
