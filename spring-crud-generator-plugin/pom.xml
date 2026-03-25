@@ -25,10 +25,6 @@
       <artifactId>spring-crud-generator-mongodb</artifactId>
     </dependency>
     <dependency>
-      <groupId>dev.markozivkovic</groupId>
-      <artifactId>spring-crud-generator-licensing</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
       <scope>provided</scope>

@@ -24,7 +24,6 @@ import dev.markozivkovic.springcrudgenerator.generators.CodeGenerator;
 import dev.markozivkovic.springcrudgenerator.generators.MongockMigrationGenerator;
 import dev.markozivkovic.springcrudgenerator.generators.MongoEntityGenerator;
 import dev.markozivkovic.springcrudgenerator.generators.MongoRepositoryGenerator;
-import dev.markozivkovic.springcrudgenerator.licensing.LicenseFeature;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -34,7 +33,6 @@ import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
  * MongoDB {@link DatabaseSupport} implementation.
  * Registered via META-INF/services for automatic discovery by {@link DatabaseSupportRegistry}.
  *
- * <p>MongoDB support requires a valid license key.
  */
 public class MongoDatabaseSupport implements DatabaseSupport {
 
@@ -55,15 +53,5 @@ public class MongoDatabaseSupport implements DatabaseSupport {
         generators.put("mongo-repository", new MongoRepositoryGenerator(packages));
         generators.put("mongock-migration-script", new MongockMigrationGenerator(config, metadata, entities));
         return generators;
-    }
-
-    @Override
-    public boolean requiresLicense() {
-        return true;
-    }
-
-    @Override
-    public LicenseFeature requiredFeature() {
-        return LicenseFeature.MONGODB;
     }
 }

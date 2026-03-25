@@ -33,7 +33,6 @@
   </scm>
 
   <modules>
-    <module>spring-crud-generator-licensing</module>
     <module>spring-crud-generator-core</module>
     <module>spring-crud-generator-sql</module>
     <module>spring-crud-generator-mongodb</module>
@@ -123,11 +122,6 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${mockito-core.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>dev.markozivkovic</groupId>
-        <artifactId>spring-crud-generator-licensing</artifactId>
-        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>dev.markozivkovic</groupId>

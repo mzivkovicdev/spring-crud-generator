@@ -40,13 +40,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.markozivkovic.springcrudgenerator.generators.SpringCrudGenerator;
 import dev.markozivkovic.springcrudgenerator.generators.tests.SpringCrudTestGenerator;
-import dev.markozivkovic.springcrudgenerator.licensing.LicenseValidator;
 import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
 import dev.markozivkovic.springcrudgenerator.models.GeneratorState;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
-import dev.markozivkovic.springcrudgenerator.spi.DatabaseSupport;
-import dev.markozivkovic.springcrudgenerator.spi.DatabaseSupportRegistry;
 import dev.markozivkovic.springcrudgenerator.utils.CrudMojoUtils;
 import dev.markozivkovic.springcrudgenerator.utils.DependencyCheckUtils;
 import dev.markozivkovic.springcrudgenerator.utils.GeneratorStateUtils;
@@ -85,9 +82,6 @@ public class CrudGeneratorMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
-
-    @Parameter(property = "licenseKey")
-    private String licenseKey;
 
     public void execute() throws MojoExecutionException {
 
@@ -130,11 +124,6 @@ public class CrudGeneratorMojo extends AbstractMojo {
                 return;
             }
             
-            final DatabaseSupport dbSupport = DatabaseSupportRegistry.resolve(spec.getConfiguration().getDatabase());
-            if (dbSupport.requiresLicense()) {
-                LicenseValidator.validate(licenseKey, dbSupport.requiredFeature());
-            }
-
             final SpringCrudGenerator generator = new SpringCrudGenerator(
                     spec.getConfiguration(), entitiesToGenerate, projectMetadata, spec.getPackages()
             );

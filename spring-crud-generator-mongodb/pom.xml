@@ -10,15 +10,11 @@
   <artifactId>spring-crud-generator-mongodb</artifactId>
   <packaging>jar</packaging>
   <name>spring-crud-generator-mongodb</name>
-  <description>MongoDB database support for spring-crud-generator (requires license)</description>
+  <description>MongoDB database support for spring-crud-generator</description>
   <dependencies>
     <dependency>
       <groupId>dev.markozivkovic</groupId>
       <artifactId>spring-crud-generator-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>dev.markozivkovic</groupId>
-      <artifactId>spring-crud-generator-licensing</artifactId>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

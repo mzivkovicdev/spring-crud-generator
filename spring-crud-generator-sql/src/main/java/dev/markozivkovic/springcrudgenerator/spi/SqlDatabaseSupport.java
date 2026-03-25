@@ -53,9 +53,4 @@ public class SqlDatabaseSupport implements DatabaseSupport {
         generators.put("migration-script", new MigrationScriptGenerator(config, metadata, entities));
         return generators;
     }
-
-    @Override
-    public boolean requiresLicense() {
-        return false;
-    }
 }

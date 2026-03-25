@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import dev.markozivkovic.springcrudgenerator.generators.CodeGenerator;
-import dev.markozivkovic.springcrudgenerator.licensing.LicenseFeature;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
@@ -62,22 +61,4 @@ public interface DatabaseSupport {
         PackageConfiguration packages
     );
 
-    /**
-     * Returns true if this database support requires a valid license key.
-     *
-     * @return true if a license is required (e.g., MongoDB, Cassandra)
-     */
-    default boolean requiresLicense() {
-        return false;
-    }
-
-    /**
-     * Returns the {@link LicenseFeature} required to use this database support.
-     * Only meaningful when {@link #requiresLicense()} returns true.
-     *
-     * @return the required license feature, or null if no license is required
-     */
-    default LicenseFeature requiredFeature() {
-        return null;
-    }
 }
