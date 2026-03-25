@@ -21,9 +21,7 @@ package dev.markozivkovic.springcrudgenerator.licensing;
  */
 public enum LicenseFeature {
 
-    MONGODB("MongoDB document generation and repository support"),
-    CASSANDRA("Cassandra table generation and repository support"),
-    ENTERPRISE("Enterprise features including advanced caching and monitoring");
+    MONGODB("MongoDB document generation and repository support");
 
     private final String description;
 
