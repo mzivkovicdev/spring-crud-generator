@@ -146,14 +146,14 @@ services:
         ports:
             - "${dbPort}:27017"
         healthcheck:
-            test: ["CMD-SHELL", "mongosh --quiet --eval \"db.runCommand({ ping: 1 }).ok\" | grep 1"]
+            test: ["CMD-SHELL", "if command -v mongosh >/dev/null 2>&1; then mongosh --quiet --eval \"db.adminCommand({ ping: 1 })\"; else mongo --quiet --eval \"db.adminCommand({ ping: 1 })\"; fi"]
             interval: 10s
             timeout: 5s
             retries: 30
             start_period: 45s
         </#if>
         volumes:
-            - db_data:/var/<#if dbType == "mssql">opt<#else>lib</#if>/<#if dbType == "postgresql">postgresql<#elseif dbType == "mysql" || dbType == "mariadb">mysql<#elseif dbType == "mssql">mssql<#elseif dbType == "mongodb">mongodb</#if>
+            - db_data:/<#if dbType == "postgresql">var/lib/postgresql<#elseif dbType == "mysql" || dbType == "mariadb">var/lib/mysql<#elseif dbType == "mssql">var/opt/mssql<#elseif dbType == "mongodb">data/db</#if>
         networks:
             - ${artifactId}-network
     <#if cacheType?? && cacheType?lower_case == "redis">
