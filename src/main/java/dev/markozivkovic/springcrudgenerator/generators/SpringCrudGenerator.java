@@ -51,6 +51,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
     private static final String GRAPHQL = "graphql";
     private static final String MIGRATION_SCRIPT = "migration-script";
+    private static final String AI_CONTEXT = "ai-context";
     
     private final Map<String, ProjectArtifactGenerator> ARTIFACT_GENERATORS;
     private final Map<String, CodeGenerator> GENERATORS;
@@ -65,7 +66,8 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
             Map.entry(EXCEPTION, new ExceptionGenerator(packageConfiguration)),
             Map.entry(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entities, packageConfiguration)),
             Map.entry(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entities)),
-            Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration))
+            Map.entry(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration)),
+            Map.entry(AI_CONTEXT, new AiContextGenerator(crudConfiguration, projectMetadata, entities))
         ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
 
         this.GENERATORS = Stream.of(
