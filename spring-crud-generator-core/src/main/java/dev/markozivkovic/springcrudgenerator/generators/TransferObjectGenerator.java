@@ -34,6 +34,7 @@ import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.templates.TransferObjectTemplateContext;
 import dev.markozivkovic.springcrudgenerator.utils.AuditUtils;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -211,7 +212,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         }
         sb.append(imports);
 
-        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields()) || FieldUtils.hasAnyFieldValidation(modelDefinition.getFields())) {
+        if (FieldValidationResolver.hasAnyColumnValidation(modelDefinition.getFields()) || FieldValidationResolver.hasAnyFieldValidation(modelDefinition.getFields())) {
             sb.append(TransferObjectImports.computeValidationImport(modelDefinition));
         }
 
@@ -248,7 +249,7 @@ public class TransferObjectGenerator implements CodeGenerator {
         final String imports = TransferObjectImports.getBaseImport(modelDefinition);
         sb.append(imports);
 
-        if (FieldUtils.hasAnyColumnValidation(modelDefinition.getFields()) || FieldUtils.hasAnyFieldValidation(modelDefinition.getFields())) {
+        if (FieldValidationResolver.hasAnyColumnValidation(modelDefinition.getFields()) || FieldValidationResolver.hasAnyFieldValidation(modelDefinition.getFields())) {
             sb.append(TransferObjectImports.computeValidationImport(modelDefinition));
         }
 

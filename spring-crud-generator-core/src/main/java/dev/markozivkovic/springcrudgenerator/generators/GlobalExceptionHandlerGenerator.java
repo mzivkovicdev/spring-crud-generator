@@ -33,6 +33,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.ErrorRespo
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -159,7 +160,7 @@ public class GlobalExceptionHandlerGenerator implements ProjectArtifactGenerator
         final List<String> relationTypes = FieldUtils.extractRelationTypes(fields);
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final boolean hasRelations = !relationTypes.isEmpty();
-        final boolean hasValidation = FieldUtils.hasAnyFieldValidation(fields) || FieldUtils.hasAnyColumnValidation(fields);
+        final boolean hasValidation = FieldValidationResolver.hasAnyFieldValidation(fields) || FieldValidationResolver.hasAnyColumnValidation(fields);
 
         final String exceptionTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "exception/rest-exception-handler-template.ftl", Map.of(

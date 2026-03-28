@@ -43,10 +43,11 @@ Full documentation is available in [`/docs`](./docs/README.md).
 - [Entities and fields](./docs/entities.md)
 - [Migrations](./docs/migrations.md)
 - [Incremental generation](./docs/incremental-generation.md)
+- [Spring CRUD Generator vs Bootify](./docs/comparison-with-bootify.md)
 - [Full spec example](./docs/examples/crud-spec-full.yaml)
 - [JSON Schema](./docs/schema/crud-spec.schema.json)
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.6.0`  
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.7.0`  
 > Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 ---
@@ -107,7 +108,7 @@ Add the following `profile` section to your `pom.xml`:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.7.0</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>

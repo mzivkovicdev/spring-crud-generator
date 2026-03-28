@@ -34,6 +34,7 @@ import dev.markozivkovic.springcrudgenerator.imports.common.ImportCommon.Collect
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
@@ -161,7 +162,7 @@ public class TransferObjectImports {
         final StringBuilder sb = new StringBuilder();
 
         ImportCommon.addIf(FieldUtils.isAnyFieldNonNullable(fields), imports, ImportConstants.Jakarta.NOT_NULL);
-        ImportCommon.addIf(FieldUtils.hasAnyFieldLengthValidation(fields), imports, ImportConstants.Jakarta.SIZE);
+        ImportCommon.addIf(FieldValidationResolver.hasAnyFieldLengthValidation(fields), imports, ImportConstants.Jakarta.SIZE);
 
         modelDefinition.getFields().forEach(field -> {
             

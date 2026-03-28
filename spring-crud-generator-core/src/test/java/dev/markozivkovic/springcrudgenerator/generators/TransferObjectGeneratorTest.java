@@ -26,6 +26,7 @@ import org.mockito.MockedStatic;
 
 import dev.markozivkovic.springcrudgenerator.imports.TransferObjectImports;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition;
+import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 import dev.markozivkovic.springcrudgenerator.models.AuditDefinition.AuditTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.GraphQLDefinition;
@@ -122,6 +123,7 @@ class TransferObjectGeneratorTest {
         final List<String> writtenSubDirs = new ArrayList<>();
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = mockStatic(FieldValidationResolver.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class);
@@ -171,13 +173,13 @@ class TransferObjectGeneratorTest {
             nameUtils.when(() -> ModelNameUtils.stripSuffix("AddressEntity"))
                      .thenReturn("Address");
 
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields()))
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyColumnValidation(mainModel.getFields()))
                     .thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(mainModel.getFields()))
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldValidation(mainModel.getFields()))
                     .thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(jsonModel.getFields()))
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyColumnValidation(jsonModel.getFields()))
                     .thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(jsonModel.getFields()))
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldValidation(jsonModel.getFields()))
                     .thenReturn(false);
 
             toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.BASE))
@@ -301,6 +303,7 @@ class TransferObjectGeneratorTest {
         final String outputDir = "out";
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = mockStatic(FieldValidationResolver.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class);
@@ -317,8 +320,8 @@ class TransferObjectGeneratorTest {
             pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.example.app", pkgCfg)).thenReturn("com.example.app.to");
             pkg.when(() -> PackageUtils.computeTransferObjectSubPackage(pkgCfg)).thenReturn("to");
             nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity")).thenReturn("User");
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(mainModel.getFields())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldValidation(mainModel.getFields())).thenReturn(false);
             toImports.when(() -> TransferObjectImports.getBaseImport(mainModel, entities, TransferObjectGenerator.TransferObjectType.BASE))
                     .thenReturn("BASE_IMPORTS\n");
             toImports.when(() -> TransferObjectImports.computeEnumsAndHelperEntitiesImport(
@@ -369,6 +372,7 @@ class TransferObjectGeneratorTest {
         final List<String> writtenClassNames = new ArrayList<>();
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<FieldValidationResolver> fieldValidation = mockStatic(FieldValidationResolver.class);
              final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
              final MockedStatic<TransferObjectTemplateContext> toCtx = mockStatic(TransferObjectTemplateContext.class);
@@ -377,8 +381,8 @@ class TransferObjectGeneratorTest {
              final MockedStatic<TransferObjectImports> toImports = mockStatic(TransferObjectImports.class)) {
 
             fieldUtils.when(() -> FieldUtils.isModelUsedAsJsonField(mainModel, entities)).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
-            fieldUtils.when(() -> FieldUtils.hasAnyFieldValidation(mainModel.getFields())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyColumnValidation(mainModel.getFields())).thenReturn(false);
+            fieldValidation.when(() -> FieldValidationResolver.hasAnyFieldValidation(mainModel.getFields())).thenReturn(false);
             fieldUtils.when(() -> FieldUtils.extractRelationTypes(mainModel.getFields())).thenReturn(List.of("REL"));
             fieldUtils.when(() -> FieldUtils.extractRelationFields(mainModel.getFields())).thenReturn(List.of(relationField));
             fieldUtils.when(() -> FieldUtils.extractIdField(roleModel.getFields())).thenReturn(roleIdField);

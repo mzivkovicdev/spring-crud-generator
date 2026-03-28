@@ -19,5 +19,20 @@
     )
     </#if>
     <#if field.relation.type != "ManyToMany">
-    @JoinColumn(name = "${field.relation.joinColumn!field.name + "_id"}")
+    <#assign joinColumnArgs = ["name = \"" + (field.relation.joinColumn!field.name + "_id") + "\""]>
+    <#if field.column??>
+    <#if field.column.unique??>
+    <#assign joinColumnArgs = joinColumnArgs + ["unique = " + field.column.unique?c]>
+    </#if>
+    <#if field.column.nullable??>
+    <#assign joinColumnArgs = joinColumnArgs + ["nullable = " + field.column.nullable?c]>
+    </#if>
+    <#if field.column.insertable??>
+    <#assign joinColumnArgs = joinColumnArgs + ["insertable = " + field.column.insertable?c]>
+    </#if>
+    <#if field.column.updateable??>
+    <#assign joinColumnArgs = joinColumnArgs + ["updatable = " + field.column.updateable?c]>
+    </#if>
+    </#if>
+    @JoinColumn(${joinColumnArgs?join(", ")})
     </#if>
