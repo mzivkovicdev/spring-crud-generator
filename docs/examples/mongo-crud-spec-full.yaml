@@ -23,13 +23,20 @@ configuration:
   graphql:
     enabled: true
     scalarConfig: true
+  optimisticLocking: true
   errorResponse: simple
+  migrationScripts: true
   tests:
     unit: true
     dataGenerator: instancio
   additionalProperties:
     rest.basePath: /api/v1
     rest.response.excludeNull: true
+    optimisticLocking.retry.config: true
+    optimisticLocking.retry.maxAttempts: 5
+    optimisticLocking.backoff.delayMs: 100
+    optimisticLocking.backoff.multiplier: 2.0
+    optimisticLocking.backoff.maxDelayMs: 1000
     github.actions: true
 packages:
   annotations: annotation
