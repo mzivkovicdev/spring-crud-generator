@@ -8,13 +8,25 @@ All options are defined under the root `configuration` key.
 
 | Property            | Type    | Default | Description                                                                                                                                                                                                                                                                                                                                  |
 | ------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `database`          | string  | `-`     | **Required.** Target SQL database (e.g. `postgresql`, `mysql`, `mariadb`, `mssql`)                                                                                                                                                                                                                                                                      |
+| `database`          | string  | `-`     | **Required.** Target database: SQL (`postgresql`, `mysql`, `mariadb`, `mssql`) or NoSQL (`mongodb`)                                                                                                                                                                                                                                                     |
 | `javaVersion`       | number  | `17`    | Java version used for generated code and Dockerfile                                                                                                                                                                                                                                                                                          |
 | `springBootVersion` | string  | `4`     | Spring Boot **major** version (`3` or `4`). If not provided, the generator tries to detect it from the project `pom.xml` (parent version). If detection fails, it defaults to `4`. If an unsupported value is provided (e.g. `1`, `2`, `5`), it will be ignored and the generator will fall back to the detected value or the default (`4`). |
-| `optimisticLocking` | boolean | `false` | Enables optimistic locking support                                                                                                                                                                                                                                                                                                           |
+| `optimisticLocking` | boolean | `false` | Enables optimistic locking. Generates a `@Version` field on each entity/document and a `@OptimisticLockingRetry` annotation. See details below. |
 | `errorResponse`     | string  | `-`     | Error response strategy (`simple`, `detailed`, `minimal`, `none`)                                                                                                                                                                                                                                                                            |
-| `migrationScripts`  | boolean | `false` | Enables Flyway migration script generation                                                                                                                                                                                                                                                                                                   |
-| `dependencyCheck`   | boolean | `false` | Enables post-validation check that scans the host project `pom.xml` and prints warnings for missing dependencies required by selected features (database driver, GraphQL, Flyway, cache, OpenAPI resources, tests, etc.)                                                                                                                     |
+| `migrationScripts`  | boolean | `false` | Enables migration generation. For SQL databases: Flyway `.sql` scripts. For MongoDB: Mongock `@ChangeUnit` Java classes. See [migrations](migrations.md).                                                                                                                                                                                    |
+| `dependencyCheck`   | boolean | `false` | Enables post-validation check that scans the host project `pom.xml` and prints warnings for missing dependencies required by selected features (database driver, GraphQL, Flyway, Mongock, cache, OpenAPI resources, tests, etc.)                                                                                                             |
+
+### Optimistic locking behavior
+
+When `optimisticLocking: true` is set, the generator:
+
+1. Adds a `version` field to each generated entity/document:
+   - **SQL**: `@Version private Integer version;` (uses `jakarta.persistence.Version`)
+   - **MongoDB**: `@Version private Long version;` (uses `org.springframework.data.annotation.Version`)
+
+2. Generates a custom `@OptimisticLockingRetry` annotation (when retry properties are configured) that retries the method on a version conflict:
+   - **SQL**: catches `jakarta.persistence.OptimisticLockException` and `ObjectOptimisticLockingFailureException`
+   - **MongoDB**: catches `org.springframework.dao.OptimisticLockingFailureException`
 
 ---
 
@@ -70,6 +82,9 @@ When you don’t override `image`/`port`, the generator uses:
 - **MSSQL**
   - `image`: `mcr.microsoft.com/mssql/server`
   - `port`: `1433`
+- **MongoDB**
+  - `image`: `mongo`
+  - `port`: `27017`
 
 ---
 
@@ -137,16 +152,21 @@ Advanced and feature-specific configuration options.
 | -------------------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------- |
 | `rest.basePath`                        | string  | `/api`  | Base path for generated REST endpoints. Example: `/api/v1`                                            |
 | `rest.response.excludeNull`            | boolean | `false` | When enabled, exclude `null` fields from JSON responses globally (Jackson `NON_NULL`).                |
-| `optimisticLocking.retry.config`       | boolean | `false` | Enables generation of a dedicated `@Retryable` configuration for optimistic locking                   |
-| `optimisticLocking.retry.maxAttempts`  | number  | `3`     | Maximum retry attempts (falls back to this value if not overridden)                                   |
-| `optimisticLocking.backoff.delayMs`    | number  | `1000`  | Initial backoff delay in milliseconds (falls back to this value if not overridden)                    |
-| `optimisticLocking.backoff.multiplier` | number  | `0.0`   | Backoff multiplier. `0.0` means no exponential backoff (constant delay) unless explicitly overridden  |
-| `optimisticLocking.backoff.maxDelayMs` | number  | `0`     | Maximum backoff delay in milliseconds. `0` means “no explicit max”, only `delay * multiplier` applies |
-| `spring.jpa.open-in-view`              | boolean | `false` | Enables/disables OSIV. The generator always supports explicit fetch plans via `EntityGraph` and when this property is false it treats them as the default approach for loading LAZY relations to avoid `LazyInitializationException` during DTO mapping. |
+| `optimisticLocking.retry.config`       | boolean | `false` | Enables generation of a dedicated `@EnableRetry` Spring configuration class.                          |
+| `optimisticLocking.retry.maxAttempts`  | number  | `3`     | Maximum retry attempts for the generated `@OptimisticLockingRetry` annotation.                        |
+| `optimisticLocking.backoff.delayMs`    | number  | `1000`  | Initial backoff delay in milliseconds.                                                                |
+| `optimisticLocking.backoff.multiplier` | number  | `0.0`   | Backoff multiplier. `0.0` means no exponential backoff (constant delay) unless explicitly overridden. |
+| `optimisticLocking.backoff.maxDelayMs` | number  | `0`     | Maximum backoff delay in milliseconds. `0` means “no explicit max”, only `delay * multiplier` applies.|
+| `spring.jpa.open-in-view`              | boolean | `false` | Enables/disables OSIV. The generator always supports explicit fetch plans via `EntityGraph` and when this property is false it treats them as the default approach for loading LAZY relations to avoid `LazyInitializationException` during DTO mapping. **SQL/JPA only.** |
 | `github.actions`                       | boolean | `false` | Generates a basic GitHub Actions CI workflow file at `.github/workflows/ci.yml` (checkout, setup Java, Maven cache, build, test). |
 
-> The retry configuration is generated only if **optimisticLocking** is enabled. Custom retry annotation is genereted if at least one of the `optimisticLocking.retry.*` / `optimisticLocking.backoff.*` properties is provided. Any missing values fall back to the defaults listed above.  
-> Enables/disables OSIV. When `false`, the generator uses `EntityGraph` as the default fetch strategy for `LAZY` relations to avoid `LazyInitializationException` during DTO mapping.
+> The retry configuration is generated only if `optimisticLocking: true`. The generated `@OptimisticLockingRetry` annotation catches the appropriate exception per database type:
+> - **SQL**: catches `jakarta.persistence.OptimisticLockException` and `ObjectOptimisticLockingFailureException`
+> - **MongoDB**: catches `org.springframework.dao.OptimisticLockingFailureException`
+>
+> Custom retry annotation is generated if at least one of the `optimisticLocking.retry.*` / `optimisticLocking.backoff.*` properties is provided. Any missing values fall back to the defaults listed above.
+>
+> `spring.jpa.open-in-view`: when `false`, the generator uses `EntityGraph` as the default fetch strategy for `LAZY` relations to avoid `LazyInitializationException` during DTO mapping.
 
 ---
 

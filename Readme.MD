@@ -14,6 +14,7 @@
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
 ![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=flat&logo=mariadb&logoColor=white)
 ![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=flat&logo=microsoftsqlserver&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DD0031?style=flat&logo=redis&logoColor=white)
 ![Hazelcast](https://img.shields.io/badge/Hazelcast-Real--time%20Data%20Platform-0A0A0A?style=flat&logo=hazelcast&logoColor=white)
 
@@ -44,7 +45,8 @@ Full documentation is available in [`/docs`](./docs/README.md).
 - [Migrations](./docs/migrations.md)
 - [Incremental generation](./docs/incremental-generation.md)
 - [Spring CRUD Generator vs Bootify](./docs/comparison-with-bootify.md)
-- [Full spec example](./docs/examples/crud-spec-full.yaml)
+- [Full SQL spec example](./docs/examples/crud-spec-full.yaml)
+- [Full MongoDB spec example](./docs/examples/mongo-crud-spec-full.yaml)
 - [JSON Schema](./docs/schema/crud-spec.schema.json)
 
 > Maven Central: `dev.markozivkovic:spring-crud-generator:1.7.0`  
@@ -55,14 +57,14 @@ Full documentation is available in [`/docs`](./docs/README.md).
 ## What you get
 
 ### Core backend
-- Entities
+- Entities / Documents
 - Repositories
 - Services
 - DTOs and mappers
 - REST controllers
 
 ### Optional platform features
-- Flyway migrations
+- Database migrations (Flyway for SQL, Mongock for MongoDB)
 - OpenAPI resources
 - GraphQL
 - Docker resources
@@ -74,7 +76,7 @@ Full documentation is available in [`/docs`](./docs/README.md).
 - JSON Schema validation
 - Incremental generation
 
-> ⚠️ Table deletion is **not** supported by the generator and must be handled manually.
+> ⚠️ Table/collection deletion is **not** supported by the generator and must be handled manually.
 
 ---
 
@@ -86,7 +88,8 @@ Choose what you need:
 - Need all available options? → [Configuration reference](./docs/configuration.md)
 - Working with entities and fields? → [Entities and fields](./docs/entities.md)
 - Need package customization? → [Packages configuration](./docs/packages.md)
-- Need a complete example? → [Full spec example](./docs/examples/crud-spec-full.yaml)
+- Need a complete SQL example? → [Full SQL spec example](./docs/examples/crud-spec-full.yaml)
+- Need a complete MongoDB example? → [Full MongoDB spec example](./docs/examples/mongo-crud-spec-full.yaml)
 - Want autocomplete/validation? → [JSON Schema](./docs/schema/crud-spec.schema.json)
 
 ---
@@ -135,12 +138,14 @@ Add the following `profile` section to your `pom.xml`:
 
 ### Step 2: Create configuration file
 
-Create the configuration file at the location defined by `inputSpecFile`.  
+Create the configuration file at the location defined by `inputSpecFile`.
 The file name is arbitrary. Only the extension matters: `.yaml`, `.yml`, or `.json`.
 
 ```text
 src/main/resources/crud-spec.yaml
 ```
+
+**SQL example (PostgreSQL, MySQL, MariaDB, MSSQL)**
 
 ```yaml
 configuration:
@@ -161,24 +166,53 @@ entities:
         type: Long
         description: "The unique identifier for the product"
         id:
-          strategy: TABLE
+          strategy: IDENTITY
       - name: name
         description: "The name of the product"
         type: String
         column:
           nullable: false
-          updateable: true
           unique: true
-          length: 10000
+          length: 255
+```
+
+**MongoDB example**
+
+```yaml
+configuration:
+  database: mongodb
+  openApi:
+    apiSpec: true
+    generateResources: true
+  errorResponse: simple
+  tests:
+    unit: true
+    dataGenerator: instancio
+entities:
+  - name: ProductModel
+    storageName: products
+    description: "Represents a product"
+    fields:
+      - name: id
+        type: String
+        id: true
+        description: "MongoDB document id"
+      - name: name
+        description: "The name of the product"
+        type: String
+        validation:
+          required: true
+          notBlank: true
+          maxLength: 255
 ```
 
 This spec file can define:
 
 - global generator configuration (database, OpenAPI, Docker, tests, caching, migration scripts, etc.)
-- entities, fields, constraints, and relationships
-- additional features like optimistic locking, base path, and more
+- entities/documents, fields, constraints, and relationships
+- additional features like base path, soft delete, audit, and more
 
-Note: the example above shows only a minimal subset (database + OpenAPI + tests + one entity).
+Note: the examples above show only a minimal subset. See the full examples for all available options.
 
 Both YAML (`.yaml/.yml`) and JSON (`.json`) formats are supported.
 
@@ -224,7 +258,8 @@ mvn clean install -Pgenerate-resources
 After execution:
 
 - source code is generated into the directory defined by `outputDir`
-- Flyway migration scripts are generated (if enabled)
+- Flyway migration scripts are generated (if enabled, SQL databases)
+- Mongock `@ChangeUnit` classes are generated (if enabled, MongoDB)
 - Swagger/OpenAPI resources are generated (if enabled)
 - Docker and Docker Compose files are generated (if enabled)
 

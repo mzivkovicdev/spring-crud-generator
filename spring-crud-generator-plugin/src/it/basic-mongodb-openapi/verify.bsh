@@ -1,0 +1,31 @@
+import java.io.File;
+
+void requireFile(String relativePath) {
+    File file = new File(basedir, relativePath);
+    if (!file.isFile()) {
+        throw new RuntimeException("Expected file is missing: " + file.getAbsolutePath());
+    }
+}
+
+void requireDirectoryMissing(String relativePath) {
+    File dir = new File(basedir, relativePath);
+    if (dir.exists()) {
+        throw new RuntimeException("Directory should not exist: " + dir.getAbsolutePath());
+    }
+}
+
+requireFile("generator-state.json");
+requireFile("src/main/resources/swagger/product-api.yaml");
+requireFile("src/main/java/com/example/itmongo/models/ProductModel.java");
+requireFile("src/main/java/com/example/itmongo/repositories/ProductRepository.java");
+requireFile("src/main/java/com/example/itmongo/services/ProductService.java");
+requireFile("src/main/java/com/example/itmongo/businessservices/ProductBusinessService.java");
+requireFile("src/main/java/com/example/itmongo/controllers/ProductController.java");
+requireFile("src/main/java/com/example/itmongo/generated/product/api/ProductsApi.java");
+requireFile("src/main/java/com/example/itmongo/migration/V001__Create_Products_Collection.java");
+requireFile("src/main/java/com/example/itmongo/migration/V002__Create_Users_Collection.java");
+requireFile("target/classes/com/example/itmongo/SpringCrudGeneratorMongoItApplication.class");
+requireFile("target/classes/com/example/itmongo/models/ProductModel.class");
+requireFile("target/failsafe-reports/TEST-com.example.itmongo.MongoGeneratedArtifactsIT.xml");
+
+requireDirectoryMissing("src/main/resources/db/migration");

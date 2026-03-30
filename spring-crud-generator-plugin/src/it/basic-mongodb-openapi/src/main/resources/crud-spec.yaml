@@ -1,0 +1,41 @@
+configuration:
+  database: mongodb
+  openApi:
+    apiSpec: true
+    generateResources: true
+  errorResponse: simple
+  migrationScripts: true
+  tests:
+    unit: true
+    dataGenerator: instancio
+entities:
+  - name: ProductModel
+    storageName: products
+    description: "Represents a product"
+    fields:
+      - name: id
+        type: String
+        id: true
+        description: "The unique identifier for the product"
+      - name: name
+        description: "The name of the product"
+        type: String
+        validation:
+          required: true
+          notBlank: true
+      - name: users
+        type: UserEntity
+        relation:
+          type: OneToMany
+  - name: UserEntity
+    storageName: users
+    description: "Represents a user"
+    fields:
+      - name: id
+        type: String
+        id: true
+      - name: email
+        type: String
+        validation:
+          required: true
+          email: true

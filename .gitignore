@@ -33,3 +33,4 @@ build/
 .vscode/
 TODO.txt
 output/
+.claude
