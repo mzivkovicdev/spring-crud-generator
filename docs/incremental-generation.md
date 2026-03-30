@@ -34,7 +34,7 @@ This ensures consistency when global settings (e.g. caching, Swagger/OpenApi, Gr
 
 ## `migration-state.json`
 
-Tracks schema changes to safely generate **Flyway** migration scripts (SQL databases only).
+Tracks schema changes to safely generate **Flyway** migration scripts. **SQL databases only.**
 
 Location:
 
@@ -42,11 +42,11 @@ Location:
 .crud-generator/migration-state.json
 ```
 
-Stores metadata about previously generated entities, their fields, column mappings, and the last migration version number. Used to detect additions and removals between generator runs and produce the correct incremental SQL scripts.
+Stores metadata about previously generated entities, their fields, column mappings, and the last migration version number. Used to detect additions and removals between generator runs and produce the correct incremental `.sql` scripts.
 
 ## `mongock-state.json`
 
-Tracks schema changes to safely generate **Mongock** `@ChangeUnit` migration classes (MongoDB only).
+Tracks schema changes to safely generate **Mongock** `@ChangeUnit` migration classes. **MongoDB only.**
 
 Location:
 
@@ -54,9 +54,9 @@ Location:
 .crud-generator/mongock-state.json
 ```
 
-Stores metadata about previously generated collections, their fields, and the last migration version number. Used to detect additions and removals between generator runs and produce the correct incremental `@ChangeUnit` classes.
+Stores metadata about previously generated collections, their fields, and the last migration version number. Used to detect additions and removals between generator runs and produce the correct incremental `@ChangeUnit` Java classes.
 
-> Both state files should be committed to version control to ensure consistent migrations across environments.
+> All state files should be committed to version control to ensure consistent migrations across environments and team members.
 
 ## Interaction with `forceRegeneration`
 
