@@ -37,11 +37,13 @@ public final class MongoModelImports {
     /**
      * Computes import statements for a MongoDB model/helper model.
      *
-     * @param modelDefinition model for which imports are resolved
+     * @param modelDefinition       model for which imports are resolved
      * @param includeDocumentImport whether @Document import should be included
+     * @param optimisticLocking     whether optimistic locking is enabled (adds @Version import)
      * @return formatted import statements
      */
-    public static String computeMongoModelImports(final ModelDefinition modelDefinition, final boolean includeDocumentImport) {
+    public static String computeMongoModelImports(final ModelDefinition modelDefinition,
+            final boolean includeDocumentImport, final boolean optimisticLocking) {
 
         final Set<String> imports = new TreeSet<>();
 
@@ -61,6 +63,10 @@ public final class MongoModelImports {
         if (auditEnabled) {
             imports.add(ImportConstants.SpringData.CREATED_DATE);
             imports.add(ImportConstants.SpringData.LAST_MODIFIED_DATE);
+        }
+
+        if (optimisticLocking && includeDocumentImport) {
+            imports.add(ImportConstants.SpringData.VERSION);
         }
 
         if (FieldUtils.isAnyRelationCollectionList(modelDefinition.getFields())) {

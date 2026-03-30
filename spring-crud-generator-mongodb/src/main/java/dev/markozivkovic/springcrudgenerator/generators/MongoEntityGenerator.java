@@ -21,10 +21,12 @@ import static dev.markozivkovic.springcrudgenerator.constants.ImportConstants.PA
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ModelImports;
 import dev.markozivkovic.springcrudgenerator.imports.MongoModelImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -94,7 +96,7 @@ public class MongoEntityGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeHelperEntityPackage(packagePath, this.packageConfiguration)));
         sb.append(ModelImports.getBaseImport(model, true, true));
 
-        final String mongoImports = MongoModelImports.computeMongoModelImports(model, false);
+        final String mongoImports = MongoModelImports.computeMongoModelImports(model, false, false);
         if (StringUtils.isNotBlank(mongoImports)) {
             sb.append(mongoImports).append(System.lineSeparator());
         }
@@ -104,7 +106,7 @@ public class MongoEntityGenerator implements CodeGenerator {
             sb.append(enumImports).append(System.lineSeparator());
         }
 
-        sb.append(this.computeMongoClassBody(model, false, true));
+        sb.append(this.computeMongoClassBody(model, false, true, false));
 
         FileWriterUtils.writeToFile(
                 outputDir,
@@ -127,6 +129,9 @@ public class MongoEntityGenerator implements CodeGenerator {
             return;
         }
 
+        final boolean optimisticLocking = Objects.nonNull(this.configuration)
+                && Boolean.TRUE.equals(this.configuration.isOptimisticLocking());
+
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String className = model.getName();
 
@@ -134,7 +139,7 @@ public class MongoEntityGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeEntityPackage(packagePath, this.packageConfiguration)));
         sb.append(ModelImports.getBaseImport(model, true, true));
 
-        final String mongoImports = MongoModelImports.computeMongoModelImports(model, true);
+        final String mongoImports = MongoModelImports.computeMongoModelImports(model, true, optimisticLocking);
         if (StringUtils.isNotBlank(mongoImports)) {
             sb.append(mongoImports).append(System.lineSeparator());
         }
@@ -146,7 +151,7 @@ public class MongoEntityGenerator implements CodeGenerator {
             sb.append(enumAndHelperImports).append(System.lineSeparator());
         }
 
-        sb.append(this.computeMongoClassBody(model, true, false));
+        sb.append(this.computeMongoClassBody(model, true, false, optimisticLocking));
 
         FileWriterUtils.writeToFile(
                 outputDir,
@@ -159,17 +164,20 @@ public class MongoEntityGenerator implements CodeGenerator {
     /**
      * Computes the body of a MongoDB document class based on the provided model definition.
      * The computed body includes fields, default constructor, constructor, getters, setters, equals, hashCode, and toString methods.
-     * 
-     * @param modelDefinition the model definition containing the class name, table name, and field definitions
-     * @param document        whether the class being generated is a MongoDB document class
-     * @param embedded        whether the class being generated is an embedded MongoDB document class
+     *
+     * @param modelDefinition   the model definition containing the class name, table name, and field definitions
+     * @param document          whether the class being generated is a MongoDB document class
+     * @param embedded          whether the class being generated is an embedded MongoDB document class
+     * @param optimisticLocking whether optimistic locking is enabled
      * @return the computed body of the MongoDB document class
      */
-    private String computeMongoClassBody(final ModelDefinition modelDefinition, final boolean document, final boolean embedded) {
+    private String computeMongoClassBody(final ModelDefinition modelDefinition, final boolean document,
+            final boolean embedded, final boolean optimisticLocking) {
 
         final Map<String, Object> classContext = JpaEntityTemplateContext.computeJpaModelContext(modelDefinition);
         classContext.put("db", this.configuration.getDatabase().name());
         classContext.put("embedded", embedded);
+        classContext.put(TemplateContextConstants.OPTIMISTIC_LOCKING, optimisticLocking);
 
         final String fieldsTemplate = FreeMarkerTemplateProcessorUtils.processTemplate(
                 "model/component/mongo-fields-template.ftl", classContext

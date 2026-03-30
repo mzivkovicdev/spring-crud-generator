@@ -752,4 +752,125 @@ class AdditionalPropertyGeneratorTest {
             assertFalse(wroteCiWorkflow, "GitHub Actions workflow should NOT be written when key is false");
         }
     }
+
+    @Test
+    @DisplayName("generate: should use mongo-retryable-annotation.ftl when database is MongoDB")
+    void generate_shouldUseMongoRetryableAnnotationTemplate_whenDatabaseIsMongoDB() {
+
+        final Env env = prepareEnv();
+
+        env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_RETRY_CONFIGURATION, Boolean.TRUE);
+        env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS, 3);
+
+        when(env.config.getOptimisticLocking()).thenReturn(true);
+        when(env.config.getDatabase()).thenReturn(CrudConfiguration.DatabaseType.MONGODB);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+                final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+                final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(AdditionalPropertiesUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                        FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                            templateInvocations.add(invocation);
+                            if ("processTemplate".equals(invocation.getMethod().getName())) {
+                                return "TEMPLATE-" + invocation.getArgument(0, String.class);
+                            }
+                            return null;
+                        });
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> null)) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(any())).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.markGenerated(any())).then(inv -> null);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", env.pkgConfig)).thenReturn("com.example.app.config");
+            pkg.when(() -> PackageUtils.computeConfigurationSubPackage(env.pkgConfig)).thenReturn("config");
+            pkg.when(() -> PackageUtils.computeAnnotationPackage("com.example.app", env.pkgConfig)).thenReturn("com.example.app.annotation");
+            pkg.when(() -> PackageUtils.computeAnnotationSubPackage(env.pkgConfig)).thenReturn("annotation");
+
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps)).thenReturn(true);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS)).thenReturn(3);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS)).thenReturn(null);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS)).thenReturn(null);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getDouble(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER)).thenReturn(null);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(env.additionalProps)).thenReturn(false);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.isGithubActionsEnabled(env.additionalProps)).thenReturn(false);
+
+            env.generator.generate("out");
+
+            final boolean mongoTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "annotation/mongo-retryable-annotation.ftl".equals(inv.getArgument(0)));
+
+            final boolean sqlTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)));
+
+            assertTrue(mongoTemplateUsed, "MongoDB retryable annotation template should be used for MongoDB database");
+            assertFalse(sqlTemplateUsed, "SQL retryable annotation template should NOT be used for MongoDB database");
+        }
+    }
+
+    @Test
+    @DisplayName("generate: should use retryable-annotation.ftl (SQL) when database is PostgreSQL")
+    void generate_shouldUseSqlRetryableAnnotationTemplate_whenDatabaseIsSQL() {
+
+        final Env env = prepareEnv();
+
+        env.additionalProps.put(AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS, 3);
+
+        when(env.config.getOptimisticLocking()).thenReturn(true);
+        when(env.config.getDatabase()).thenReturn(CrudConfiguration.DatabaseType.POSTGRESQL);
+
+        final List<InvocationOnMock> templateInvocations = new ArrayList<>();
+
+        try (final MockedStatic<ContainerUtils> cont = mockStatic(ContainerUtils.class);
+                final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+                final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+                final MockedStatic<AdditionalPropertiesUtils> additionalPropsUtils = mockStatic(AdditionalPropertiesUtils.class);
+                final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(
+                        FreeMarkerTemplateProcessorUtils.class, invocation -> {
+                            templateInvocations.add(invocation);
+                            if ("processTemplate".equals(invocation.getMethod().getName())) {
+                                return "TEMPLATE-" + invocation.getArgument(0, String.class);
+                            }
+                            return null;
+                        });
+                final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class, invocation -> null)) {
+
+            cont.when(() -> ContainerUtils.isEmpty(env.additionalProps)).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.isGenerated(any())).thenReturn(false);
+            genCtx.when(() -> GeneratorContext.markGenerated(any())).then(inv -> null);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir("out")).thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeConfigurationPackage("com.example.app", env.pkgConfig)).thenReturn("com.example.app.config");
+            pkg.when(() -> PackageUtils.computeConfigurationSubPackage(env.pkgConfig)).thenReturn("config");
+            pkg.when(() -> PackageUtils.computeAnnotationPackage("com.example.app", env.pkgConfig)).thenReturn("com.example.app.annotation");
+            pkg.when(() -> PackageUtils.computeAnnotationSubPackage(env.pkgConfig)).thenReturn("annotation");
+
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.hasAnyRetryableConfigOverride(env.additionalProps)).thenReturn(true);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_MAX_ATTEMPTS)).thenReturn(3);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_DELAY_MS)).thenReturn(null);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getInt(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MAX_DELAY_MS)).thenReturn(null);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.getDouble(env.additionalProps, AdditionalConfigurationConstants.OPT_LOCK_BACKOFF_MULTIPLIER)).thenReturn(null);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.shouldExcludeNullValuesInRestResponse(env.additionalProps)).thenReturn(false);
+            additionalPropsUtils.when(() -> AdditionalPropertiesUtils.isGithubActionsEnabled(env.additionalProps)).thenReturn(false);
+
+            env.generator.generate("out");
+
+            final boolean sqlTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "annotation/retryable-annotation.ftl".equals(inv.getArgument(0)));
+
+            final boolean mongoTemplateUsed = templateInvocations.stream()
+                    .anyMatch(inv -> "processTemplate".equals(inv.getMethod().getName())
+                            && "annotation/mongo-retryable-annotation.ftl".equals(inv.getArgument(0)));
+
+            assertTrue(sqlTemplateUsed, "SQL retryable annotation template should be used for SQL database");
+            assertFalse(mongoTemplateUsed, "MongoDB retryable annotation template should NOT be used for SQL database");
+        }
+    }
 }

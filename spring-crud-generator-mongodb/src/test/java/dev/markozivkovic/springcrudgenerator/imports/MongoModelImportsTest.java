@@ -37,7 +37,7 @@ class MongoModelImportsTest {
                                 .setRelation(new RelationDefinition().setType("ManyToMany").setUniqueItems(true))
                 ));
 
-        final String imports = MongoModelImports.computeMongoModelImports(model, true);
+        final String imports = MongoModelImports.computeMongoModelImports(model, true, false);
 
         assertTrue(imports.contains("import " + ImportConstants.SpringData.MONGO_DOCUMENT));
         assertTrue(imports.contains("import " + ImportConstants.SpringData.MONGO_ID));
@@ -46,6 +46,7 @@ class MongoModelImportsTest {
         assertTrue(imports.contains("import " + ImportConstants.SpringData.LAST_MODIFIED_DATE));
         assertTrue(imports.contains("import " + ImportConstants.Java.ARRAY_LIST));
         assertTrue(imports.contains("import " + ImportConstants.Java.HASH_SET));
+        assertFalse(imports.contains("import " + ImportConstants.SpringData.VERSION));
     }
 
     @Test
@@ -56,8 +57,37 @@ class MongoModelImportsTest {
                 .setName("Address")
                 .setFields(List.of(new FieldDefinition().setName("city").setType("String")));
 
-        final String imports = MongoModelImports.computeMongoModelImports(helperModel, false);
+        final String imports = MongoModelImports.computeMongoModelImports(helperModel, false, false);
 
         assertFalse(imports.contains("import " + ImportConstants.SpringData.MONGO_DOCUMENT));
+    }
+
+    @Test
+    @DisplayName("computeMongoModelImports includes @Version import when optimistic locking is enabled for document")
+    void computeMongoModelImports_withOptimisticLocking_includesVersionImport() {
+
+        final ModelDefinition model = new ModelDefinition()
+                .setName("ProductModel")
+                .setStorageName("products")
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition())
+                ));
+
+        final String imports = MongoModelImports.computeMongoModelImports(model, true, true);
+
+        assertTrue(imports.contains("import " + ImportConstants.SpringData.VERSION));
+    }
+
+    @Test
+    @DisplayName("computeMongoModelImports does not include @Version import for embedded models even when optimistic locking is enabled")
+    void computeMongoModelImports_embeddedWithOptimisticLocking_excludesVersionImport() {
+
+        final ModelDefinition helperModel = new ModelDefinition()
+                .setName("Address")
+                .setFields(List.of(new FieldDefinition().setName("city").setType("String")));
+
+        final String imports = MongoModelImports.computeMongoModelImports(helperModel, false, true);
+
+        assertFalse(imports.contains("import " + ImportConstants.SpringData.VERSION));
     }
 }

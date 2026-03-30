@@ -13,6 +13,10 @@
     </#if>
 
 </#list>
+<#if !(embedded?? && embedded) && optimisticLocking>
+    @Version
+    private Long version;
+</#if><#t>
 <#if auditEnabled?? && auditEnabled>
 
     @CreatedDate

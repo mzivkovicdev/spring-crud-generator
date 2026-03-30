@@ -104,4 +104,100 @@ class MongoEntityGeneratorTest {
         final String modelContent = Files.readString(modelFile);
         assertTrue(modelContent.contains("private Address shippingAddress"));
     }
+
+    @Test
+    void generate_shouldIncludeVersionField_whenOptimisticLockingEnabled() throws Exception {
+
+        final Path outputDir = tempDir.resolve("src/main/java/com/example/optlock");
+        Files.createDirectories(outputDir);
+
+        final ModelDefinition product = new ModelDefinition()
+                .setName("ProductModel")
+                .setStorageName("products")
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition()),
+                        new FieldDefinition().setName("name").setType("String")
+                ));
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.MONGODB)
+                .setOptimisticLocking(true);
+        final MongoEntityGenerator generator = new MongoEntityGenerator(
+                configuration, List.of(product), new PackageConfiguration()
+        );
+
+        generator.generate(product, outputDir.toAbsolutePath().toString());
+
+        final String content = Files.readString(outputDir.resolve("models/ProductModel.java"));
+        assertTrue(content.contains("@Version"), "Document should contain @Version annotation");
+        assertTrue(content.contains("private Long version"), "Document should contain version field");
+        assertTrue(content.contains("import org.springframework.data.annotation.Version"),
+                "Document should import Spring Data @Version");
+    }
+
+    @Test
+    void generate_shouldNotIncludeVersionField_whenOptimisticLockingDisabled() throws Exception {
+
+        final Path outputDir = tempDir.resolve("src/main/java/com/example/nooptlock");
+        Files.createDirectories(outputDir);
+
+        final ModelDefinition product = new ModelDefinition()
+                .setName("ProductModel")
+                .setStorageName("products")
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition()),
+                        new FieldDefinition().setName("name").setType("String")
+                ));
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.MONGODB)
+                .setOptimisticLocking(false);
+        final MongoEntityGenerator generator = new MongoEntityGenerator(
+                configuration, List.of(product), new PackageConfiguration()
+        );
+
+        generator.generate(product, outputDir.toAbsolutePath().toString());
+
+        final String content = Files.readString(outputDir.resolve("models/ProductModel.java"));
+        assertFalse(content.contains("@Version"), "Document should NOT contain @Version when optimistic locking is disabled");
+        assertFalse(content.contains("private Long version"), "Document should NOT contain version field");
+    }
+
+    @Test
+    void generate_shouldNotIncludeVersionFieldInEmbeddedHelper_whenOptimisticLockingEnabled() throws Exception {
+
+        final Path outputDir = tempDir.resolve("src/main/java/com/example/embeddedoptlock");
+        Files.createDirectories(outputDir);
+
+        final ModelDefinition address = new ModelDefinition()
+                .setName("Address")
+                .setFields(List.of(new FieldDefinition().setName("city").setType("String")));
+
+        final ModelDefinition order = new ModelDefinition()
+                .setName("OrderModel")
+                .setStorageName("orders")
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition()),
+                        new FieldDefinition().setName("shippingAddress").setType("JSON<Address>")
+                ));
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.MONGODB)
+                .setOptimisticLocking(true);
+        final MongoEntityGenerator generator = new MongoEntityGenerator(
+                configuration, List.of(order, address), new PackageConfiguration()
+        );
+
+        generator.generate(order, outputDir.toAbsolutePath().toString());
+
+        final String helperContent = Files.readString(outputDir.resolve("models/helpers/Address.java"));
+        assertFalse(helperContent.contains("@Version"),
+                "Embedded helper class should NOT contain @Version even when optimistic locking is enabled");
+        assertFalse(helperContent.contains("private Long version"),
+                "Embedded helper class should NOT contain version field");
+
+        final String documentContent = Files.readString(outputDir.resolve("models/OrderModel.java"));
+        assertTrue(documentContent.contains("@Version"),
+                "Main document should still contain @Version when optimistic locking is enabled");
+    }
 }

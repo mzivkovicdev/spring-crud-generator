@@ -139,11 +139,17 @@ public class AdditionalPropertyGenerator implements ProjectArtifactGenerator {
         context.put("maxDelayMs", maxDelayMs);
         context.put("multiplier", multiplier);
 
+        final boolean isMongo = this.configuration.getDatabase() != null
+                && this.configuration.getDatabase().isMongo();
+        final String retryableTemplate = isMongo
+                ? "annotation/mongo-retryable-annotation.ftl"
+                : "annotation/retryable-annotation.ftl";
+
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeAnnotationPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate(
-                "annotation/retryable-annotation.ftl", context
+                retryableTemplate, context
                 ));
 
         FileWriterUtils.writeToFile(

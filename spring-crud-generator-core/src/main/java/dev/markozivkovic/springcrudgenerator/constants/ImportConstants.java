@@ -162,6 +162,7 @@ public final class ImportConstants {
         public static final String MONGO_REPOSITORY = "org.springframework.data.mongodb.repository.MongoRepository";
         public static final String CREATED_DATE = "org.springframework.data.annotation.CreatedDate";
         public static final String LAST_MODIFIED_DATE = "org.springframework.data.annotation.LastModifiedDate";
+        public static final String VERSION = "org.springframework.data.annotation.Version";
         public static final String AUDITING_ENTITY_LISTENER = "org.springframework.data.jpa.domain.support.AuditingEntityListener";
         public static final String JPA_REPOSITORY = "org.springframework.data.jpa.repository.JpaRepository";
     }
