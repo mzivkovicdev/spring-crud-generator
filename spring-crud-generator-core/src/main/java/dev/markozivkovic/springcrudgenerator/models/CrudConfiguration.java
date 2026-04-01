@@ -17,6 +17,7 @@
 package dev.markozivkovic.springcrudgenerator.models;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -34,8 +35,9 @@ public class CrudConfiguration {
     private Boolean migrationScripts;
     private Boolean dependencyCheck = false;
     private TestConfiguration tests;
+    private SecurityConfiguration security;
     private Map<String, Object> additionalProperties = new HashMap<>();
-    
+
     public CrudConfiguration() {
 
     }
@@ -44,7 +46,7 @@ public class CrudConfiguration {
             final Boolean optimisticLocking, final DockerConfiguration docker, final CacheConfiguration cache,
             final OpenApiDefinition openApi, final GraphQLDefinition graphql, final ErrorResponse errorResponse,
             final Boolean migrationScripts, final Boolean dependencyCheck, final TestConfiguration tests,
-            final Map<String, Object> additionalProperties) {
+            final SecurityConfiguration security, final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.springBootVersion = springBootVersion;
@@ -57,6 +59,7 @@ public class CrudConfiguration {
         this.migrationScripts = migrationScripts;
         this.dependencyCheck = dependencyCheck;
         this.tests = tests;
+        this.security = security;
         this.additionalProperties = additionalProperties;
     }
 
@@ -172,6 +175,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public SecurityConfiguration getSecurity() {
+        return this.security;
+    }
+
+    public CrudConfiguration setSecurity(final SecurityConfiguration security) {
+        this.security = security;
+        return this;
+    }
+
     public Map<String, Object> getAdditionalProperties() {
         return this.additionalProperties;
     }
@@ -201,6 +213,7 @@ public class CrudConfiguration {
                 Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
                 Objects.equals(dependencyCheck, crudConfiguration.dependencyCheck) &&
                 Objects.equals(tests, crudConfiguration.tests) &&
+                Objects.equals(security, crudConfiguration.security) &&
                 Objects.equals(additionalProperties, crudConfiguration.additionalProperties);
     }
 
@@ -208,7 +221,7 @@ public class CrudConfiguration {
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, springBootVersion, optimisticLocking, docker, cache, openApi,
-            graphql, errorResponse, migrationScripts, dependencyCheck, tests, additionalProperties
+            graphql, errorResponse, migrationScripts, dependencyCheck, tests, security, additionalProperties
         );
     }
 
@@ -227,6 +240,7 @@ public class CrudConfiguration {
             ", migrationScripts='" + isMigrationScripts() + "'" +
             ", dependencyCheck='" + getDependencyCheck() + "'" +
             ", tests='" + getTests() + "'" +
+            ", security='" + getSecurity() + "'" +
             ", additionalProperties='" + getAdditionalProperties() + "'" +
             "}";
     }
@@ -691,6 +705,453 @@ public class CrudConfiguration {
                 ", tag='" + getTag() + "'" +
                 ", port='" + getPort() + "'" +
                 "}";
+        }
+    }
+
+    public static class SecurityConfiguration {
+
+        private Boolean enabled;
+        private SecurityTypeEnum type;
+        private BasicAuthConfig basicAuth;
+        private JwtConfig jwt;
+        private OAuth2Config oauth2;
+        private ApiKeyConfig apiKey;
+
+        public SecurityConfiguration() {}
+
+        public SecurityConfiguration(final Boolean enabled, final SecurityTypeEnum type, final BasicAuthConfig basicAuth,
+                final JwtConfig jwt, final OAuth2Config oauth2, final ApiKeyConfig apiKey) {
+            this.enabled = enabled;
+            this.type = type;
+            this.basicAuth = basicAuth;
+            this.jwt = jwt;
+            this.oauth2 = oauth2;
+            this.apiKey = apiKey;
+        }
+
+        public Boolean getEnabled() {
+            return this.enabled;
+        }
+
+        public SecurityConfiguration setEnabled(final Boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public SecurityTypeEnum getType() {
+            return this.type;
+        }
+
+        public SecurityConfiguration setType(final SecurityTypeEnum type) {
+            this.type = type;
+            return this;
+        }
+
+        public BasicAuthConfig getBasicAuth() {
+            return this.basicAuth;
+        }
+
+        public SecurityConfiguration setBasicAuth(final BasicAuthConfig basicAuth) {
+            this.basicAuth = basicAuth;
+            return this;
+        }
+
+        public JwtConfig getJwt() {
+            return this.jwt;
+        }
+
+        public SecurityConfiguration setJwt(final JwtConfig jwt) {
+            this.jwt = jwt;
+            return this;
+        }
+
+        public OAuth2Config getOauth2() {
+            return this.oauth2;
+        }
+
+        public SecurityConfiguration setOauth2(final OAuth2Config oauth2) {
+            this.oauth2 = oauth2;
+            return this;
+        }
+
+        public ApiKeyConfig getApiKey() {
+            return this.apiKey;
+        }
+
+        public SecurityConfiguration setApiKey(final ApiKeyConfig apiKey) {
+            this.apiKey = apiKey;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof SecurityConfiguration)) {
+                return false;
+            }
+            final SecurityConfiguration sc = (SecurityConfiguration) o;
+            return Objects.equals(enabled, sc.enabled) &&
+                    Objects.equals(type, sc.type) &&
+                    Objects.equals(basicAuth, sc.basicAuth) &&
+                    Objects.equals(jwt, sc.jwt) &&
+                    Objects.equals(oauth2, sc.oauth2) &&
+                    Objects.equals(apiKey, sc.apiKey);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(enabled, type, basicAuth, jwt, oauth2, apiKey);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " enabled='" + getEnabled() + "'" +
+                ", type='" + getType() + "'" +
+                ", basicAuth='" + getBasicAuth() + "'" +
+                ", jwt='" + getJwt() + "'" +
+                ", oauth2='" + getOauth2() + "'" +
+                ", apiKey='" + getApiKey() + "'" +
+                "}";
+        }
+
+        public enum SecurityTypeEnum {
+            BASIC_AUTH, JWT, OAUTH2_RESOURCE_SERVER, API_KEY
+        }
+
+        public static class BasicAuthConfig {
+
+            private List<BasicAuthUser> users;
+
+            public BasicAuthConfig() {}
+
+            public BasicAuthConfig(final List<BasicAuthUser> users) {
+                this.users = users;
+            }
+
+            public List<BasicAuthUser> getUsers() {
+                return this.users;
+            }
+
+            public BasicAuthConfig setUsers(final List<BasicAuthUser> users) {
+                this.users = users;
+                return this;
+            }
+
+            @Override
+            public boolean equals(final Object o) {
+                if (o == this) return true;
+                if (!(o instanceof BasicAuthConfig)) return false;
+                return Objects.equals(users, ((BasicAuthConfig) o).users);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(users);
+            }
+
+            @Override
+            public String toString() {
+                return "{users='" + getUsers() + "'}";
+            }
+        }
+
+        public static class BasicAuthUser {
+
+            private String username;
+            private String password;
+            private List<String> roles;
+
+            public BasicAuthUser() {}
+
+            public BasicAuthUser(final String username, final String password, final List<String> roles) {
+                this.username = username;
+                this.password = password;
+                this.roles = roles;
+            }
+
+            public String getUsername() {
+                return this.username;
+            }
+
+            public BasicAuthUser setUsername(final String username) {
+                this.username = username;
+                return this;
+            }
+
+            public String getPassword() {
+                return this.password;
+            }
+
+            public BasicAuthUser setPassword(final String password) {
+                this.password = password;
+                return this;
+            }
+
+            public List<String> getRoles() {
+                return this.roles;
+            }
+
+            public BasicAuthUser setRoles(final List<String> roles) {
+                this.roles = roles;
+                return this;
+            }
+
+            @Override
+            public boolean equals(final Object o) {
+                if (o == this) return true;
+                if (!(o instanceof BasicAuthUser)) return false;
+                final BasicAuthUser u = (BasicAuthUser) o;
+                return Objects.equals(username, u.username) &&
+                        Objects.equals(password, u.password) &&
+                        Objects.equals(roles, u.roles);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(username, password, roles);
+            }
+
+            @Override
+            public String toString() {
+                return "{username='" + username + "', roles='" + roles + "'}";
+            }
+        }
+
+        public static class JwtConfig {
+
+            private String secret;
+            private Long expirationMs;
+            private String issuer;
+
+            public JwtConfig() {}
+
+            public JwtConfig(final String secret, final Long expirationMs, final String issuer) {
+                this.secret = secret;
+                this.expirationMs = expirationMs;
+                this.issuer = issuer;
+            }
+
+            public String getSecret() {
+                return this.secret;
+            }
+
+            public JwtConfig setSecret(final String secret) {
+                this.secret = secret;
+                return this;
+            }
+
+            public Long getExpirationMs() {
+                return this.expirationMs;
+            }
+
+            public JwtConfig setExpirationMs(final Long expirationMs) {
+                this.expirationMs = expirationMs;
+                return this;
+            }
+
+            public String getIssuer() {
+                return this.issuer;
+            }
+
+            public JwtConfig setIssuer(final String issuer) {
+                this.issuer = issuer;
+                return this;
+            }
+
+            @Override
+            public boolean equals(final Object o) {
+                if (o == this) return true;
+                if (!(o instanceof JwtConfig)) return false;
+                final JwtConfig j = (JwtConfig) o;
+                return Objects.equals(secret, j.secret) &&
+                        Objects.equals(expirationMs, j.expirationMs) &&
+                        Objects.equals(issuer, j.issuer);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(secret, expirationMs, issuer);
+            }
+
+            @Override
+            public String toString() {
+                return "{secret='[PROTECTED]', expirationMs='" + expirationMs + "', issuer='" + issuer + "'}";
+            }
+        }
+
+        public static class OAuth2Config {
+
+            private String issuerUri;
+            private String jwkSetUri;
+            private String rolesClaim;
+
+            public OAuth2Config() {}
+
+            public OAuth2Config(final String issuerUri, final String jwkSetUri, final String rolesClaim) {
+                this.issuerUri = issuerUri;
+                this.jwkSetUri = jwkSetUri;
+                this.rolesClaim = rolesClaim;
+            }
+
+            public String getIssuerUri() {
+                return this.issuerUri;
+            }
+
+            public OAuth2Config setIssuerUri(final String issuerUri) {
+                this.issuerUri = issuerUri;
+                return this;
+            }
+
+            public String getJwkSetUri() {
+                return this.jwkSetUri;
+            }
+
+            public OAuth2Config setJwkSetUri(final String jwkSetUri) {
+                this.jwkSetUri = jwkSetUri;
+                return this;
+            }
+
+            public String getRolesClaim() {
+                return this.rolesClaim;
+            }
+
+            public OAuth2Config setRolesClaim(final String rolesClaim) {
+                this.rolesClaim = rolesClaim;
+                return this;
+            }
+
+            @Override
+            public boolean equals(final Object o) {
+                if (o == this) return true;
+                if (!(o instanceof OAuth2Config)) return false;
+                final OAuth2Config c = (OAuth2Config) o;
+                return Objects.equals(issuerUri, c.issuerUri) &&
+                        Objects.equals(jwkSetUri, c.jwkSetUri) &&
+                        Objects.equals(rolesClaim, c.rolesClaim);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(issuerUri, jwkSetUri, rolesClaim);
+            }
+
+            @Override
+            public String toString() {
+                return "{issuerUri='" + issuerUri + "', jwkSetUri='" + jwkSetUri + "', rolesClaim='" + rolesClaim + "'}";
+            }
+        }
+
+        public static class ApiKeyConfig {
+
+            private String headerName;
+            private List<ApiKeyEntry> keys;
+
+            public ApiKeyConfig() {}
+
+            public ApiKeyConfig(final String headerName, final List<ApiKeyEntry> keys) {
+                this.headerName = headerName;
+                this.keys = keys;
+            }
+
+            public String getHeaderName() {
+                return this.headerName;
+            }
+
+            public ApiKeyConfig setHeaderName(final String headerName) {
+                this.headerName = headerName;
+                return this;
+            }
+
+            public List<ApiKeyEntry> getKeys() {
+                return this.keys;
+            }
+
+            public ApiKeyConfig setKeys(final List<ApiKeyEntry> keys) {
+                this.keys = keys;
+                return this;
+            }
+
+            @Override
+            public boolean equals(final Object o) {
+                if (o == this) return true;
+                if (!(o instanceof ApiKeyConfig)) return false;
+                final ApiKeyConfig c = (ApiKeyConfig) o;
+                return Objects.equals(headerName, c.headerName) && Objects.equals(keys, c.keys);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(headerName, keys);
+            }
+
+            @Override
+            public String toString() {
+                return "{headerName='" + headerName + "', keys='" + keys + "'}";
+            }
+        }
+
+        public static class ApiKeyEntry {
+
+            private String name;
+            private String value;
+            private List<String> roles;
+
+            public ApiKeyEntry() {}
+
+            public ApiKeyEntry(final String name, final String value, final List<String> roles) {
+                this.name = name;
+                this.value = value;
+                this.roles = roles;
+            }
+
+            public String getName() {
+                return this.name;
+            }
+
+            public ApiKeyEntry setName(final String name) {
+                this.name = name;
+                return this;
+            }
+
+            public String getValue() {
+                return this.value;
+            }
+
+            public ApiKeyEntry setValue(final String value) {
+                this.value = value;
+                return this;
+            }
+
+            public List<String> getRoles() {
+                return this.roles;
+            }
+
+            public ApiKeyEntry setRoles(final List<String> roles) {
+                this.roles = roles;
+                return this;
+            }
+
+            @Override
+            public boolean equals(final Object o) {
+                if (o == this) return true;
+                if (!(o instanceof ApiKeyEntry)) return false;
+                final ApiKeyEntry e = (ApiKeyEntry) o;
+                return Objects.equals(name, e.name) &&
+                        Objects.equals(value, e.value) &&
+                        Objects.equals(roles, e.roles);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(name, value, roles);
+            }
+
+            @Override
+            public String toString() {
+                return "{name='" + name + "', roles='" + roles + "'}";
+            }
         }
     }
 
