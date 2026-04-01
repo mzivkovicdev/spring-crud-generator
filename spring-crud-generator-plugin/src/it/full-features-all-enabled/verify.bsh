@@ -37,6 +37,7 @@ requireFile("src/main/java/com/example/fullfeatures/configuration/HibernateLazyN
 requireFile("src/main/java/com/example/fullfeatures/configuration/GraphQlConfiguration.java");
 requireFile("src/main/java/com/example/fullfeatures/configuration/EnableRetryConfiguration.java");
 requireFile("src/main/java/com/example/fullfeatures/configuration/JacksonNullExclusionConfig.java");
+requireFile("src/main/java/com/example/fullfeatures/configuration/SecurityConfiguration.java");
 requireFile("src/main/java/com/example/fullfeatures/annotation/OptimisticLockingRetry.java");
 requireFile("src/main/java/com/example/fullfeatures/controller/ProductController.java");
 requireFile("src/main/java/com/example/fullfeatures/controller/OrderController.java");
