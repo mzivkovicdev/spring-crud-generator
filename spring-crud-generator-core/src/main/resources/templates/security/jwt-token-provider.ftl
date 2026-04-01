@@ -1,4 +1,4 @@
-${jwtImports}
+${imports}
 
 @Component
 public class JwtTokenProvider {

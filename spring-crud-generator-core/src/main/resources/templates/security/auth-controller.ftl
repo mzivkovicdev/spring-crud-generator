@@ -1,4 +1,4 @@
-${controllerImports}
+${imports}
 
 @RestController
 @RequestMapping("/auth")

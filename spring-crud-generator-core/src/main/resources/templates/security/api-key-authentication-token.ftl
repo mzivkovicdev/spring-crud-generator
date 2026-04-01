@@ -1,4 +1,4 @@
-${tokenImports}
+${imports}
 
 public class ApiKeyAuthenticationToken extends AbstractAuthenticationToken {
 

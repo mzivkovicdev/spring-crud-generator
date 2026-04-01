@@ -1,4 +1,4 @@
-${serviceImports}
+${imports}
 
 /**
  * UserDetailsService implementation.

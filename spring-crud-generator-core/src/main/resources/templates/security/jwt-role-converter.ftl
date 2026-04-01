@@ -1,4 +1,4 @@
-${converterImports}
+${imports}
 
 /**
  * Converts JWT claims to Spring Security GrantedAuthority objects.

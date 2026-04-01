@@ -21,6 +21,7 @@ import static dev.markozivkovic.springcrudgenerator.constants.ImportConstants.PA
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import dev.markozivkovic.springcrudgenerator.imports.RestControllerImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.SecurityDefinition;
 import dev.markozivkovic.springcrudgenerator.templates.RestControllerTemplateContext;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
@@ -101,15 +103,17 @@ public class RestControllerGenerator implements CodeGenerator {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeControllerClassContext(modelDefinition);
         final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+        final boolean securityEnabled = isSecurityEnabled(this.configuration);
 
         context.put("basePath", basePath);
         context.put("projectImports", RestControllerImports.computeControllerProjectImports(modelDefinition, outputDir, swagger, packageConfiguration));
-        context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger));
-        context.put("createBulkResource", generateCreateBulkResourceEndpoint(modelDefinition, swagger));
-        context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger));
-        context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition, swagger));
-        context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition, swagger));
-        context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition, swagger));
+        context.put("securityEnabled", securityEnabled);
+        context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger, securityEnabled));
+        context.put("createBulkResource", generateCreateBulkResourceEndpoint(modelDefinition, swagger, securityEnabled));
+        context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger, securityEnabled));
+        context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition, swagger, securityEnabled));
+        context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition, swagger, securityEnabled));
+        context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition, swagger, securityEnabled));
         context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition, swagger));
         context.put("removeResourceRelation", generateRemoveResourceRelationEndpoint(modelDefinition, swagger));
         context.put(TemplateContextConstants.SWAGGER, swagger);
@@ -125,10 +129,12 @@ public class RestControllerGenerator implements CodeGenerator {
      * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the create resource endpoint method.
      */
-    private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entities);
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "create", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-resource.ftl", context);
     }
@@ -140,7 +146,8 @@ public class RestControllerGenerator implements CodeGenerator {
      * @param swagger Indicates whether Swagger generator is enabled.
      * @return A string representation of the bulk create resource endpoint method, or null when disabled.
      */
-    private String generateCreateBulkResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateCreateBulkResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
 
         if (!modelDefinition.isBulkCreateEnabled()) {
             return null;
@@ -148,6 +155,7 @@ public class RestControllerGenerator implements CodeGenerator {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeCreateEndpointContext(modelDefinition, entities);
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "create", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-bulk-resource.ftl", context);
     }
@@ -160,10 +168,12 @@ public class RestControllerGenerator implements CodeGenerator {
      * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the get resource endpoint method.
      */
-    private String generateGetResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateGetResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeGetByIdEndpointContext(modelDefinition);
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "getById", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-resource.ftl", context);
     }
@@ -176,13 +186,15 @@ public class RestControllerGenerator implements CodeGenerator {
      * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the get all resources endpoint method.
      */
-    private String generateGetAllResourcesEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateGetAllResourcesEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeGetAllEndpointContext(modelDefinition);
         context.put(TemplateContextConstants.SWAGGER, swagger);
         context.put(
             TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties())
         );
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "getAll", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/get-all-resources.ftl", context);
     }
@@ -195,10 +207,12 @@ public class RestControllerGenerator implements CodeGenerator {
      * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the update resource endpoint method.
      */
-    private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeUpdateEndpointContext(modelDefinition, swagger);
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "update", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/update-resource.ftl", context);
     }
@@ -211,10 +225,12 @@ public class RestControllerGenerator implements CodeGenerator {
      * @param swagger Indicates whether Swagger generatror is enabled.
      * @return A string representation of the delete resource endpoint method.
      */
-    private String generateDeleteResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateDeleteResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeDeleteEndpointContext(modelDefinition);
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "delete", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/delete-resource.ftl", context);
     }
@@ -250,9 +266,9 @@ public class RestControllerGenerator implements CodeGenerator {
      *         or null if the context is empty.
      */
     private String generateRemoveResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
-        
+
         final Map<String, Object> context = RestControllerTemplateContext.computeRemoveResourceRelationEndpointContext(modelDefinition, entities);
-        
+
         if (context.isEmpty()) {
             return null;
         }
@@ -260,6 +276,66 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/remove-resource-relation.ftl", context);
+    }
+
+    /**
+     * Returns a @PreAuthorize expression for the given endpoint operation, or null when security is disabled.
+     * When security is enabled but the entity has no per-operation roles, returns "authenticated()" as default.
+     *
+     * @param securityDefinition the entity-level security definition (may be null)
+     * @param operation          the operation name: create, getAll, getById, update, delete
+     * @param securityEnabled    whether global security is enabled
+     * @return the PreAuthorize expression string, or null
+     */
+    private static String computePreAuthorize(final SecurityDefinition securityDefinition,
+            final String operation, final boolean securityEnabled) {
+
+        if (!securityEnabled) {
+            return null;
+        }
+
+        if (Objects.isNull(securityDefinition)) {
+            return "isAuthenticated()";
+        }
+
+        final List<String> roles;
+        switch (operation) {
+            case "create":
+                roles = securityDefinition.getCreate();
+                break;
+            case "getAll":
+                roles = securityDefinition.getGetAll();
+                break;
+            case "getById":
+                roles = securityDefinition.getGetById();
+                break;
+            case "update":
+                roles = securityDefinition.getUpdate();
+                break;
+            case "delete":
+                roles = securityDefinition.getDelete();
+                break;
+            default:
+                roles = null;
+        }
+
+        if (Objects.isNull(roles) || roles.isEmpty()) {
+            return "isAuthenticated()";
+        }
+
+        final String roleList = roles.stream()
+            .map(r -> "'" + r + "'")
+            .collect(Collectors.joining(", "));
+
+        return "hasAnyRole(" + roleList + ")";
+    }
+
+    /**
+     * Returns true if security is enabled in the configuration.
+     */
+    private static boolean isSecurityEnabled(final CrudConfiguration configuration) {
+        return Objects.nonNull(configuration.getSecurity())
+                && Boolean.TRUE.equals(configuration.getSecurity().getEnabled());
     }
 
 }

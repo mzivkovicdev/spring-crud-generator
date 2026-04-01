@@ -1,7 +1,4 @@
-${securityImports}<#if type?string == "BASIC_AUTH">
-${basicAuthImports}</#if><#if type?string == "JWT">
-${jwtImports}</#if><#if type?string == "API_KEY">
-${apiKeyImports}</#if>
+${imports}
 
 @Configuration
 @EnableWebSecurity

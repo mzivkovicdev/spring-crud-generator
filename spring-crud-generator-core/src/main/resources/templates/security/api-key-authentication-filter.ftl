@@ -1,4 +1,4 @@
-${filterImports}
+${imports}
 
 @Component
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
