@@ -221,5 +221,32 @@ public final class ImportConstants {
         private GraphQLTest() {}
         public static final String GRAPH_QL_TESTER = "org.springframework.graphql.test.tester.GraphQlTester";
     }
-    
+
+    public static final class SpringSecurity {
+        private SpringSecurity() {}
+        public static final String PRE_AUTHORIZE = "org.springframework.security.access.prepost.PreAuthorize";
+        public static final String ENABLE_METHOD_SECURITY = "org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity";
+        public static final String ENABLE_WEB_SECURITY = "org.springframework.security.config.annotation.web.configuration.EnableWebSecurity";
+        public static final String SECURITY_FILTER_CHAIN = "org.springframework.security.web.SecurityFilterChain";
+        public static final String HTTP_SECURITY = "org.springframework.security.config.annotation.web.builders.HttpSecurity";
+        public static final String SESSION_CREATION_POLICY = "org.springframework.security.config.http.SessionCreationPolicy";
+        public static final String BCRYPT_PASSWORD_ENCODER = "org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder";
+        public static final String PASSWORD_ENCODER = "org.springframework.security.crypto.password.PasswordEncoder";
+        public static final String USER_DETAILS = "org.springframework.security.core.userdetails.UserDetails";
+        public static final String USER_DETAILS_SERVICE = "org.springframework.security.core.userdetails.UserDetailsService";
+        public static final String USER_DETAILS_SERVICE_IMPL = "org.springframework.security.core.userdetails.UsernameNotFoundException";
+        public static final String USER = "org.springframework.security.core.userdetails.User";
+        public static final String IN_MEMORY_USER_DETAILS_MANAGER = "org.springframework.security.provisioning.InMemoryUserDetailsManager";
+        public static final String USERNAME_PASSWORD_AUTH_FILTER = "org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter";
+        public static final String AUTHENTICATION_MANAGER = "org.springframework.security.authentication.AuthenticationManager";
+        public static final String AUTHENTICATION_CONFIGURATION = "org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration";
+        public static final String ONCE_PER_REQUEST_FILTER = "org.springframework.web.filter.OncePerRequestFilter";
+        public static final String SECURITY_CONTEXT_HOLDER = "org.springframework.security.core.context.SecurityContextHolder";
+        public static final String GRANTED_AUTHORITY = "org.springframework.security.core.GrantedAuthority";
+        public static final String SIMPLE_GRANTED_AUTHORITY = "org.springframework.security.core.authority.SimpleGrantedAuthority";
+        public static final String ABSTRACT_AUTH_TOKEN = "org.springframework.security.authentication.AbstractAuthenticationToken";
+        public static final String JWT_AUTHENTICATION_CONVERTER = "org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter";
+        public static final String JWT_GRANTED_AUTHORITIES_CONVERTER = "org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter";
+    }
+
 }
