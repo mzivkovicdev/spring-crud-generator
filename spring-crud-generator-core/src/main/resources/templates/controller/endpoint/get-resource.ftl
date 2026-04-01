@@ -4,6 +4,9 @@
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 <#assign openApiResponse = strippedModelName + "Payload">
 
+    <#if preAuthorize?? && preAuthorize?has_content>
+    @PreAuthorize("${preAuthorize}")
+    </#if>
     <#if swagger>@Override<#else>@GetMapping("/{id}")</#if>
     public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiResponse}</#if>> ${uncapModelName}sIdGet(<#if !swagger>@PathVariable </#if>final ${idType} id) {
         <#if !swagger>

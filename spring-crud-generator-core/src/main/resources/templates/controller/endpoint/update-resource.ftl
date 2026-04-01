@@ -6,6 +6,9 @@
 <#assign openApiResponse = strippedModelName + "Payload">
 <#assign openApiRequest = strippedModelName + "UpdatePayload">
 
+    <#if preAuthorize?? && preAuthorize?has_content>
+    @PreAuthorize("${preAuthorize}")
+    </#if>
     <#if swagger>
     @Override
     <#else>
