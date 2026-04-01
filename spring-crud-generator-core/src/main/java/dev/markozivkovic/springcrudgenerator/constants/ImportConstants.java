@@ -28,14 +28,17 @@ public final class ImportConstants {
 
     public static final class Java {
         private Java() {}
+        public static final String IO_EXCEPTION = "java.io.IOException";
         public static final String OBJECTS = "java.util.Objects";
         public static final String OPTIONAL = "java.util.Optional";
         public static final String UUID = "java.util.UUID";
+        public static final String COLLECTION = "java.util.Collection";
         public static final String LIST = "java.util.List";
         public static final String SET = "java.util.Set";
         public static final String ARRAY_LIST = "java.util.ArrayList";
         public static final String HASH_SET = "java.util.HashSet";
         public static final String MAP = "java.util.Map";
+        public static final String DATE = "java.util.Date";
         public static final String COLLECTORS = "java.util.stream.Collectors";
         public static final String BIG_DECIMAL = "java.math.BigDecimal";
         public static final String BIG_INTEGER = "java.math.BigInteger";
@@ -44,8 +47,17 @@ public final class ImportConstants {
         public static final String LOCAL_DATE_TIME = "java.time.LocalDateTime";
     }
 
+    public static final class Javax {
+        private Javax() {}
+        public static final String SECRET_KEY = "javax.crypto.SecretKey";
+    }
+
     public static final class Jakarta {
         private Jakarta() {}
+        public static final String FILTER_CHAIN = "jakarta.servlet.FilterChain";
+        public static final String SERVLET_EXCEPTION = "jakarta.servlet.ServletException";
+        public static final String HTTP_SERVLET_REQUEST = "jakarta.servlet.http.HttpServletRequest";
+        public static final String HTTP_SERVLET_RESPONSE = "jakarta.servlet.http.HttpServletResponse";
         public static final String ENTITY = "jakarta.persistence.Entity";
         public static final String NAMED_ENTITY_GRAPH = "jakarta.persistence.NamedEntityGraph";
         public static final String NAMED_ATTRIBUTE_NODE = "jakarta.persistence.NamedAttributeNode";
@@ -119,10 +131,13 @@ public final class ImportConstants {
     public static final class SpringBean {
         private SpringBean() {}
         public static final String AUTOWIRED = "org.springframework.beans.factory.annotation.Autowired";
+        public static final String VALUE = "org.springframework.beans.factory.annotation.Value";
     }
 
     public static final class SpringContext {
         private SpringContext() {}
+        public static final String BEAN = "org.springframework.context.annotation.Bean";
+        public static final String CONFIGURATION = "org.springframework.context.annotation.Configuration";
         public static final String IMPORT = "org.springframework.context.annotation.Import";
     }
 
@@ -135,16 +150,20 @@ public final class ImportConstants {
 
     public static final class SpringHttp {
         private SpringHttp() {}
+        public static final String HTTP_STATUS = "org.springframework.http.HttpStatus";
         public static final String MEDIA_TYPE = "org.springframework.http.MediaType";
+        public static final String RESPONSE_ENTITY = "org.springframework.http.ResponseEntity";
     }
 
     public static final class SpringStereotype {
         private SpringStereotype() {}
+        public static final String COMPONENT = "org.springframework.stereotype.Component";
         public static final String SERVICE = "org.springframework.stereotype.Service";
     }
 
     public static final class SpringCore {
         private SpringCore() {}
+        public static final String CONVERTER = "org.springframework.core.convert.converter.Converter";
         public static final String PARAMETERIZED_TYPE_REFERENCE = "org.springframework.core.ParameterizedTypeReference";
     }
 
@@ -221,5 +240,59 @@ public final class ImportConstants {
         private GraphQLTest() {}
         public static final String GRAPH_QL_TESTER = "org.springframework.graphql.test.tester.GraphQlTester";
     }
-    
+
+    public static final class SpringSecurity {
+        private SpringSecurity() {}
+        public static final String PRE_AUTHORIZE = "org.springframework.security.access.prepost.PreAuthorize";
+        public static final String ABSTRACT_AUTH_TOKEN = "org.springframework.security.authentication.AbstractAuthenticationToken";
+        public static final String AUTHENTICATION_MANAGER = "org.springframework.security.authentication.AuthenticationManager";
+        public static final String AUTHENTICATION_CONFIGURATION = "org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration";
+        public static final String ENABLE_METHOD_SECURITY = "org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity";
+        public static final String HTTP_SECURITY = "org.springframework.security.config.annotation.web.builders.HttpSecurity";
+        public static final String ENABLE_WEB_SECURITY = "org.springframework.security.config.annotation.web.configuration.EnableWebSecurity";
+        public static final String SESSION_CREATION_POLICY = "org.springframework.security.config.http.SessionCreationPolicy";
+        public static final String AUTHENTICATION = "org.springframework.security.core.Authentication";
+        public static final String GRANTED_AUTHORITY = "org.springframework.security.core.GrantedAuthority";
+        public static final String SIMPLE_GRANTED_AUTHORITY = "org.springframework.security.core.authority.SimpleGrantedAuthority";
+        public static final String SECURITY_CONTEXT_HOLDER = "org.springframework.security.core.context.SecurityContextHolder";
+        public static final String USER = "org.springframework.security.core.userdetails.User";
+        public static final String USER_DETAILS = "org.springframework.security.core.userdetails.UserDetails";
+        public static final String USER_DETAILS_SERVICE = "org.springframework.security.core.userdetails.UserDetailsService";
+        public static final String USERNAME_NOT_FOUND_EXCEPTION = "org.springframework.security.core.userdetails.UsernameNotFoundException";
+        public static final String BCRYPT_PASSWORD_ENCODER = "org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder";
+        public static final String PASSWORD_ENCODER = "org.springframework.security.crypto.password.PasswordEncoder";
+        public static final String IN_MEMORY_USER_DETAILS_MANAGER = "org.springframework.security.provisioning.InMemoryUserDetailsManager";
+        public static final String JWT_OAUTH2 = "org.springframework.security.oauth2.jwt.Jwt";
+        public static final String JWT_AUTHENTICATION_CONVERTER = "org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter";
+        public static final String JWT_GRANTED_AUTHORITIES_CONVERTER = "org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter";
+        public static final String SECURITY_FILTER_CHAIN = "org.springframework.security.web.SecurityFilterChain";
+        public static final String USERNAME_PASSWORD_AUTH_FILTER = "org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter";
+        public static final String USERNAME_PASSWORD_AUTH_TOKEN = "org.springframework.security.authentication.UsernamePasswordAuthenticationToken";
+        public static final String WEB_AUTH_DETAILS_SOURCE = "org.springframework.security.web.authentication.WebAuthenticationDetailsSource";
+        public static final String ONCE_PER_REQUEST_FILTER = "org.springframework.web.filter.OncePerRequestFilter";
+    }
+
+    public static final class SpringWeb {
+        private SpringWeb() {}
+        public static final String CONTROLLER_ADVICE = "org.springframework.web.bind.annotation.ControllerAdvice";
+        public static final String DELETE_MAPPING = "org.springframework.web.bind.annotation.DeleteMapping";
+        public static final String EXCEPTION_HANDLER = "org.springframework.web.bind.annotation.ExceptionHandler";
+        public static final String GET_MAPPING = "org.springframework.web.bind.annotation.GetMapping";
+        public static final String PATH_VARIABLE = "org.springframework.web.bind.annotation.PathVariable";
+        public static final String POST_MAPPING = "org.springframework.web.bind.annotation.PostMapping";
+        public static final String PUT_MAPPING = "org.springframework.web.bind.annotation.PutMapping";
+        public static final String REQUEST_BODY = "org.springframework.web.bind.annotation.RequestBody";
+        public static final String REQUEST_MAPPING = "org.springframework.web.bind.annotation.RequestMapping";
+        public static final String REQUEST_PARAM = "org.springframework.web.bind.annotation.RequestParam";
+        public static final String REST_CONTROLLER = "org.springframework.web.bind.annotation.RestController";
+        public static final String REST_CONTROLLER_ADVICE = "org.springframework.web.bind.annotation.RestControllerAdvice";
+    }
+
+    public static final class Jjwt {
+        private Jjwt() {}
+        public static final String CLAIMS = "io.jsonwebtoken.Claims";
+        public static final String JWTS = "io.jsonwebtoken.Jwts";
+        public static final String KEYS = "io.jsonwebtoken.security.Keys";
+    }
+
 }

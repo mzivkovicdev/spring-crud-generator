@@ -6,6 +6,9 @@
 <#if swagger><#assign responseClass = strippedModelName + "sGet200Response"></#if>
 <#assign openApiModel = strippedModelName + "Payload">
 
+    <#if preAuthorize?? && preAuthorize?has_content>
+    @PreAuthorize("${preAuthorize}")
+    </#if>
     <#if swagger>@Override<#else>@GetMapping</#if>
     public ResponseEntity<<#if !swagger>PageTO<${transferObjectClass}><#else>${responseClass}</#if>> ${uncapModelName}sGet(
             <#if !swagger>@RequestParam </#if>final Integer pageNumber,

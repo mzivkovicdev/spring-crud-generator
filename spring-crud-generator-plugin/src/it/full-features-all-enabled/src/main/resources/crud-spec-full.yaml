@@ -24,6 +24,19 @@ configuration:
   graphql:
     enabled: true
     scalarConfig: true
+  security:
+    enabled: true
+    type: BASIC_AUTH
+    basicAuth:
+      users:
+        - username: admin
+          password: admin
+          roles:
+            - ADMIN
+        - username: user
+          password: user
+          roles:
+            - USER
   errorResponse: simple
   migrationScripts: true
   tests:

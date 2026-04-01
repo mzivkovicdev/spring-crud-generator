@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Base64;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,7 @@ class FullFeaturesApiIT {
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final JsonMapper OBJECT_MAPPER = JsonMapper.builder().build();
     private static final String BASE_URL = System.getProperty("it.baseUrl", "http://localhost:18081");
+    private static final String BASIC_AUTH_HEADER = "Basic " + Base64.getEncoder().encodeToString("admin:admin".getBytes());
 
     @Test
     void shouldExecuteCrudAndGraphQlFlowAgainstGeneratedApp() throws Exception {
@@ -168,7 +170,8 @@ class FullFeaturesApiIT {
 
         final HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + path))
-                .header("Accept", "application/json");
+                .header("Accept", "application/json")
+                .header("Authorization", BASIC_AUTH_HEADER);
 
         if (body != null) {
             requestBuilder.header("Content-Type", "application/json");
