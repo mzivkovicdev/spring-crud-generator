@@ -260,10 +260,10 @@ class ServiceUnitTestGeneratorTest {
             sut.generate(model, "/project/src/main/java/com/acme");
         }
 
-        assertEquals(true, getByIdCtxRef.get().get("mongoSoftDelete"));
-        assertEquals(true, getAllCtxRef.get().get("mongoSoftDelete"));
-        assertEquals(true, deleteCtxRef.get().get("mongoSoftDelete"));
-        assertEquals(true, updateCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(true, getByIdCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        assertEquals(true, getAllCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        assertEquals(true, deleteCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        assertEquals(true, updateCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
     }
 
     @Test
@@ -351,9 +351,9 @@ class ServiceUnitTestGeneratorTest {
             sut.generate(model, "/project/src/main/java/com/acme");
         }
 
-        assertEquals(false, getByIdCtxRef.get().get("mongoSoftDelete"));
-        assertEquals(false, getAllCtxRef.get().get("mongoSoftDelete"));
-        assertEquals(false, deleteCtxRef.get().get("mongoSoftDelete"));
-        assertEquals(false, updateCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(false, getByIdCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        assertEquals(false, getAllCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        assertEquals(false, deleteCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+        assertEquals(false, updateCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED));
     }
 }

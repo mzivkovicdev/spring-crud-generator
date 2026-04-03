@@ -200,7 +200,7 @@ public class ServiceGenerator implements CodeGenerator {
     private String generateGetAllMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = ServiceTemplateContext.computeGetAllContext(modelDefinition);
-        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
+        context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-all.ftl", context);
     }
@@ -263,7 +263,7 @@ public class ServiceGenerator implements CodeGenerator {
     private String generateDeleteByIdMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = ServiceTemplateContext.computeDeleteByIdContext(modelDefinition);
-        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
+        context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/delete-by-id.ftl", context);
@@ -279,7 +279,7 @@ public class ServiceGenerator implements CodeGenerator {
     public String generateGetByIdMethod(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = ServiceTemplateContext.computeGetByIdContext(modelDefinition);
-        context.put("mongoSoftDelete", this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
+        context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         this.putCacheFlagToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/get-by-id.ftl", context);

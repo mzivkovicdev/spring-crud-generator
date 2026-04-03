@@ -4,14 +4,14 @@
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         final ${idType} ${idField} = ${modelName?uncap_first}.get${idField?cap_first}();
 
-        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
+        when(this.${strippedModelName?uncap_first}Repository.<#if softDeleteEnabled?? && softDeleteEnabled>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
                 .thenReturn(Optional.of(${modelName?uncap_first}));
 
         final ${modelName} result = this.${strippedModelName?uncap_first}Service.getById(${idField});
 
         verify${strippedModelName?cap_first}(result, ${modelName?uncap_first});
 
-        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
+        verify(this.${strippedModelName?uncap_first}Repository).<#if softDeleteEnabled?? && softDeleteEnabled>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
     }
 
     @Test
@@ -19,7 +19,7 @@
 
         final ${idType} ${idField} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
 
-        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
+        when(this.${strippedModelName?uncap_first}Repository.<#if softDeleteEnabled?? && softDeleteEnabled>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> this.${strippedModelName?uncap_first}Service.getById(${idField}))
@@ -29,6 +29,6 @@
                 )
                 .hasNoCause();
 
-        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
+        verify(this.${strippedModelName?uncap_first}Repository).<#if softDeleteEnabled?? && softDeleteEnabled>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
     }
     

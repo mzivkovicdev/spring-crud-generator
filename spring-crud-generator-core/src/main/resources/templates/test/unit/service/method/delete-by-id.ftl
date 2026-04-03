@@ -3,7 +3,7 @@
     void deleteById() {
 
         final ${idType} ${idField} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
-        <#if mongoSoftDelete?? && mongoSoftDelete>
+        <#if softDeleteEnabled?? && softDeleteEnabled>
         final ${modelName} ${modelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
         when(this.${strippedModelName?uncap_first}Repository.findByIdAndDeletedFalse(${idField}))
                 .thenReturn(Optional.of(${modelName?uncap_first}));
@@ -11,7 +11,7 @@
 
         this.${strippedModelName?uncap_first}Service.deleteById(${idField});
 
-        <#if mongoSoftDelete?? && mongoSoftDelete>
+        <#if softDeleteEnabled?? && softDeleteEnabled>
         assertThat(${modelName?uncap_first}.getDeleted()).isTrue();
         verify(this.${strippedModelName?uncap_first}Repository).findByIdAndDeletedFalse(${idField});
         verify(this.${strippedModelName?uncap_first}Repository).save(${modelName?uncap_first});
@@ -19,7 +19,7 @@
         verify(this.${strippedModelName?uncap_first}Repository).deleteById(${idField});
         </#if>
     }
-    <#if mongoSoftDelete?? && mongoSoftDelete>
+    <#if softDeleteEnabled?? && softDeleteEnabled>
 
     @Test
     void deleteById_notFound() {
