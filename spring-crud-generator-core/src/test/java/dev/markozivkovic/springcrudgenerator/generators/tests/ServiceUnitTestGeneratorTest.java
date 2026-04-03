@@ -198,6 +198,7 @@ class ServiceUnitTestGeneratorTest {
         final AtomicReference<Map<String, Object>> getByIdCtxRef = new AtomicReference<>();
         final AtomicReference<Map<String, Object>> getAllCtxRef = new AtomicReference<>();
         final AtomicReference<Map<String, Object>> deleteCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> updateCtxRef = new AtomicReference<>();
 
         try (final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
@@ -251,7 +252,8 @@ class ServiceUnitTestGeneratorTest {
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/delete-by-id.ftl"), anyMap()))
                     .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/create.ftl"), anyMap())).thenReturn("");
-            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/update-by-id.ftl"), anyMap())).thenReturn("");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/update-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { updateCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/service-test-class-template.ftl"), anyMap())).thenReturn("");
             fileWriter.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
 
@@ -261,6 +263,7 @@ class ServiceUnitTestGeneratorTest {
         assertEquals(true, getByIdCtxRef.get().get("mongoSoftDelete"));
         assertEquals(true, getAllCtxRef.get().get("mongoSoftDelete"));
         assertEquals(true, deleteCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(true, updateCtxRef.get().get("mongoSoftDelete"));
     }
 
     @Test
@@ -286,6 +289,7 @@ class ServiceUnitTestGeneratorTest {
         final AtomicReference<Map<String, Object>> getByIdCtxRef = new AtomicReference<>();
         final AtomicReference<Map<String, Object>> getAllCtxRef = new AtomicReference<>();
         final AtomicReference<Map<String, Object>> deleteCtxRef = new AtomicReference<>();
+        final AtomicReference<Map<String, Object>> updateCtxRef = new AtomicReference<>();
 
         try (final MockedStatic<UnitTestUtils> unitTestUtils = mockStatic(UnitTestUtils.class);
              final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
@@ -339,7 +343,8 @@ class ServiceUnitTestGeneratorTest {
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/delete-by-id.ftl"), anyMap()))
                     .thenAnswer(inv -> { deleteCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/create.ftl"), anyMap())).thenReturn("");
-            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/update-by-id.ftl"), anyMap())).thenReturn("");
+            ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/method/update-by-id.ftl"), anyMap()))
+                    .thenAnswer(inv -> { updateCtxRef.set(inv.getArgument(1, Map.class)); return ""; });
             ftl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("test/unit/service/service-test-class-template.ftl"), anyMap())).thenReturn("");
             fileWriter.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString(), anyString())).thenAnswer(inv -> null);
 
@@ -349,5 +354,6 @@ class ServiceUnitTestGeneratorTest {
         assertEquals(false, getByIdCtxRef.get().get("mongoSoftDelete"));
         assertEquals(false, getAllCtxRef.get().get("mongoSoftDelete"));
         assertEquals(false, deleteCtxRef.get().get("mongoSoftDelete"));
+        assertEquals(false, updateCtxRef.get().get("mongoSoftDelete"));
     }
 }

@@ -30,3 +30,13 @@
         return this.updatedAt;
     }
 </#if>
+<#if softDeleteEnabled?? && softDeleteEnabled>
+    public boolean getDeleted() {
+        return this.deleted;
+    }
+
+    public ${className} setDeleted(final boolean deleted) {
+        this.deleted = deleted;
+        return this;
+    }
+</#if>

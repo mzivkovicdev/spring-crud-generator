@@ -12,7 +12,7 @@
         final ${idType} ${idField} = ${strippedModelName?uncap_first}.get${idField?cap_first}();
         <#if !rel.isCollection?? || !rel.isCollection>${strippedModelName?uncap_first}.set${rel.relationField?cap_first}(null);</#if>
 
-        when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
+        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
                 .thenReturn(Optional.of(${strippedModelName?uncap_first}));
         when(this.${strippedModelName?uncap_first}Repository.saveAndFlush(any()))
                 .thenReturn(${strippedModelName?uncap_first});
@@ -23,7 +23,7 @@
 
         verify${strippedModelName?cap_first}(result, ${strippedModelName?uncap_first});
 
-        verify(this.${strippedModelName?uncap_first}Repository).findById(${idField});
+        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
         verify(this.${strippedModelName?uncap_first}Repository).saveAndFlush(any());
     }
 
@@ -33,7 +33,7 @@
         final ${idType} ${idField} = ${generatorFieldName}.${singleObjectMethodName}(${idType}.class);
         final ${rel.relationClassName} ${rel.relationClassName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${rel.relationClassName}.class);
 
-        when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
+        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> this.${strippedModelName?uncap_first}Service.${rel.methodName}(${idField}, ${rel.relationClassName?uncap_first}))
@@ -43,7 +43,7 @@
                 )
                 .hasNoCause();
 
-        verify(this.${strippedModelName?uncap_first}Repository).findById(${idField});
+        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
     }
 
     @Test
@@ -59,7 +59,7 @@
         </#if>
         final ${idType} ${idField} = ${strippedModelName?uncap_first}.get${idField?cap_first}();
 
-        when(this.${strippedModelName?uncap_first}Repository.findById(${idField}))
+        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
                 .thenReturn(Optional.of(${strippedModelName?uncap_first}));
 
         assertThatThrownBy(() -> this.${strippedModelName?uncap_first}Service.${rel.methodName}(${idField}, ${rel.relationClassName?uncap_first}))
@@ -69,6 +69,6 @@
                 )
                 .hasNoCause();
 
-        verify(this.${strippedModelName?uncap_first}Repository).findById(${idField});
+        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
     }
 </#list>
