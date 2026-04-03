@@ -14,10 +14,10 @@
         final String sortBy = null;
         final String sortDirection = null;
 
-        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize)))
+        when(this.${strippedModelName?uncap_first}Repository.<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize)))
                 .thenReturn(page${strippedModelName?cap_first});
         <#else>
-        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize)))
+        when(this.${strippedModelName?uncap_first}Repository.<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize)))
                 .thenReturn(page${strippedModelName?cap_first});
         </#if>
 
@@ -37,7 +37,7 @@
             verify${strippedModelName?cap_first}(result, ${modelName?uncap_first});
         });
 
-        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize));
+        verify(this.${strippedModelName?uncap_first}Repository).<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize));
     }
     <#if sortEnabled?? && sortEnabled>
 
@@ -50,7 +50,7 @@
         final Sort sort = Sort.by(Direction.fromString("${sortDefaultDirection}"), sortBy);
         final Page<${modelName}> page${strippedModelName?cap_first} = new PageImpl<>(List.of());
 
-        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort)))
+        when(this.${strippedModelName?uncap_first}Repository.<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort)))
                 .thenReturn(page${strippedModelName?cap_first});
 
         final Page<${modelName}> results = this.${strippedModelName?uncap_first}Service.getAll(
@@ -58,7 +58,7 @@
         );
 
         assertThat(results).isNotNull();
-        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort));
+        verify(this.${strippedModelName?uncap_first}Repository).<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort));
     }
 
     @Test
@@ -70,7 +70,7 @@
         final Sort sort = Sort.by(Direction.fromString(sortDirection), sortBy);
         final Page<${modelName}> page${strippedModelName?cap_first} = new PageImpl<>(List.of());
 
-        when(this.${strippedModelName?uncap_first}Repository.<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort)))
+        when(this.${strippedModelName?uncap_first}Repository.<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort)))
                 .thenReturn(page${strippedModelName?cap_first});
 
         final Page<${modelName}> results = this.${strippedModelName?uncap_first}Service.getAll(
@@ -78,7 +78,7 @@
         );
 
         assertThat(results).isNotNull();
-        verify(this.${strippedModelName?uncap_first}Repository).<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort));
+        verify(this.${strippedModelName?uncap_first}Repository).<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort));
     }
 
     @Test

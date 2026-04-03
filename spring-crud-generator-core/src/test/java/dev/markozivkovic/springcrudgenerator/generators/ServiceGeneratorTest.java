@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports;
 import dev.markozivkovic.springcrudgenerator.imports.ServiceImports.ServiceImportScope;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -390,9 +391,9 @@ class ServiceGeneratorTest {
             generator.generate(model, "out");
         }
 
-        assertEquals(true, deleteCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be true in deleteById context for MongoDB + softDelete=true");
-        assertEquals(true, getByIdCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be true in getById context for MongoDB + softDelete=true");
-        assertEquals(true, getAllCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be true in getAll context for MongoDB + softDelete=true");
+        assertEquals(true, deleteCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED), "softDeleteEnabled must be true in deleteById context for MongoDB + softDelete=true");
+        assertEquals(true, getByIdCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED), "softDeleteEnabled must be true in getById context for MongoDB + softDelete=true");
+        assertEquals(true, getAllCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED), "softDeleteEnabled must be true in getAll context for MongoDB + softDelete=true");
     }
 
     @Test
@@ -454,9 +455,9 @@ class ServiceGeneratorTest {
             generator.generate(model, "out");
         }
 
-        assertEquals(false, deleteCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be false for SQL database even if softDelete=true");
-        assertEquals(false, getByIdCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be false for SQL database even if softDelete=true");
-        assertEquals(false, getAllCtxRef.get().get("mongoSoftDelete"), "mongoSoftDelete must be false for SQL database even if softDelete=true");
+        assertEquals(false, deleteCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED), "softDeleteEnabled must be false for SQL database even if softDelete=true");
+        assertEquals(false, getByIdCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED), "softDeleteEnabled must be false for SQL database even if softDelete=true");
+        assertEquals(false, getAllCtxRef.get().get(TemplateContextConstants.SOFT_DELETE_ENABLED), "softDeleteEnabled must be false for SQL database even if softDelete=true");
     }
 
     @Test
