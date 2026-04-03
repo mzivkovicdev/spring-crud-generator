@@ -14,11 +14,28 @@ configuration:
       image: postgres
       port: 5432
       tag: latest
-  cache: 
+  cache:
     enabled: true
     type: REDIS
     expiration: 5
     # maxSize: 10000 use for CAFFEINE
+  rateLimiting:
+    enabled: true
+    type: IN_MEMORY        # IN_MEMORY | REDIS
+    keyStrategy: IP        # IP | API_KEY | HEADER | AUTHENTICATED_USER
+    # keyHeader: X-Client-Id   # only used when keyStrategy: HEADER
+    global:
+      capacity: 100
+      refillTokens: 100
+      refillDuration: 60   # seconds (100 req/min)
+      # overdraft:         # optional burst control
+      #   capacity: 20
+      #   refillTokens: 20
+      #   refillDuration: 10
+    response:
+      statusCode: 429
+      includeHeaders: true
+      message: "Rate limit exceeded. Please try again later."
   openApi:
     apiSpec: true
     generateResources: true

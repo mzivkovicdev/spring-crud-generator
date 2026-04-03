@@ -202,6 +202,9 @@
         },
         "additionalProperties": {
           "$ref": "#/$defs/additionalProperties"
+        },
+        "rateLimiting": {
+          "$ref": "#/$defs/rateLimiting"
         }
       }
     },
@@ -299,6 +302,95 @@
         },
         "generateResources": {
           "type": "boolean"
+        }
+      }
+    },
+    "rateLimiting": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Rate limiting configuration using Bucket4j token bucket algorithm.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "description": "Storage backend for rate limit buckets. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "IN_MEMORY",
+            "REDIS",
+            "in_memory",
+            "redis"
+          ]
+        },
+        "keyStrategy": {
+          "type": "string",
+          "description": "How clients are identified for rate limiting. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "IP",
+            "API_KEY",
+            "HEADER",
+            "AUTHENTICATED_USER",
+            "ip",
+            "api_key",
+            "header",
+            "authenticated_user"
+          ]
+        },
+        "keyHeader": {
+          "type": "string",
+          "description": "Header name used when keyStrategy is HEADER."
+        },
+        "global": {
+          "$ref": "#/$defs/rateLimitDefinition"
+        },
+        "response": {
+          "$ref": "#/$defs/rateLimitResponseConfig"
+        }
+      }
+    },
+    "rateLimitDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of tokens in the bucket."
+        },
+        "refillTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of tokens added per refill period."
+        },
+        "refillDuration": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Refill period in seconds."
+        },
+        "overdraft": {
+          "$ref": "#/$defs/rateLimitDefinition",
+          "description": "Optional burst control bandwidth (secondary token bucket)."
+        }
+      }
+    },
+    "rateLimitResponseConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "statusCode": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599,
+          "description": "HTTP status code returned when rate limit is exceeded. Defaults to 429."
+        },
+        "includeHeaders": {
+          "type": "boolean",
+          "description": "When true, includes X-Rate-Limit-Remaining and X-Rate-Limit-Retry-After-Seconds headers."
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message returned in the response body when rate limit is exceeded."
         }
       }
     },
