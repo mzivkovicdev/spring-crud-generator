@@ -49,6 +49,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     private static final String SWAGGER = "swagger";
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
     private static final String GRAPHQL = "graphql";
+    private static final String RATE_LIMITING = "rate-limiting";
 
     private final Map<String, ProjectArtifactGenerator> ARTIFACT_GENERATORS;
     private final Map<String, CodeGenerator> GENERATORS;
@@ -64,6 +65,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.ARTIFACT_GENERATORS.put(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entities, packageConfiguration));
         this.ARTIFACT_GENERATORS.put(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entities));
         this.ARTIFACT_GENERATORS.put(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration));
+        this.ARTIFACT_GENERATORS.put(RATE_LIMITING, new RateLimitingGenerator(crudConfiguration, packageConfiguration));
 
         this.GENERATORS = new LinkedHashMap<>();
         this.GENERATORS.put(ENUM, new EnumGenerator(packageConfiguration));

@@ -35,7 +35,8 @@ public class CrudConfiguration {
     private Boolean dependencyCheck = false;
     private TestConfiguration tests;
     private Map<String, Object> additionalProperties = new HashMap<>();
-    
+    private RateLimitingConfiguration rateLimiting;
+
     public CrudConfiguration() {
 
     }
@@ -44,7 +45,7 @@ public class CrudConfiguration {
             final Boolean optimisticLocking, final DockerConfiguration docker, final CacheConfiguration cache,
             final OpenApiDefinition openApi, final GraphQLDefinition graphql, final ErrorResponse errorResponse,
             final Boolean migrationScripts, final Boolean dependencyCheck, final TestConfiguration tests,
-            final Map<String, Object> additionalProperties) {
+            final Map<String, Object> additionalProperties, final RateLimitingConfiguration rateLimiting) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.springBootVersion = springBootVersion;
@@ -58,6 +59,7 @@ public class CrudConfiguration {
         this.dependencyCheck = dependencyCheck;
         this.tests = tests;
         this.additionalProperties = additionalProperties;
+        this.rateLimiting = rateLimiting;
     }
 
     public DatabaseType getDatabase() {
@@ -181,6 +183,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public RateLimitingConfiguration getRateLimiting() {
+        return this.rateLimiting;
+    }
+
+    public CrudConfiguration setRateLimiting(final RateLimitingConfiguration rateLimiting) {
+        this.rateLimiting = rateLimiting;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -201,14 +212,15 @@ public class CrudConfiguration {
                 Objects.equals(migrationScripts, crudConfiguration.migrationScripts) &&
                 Objects.equals(dependencyCheck, crudConfiguration.dependencyCheck) &&
                 Objects.equals(tests, crudConfiguration.tests) &&
-                Objects.equals(additionalProperties, crudConfiguration.additionalProperties);
+                Objects.equals(additionalProperties, crudConfiguration.additionalProperties) &&
+                Objects.equals(rateLimiting, crudConfiguration.rateLimiting);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, springBootVersion, optimisticLocking, docker, cache, openApi,
-            graphql, errorResponse, migrationScripts, dependencyCheck, tests, additionalProperties
+            graphql, errorResponse, migrationScripts, dependencyCheck, tests, additionalProperties, rateLimiting
         );
     }
 
@@ -228,6 +240,7 @@ public class CrudConfiguration {
             ", dependencyCheck='" + getDependencyCheck() + "'" +
             ", tests='" + getTests() + "'" +
             ", additionalProperties='" + getAdditionalProperties() + "'" +
+            ", rateLimiting='" + getRateLimiting() + "'" +
             "}";
     }
 
@@ -747,6 +760,276 @@ public class CrudConfiguration {
             return "{" +
                 " apiSpec='" + getApiSpec() + "'" +
                 ", generateResources='" + getGenerateResources() + "'" +
+                "}";
+        }
+    }
+
+    public static class RateLimitingConfiguration {
+
+        private Boolean enabled;
+        private RateLimitTypeEnum type;
+        private KeyStrategyEnum keyStrategy;
+        private String keyHeader;
+        private RateLimitDefinition global;
+        private RateLimitResponseConfig response;
+
+        public RateLimitingConfiguration() {}
+
+        public RateLimitingConfiguration(final Boolean enabled, final RateLimitTypeEnum type,
+                final KeyStrategyEnum keyStrategy, final String keyHeader,
+                final RateLimitDefinition global, final RateLimitResponseConfig response) {
+            this.enabled = enabled;
+            this.type = type;
+            this.keyStrategy = keyStrategy;
+            this.keyHeader = keyHeader;
+            this.global = global;
+            this.response = response;
+        }
+
+        public Boolean getEnabled() {
+            return this.enabled;
+        }
+
+        public RateLimitingConfiguration setEnabled(final Boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public RateLimitTypeEnum getType() {
+            return this.type;
+        }
+
+        public RateLimitingConfiguration setType(final RateLimitTypeEnum type) {
+            this.type = type;
+            return this;
+        }
+
+        public KeyStrategyEnum getKeyStrategy() {
+            return this.keyStrategy;
+        }
+
+        public RateLimitingConfiguration setKeyStrategy(final KeyStrategyEnum keyStrategy) {
+            this.keyStrategy = keyStrategy;
+            return this;
+        }
+
+        public String getKeyHeader() {
+            return this.keyHeader;
+        }
+
+        public RateLimitingConfiguration setKeyHeader(final String keyHeader) {
+            this.keyHeader = keyHeader;
+            return this;
+        }
+
+        public RateLimitDefinition getGlobal() {
+            return this.global;
+        }
+
+        public RateLimitingConfiguration setGlobal(final RateLimitDefinition global) {
+            this.global = global;
+            return this;
+        }
+
+        public RateLimitResponseConfig getResponse() {
+            return this.response;
+        }
+
+        public RateLimitingConfiguration setResponse(final RateLimitResponseConfig response) {
+            this.response = response;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof RateLimitingConfiguration)) {
+                return false;
+            }
+            final RateLimitingConfiguration other = (RateLimitingConfiguration) o;
+            return Objects.equals(enabled, other.enabled) &&
+                    Objects.equals(type, other.type) &&
+                    Objects.equals(keyStrategy, other.keyStrategy) &&
+                    Objects.equals(keyHeader, other.keyHeader) &&
+                    Objects.equals(global, other.global) &&
+                    Objects.equals(response, other.response);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(enabled, type, keyStrategy, keyHeader, global, response);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " enabled='" + getEnabled() + "'" +
+                ", type='" + getType() + "'" +
+                ", keyStrategy='" + getKeyStrategy() + "'" +
+                ", keyHeader='" + getKeyHeader() + "'" +
+                ", global='" + getGlobal() + "'" +
+                ", response='" + getResponse() + "'" +
+                "}";
+        }
+
+        public enum RateLimitTypeEnum {
+            IN_MEMORY, REDIS
+        }
+
+        public enum KeyStrategyEnum {
+            IP, API_KEY, HEADER, AUTHENTICATED_USER
+        }
+    }
+
+    public static class RateLimitDefinition {
+
+        private Long capacity;
+        private Long refillTokens;
+        private Long refillDuration;
+        private RateLimitDefinition overdraft;
+
+        public RateLimitDefinition() {}
+
+        public RateLimitDefinition(final Long capacity, final Long refillTokens, final Long refillDuration,
+                final RateLimitDefinition overdraft) {
+            this.capacity = capacity;
+            this.refillTokens = refillTokens;
+            this.refillDuration = refillDuration;
+            this.overdraft = overdraft;
+        }
+
+        public Long getCapacity() {
+            return this.capacity;
+        }
+
+        public RateLimitDefinition setCapacity(final Long capacity) {
+            this.capacity = capacity;
+            return this;
+        }
+
+        public Long getRefillTokens() {
+            return this.refillTokens;
+        }
+
+        public RateLimitDefinition setRefillTokens(final Long refillTokens) {
+            this.refillTokens = refillTokens;
+            return this;
+        }
+
+        public Long getRefillDuration() {
+            return this.refillDuration;
+        }
+
+        public RateLimitDefinition setRefillDuration(final Long refillDuration) {
+            this.refillDuration = refillDuration;
+            return this;
+        }
+
+        public RateLimitDefinition getOverdraft() {
+            return this.overdraft;
+        }
+
+        public RateLimitDefinition setOverdraft(final RateLimitDefinition overdraft) {
+            this.overdraft = overdraft;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof RateLimitDefinition)) {
+                return false;
+            }
+            final RateLimitDefinition other = (RateLimitDefinition) o;
+            return Objects.equals(capacity, other.capacity) &&
+                    Objects.equals(refillTokens, other.refillTokens) &&
+                    Objects.equals(refillDuration, other.refillDuration) &&
+                    Objects.equals(overdraft, other.overdraft);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(capacity, refillTokens, refillDuration, overdraft);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " capacity='" + getCapacity() + "'" +
+                ", refillTokens='" + getRefillTokens() + "'" +
+                ", refillDuration='" + getRefillDuration() + "'" +
+                ", overdraft='" + getOverdraft() + "'" +
+                "}";
+        }
+    }
+
+    public static class RateLimitResponseConfig {
+
+        private Integer statusCode;
+        private Boolean includeHeaders;
+        private String message;
+
+        public RateLimitResponseConfig() {}
+
+        public RateLimitResponseConfig(final Integer statusCode, final Boolean includeHeaders, final String message) {
+            this.statusCode = statusCode;
+            this.includeHeaders = includeHeaders;
+            this.message = message;
+        }
+
+        public Integer getStatusCode() {
+            return this.statusCode;
+        }
+
+        public RateLimitResponseConfig setStatusCode(final Integer statusCode) {
+            this.statusCode = statusCode;
+            return this;
+        }
+
+        public Boolean getIncludeHeaders() {
+            return this.includeHeaders;
+        }
+
+        public RateLimitResponseConfig setIncludeHeaders(final Boolean includeHeaders) {
+            this.includeHeaders = includeHeaders;
+            return this;
+        }
+
+        public String getMessage() {
+            return this.message;
+        }
+
+        public RateLimitResponseConfig setMessage(final String message) {
+            this.message = message;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof RateLimitResponseConfig)) {
+                return false;
+            }
+            final RateLimitResponseConfig other = (RateLimitResponseConfig) o;
+            return Objects.equals(statusCode, other.statusCode) &&
+                    Objects.equals(includeHeaders, other.includeHeaders) &&
+                    Objects.equals(message, other.message);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(statusCode, includeHeaders, message);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " statusCode='" + getStatusCode() + "'" +
+                ", includeHeaders='" + getIncludeHeaders() + "'" +
+                ", message='" + getMessage() + "'" +
                 "}";
         }
     }
