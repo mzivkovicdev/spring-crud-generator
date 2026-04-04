@@ -1,0 +1,755 @@
+/*
+ * Copyright 2025-present Marko Zivkovic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package dev.markozivkovic.springcrudgenerator.validators;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
+import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
+import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
+import dev.markozivkovic.springcrudgenerator.models.CrudSpecification;
+import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
+import dev.markozivkovic.springcrudgenerator.models.IdDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
+import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
+import dev.markozivkovic.springcrudgenerator.models.SortDefinition;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
+import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
+import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
+import dev.markozivkovic.springcrudgenerator.utils.RegexUtils;
+import dev.markozivkovic.springcrudgenerator.utils.StringUtils;
+
+public class SpecificationValidator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpecificationValidator.class);
+    private static final int MIN_SUPPORTED_JAVA = 17;
+    private static final int MAX_SUPPORTED_JAVA = 25;
+    private static final String LOWER_SNAKE_CASE_REGEX = "[a-z][a-z0-9_]*";
+
+    private SpecificationValidator() {}
+
+    /**
+     * Validates a CRUD specification.
+     * 
+     * Checks if the CRUD specification, configuration and entities are not null.
+     * Then, for each entity, it checks if the model name and storage name are not null or empty,
+     * and if the model has at least one field defined. Then, for each field, it checks if the field name is
+     * not null or empty and if it is not duplicated. Finally, it validates each field type, enum values and JSON
+     * type if applicable.
+     * 
+     * @param specification the CRUD specification to validate
+     * @throws IllegalArgumentException if the CRUD specification is invalid
+     */
+    public static void validate(final CrudSpecification specification) {
+        
+        if (Objects.isNull(specification) || Objects.isNull(specification.getConfiguration())
+                    || ContainerUtils.isEmpty(specification.getEntities())) {
+            throw new IllegalArgumentException("CRUD specification, configuration and entities must not be null");
+        }
+
+        final List<String> errors = new ArrayList<>();
+        final DatabaseType database = specification.getConfiguration().getDatabase();
+
+        validateJavaVersion(specification.getConfiguration(), errors);
+        validateDatabase(database, errors);
+        validateAdditionalProperties(specification.getConfiguration(), errors);
+
+        try {
+            DockerConfigurationValidator.validate(specification.getConfiguration().getDocker());
+        } catch (final IllegalArgumentException e) {
+            errors.add(e.getMessage());
+        }
+
+        try {
+            CacheConfigurationValidator.validate(specification.getConfiguration().getCache());
+        } catch (final IllegalArgumentException e) {
+            errors.add(e.getMessage());
+        }
+
+        try {
+            TestConfigurationValidator.validate(specification.getConfiguration().getTests());
+        } catch (final IllegalArgumentException e) {
+            errors.add(e.getMessage());
+        }
+
+        specification.getEntities().forEach(model -> validateModel(model, specification.getEntities(), database, errors));
+
+        if (!ContainerUtils.isEmpty(errors)) {
+            final String errorMessages = errors.stream()
+                    .map(error -> "- " + error)
+                    .collect(Collectors.joining(System.lineSeparator()));
+            
+            throw new IllegalArgumentException(
+                String.format("Found %d validation errors: %s", errors.size(), errorMessages)
+            );
+        }
+    }
+
+    /**
+     * Validates the database type set in the CRUD configuration.
+     * 
+     * If the database type is null, it throws an {@link IllegalArgumentException}.
+     * 
+     * @param database the database type to validate
+     * @param errors   the list to collect validation error messages
+     */
+    private static void validateDatabase(final DatabaseType database, final List<String> errors) {
+        
+        if (Objects.isNull(database)) {
+            errors.add("Database must not be null or empty");
+        }
+    }
+
+
+    /**
+     * Validates the Java version set in the CRUD configuration.
+     * 
+     * If the Java version is not set, it defaults to the minimum supported version.
+     * If the set Java version is less than the minimum supported version, it throws an {@link IllegalArgumentException}.
+     * If the set Java version is greater than the maximum supported version, it throws an {@link IllegalArgumentException}.
+     * 
+     * @param configuration the CRUD configuration containing the Java version to validate
+     * @param errors        the list to collect validation error messages
+     */
+    private static void validateJavaVersion(final CrudConfiguration configuration, final List<String> errors) {
+        
+        if (Objects.isNull(configuration.getJavaVersion())) {
+            LOGGER.info(
+                String.format(
+                    "Java version is not set, defaulting to Java %d", MIN_SUPPORTED_JAVA
+                )
+            );
+            return;
+        }
+
+        if (configuration.getJavaVersion() < 17) {
+            errors.add(String.format(
+                    "Java version %d is not supported. Minimum supported version is %d.",
+                    configuration.getJavaVersion(), MIN_SUPPORTED_JAVA
+            ));
+        }
+
+        if (configuration.getJavaVersion() > 25) {
+            errors.add(String.format(
+                    "Java version %d is not supported. Maximum supported version is %d.",
+                    configuration.getJavaVersion(), MAX_SUPPORTED_JAVA
+            ));
+        }
+    }
+
+    /**
+     * Validates typed additional property values that are consumed by the generator.
+     *
+     * @param configuration configuration holding additional properties
+     * @param errors collected validation errors
+     */
+    private static void validateAdditionalProperties(final CrudConfiguration configuration, final List<String> errors) {
+
+        try {
+            AdditionalPropertiesUtils.isGithubActionsEnabled(configuration.getAdditionalProperties());
+        } catch (final IllegalArgumentException e) {
+            errors.add(String.format(
+                    "Additional property '%s' must be boolean. %s",
+                    AdditionalConfigurationConstants.GITHUB_ACTIONS,
+                    e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Validates a model definition.
+     *
+     * Checks if the model name and storage name are not null or empty, and if the model has at least one field defined.
+     * Then, for each field, it checks if the field name is not null or empty and if it is not duplicated.
+     * Finally, it validates each field type, enum values and JSON type if applicable.
+     *
+     * @param model  the model definition to validate
+     * @param models the set of names of all models in the CRUD specification
+     * @param errors the list to collect validation error messages
+     * @throws IllegalArgumentException if the model definition is invalid
+     */
+    private static void validateModel(final ModelDefinition model, final List<ModelDefinition> models, final DatabaseType database,
+            final List<String> errors) {
+
+        validateModelBasics(model, models, database, errors);
+
+        if (ContainerUtils.isEmpty(model.getFields())) {
+            return;
+        }
+
+        final Set<String> modelNames = models.stream()
+                .map(ModelDefinition::getName)
+                .collect(Collectors.toSet());
+
+        final Set<String> fieldNames = new HashSet<>();
+
+        model.getFields().forEach(field -> {
+            
+            if (StringUtils.isBlank(field.getName())) {
+                errors.add(String.format("Field name in model %s must not be null or empty", model.getName()));
+                return;
+            }
+
+            if (!fieldNames.add(field.getName())) {
+                errors.add(String.format("Field name %s in model %s is duplicated", field.getName(), model.getName()));
+            }
+
+            validateFieldType(model, field, modelNames, errors);
+            validateEnumValues(model, field, errors);
+            validateJsonType(model, field, modelNames, errors);
+            validateRegexPattern(model, field, errors);
+            validateFieldDatabaseSpecificOptions(model, field, database, errors);
+            validateRelations(model, field, modelNames, database, errors);
+        });
+
+        validateSort(model, errors);
+    }
+
+    /**
+     * Validates sorting configuration for a model.
+     *
+     * @param model  model definition that contains sort settings
+     * @param errors collected validation errors
+     */
+    private static void validateSort(final ModelDefinition model, final List<String> errors) {
+
+        final SortDefinition sort = model.getSort();
+        if (Objects.isNull(sort)) {
+            return;
+        }
+
+        if (ContainerUtils.isEmpty(sort.getAllowedFields())) {
+            errors.add(String.format(
+                    "Sort configuration for model %s must define a non-empty allowedFields list.",
+                    model.getName()
+            ));
+            return;
+        }
+
+        final Map<String, FieldDefinition> fieldMap = model.getFields().stream()
+                .collect(Collectors.toMap(FieldDefinition::getName, field -> field, (left, right) -> left));
+        final Set<String> sortableTargets = new HashSet<>(fieldMap.keySet());
+
+        final boolean auditEnabled = Objects.nonNull(model.getAudit()) && Boolean.TRUE.equals(model.getAudit().getEnabled());
+        if (auditEnabled) {
+            sortableTargets.add("createdAt");
+            sortableTargets.add("updatedAt");
+        }
+
+        final Set<String> allowedFieldSet = new HashSet<>();
+        sort.getAllowedFields().forEach(allowedField -> {
+
+            if (StringUtils.isBlank(allowedField)) {
+                errors.add(String.format(
+                        "Sort allowedFields contains blank entry for model %s.",
+                        model.getName()
+                ));
+                return;
+            }
+
+            if (!allowedFieldSet.add(allowedField)) {
+                errors.add(String.format(
+                        "Sort allowedFields contains duplicate value '%s' for model %s.",
+                        allowedField, model.getName()
+                ));
+            }
+
+            if (!sortableTargets.contains(allowedField)) {
+                errors.add(String.format(
+                        "Sort field '%s' is not valid for model %s. It must match an existing field%s.",
+                        allowedField,
+                        model.getName(),
+                        auditEnabled ? " or generated audit field (createdAt, updatedAt)" : ""
+                ));
+                return;
+            }
+
+            final FieldDefinition field = fieldMap.get(allowedField);
+            if (Objects.isNull(field)) {
+                return;
+            }
+
+            if (FieldUtils.isSimpleCollectionField(field)) {
+                errors.add(String.format(
+                        "Sort field '%s' in model %s is not supported in v1: simple collection fields are not sortable.",
+                        allowedField, model.getName()
+                ));
+            }
+
+            if (FieldUtils.isJsonField(field)) {
+                errors.add(String.format(
+                        "Sort field '%s' in model %s is not supported in v1: JSON fields are not sortable.",
+                        allowedField, model.getName()
+                ));
+            }
+
+            if (Objects.nonNull(field.getRelation()) && FieldUtils.isCollectionRelation(field)) {
+                errors.add(String.format(
+                        "Sort field '%s' in model %s is not supported in v1: relation collections are not sortable.",
+                        allowedField, model.getName()
+                ));
+            }
+        });
+
+    }
+
+    /**
+     * Validates the relations for a field in a model definition.
+     * 
+     * @param model      the model definition that contains the field
+     * @param field      the field definition with the relations to validate
+     * @param modelNames the set of names of all models in the CRUD specification
+     * @param errors     the list to collect validation error messages
+     */
+    private static void validateRelations(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames,
+            final DatabaseType database, final List<String> errors) {
+        
+        if (Objects.nonNull(field.getRelation())) {
+
+            final RelationDefinition relation = field.getRelation();
+            final RelationTypeEnum relationType;
+            try {
+                relationType = RelationTypeEnum.fromString(relation.getType());
+            } catch (final IllegalArgumentException e) {
+                errors.add(e.getMessage());
+                return;
+            }
+            
+            if (!modelNames.contains(field.getType())) {
+                errors.add(String.format(
+                        "Target model %s in relation for field %s in model %s does not exist",
+                        field.getType(), field.getName(), model.getName()
+                ));
+            }
+
+            if (!isSqlDatabase(database)) {
+                validateMongoRelationOptions(model, field, relation, errors);
+
+                if (Boolean.TRUE.equals(relation.getUniqueItems()) && !FieldUtils.isCollectionRelation(field)) {
+                    errors.add(String.format(
+                            "uniqueItems is supported only for OneToMany or ManyToMany relations. Field %s in model %s has relation type %s.",
+                            field.getName(), model.getName(), relationType.getKey()
+                    ));
+                }
+
+                return;
+            }
+
+            if (Objects.nonNull(relation.getJoinTable())) {
+                final JoinTableDefinition joinTable = relation.getJoinTable();
+
+                if (StringUtils.isBlank(joinTable.getName())) {
+                    errors.add(String.format(
+                            "Join table name in relation for field %s in model %s must not be null or empty",
+                            field.getName(), model.getName()
+                    ));
+                } else if (!joinTable.getName().matches(LOWER_SNAKE_CASE_REGEX)) {
+                    errors.add(String.format(
+                            "Invalid join table name '%s' in relation for field %s in model %s. Table names should be lower_snake_case.",
+                            relation.getJoinTable().getName(), field.getName(), model.getName()
+                    ));
+                }
+
+                if (StringUtils.isBlank(joinTable.getJoinColumn())) {
+                    errors.add(String.format(
+                            "Join table -> join column name in relation for field %s in model %s must not be null or empty",
+                            field.getName(), model.getName()
+                    ));
+                } else if (!joinTable.getJoinColumn().matches(LOWER_SNAKE_CASE_REGEX)) {
+                    errors.add(String.format(
+                            "Invalid join table -> join column name '%s' in relation for field %s in model %s. Column names should be lower_snake_case.",
+                            joinTable.getJoinColumn(), field.getName(), model.getName()
+                    ));
+                }
+
+                if (StringUtils.isBlank(joinTable.getInverseJoinColumn())) {
+                    errors.add(String.format(
+                            "Join table -> inverse join column name in relation for field %s in model %s must not be null or empty",
+                            field.getName(), model.getName()
+                    ));
+                } else if (!joinTable.getInverseJoinColumn().matches(LOWER_SNAKE_CASE_REGEX)) {
+                    errors.add(String.format(
+                            "Invalid join table -> inverse join column name '%s' in relation for field %s in model %s. Column names should be lower_snake_case.",
+                            joinTable.getInverseJoinColumn(), field.getName(), model.getName()
+                    ));
+                }
+
+                if (StringUtils.isNotBlank(relation.getJoinColumn())) {
+                    errors.add(String.format(
+                            "Join column name should not be defined for field %s in model %s when join table is defined. Please remove join column name or remove join table definition.",
+                            field.getName(), model.getName()
+                    ));
+                }
+            }
+
+            if (StringUtils.isNotBlank(relation.getJoinColumn()) && !relation.getJoinColumn().matches(LOWER_SNAKE_CASE_REGEX)) {
+                errors.add(String.format(
+                        "Invalid join column name '%s' in relation for field %s in model %s. Column names should be lower_snake_case.",
+                        relation.getJoinColumn(), field.getName(), model.getName()
+                ));
+            }
+
+            if (RelationTypeEnum.MANY_TO_MANY.equals(relationType) && Objects.isNull(relation.getJoinTable())) {
+                errors.add(String.format(
+                        "Many-to-Many relation for field %s in model %s must have a join table defined",
+                        field.getName(), model.getName()
+                ));
+            }
+
+            if ((RelationTypeEnum.MANY_TO_MANY.equals(relationType) || RelationTypeEnum.MANY_TO_ONE.equals(relationType))
+                    && Boolean.TRUE.equals(relation.getOrphanRemoval())) {
+
+                errors.add(String.format(
+                        "Orphan removal is not supported for Many-to-Many or Many-to-One relations. Field %s in model %s has orphan removal enabled.",
+                        field.getName(), model.getName()
+                ));
+            }
+
+            if (Boolean.TRUE.equals(relation.getUniqueItems()) && !FieldUtils.isCollectionRelation(field)) {
+                errors.add(String.format(
+                        "uniqueItems is supported only for OneToMany or ManyToMany relations. Field %s in model %s has relation type %s.",
+                        field.getName(), model.getName(), relationType.getKey()
+                ));
+            }
+        }
+    }
+
+    /**
+     * Validates relation options for MongoDB mode.
+     *
+     * @param model    model definition
+     * @param field    field definition
+     * @param relation relation definition
+     * @param errors   collected validation errors
+     */
+    private static void validateMongoRelationOptions(final ModelDefinition model, final FieldDefinition field,
+            final RelationDefinition relation, final List<String> errors) {
+
+        if (Objects.nonNull(relation.getJoinTable())) {
+            errors.add(String.format(
+                    "relation.joinTable is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (StringUtils.isNotBlank(relation.getJoinColumn())) {
+            errors.add(String.format(
+                    "relation.joinColumn is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (StringUtils.isNotBlank(relation.getFetch())) {
+            errors.add(String.format(
+                    "relation.fetch is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (StringUtils.isNotBlank(relation.getCascade())) {
+            errors.add(String.format(
+                    "relation.cascade is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (Boolean.TRUE.equals(relation.getOrphanRemoval())) {
+            errors.add(String.format(
+                    "relation.orphanRemoval is SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+    }
+
+    /**
+     * Validates the regex pattern for a field in a model definition.
+     * If the regex pattern is not null or empty, it checks if the pattern is valid.
+     * If the pattern is invalid, it throws an IllegalArgumentException.
+     * 
+     * @param model the model definition that contains the field
+     * @param field the field definition with the regex pattern to validate
+     * @param errors the list of errors to add validation errors to
+     */
+    private static void validateRegexPattern(final ModelDefinition model, final FieldDefinition field, final List<String> errors) {
+
+        if (Objects.nonNull(field.getValidation()) && Objects.nonNull(field.getValidation().getPattern())) {
+            
+            if (StringUtils.isNotBlank(field.getValidation().getPattern()) &&
+                    !RegexUtils.isValidRegex(field.getValidation().getPattern())) {
+
+                errors.add(String.format(
+                        "Regex pattern %s in field %s in model %s is invalid",
+                        field.getValidation().getPattern(), field.getName(), model.getName()
+                    )
+                );
+            }
+        }
+    }
+
+    /**
+     * Validates the basic properties of a model definition.
+     * 
+     * Checks if the model name is not null or empty, and if the model has at least one field defined.
+     * Then, for non-JSON models, it checks if the storage name is not null or empty, and if it matches the lower_snake_case
+     * pattern. Finally, it checks if the model has exactly one id field defined.
+     * 
+     * @param model  the model definition to validate
+     * @param models the set of names of all models in the CRUd specification
+     * @param errors the list to collect validation error messages
+     * @throws IllegalArgumentException if the model definition is invalid
+     */
+    private static void validateModelBasics(final ModelDefinition model, final List<ModelDefinition> models,
+            final DatabaseType database, final List<String> errors) {
+
+        if (StringUtils.isBlank(model.getName())) {
+            errors.add("Model name must not be null or empty");
+            return;
+        }
+        
+        final boolean usedAsJson = FieldUtils.isModelUsedAsJsonField(model, models);
+        if (!usedAsJson && StringUtils.isBlank(model.getStorageName())) {
+            errors.add("Model storage name must not be null or empty");
+        }
+
+        if (StringUtils.isNotBlank(model.getStorageName()) && !model.getStorageName().matches(LOWER_SNAKE_CASE_REGEX)) {
+            errors.add(String.format("Invalid storageName '%s'. Storage names should be lower_snake_case.", model.getStorageName()));
+        }
+
+        if (ContainerUtils.isEmpty(model.getFields())) {
+            errors.add(String.format("Model %s must have at least one field defined", model.getName()));
+            return;
+        }
+
+        if (usedAsJson && FieldUtils.hasRelation(model, models)) {
+            errors.add(
+                String.format("Model %s is used as a JSON field but it is tried to be connected to another model by relation.", model.getName())
+            );
+        }
+
+        if (usedAsJson && !ContainerUtils.isEmpty(FieldUtils.extractRelationFields(model.getFields()))) {
+            errors.add(
+                String.format("Model %s is used as a JSON field but it has relation fields defined.", model.getName())
+            );
+        }
+        
+        if (!usedAsJson) {
+            final long idCount = model.getFields().stream()
+                    .filter(field -> Objects.nonNull(field.getId()))
+                    .count();
+
+            if (idCount == 0) {
+                errors.add(String.format("Model %s must have id field defined", model.getName()));
+            }
+
+            if (idCount > 1) {
+                errors.add(String.format("Model %s must have only one id field defined", model.getName()));
+            }
+        }
+    }
+
+    /**
+     * Validates field options that are SQL-specific in MongoDB mode.
+     *
+     * @param model    model definition
+     * @param field    field definition
+     * @param database selected database
+     * @param errors   collected validation errors
+     */
+    private static void validateFieldDatabaseSpecificOptions(final ModelDefinition model, final FieldDefinition field,
+            final DatabaseType database, final List<String> errors) {
+
+        if (isSqlDatabase(database)) {
+            if (Objects.nonNull(field.getId()) && field.getId().isMarkerOnly()) {
+                errors.add(String.format(
+                        "Boolean id marker (id: true) is not supported in SQL mode. Field %s in model %s must define id.strategy.",
+                        field.getName(), model.getName()
+                ));
+            }
+
+            if (Objects.nonNull(field.getId()) && Objects.isNull(field.getId().getStrategy())) {
+                errors.add(String.format(
+                        "id.strategy must be defined in SQL mode. Field %s in model %s.",
+                        field.getName(), model.getName()
+                ));
+            }
+
+            return;
+        }
+
+        if (Objects.nonNull(field.getColumn())) {
+            errors.add(String.format(
+                    "column.* options are SQL-specific and not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (Objects.nonNull(field.getId()) && isMongoEmptyIdObject(field.getId())) {
+            errors.add(String.format(
+                    "Empty id object (id: {}) is not supported in MongoDB mode. Use id: true. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+
+        if (Objects.nonNull(field.getId()) && hasAnySqlIdOptions(field.getId())) {
+
+            errors.add(String.format(
+                    "id.strategy and related SQL id options are not supported in MongoDB mode. Field %s in model %s.",
+                    field.getName(), model.getName()
+            ));
+        }
+    }
+
+    private static boolean isSqlDatabase(final DatabaseType database) {
+        return Objects.isNull(database) || database.isSql();
+    }
+
+    private static boolean hasAnySqlIdOptions(final IdDefinition idDefinition) {
+
+        return Objects.nonNull(idDefinition.getStrategy())
+                || StringUtils.isNotBlank(idDefinition.getGeneratorName())
+                || Objects.nonNull(idDefinition.getAllocationSize())
+                || Objects.nonNull(idDefinition.getInitialValue())
+                || StringUtils.isNotBlank(idDefinition.getPkColumnName())
+                || StringUtils.isNotBlank(idDefinition.getValueColumnName());
+    }
+
+    private static boolean isMongoEmptyIdObject(final IdDefinition idDefinition) {
+
+        return !idDefinition.isMarkerOnly() && !hasAnySqlIdOptions(idDefinition);
+    }
+
+    /**
+     * Validates the inner type of a JSON field.
+     *
+     * Checks if the inner type of a JSON field is a basic type or a reference to another model.
+     * If the inner type is neither a basic type nor a reference to another model, an exception is thrown.
+     *
+     * @param model      the model definition containing the JSON field
+     * @param field      the JSON field definition to validate
+     * @param modelNames the set of names of all models in the CRUd specification
+     * @param errors     the list to collect validation error messages
+     */
+    private static void validateJsonType(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames,
+                final List<String> errors) {
+        
+        if (!SpecialTypeEnum.isJsonType(field.getType())) return;
+
+        final String inner;
+        try {
+            inner = FieldUtils.extractJsonInnerElementType(field);
+        } catch (final IllegalStateException e) {
+            errors.add(String.format(
+                    "JSON field %s.%s has invalid inner type or invalid format. Please specify a valid inner type or valid format.",
+                    model.getName(), field.getName()
+            ));
+            return;
+        }
+
+        final boolean isBasicType = BasicTypeEnum.isBasicType(inner);
+        final boolean isCollectionType = SpecialTypeEnum.isCollectionType(inner);
+        final boolean innerModel = modelNames.contains(inner);
+
+        if (!isBasicType && !innerModel && !isCollectionType) {
+            errors.add(String.format(
+                    "Inner type %s of JSON field %s.%s is invalid. It must be a basic type [%s], a collection type [%s] or reference to another model.",
+                    inner, model.getName(), field.getName(), SpecialTypeEnum.getSupportedCollectionValues(), BasicTypeEnum.getSupportedValues()
+            ));
+        }
+    }
+
+    /**
+     * Validates the enum values of a field in a model definition.
+     * 
+     * If the field is of enum type, this method checks if the field has any enum values defined.
+     * If no enum values are defined, it throws an exception.
+     * 
+     * @param model the model definition
+     * @param field the field definition
+     * @param errors the list to collect validation error messages
+     */
+    private static void validateEnumValues(final ModelDefinition model, final FieldDefinition field, final List<String> errors) {
+
+        if (SpecialTypeEnum.isEnumType(field.getType())) {
+            if (ContainerUtils.isEmpty(field.getValues())) {
+                errors.add(String.format(
+                        "Field %s in model %s is of enum type but has no enum values defined. Please define enum values.",
+                        field.getName(), model.getName()
+                ));
+            }
+        }
+    }
+
+    /**
+     * Validates the type of a field in a model definition.
+     * 
+     * Checks if the field type is null or empty, and if it is not a basic type, enum type, json type or reference to another model.
+     * 
+     * @param model      the model definition containing the field
+     * @param field      the field definition to validate
+     * @param modelNames the set of names of all models in the CRUd specification
+     * @param errors     the list to collect validation error messages
+     */
+    private static void validateFieldType(final ModelDefinition model, final FieldDefinition field, final Set<String> modelNames,
+                final List<String> errors) {
+        
+        if (StringUtils.isBlank(field.getType())) {
+            errors.add(String.format("Field type for field %s in model %s must not be null or empty", field.getName(), model.getName()));
+            return;
+        }
+        
+        final String type = field.getType();
+        final boolean isBasicType = BasicTypeEnum.isBasicType(type);
+        final boolean isEnumType = SpecialTypeEnum.isEnumType(type);
+        final boolean isJsonType = SpecialTypeEnum.isJsonType(type);
+        final boolean isCollectionType = SpecialTypeEnum.isCollectionType(type);
+
+        if (isCollectionType) {
+            final String innerType = FieldUtils.extractSimpleCollectionType(field);
+            final boolean innerIsBasicType = BasicTypeEnum.isBasicType(innerType);
+            
+            if (!innerIsBasicType) {
+                errors.add(String.format(
+                        "Inner type %s of collection field %s in model %s is invalid. It must be a basic type [%s].",
+                        innerType, field.getName(), model.getName(), BasicTypeEnum.getSupportedValues()
+                ));
+            }
+        }
+        
+        final boolean modelReference = modelNames.contains(type);
+
+        if (!isBasicType && !isEnumType && !isJsonType && !modelReference && !isCollectionType) {
+            errors.add(String.format(
+                    "Field type %s for field %s in model %s is invalid. It must be a basic type [%s], special type [%s] or reference to another model %s.",
+                    type, field.getName(), model.getName(), BasicTypeEnum.getSupportedValues(), SpecialTypeEnum.getSupportedValues(), modelNames
+            ));
+        }
+    }
+    
+}

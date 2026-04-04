@@ -2,8 +2,8 @@
 
 Entities are defined under the `entities` section. Each entity describes:
 
-- a generated Java model/entity class
-- its database storage representation (table name)
+- a generated Java model class (JPA `@Entity` for SQL, Spring Data `@Document` for MongoDB)
+- its storage name (SQL table name or MongoDB collection name)
 - its fields, constraints, and relationships
 - optional metadata used for documentation (Javadoc, OpenAPI descriptions, etc.)
 
@@ -23,16 +23,16 @@ entities:
     fields: []
 ```
 
-| Property      | Type    | Required  | Description                                                     |
-| ------------- | ------- | ----------| ----------------------------------------------------------------|
-| `name`        | string  | ✅        | Java class name of the entity/model                             |
-| `storageName` | string  | ✅        | Database table name (storage name).                             |
-| `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable) |
-| `audit`       | object  | optional  | Audit configuration for `created_at` / `updated_at` columns     |
-| `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create) |
-| `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries      |
-| `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)          |
-| `fields`      | list    | ✅        | List of fields for the entity                                   |
+| Property      | Type    | Required  | Description                                                                              |
+| ------------- | ------- | ----------| ------------------------------------------------------------------------------------------|
+| `name`        | string  | ✅        | Java class name of the entity/model                                                       |
+| `storageName` | string  | ✅        | SQL: table name. MongoDB: collection name.                                                |
+| `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable)                          |
+| `audit`       | object  | optional  | Audit configuration for `createdAt` / `updatedAt` fields                                 |
+| `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create)                         |
+| `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries                               |
+| `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)                                   |
+| `fields`      | list    | ✅        | List of fields for the entity                                                             |
 
 > If `description` is provided, the generator can produce Javadoc for entities/fields.
 
@@ -40,7 +40,7 @@ entities:
 
 ## Soft delete configuration
 
-Soft delete allows “deleting” rows without physically removing them from the table.
+Soft delete allows “deleting” records without physically removing them from the database.
 
 ```yaml
 softDelete: true
@@ -52,13 +52,15 @@ softDelete: true
 
 ### Generator behavior (when `softDelete: true`)
 
-- The entity is generated with Hibernate soft-delete annotations (`@SQLDelete` and `@SQLRestriction`) so that DELETE statements become UPDATE ... (logical delete)
+**SQL databases:** The entity is generated with Hibernate soft-delete annotations (`@SQLDelete` and `@SQLRestriction`) so that DELETE statements become UPDATE statements (logical delete).
+
+**MongoDB:** A `deleted` boolean field is added to the document, and service/repository methods apply a filter to exclude soft-deleted documents from queries.
 
 ---
 
 ## Audit configuration
 
-The audit block controls automatic creation of audit columns on the entity’s table (typically `created_at` and `updated_at`).
+The audit block controls automatic creation of audit fields on the entity (typically `createdAt` and `updatedAt`).
 
 ```yaml
 audit:
@@ -68,8 +70,12 @@ audit:
 
 | Property  | Type    | Required | Description                                                                           |
 | --------- | ------- | -------- | --------------------------------------------------------------------------------------|
-| `enabled` | boolean | optional | Enables audit columns (`created_at`, `updated_at`) for this entity (default: `false`) |
-| `type`    | enum    | optional | Underlying temporal type used for audit columns                                       |
+| `enabled` | boolean | optional | Enables audit fields (`createdAt`, `updatedAt`) for this entity (default: `false`)   |
+| `type`    | enum    | optional | Underlying temporal type used for audit fields                                        |
+
+**SQL databases:** Audit fields map to `created_at` / `updated_at` columns using Spring Data JPA auditing (`@CreatedDate`, `@LastModifiedDate`).
+
+**MongoDB:** Audit fields are stored as document fields using Spring Data MongoDB auditing (`@CreatedDate`, `@LastModifiedDate`).
 
 Possible `type` values:
 
@@ -164,7 +170,9 @@ Example:
   type: Set<Long>
 ```
 
-For `List<BasicType>` / `Set<BasicType>`, the generator creates a separate collection table named `${storageName}_${snake_case(fieldName)}` and links it to the owner entity via `<entity>_id`.
+**SQL databases:** The generator creates a separate collection table named `${storageName}_${snake_case(fieldName)}` and links it to the owner entity via `<entity>_id` (JPA `@ElementCollection`).
+
+**MongoDB:** The collection is stored as a native array field within the document — no extra collection/table is created.
 
 ---
 
@@ -192,7 +200,11 @@ Example:
 
 ---
 
-## Primary key: `id.strategy`
+## Primary key: `id`
+
+The `id` field definition differs between SQL and MongoDB:
+
+### SQL/JPA example
 
 ```yaml
 - name: id
@@ -200,6 +212,15 @@ Example:
   description: "The unique identifier for the entity"
   id:
     strategy: IDENTITY
+```
+
+### MongoDB/NoSQL example
+
+```yaml
+- name: id
+  type: String
+  id: true
+  description: "Mongo document id"
 ```
 
 Supported strategies:
@@ -246,12 +267,13 @@ Supported strategies:
 ```
 - For `TABLE` strategy, the `pkColumnValue` is automatically set to the entity's `storageName` (e.g. `user_table`), so you normally don't need to configure it manually.
 
-### Note
-- Not all databases support all ID strategies
+> Not all SQL databases support all ID strategies. `SEQUENCE` is best supported on PostgreSQL; `IDENTITY` works on MySQL, MariaDB, MSSQL, and PostgreSQL; `TABLE` works on all SQL databases.
 
 ---
 
 ## Column constraints: `column.*`
+
+> **SQL databases only.** The `column` block maps to JPA `@Column` annotation properties and has no effect for MongoDB.
 
 Use the column block to control column-level constraints:
 
@@ -273,6 +295,8 @@ Use the column block to control column-level constraints:
 | `insertable`  | boolean | Whether the column can be inserted         |
 | `updateable`  | boolean | Whether the column can be updated          |
 
+For MongoDB, use `validation.*` to enforce constraints at the application level (e.g. `required: true`, `notBlank: true`).
+
 ---
 
 ## Relationships: `relation.*`
@@ -283,9 +307,14 @@ Relationships are defined via the relation block. The type must be one of:
 - `ManyToOne`
 - `ManyToMany`
 
-### One-to-one
+The same relation types work for both SQL and MongoDB, but the underlying implementation differs:
+- **SQL:** relations use JPA annotations with foreign keys / join tables
+- **MongoDB:** relations are represented as embedded documents or document references
+
+### SQL examples
 
 ```yaml
+# One-to-one (SQL)
 - name: product
   type: ProductModel
   relation:
@@ -293,11 +322,8 @@ Relationships are defined via the relation block. The type must be one of:
     joinColumn: product_id
     fetch: EAGER
     cascade: MERGE
-```
 
-### One-to-many
-
-```yaml
+# One-to-many (SQL)
 - name: users
   type: UserEntity
   relation:
@@ -305,24 +331,8 @@ Relationships are defined via the relation block. The type must be one of:
     joinColumn: product_id
     fetch: LAZY
     cascade: MERGE
-```
 
-Use `uniqueItems: true` when relation collection should be generated as `Set` (instead of `List`):
-
-```yaml
-- name: users
-  type: UserEntity
-  relation:
-    type: OneToMany
-    uniqueItems: true
-    joinColumn: product_id
-    fetch: LAZY
-    cascade: MERGE
-```
-
-### Many-to-many
-
-```yaml
+# Many-to-many (SQL)
 - name: users
   type: UserEntity
   relation:
@@ -336,19 +346,49 @@ Use `uniqueItems: true` when relation collection should be generated as `Set` (i
       inverseJoinColumn: user_id
 ```
 
-`uniqueItems` can be used only with `OneToMany` and `ManyToMany`.
-- `uniqueItems: true` -> generator uses `Set`/`HashSet`
-- omitted or `false` -> generator uses `List`/`ArrayList`
+### MongoDB examples
+
+For MongoDB, omit `joinColumn`, `joinTable`, `fetch`, and `cascade` — they are not applicable:
+
+```yaml
+# One-to-one (MongoDB)
+- name: product
+  type: ProductModel
+  relation:
+    type: OneToOne
+
+# One-to-many (MongoDB)
+- name: users
+  type: UserEntity
+  relation:
+    type: OneToMany
+    uniqueItems: true
+
+# Many-to-many (MongoDB)
+- name: users
+  type: UserEntity
+  relation:
+    type: ManyToMany
+    uniqueItems: true
+```
+
+### `uniqueItems`
+
+`uniqueItems` can be used only with `OneToMany` and `ManyToMany`:
+- `uniqueItems: true` → generator uses `Set`/`HashSet`
+- omitted or `false` → generator uses `List`/`ArrayList`
 - for `OneToOne` and `ManyToOne`, validator reports an error
 
-| Property     | Type   | Description                                                                  |
-| ------------ | ------ | ---------------------------------------------------------------------------- |
-| `type`       | string | Relationship type (`OneToOne`, `OneToMany`, `ManyToOne`, `ManyToMany`)       |
-| `fetch`      | string | Fetch type (`EAGER`, `LAZY`)                                                 |
-| `cascade`    | string | Cascade type (e.g. `MERGE`, `ALL`, `PERSIST`, etc.)                          |
-| `uniqueItems`| boolean| Collection uniqueness for `OneToMany` / `ManyToMany` (`true` => `Set`, otherwise `List`) |
-| `joinColumn` | string | Join column name (for `OneToOne`, `OneToMany`, `ManyToOne` where applicable) |
-| `joinTable`  | object | Join table config (used in `ManyToMany`)                                     |
+### Relation properties
+
+| Property     | Type   | Applies to  | Description                                                                  |
+| ------------ | ------ | ----------- | ---------------------------------------------------------------------------- |
+| `type`       | string | all         | Relationship type (`OneToOne`, `OneToMany`, `ManyToOne`, `ManyToMany`)       |
+| `fetch`      | string | SQL only    | Fetch type (`EAGER`, `LAZY`)                                                 |
+| `cascade`    | string | SQL only    | Cascade type (e.g. `MERGE`, `ALL`, `PERSIST`, etc.)                         |
+| `uniqueItems`| boolean| all         | Collection uniqueness for `OneToMany` / `ManyToMany` (`true` => `Set`, otherwise `List`) |
+| `joinColumn` | string | SQL only    | Join column name (for `OneToOne`, `OneToMany`, `ManyToOne`)                  |
+| `joinTable`  | object | SQL only    | Join table config (used in `ManyToMany`)                                     |
 
 ---
 
@@ -387,7 +427,8 @@ Where Details is another entity-like schema definition (often used as an embedde
       type: String
 ```
 
-- JSON types are useful for storing structured data inside a single database column (database support and mapping strategy depend on the selected SQL database).
+- **SQL databases:** JSON types are stored in a single database column. Exact support depends on the database (PostgreSQL has native `jsonb`, MySQL/MariaDB have `JSON` columns, MSSQL uses `nvarchar(max)`).
+- **MongoDB:** JSON types map naturally to nested embedded documents — no special column type needed.
 
 ---
 

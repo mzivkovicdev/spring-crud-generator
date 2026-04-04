@@ -14,7 +14,8 @@ This directory contains the full project documentation.
 - Need incremental generation details? → [Incremental generation](./incremental-generation.md)
 - Need a neutral product comparison? → [Spring CRUD Generator vs Bootify](./comparison-with-bootify.md)
 - Want autocomplete/validation? → [crud-spec.schema.json](./schema/crud-spec.schema.json)
-- Need a complete example? → [crud-spec-full.yaml](./examples/crud-spec-full.yaml)
+- Need a complete SQL example? → [crud-spec-full.yaml](./examples/crud-spec-full.yaml)
+- Need a complete MongoDB example? → [mongo-crud-spec-full.yaml](./examples/mongo-crud-spec-full.yaml)
 
 ## What you will find here
 
@@ -25,7 +26,9 @@ This directory contains the full project documentation.
 - Migration and incremental generation behavior
 - Schema and example specs
 
-## Minimal example
+## Minimal examples
+
+**SQL (PostgreSQL / MySQL / MariaDB / MSSQL)**
 
 ```yaml
 configuration:
@@ -45,6 +48,25 @@ entities:
           unique: true
 ```
 
-See the full example spec: [crud-spec-full.yaml](./examples/crud-spec-full.yaml)
+**MongoDB**
+
+```yaml
+configuration:
+  database: mongodb
+entities:
+  - name: ProductModel
+    storageName: products
+    fields:
+      - name: id
+        type: String
+        id: true
+      - name: name
+        type: String
+        validation:
+          required: true
+          notBlank: true
+```
+
+Full examples: [SQL spec](./examples/crud-spec-full.yaml) · [MongoDB spec](./examples/mongo-crud-spec-full.yaml)
 
 Back to the main project page: [README](../Readme.MD)

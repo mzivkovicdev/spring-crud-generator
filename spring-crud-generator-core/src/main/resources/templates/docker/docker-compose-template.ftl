@@ -1,0 +1,201 @@
+<#setting number_format="computer">
+services:
+    ${artifactId}:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: ${artifactId}-app
+        restart: unless-stopped
+        ports:
+            - "${appPort}:${appPort}"
+        environment:
+            <#if dbType == "postgresql">
+            SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/${artifactId}
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: app
+            <#elseif dbType == "mysql">
+            SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/${artifactId}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: app
+            <#elseif dbType == "mariadb">
+            SPRING_DATASOURCE_URL: jdbc:mariadb://database:3306/${artifactId}?useSSL=false&serverTimezone=UTC
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: app
+            <#elseif dbType == "mssql">
+            SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=${artifactId};encrypt=false
+            SPRING_DATASOURCE_USERNAME: app
+            SPRING_DATASOURCE_PASSWORD: App!Passw0rd
+            <#elseif dbType == "mongodb">
+            SPRING_DATA_MONGODB_URI: mongodb://database:27017/${artifactId}
+            </#if>
+            <#if cacheType?? && cacheType?lower_case == "redis">
+            SPRING_DATA_REDIS_HOST: redis
+            SPRING_DATA_REDIS_PORT: 6379
+            </#if><#t>
+            <#if cacheType?? && cacheType?lower_case == "hazelcast">
+            SPRING_CACHE_TYPE: hazelcast
+            SPRING_HAZELCAST_CONFIG: classpath:hazelcast-client.yaml
+            </#if><#t>
+        depends_on:
+            database:
+                condition: service_healthy
+            <#if cacheType?? && cacheType?lower_case == "redis">
+            redis:
+                condition: service_healthy
+            </#if><#t>
+            <#if cacheType?? && cacheType?lower_case == "hazelcast">
+            hazelcast:
+                condition: service_started
+            </#if><#t>
+        networks:
+            - ${artifactId}-network
+    
+    database:
+        <#if dbType == "postgresql">
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
+        container_name: ${artifactId}-postgre-db
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${artifactId}
+            POSTGRES_USER: app
+            POSTGRES_PASSWORD: app
+        ports:
+            - "${dbPort}:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U app -d ${artifactId}"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
+        <#elseif dbType == "mysql">
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
+        container_name: ${artifactId}-mysql-db
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${artifactId}
+            MYSQL_USER: app
+            MYSQL_PASSWORD: app
+            MYSQL_ROOT_PASSWORD: root
+        ports:
+            - "${dbPort}:3306"
+        healthcheck:
+            test: ["CMD-SHELL", "mysqladmin ping -h localhost -P 3306 -uapp -papp --silent"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
+        <#elseif dbType == "mariadb">
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
+        container_name: ${artifactId}-mariadb-db
+        restart: unless-stopped
+        environment:
+            MARIADB_DATABASE: ${artifactId}
+            MARIADB_USER: app
+            MARIADB_PASSWORD: app
+            MARIADB_ROOT_PASSWORD: root
+        ports:
+            - "${dbPort}:3306"
+        healthcheck:
+            test: ["CMD-SHELL", "mariadb-admin ping -h localhost -P 3306 -uapp -papp --silent"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
+        <#elseif dbType == "mssql">
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
+        container_name: ${artifactId}-mssql-db
+        restart: unless-stopped
+        environment:
+            ACCEPT_EULA: "Y"
+            DB_NAME: ${artifactId}
+            MSSQL_SA_PASSWORD: Strong!Passw0rd
+            MSSQL_PID: "Express"
+            APP_USER: app
+            APP_PASSWORD: App!Passw0rd
+        ports:
+            - "${dbPort}:1433"
+        command:
+            - bash
+            - -lc
+            - |
+                /opt/mssql/bin/sqlservr & pid=$$!;
+                echo 'Waiting for SQL Server to be ready...';
+                for i in {1..60}; do
+                    /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q 'SELECT 1' >/dev/null 2>&1 && break;
+                    sleep 3;
+                done;
+                echo 'Creating database and user if needed...';
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF DB_ID('$$DB_NAME') IS NULL BEGIN CREATE DATABASE [$$DB_NAME]; END";
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = '$$APP_USER') BEGIN CREATE LOGIN [$$APP_USER] WITH PASSWORD='$$APP_PASSWORD', CHECK_POLICY=OFF; END";
+                /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "USE [$$DB_NAME]; IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$$APP_USER') CREATE USER [$$APP_USER] FOR LOGIN [$$APP_USER]; EXEC sp_addrolemember 'db_owner', '$$APP_USER';";
+                wait $$pid
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" >/dev/null 2>&1"
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
+        <#elseif dbType == "mongodb">
+        image: ${dbImage}<#if dbTag?? && dbTag?has_content>:${dbTag}</#if>
+        container_name: ${artifactId}-mongodb-db
+        restart: unless-stopped
+        ports:
+            - "${dbPort}:27017"
+        healthcheck:
+            test: ["CMD-SHELL", "if command -v mongosh >/dev/null 2>&1; then mongosh --quiet --eval \"db.adminCommand({ ping: 1 })\"; else mongo --quiet --eval \"db.adminCommand({ ping: 1 })\"; fi"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 45s
+        </#if>
+        volumes:
+            - db_data:/<#if dbType == "postgresql">var/lib/postgresql<#elseif dbType == "mysql" || dbType == "mariadb">var/lib/mysql<#elseif dbType == "mssql">var/opt/mssql<#elseif dbType == "mongodb">data/db</#if>
+        networks:
+            - ${artifactId}-network
+    <#if cacheType?? && cacheType?lower_case == "redis">
+
+    redis:
+        image: redis:7-alpine
+        container_name: ${artifactId}-redis
+        restart: unless-stopped
+        command: ["redis-server", "--appendonly", "yes"]
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 30
+            start_period: 15s
+        networks:
+            - ${artifactId}-network
+
+    </#if><#t>
+    <#if cacheType?? && cacheType?lower_case == "hazelcast">
+
+    hazelcast:
+        image: hazelcast/hazelcast
+        container_name: ${artifactId}-hazelcast
+        restart: unless-stopped
+        environment:
+            HZ_CLUSTERNAME: ${artifactId}-cluster
+        ports:
+            - "5701:5701"
+        networks:
+            - ${artifactId}-network
+
+    </#if><#t>
+networks:
+    ${artifactId}-network:
+
+volumes:
+    db_data:
+    <#if cacheType?? && cacheType?lower_case == "redis">
+    redis_data:
+    </#if><#t>

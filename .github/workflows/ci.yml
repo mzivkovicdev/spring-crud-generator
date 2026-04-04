@@ -32,7 +32,7 @@ jobs:
           cache: 'maven'
 
       - name: Build & Run Tests
-        run: mvn -B verify
+        run: mvn -B install
 
       - name: Run Code Quality Checks
         run: mvn -B -DskipTests checkstyle:check spotbugs:check
