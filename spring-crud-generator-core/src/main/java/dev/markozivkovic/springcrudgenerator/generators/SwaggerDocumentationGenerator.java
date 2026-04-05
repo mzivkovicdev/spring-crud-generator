@@ -33,6 +33,7 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.templates.SwaggerTemplateContext;
+import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
@@ -43,6 +44,7 @@ import dev.markozivkovic.springcrudgenerator.utils.SwaggerUtils;
 public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SwaggerDocumentationGenerator.class);
+    private static final int DEFAULT_APP_PORT = 8080;
 
     private final CrudConfiguration configuration;
     private final ProjectMetadata projectMetadata;
@@ -232,6 +234,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         final Map<String, Object> idProperty = SwaggerUtils.toSwaggerProperty(idField);
 
         final Map<String, Object> context = SwaggerTemplateContext.computeSwaggerTemplateContext(e);
+        context.put("serverUrl", this.resolveServerUrl());
         context.put("id", idProperty);
         context.put("create", createEndpoint(e));
         context.put("createBulk", createBulkEndpoint(e));
@@ -368,6 +371,28 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         final Map<String, Object> context = SwaggerTemplateContext.computeBaseContext(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/get-all-endpoint.ftl", context);
+    }
+
+    /**
+     * Resolves the server URL for the generated swagger documentation. This method uses the "basePath" property from the configuration
+     * and the port number from the docker configuration (if present). If the port number is not present, it defaults to
+     * {@link #DEFAULT_APP_PORT}. The server URL is returned in the format "http://localhost:<port><basePath>".
+     * 
+     * @return The server URL as a string.
+     */
+    private String resolveServerUrl() {
+
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(this.configuration);
+        final String normalizedBasePath = basePath.startsWith("/") ? basePath : "/" + basePath;
+
+        int appPort = DEFAULT_APP_PORT;
+        if (Objects.nonNull(this.configuration.getDocker())
+                && Objects.nonNull(this.configuration.getDocker().getApp())
+                && Objects.nonNull(this.configuration.getDocker().getApp().getPort())) {
+            appPort = this.configuration.getDocker().getApp().getPort();
+        }
+
+        return String.format("http://localhost:%d%s", appPort, normalizedBasePath);
     }
 
 }

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
@@ -941,6 +942,143 @@ class SwaggerDocumentationGeneratorTest {
 
             generator.generate("out");
         }
+    }
+
+    @Test
+    @DisplayName("generate should include default server URL in swagger template context")
+    void generate_shouldIncludeDefaultServerUrlInSwaggerContext() {
+
+        final CrudConfiguration cfg = new CrudConfiguration();
+        cfg.setOpenApi(new CrudConfiguration.OpenApiDefinition().setApiSpec(true));
+
+        final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
+        when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final ModelDefinition entity = newModel("ProductEntity", List.of(idField), null);
+
+        final SwaggerDocumentationGenerator generator =
+                new SwaggerDocumentationGenerator(cfg, projectMetadata, List.of(entity));
+
+        final AtomicReference<Map<String, Object>> swaggerTemplateContextRef = new AtomicReference<>();
+
+        try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(entity.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(entity.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("Product")).thenReturn("Product");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Product")).thenReturn("ProductCreate");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("Product")).thenReturn("ProductUpdate");
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of("title", "Product", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "ProductCreate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "ProductUpdate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), anyList())).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeContextWithId(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeBaseContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap())).thenReturn("OBJECT_SCHEMA");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(startsWith("swagger/endpoint/"), anyMap())).thenReturn("EP");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/swagger-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> swaggerContext = inv.getArgument(1, Map.class);
+                        swaggerTemplateContextRef.set(swaggerContext);
+                        return "SWAGGER_DOC";
+                    });
+
+            generator.generate("out");
+        }
+
+        final Map<String, Object> swaggerContext = swaggerTemplateContextRef.get();
+        assertNotNull(swaggerContext);
+        assertEquals("http://localhost:8080/api", swaggerContext.get("serverUrl"));
+    }
+
+    @Test
+    @DisplayName("generate should include configured server URL from docker app port and additional base path")
+    void generate_shouldIncludeConfiguredServerUrlInSwaggerContext() {
+
+        final CrudConfiguration cfg = new CrudConfiguration();
+        cfg.setOpenApi(new CrudConfiguration.OpenApiDefinition().setApiSpec(true));
+        cfg.setAdditionalProperties(Map.of(AdditionalConfigurationConstants.REST_BASEPATH, "api/v2"));
+        cfg.setDocker(new CrudConfiguration.DockerConfiguration()
+                .setApp(new CrudConfiguration.ApplicationDockerConfiguration().setPort(9090)));
+
+        final ProjectMetadata projectMetadata = mock(ProjectMetadata.class);
+        when(projectMetadata.getProjectBaseDir()).thenReturn("/tmp/project");
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final ModelDefinition entity = newModel("ProductEntity", List.of(idField), null);
+
+        final SwaggerDocumentationGenerator generator =
+                new SwaggerDocumentationGenerator(cfg, projectMetadata, List.of(entity));
+
+        final AtomicReference<Map<String, Object>> swaggerTemplateContextRef = new AtomicReference<>();
+
+        try (final MockedStatic<GeneratorContext> ctx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<SwaggerUtils> swaggerUtils = mockStatic(SwaggerUtils.class);
+             final MockedStatic<SwaggerTemplateContext> swaggerCtx = mockStatic(SwaggerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            ctx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.SWAGGER)).thenReturn(false);
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(entity.getFields())).thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.extractIdField(entity.getFields())).thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractJsonFields(anyList())).thenReturn(List.of());
+            swaggerUtils.when(() -> SwaggerUtils.toSwaggerProperty(any(FieldDefinition.class))).thenReturn(new HashMap<>());
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity")).thenReturn("Product");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiModelName("Product")).thenReturn("Product");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiCreateModelName("Product")).thenReturn("ProductCreate");
+            nameUtils.when(() -> ModelNameUtils.computeOpenApiUpdateModelName("Product")).thenReturn("ProductUpdate");
+
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.DEFAULT)))
+                    .thenReturn(new HashMap<>(Map.of("title", "Product", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.CREATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "ProductCreate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeObjectContext(eq(entity), eq(SwaggerObjectModeEnum.UPDATE_MODEL)))
+                    .thenReturn(new HashMap<>(Map.of("title", "ProductUpdate", "properties", List.of())));
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeSwaggerTemplateContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeRelationEndpointContext(any(ModelDefinition.class), anyList())).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeContextWithId(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+            swaggerCtx.when(() -> SwaggerTemplateContext.computeBaseContext(any(ModelDefinition.class))).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/schema/object-template.ftl"), anyMap())).thenReturn("OBJECT_SCHEMA");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(startsWith("swagger/endpoint/"), anyMap())).thenReturn("EP");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("swagger/swagger-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> swaggerContext = inv.getArgument(1, Map.class);
+                        swaggerTemplateContextRef.set(swaggerContext);
+                        return "SWAGGER_DOC";
+                    });
+
+            generator.generate("out");
+        }
+
+        final Map<String, Object> swaggerContext = swaggerTemplateContextRef.get();
+        assertNotNull(swaggerContext);
+        assertEquals("http://localhost:9090/api/v2", swaggerContext.get("serverUrl"));
     }
 
     @Test
