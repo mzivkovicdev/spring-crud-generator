@@ -18,10 +18,23 @@ void requireDirectoryHasSqlFiles(String relativePath) {
     }
 }
 
+void requireFileContains(String relativePath, String expectedSnippet) throws Exception {
+    File file = new File(basedir, relativePath);
+    if (!file.isFile()) {
+        throw new RuntimeException("Expected file is missing: " + file.getAbsolutePath());
+    }
+    String content = new String(java.nio.file.Files.readAllBytes(file.toPath()));
+    if (!content.contains(expectedSnippet)) {
+        throw new RuntimeException("Expected snippet not found in " + file.getAbsolutePath() + ": " + expectedSnippet);
+    }
+}
+
 requireFile("generator-state.json");
 requireFile("migration-state.json");
 requireFile("Dockerfile");
 requireFile("docker-compose.yml");
+requireFile("CLAUDE.md");
+requireFile("AGENTS.md");
 requireFile(".github/workflows/ci.yml");
 
 requireFile("src/main/resources/swagger/product-api.yaml");
@@ -31,9 +44,9 @@ requireFile("src/main/resources/graphql/product.graphqls");
 requireFile("src/main/resources/graphql/order.graphqls");
 requireFile("src/main/resources/graphql/user.graphqls");
 requireFile("src/main/resources/graphql/scalars.graphqls");
+requireFileContains("src/main/resources/swagger/user-api.yaml", "url: http://localhost:8080/api/v1");
 
 requireFile("src/main/java/com/example/fullfeatures/configuration/CacheConfiguration.java");
-requireFile("src/main/java/com/example/fullfeatures/configuration/HibernateLazyNullModule.java");
 requireFile("src/main/java/com/example/fullfeatures/configuration/GraphQlConfiguration.java");
 requireFile("src/main/java/com/example/fullfeatures/configuration/EnableRetryConfiguration.java");
 requireFile("src/main/java/com/example/fullfeatures/configuration/JacksonNullExclusionConfig.java");
