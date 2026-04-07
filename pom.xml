@@ -6,7 +6,7 @@
   <groupId>dev.markozivkovic</groupId>
   <artifactId>spring-crud-generator-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.7.0</version>
+  <version>1.8.0</version>
   <name>spring-crud-generator-parent</name>
   <description>Parent POM for spring-crud-generator multi-module project</description>
   <url>https://github.com/mzivkovicdev/spring-crud-generator</url>
