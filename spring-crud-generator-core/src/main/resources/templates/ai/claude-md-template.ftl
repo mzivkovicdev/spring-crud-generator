@@ -21,9 +21,13 @@ mvn clean install -Pgenerate-resources
 ## Database
 
 This project uses **${database}**. Configure the connection in `src/main/resources/application.properties` or `application.yml`.
+<#assign mongoDb = (isMongoDatabase!false) || ((database!"") == "MONGODB")>
 <#if migrationScripts>
-
+<#if mongoDb>
+Database migrations are managed by **Mongock**. Change units are in `${mongoMigrationPath}`. Never manually rename or reorder migration classes.
+<#else>
 Database schema is managed by **Flyway**. Migration scripts are in `src/main/resources/db/migration/`. Never manually rename or reorder migration files.
+</#if>
 </#if>
 <#if cacheEnabled>
 
@@ -54,7 +58,7 @@ docker-compose down
 <#else>
 ```bash
 docker build -t ${artifactId} .
-docker run -p ${appPort}:${appPort} ${artifactId}
+docker run -p ${appPort?c}:${appPort?c} ${artifactId}
 ```
 </#if>
 </#if>
@@ -62,13 +66,13 @@ docker run -p ${appPort}:${appPort} ${artifactId}
 
 ## API Documentation
 
-Swagger UI is available at: `http://localhost:${appPort}/swagger-ui/index.html`
+OpenAPI specs are generated in: `src/main/resources/swagger/`
 </#if>
 <#if graphqlEnabled>
 
 ## GraphQL
 
-GraphQL playground is available at: `http://localhost:${appPort}/graphiql`
+GraphQL endpoint is available at: `http://localhost:${appPort?c}/graphql`
 </#if>
 <#if testsEnabled>
 
@@ -90,27 +94,33 @@ mvn verify
 
 Generated from `src/main/resources/crud-spec.yaml`:
 
-- `model/` — JPA entities
-- `repository/` — Spring Data repositories
-- `service/` — Service interfaces and implementations
-- `businessservice/` — Business logic layer (safe to extend)
-- `to/` — Transfer Objects (DTOs)
-- `mapper/` — Entity ↔ DTO mappers
-- `controller/` — REST controllers
-- `config/` — Application configuration
-- `exception/` — Exception handling
+Package names are configurable via the `packages` section in `crud-spec.yaml`.
+
+- `packages.models` — JPA entities
+- `packages.repositories` — Spring Data repositories
+- `packages.services` — Service interfaces and implementations
+- `packages.businessservices` — Business logic layer (safe to extend)
+- `packages.transferobjects` — Transfer Objects (DTOs)
+- `packages.mappers` — Entity ↔ DTO mappers
+- `packages.controllers` — REST controllers
+- `packages.configurations` — Application configuration
+- `packages.exceptions` — Exception handling
 <#if graphqlEnabled>
-- `graphql/` — GraphQL resolvers and schema
+- `packages.resolvers` — GraphQL resolvers and schema
 </#if>
 
 ## Key Conventions
 
 - **Do not manually edit generated files.** Re-run the generator instead (`mvn clean install -Pgenerate-resources`).
-- Custom business logic belongs in the `businessservice/` layer or in new classes outside generated packages.
+- Custom business logic belongs in the package mapped by `packages.businessservices` (or in new classes outside generated packages).
 - `crud-spec.yaml` is the single source of truth for entity definitions and configuration.
 - `generator-state.json` tracks generation state — do not delete it.
 <#if migrationScripts>
+<#if mongoDb>
+- Never rename or reorder Mongock migration classes in `${mongoMigrationPath}`.
+<#else>
 - Never rename or reorder Flyway migration scripts in `src/main/resources/db/migration/`.
+</#if>
 </#if>
 <#if cacheRequiresInfrastructure>
 - Ensure ${cacheType} is running before starting the application — lazy-loaded relations and caching depend on it.

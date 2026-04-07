@@ -29,10 +29,12 @@ import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.AiContextConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUtils;
+import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
 public class AiContextGenerator implements ProjectArtifactGenerator {
 
@@ -59,11 +61,11 @@ public class AiContextGenerator implements ProjectArtifactGenerator {
         }
 
         if (Boolean.TRUE.equals(ai.getClaude())) {
-            this.generateClaudeMd();
+            this.generateClaudeMd(outputDir);
         }
 
         if (Boolean.TRUE.equals(ai.getAgents())) {
-            this.generateAgentsMd();
+            this.generateAgentsMd(outputDir);
         }
     }
 
@@ -76,14 +78,14 @@ public class AiContextGenerator implements ProjectArtifactGenerator {
      * Only sections relevant to the actual configuration are included.
      * </p>
      */
-    private void generateClaudeMd() {
+    private void generateClaudeMd(final String outputDir) {
 
         if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CLAUDE_MD)) { return; }
 
         LOGGER.info("Generating CLAUDE.md");
 
         final String content = FreeMarkerTemplateProcessorUtils.processTemplate(
-            "ai/claude-md-template.ftl", buildContext());
+            "ai/claude-md-template.ftl", buildContext(outputDir));
 
         FileWriterUtils.writeToFile(projectMetadata.getProjectBaseDir(), "CLAUDE.md", content);
 
@@ -101,14 +103,14 @@ public class AiContextGenerator implements ProjectArtifactGenerator {
      * Only sections relevant to the actual configuration are included.
      * </p>
      */
-    private void generateAgentsMd() {
+    private void generateAgentsMd(final String outputDir) {
 
         if (GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.AGENTS_MD)) { return; }
 
         LOGGER.info("Generating AGENTS.md");
 
         final String content = FreeMarkerTemplateProcessorUtils.processTemplate(
-            "ai/agents-md-template.ftl", buildContext());
+            "ai/agents-md-template.ftl", buildContext(outputDir));
 
         FileWriterUtils.writeToFile(projectMetadata.getProjectBaseDir(), "AGENTS.md", content);
 
@@ -130,12 +132,14 @@ public class AiContextGenerator implements ProjectArtifactGenerator {
      * @return a map of template variables consumed by both {@code CLAUDE.md} and
      *         {@code AGENTS.md} templates
      */
-    private Map<String, Object> buildContext() {
+    private Map<String, Object> buildContext(final String outputDir) {
 
         final Map<String, Object> context = new HashMap<>();
 
         context.put("artifactId", projectMetadata.getArtifactId());
         context.put("database", this.configuration.getDatabase().name());
+        context.put("isMongoDatabase", DatabaseType.MONGODB.equals(this.configuration.getDatabase()));
+        context.put("mongoMigrationPath", this.resolveMongoMigrationPath(outputDir));
 
         final boolean dockerEnabled = Objects.nonNull(this.configuration.getDocker())
             && Boolean.TRUE.equals(this.configuration.getDocker().getDockerfile());
@@ -189,6 +193,27 @@ public class AiContextGenerator implements ProjectArtifactGenerator {
         context.put("entities", this.entities.stream().map(ModelDefinition::getName).toList());
 
         return context;
+    }
+
+    /**
+     * Resolves the generated MongoDB migration classes path.
+     * For MongoDB, migration change units are generated in {@code src/main/java/<basePackage>/migration}.
+     * If output directory cannot be parsed, a generic placeholder path is returned.
+     *
+     * @param outputDir generation output directory
+     * @return migration path string for documentation templates
+     */
+    private String resolveMongoMigrationPath(final String outputDir) {
+
+        try {
+            final String basePackage = PackageUtils.getPackagePathFromOutputDir(outputDir);
+            if (Objects.isNull(basePackage) || basePackage.isBlank()) {
+                return "src/main/java/migration/";
+            }
+            return "src/main/java/" + basePackage.replace('.', '/') + "/migration/";
+        } catch (RuntimeException ex) {
+            return "src/main/java/<base-package>/migration/";
+        }
     }
 
 }

@@ -40,7 +40,7 @@ Or with Docker:
 
 ```bash
 docker build -t ${artifactId} .
-docker run -p ${appPort}:${appPort} ${artifactId}
+docker run -p ${appPort?c}:${appPort?c} ${artifactId}
 ```
 </#if>
 
@@ -51,21 +51,24 @@ Spring Boot application with a layered architecture generated from `src/main/res
 **Database:** ${database}
 <#if cacheEnabled>**Cache:** ${cacheType}</#if>
 <#if graphqlEnabled>**APIs:** REST + GraphQL<#else>**API:** REST</#if>
+<#assign mongoDb = (isMongoDatabase!false) || ((database!"") == "MONGODB")>
 
 ### Generated Layers
 
-| Package | Purpose |
+Package names are configurable via the `packages` section in `crud-spec.yaml`.
+
+| Package Key | Purpose |
 |---------|---------|
-| `model/` | JPA entities (database tables) |
-| `repository/` | Spring Data JPA repositories |
-| `service/` | CRUD service interfaces and implementations |
-| `businessservice/` | Business logic layer |
-| `to/` | Transfer Objects (request/response DTOs) |
-| `mapper/` | Entity ↔ DTO mappers |
-| `controller/` | REST controllers |
-| `config/` | Application configuration |
-| `exception/` | Exception types and error handling |
-<#if graphqlEnabled>| `graphql/` | GraphQL resolvers and schema |
+| `packages.models` | JPA entities (database tables) |
+| `packages.repositories` | Spring Data JPA repositories |
+| `packages.services` | CRUD service interfaces and implementations |
+| `packages.businessservices` | Business logic layer |
+| `packages.transferobjects` | Transfer Objects (request/response DTOs) |
+| `packages.mappers` | Entity ↔ DTO mappers |
+| `packages.controllers` | REST controllers |
+| `packages.configurations` | Application configuration |
+| `packages.exceptions` | Exception types and error handling |
+<#if graphqlEnabled>| `packages.resolvers` | GraphQL resolvers and schema |
 </#if>
 <#if entities?has_content>
 ### Entities
@@ -77,22 +80,26 @@ Spring Boot application with a layered architecture generated from `src/main/res
 <#if openApiEnabled>
 ## API Documentation
 
-Swagger UI: `http://localhost:${appPort}/swagger-ui/index.html`
+OpenAPI specs: `src/main/resources/swagger/`
 </#if>
 <#if graphqlEnabled>
 ## GraphQL
 
-Playground: `http://localhost:${appPort}/graphiql`
+Endpoint: `http://localhost:${appPort?c}/graphql`
 </#if>
 
 ## Important Rules
 
 - **Never edit generated files directly.** Changes will be overwritten on next generator run. Re-run with `mvn clean install -Pgenerate-resources` instead.
-- Custom business logic goes in `businessservice/` or new classes outside generated packages.
+- Custom business logic goes in the package mapped by `packages.businessservices` or in new classes outside generated packages.
 - `crud-spec.yaml` defines all entities, fields, and configuration — this is the single source of truth.
 - `generator-state.json` must not be deleted (tracks incremental generation state).
 <#if migrationScripts>
+<#if mongoDb>
+- Mongock migration classes in `${mongoMigrationPath}` must never be renamed or reordered.
+<#else>
 - Flyway migration files in `src/main/resources/db/migration/` must never be renamed or reordered.
+</#if>
 </#if>
 <#if cacheRequiresInfrastructure>
 - **${cacheType} must be running** before starting the application.

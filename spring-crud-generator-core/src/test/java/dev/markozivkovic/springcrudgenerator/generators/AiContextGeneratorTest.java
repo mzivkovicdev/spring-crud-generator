@@ -533,6 +533,39 @@ class AiContextGeneratorTest {
     }
 
     @Test
+    void generate_shouldBuildContextWithMongoMigrationPath() {
+
+        final Env env = prepareEnv();
+        when(env.aiCfg.getClaude()).thenReturn(true);
+        when(env.aiCfg.getAgents()).thenReturn(false);
+        when(env.config.getDatabase()).thenReturn(DatabaseType.MONGODB);
+        when(env.config.isMigrationScripts()).thenReturn(true);
+
+        final List<Map<String, Object>> capturedContexts = new ArrayList<>();
+
+        try (final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            genCtx.when(() -> GeneratorContext.isGenerated(GeneratorConstants.GeneratorContextKeys.CLAUDE_MD)).thenReturn(false);
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        capturedContexts.add(new HashMap<>(ctx));
+                        return "CONTENT";
+                    });
+            writer.when(() -> FileWriterUtils.writeToFile(anyString(), anyString(), anyString())).thenAnswer(inv -> null);
+
+            env.generator.generate("/tmp/project/src/main/java/com/example/demo");
+
+            final Map<String, Object> ctx = capturedContexts.get(0);
+            assertTrue((Boolean) ctx.get("isMongoDatabase"));
+            assertEquals("src/main/java/com/example/demo/migration/", ctx.get("mongoMigrationPath"));
+        }
+    }
+
+    @Test
     void generate_shouldBuildContextWithEntities() {
 
         final ModelDefinition product = mock(ModelDefinition.class);
