@@ -582,11 +582,15 @@ class BusinessServiceImportsTest {
             pkg.when(() -> PackageUtils.computeEntityPackage("com.example", packageConfiguration)).thenReturn("com.example.model");
             pkg.when(() -> PackageUtils.computeServicePackage("com.example", packageConfiguration))
                     .thenReturn("com.example.service");
+            pkg.when(() -> PackageUtils.computeUtilsPackage("com.example", packageConfiguration))
+                    .thenReturn("com.example.utils");
 
             pkg.when(() -> PackageUtils.join("com.example.model", "User"))
                     .thenReturn("com.example.model.User");
             pkg.when(() -> PackageUtils.join("com.example.service", "UserService"))
                     .thenReturn("com.example.service.UserService");
+            pkg.when(() -> PackageUtils.join("com.example.utils", "ArgumentVerifier"))
+                    .thenReturn("com.example.utils.ArgumentVerifier");
 
             names.when(() -> ModelNameUtils.stripSuffix("User"))
                     .thenReturn("User");
@@ -610,6 +614,7 @@ class BusinessServiceImportsTest {
             assertTrue(result.contains("import com.example.common.UserEnums;"), "Enums import");
             assertTrue(result.contains("import com.example.model.User;"), "Entity import");
             assertTrue(result.contains("import com.example.service.UserService;"), "Service import");
+            assertTrue(result.contains("import com.example.utils.ArgumentVerifier;"), "ArgumentVerifier import");
             assertFalse(result.contains(GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY),
                     "Retry annotation should not be imported");
         }
@@ -643,6 +648,8 @@ class BusinessServiceImportsTest {
                     .thenReturn("com.shop.entity");
             pkg.when(() -> PackageUtils.computeServicePackage("com.shop", packageConfiguration))
                     .thenReturn("com.shop.service");
+            pkg.when(() -> PackageUtils.computeUtilsPackage("com.shop", packageConfiguration))
+                    .thenReturn("com.shop.utils");
             pkg.when(() -> PackageUtils.computeAnnotationPackage("com.shop", packageConfiguration))
                     .thenReturn("com.shop.annotation");
 
@@ -655,6 +662,8 @@ class BusinessServiceImportsTest {
                     .thenReturn("com.shop.entity.Customer");
             pkg.when(() -> PackageUtils.join("com.shop.service", "CustomerService"))
                     .thenReturn("com.shop.service.CustomerService");
+            pkg.when(() -> PackageUtils.join("com.shop.utils", "ArgumentVerifier"))
+                    .thenReturn("com.shop.utils.ArgumentVerifier");
 
             pkg.when(() -> PackageUtils.join("com.shop.annotation", GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY))
                     .thenReturn("com.shop.annotation." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY);
@@ -685,6 +694,7 @@ class BusinessServiceImportsTest {
             assertTrue(result.contains("import com.shop.service.OrderService;"), "OrderService import");
             assertTrue(result.contains("import com.shop.entity.Customer;"), "Customer entity import");
             assertTrue(result.contains("import com.shop.service.CustomerService;"), "CustomerService import");
+            assertTrue(result.contains("import com.shop.utils.ArgumentVerifier;"), "ArgumentVerifier import");
             assertTrue(result.contains("import com.shop.annotation." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY + ";"),
                     "Retryable annotation import");
         }

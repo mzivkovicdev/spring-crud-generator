@@ -51,6 +51,7 @@ class UtilsGeneratorTest {
         final UtilsGenerator generator = new UtilsGenerator(packageConfiguration);
         final AtomicInteger markGeneratedCount = new AtomicInteger(0);
         final String outputDir = "out";
+        final String testOutputDir = "out";
 
         try (final MockedStatic<GeneratorContext> generatorContext = mockStatic(GeneratorContext.class);
              final MockedStatic<PackageUtils> packageUtils = mockStatic(PackageUtils.class);
@@ -67,30 +68,43 @@ class UtilsGeneratorTest {
 
             packageUtils.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
                     .thenReturn("com.example");
-            packageUtils.when(() -> PackageUtils.computeServicePackage("com.example", packageConfiguration))
-                    .thenReturn("com.example.services");
+            packageUtils.when(() -> PackageUtils.computeUtilsPackage("com.example", packageConfiguration))
+                    .thenReturn("com.example.utils");
             packageUtils.when(() -> PackageUtils.computeExceptionPackage("com.example", packageConfiguration))
                     .thenReturn("com.example.exceptions");
             packageUtils.when(() -> PackageUtils.join("com.example.exceptions", "EtArgumentException"))
                     .thenReturn("com.example.exceptions.EtArgumentException");
-            packageUtils.when(() -> PackageUtils.computeServiceSubPackage(packageConfiguration))
-                    .thenReturn("services");
+            packageUtils.when(() -> PackageUtils.computeUtilsSubPackage(packageConfiguration))
+                    .thenReturn("utils");
 
             templates.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
-                    "service/argument-verifier-template.ftl",
+                    "utils/argument-verifier-template.ftl",
                     Map.of(
                             TemplateContextConstants.PROJECT_IMPORTS,
                             "import com.example.exceptions.EtArgumentException;\n"
                     )
             )).thenReturn("ARGUMENT_VERIFIER_TEMPLATE");
+            templates.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    "test/unit/utils/argument-verifier-test-template.ftl",
+                    Map.of(
+                            TemplateContextConstants.PROJECT_IMPORTS,
+                            "import com.example.exceptions.EtArgumentException;\n"
+                    )
+            )).thenReturn("ARGUMENT_VERIFIER_TEST_TEMPLATE");
 
             generator.generate(outputDir);
 
             writer.verify(() -> FileWriterUtils.writeToFile(
                     outputDir,
-                    "services",
+                    "utils",
                     "ArgumentVerifier",
-                    "package com.example.services;\n\nARGUMENT_VERIFIER_TEMPLATE"
+                    "package com.example.utils;\n\nARGUMENT_VERIFIER_TEMPLATE"
+            ));
+            writer.verify(() -> FileWriterUtils.writeToFile(
+                    testOutputDir,
+                    "utils",
+                    "ArgumentVerifierTest",
+                    "package com.example.utils;\n\nARGUMENT_VERIFIER_TEST_TEMPLATE"
             ));
             assertEquals(1, markGeneratedCount.get(), "GeneratorContext.markGenerated(ARGUMENT_VERIFIER) should be called once");
         }

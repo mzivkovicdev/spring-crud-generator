@@ -3,9 +3,21 @@
 <#assign serviceClass = model.modelService>
 <#assign inputArgs = model.inputArgs>
 <#assign fieldNames = model.fieldNames>
+<#assign notNullArgs = model.notNullArgs![]>
+<#assign notEmptyArgs = model.notEmptyArgs![]>
+<#assign notBlankArgs = model.notBlankArgs![]>
 
     ${transactionalAnnotation}
     public ${modelName} create(${inputArgs}) {
+        <#if notNullArgs?has_content>
+        ArgumentVerifier.verifyNotNull(${notNullArgs?join(", ")});
+        </#if>
+        <#if notBlankArgs?has_content>
+        ArgumentVerifier.verifyNotBlank(${notBlankArgs?join(", ")});
+        </#if>
+        <#if notEmptyArgs?has_content>
+        ArgumentVerifier.verifyNotEmpty(${notEmptyArgs?join(", ")});
+        </#if>
 
         <#list relations as rel>
         <#assign relationServiceClass = rel.strippedRelationClassName?uncap_first + "Service">

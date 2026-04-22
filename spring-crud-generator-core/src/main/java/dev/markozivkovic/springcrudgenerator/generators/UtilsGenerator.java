@@ -36,6 +36,7 @@ public class UtilsGenerator implements ProjectArtifactGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UtilsGenerator.class);
     private static final String CLASS_NAME = "ArgumentVerifier";
+    private static final String TEST_CLASS_NAME = "ArgumentVerifierTest";
     private static final String ET_ARGUMENT_EXCEPTION = "EtArgumentException";
 
     private final PackageConfiguration packageConfiguration;
@@ -53,13 +54,26 @@ public class UtilsGenerator implements ProjectArtifactGenerator {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         final String exceptionPackage = PackageUtils.computeExceptionPackage(packagePath, packageConfiguration);
-        final String servicePackage = PackageUtils.computeServicePackage(packagePath, packageConfiguration);
+        final String utilsPackage = PackageUtils.computeUtilsPackage(packagePath, packageConfiguration);
+        final String utilsSubPackage = PackageUtils.computeUtilsSubPackage(packageConfiguration);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, servicePackage));
+        sb.append(String.format(PACKAGE, utilsPackage));
         sb.append(
                 FreeMarkerTemplateProcessorUtils.processTemplate(
-                        "service/argument-verifier-template.ftl",
+                        "utils/argument-verifier-template.ftl",
+                        Map.of(
+                                TemplateContextConstants.PROJECT_IMPORTS,
+                                String.format(IMPORT, PackageUtils.join(exceptionPackage, ET_ARGUMENT_EXCEPTION))
+                        )
+                )
+        );
+        final String testOutputDir = outputDir.replace("main", "test");
+        final StringBuilder testSb = new StringBuilder();
+        testSb.append(String.format(PACKAGE, utilsPackage));
+        testSb.append(
+                FreeMarkerTemplateProcessorUtils.processTemplate(
+                        "test/unit/utils/argument-verifier-test-template.ftl",
                         Map.of(
                                 TemplateContextConstants.PROJECT_IMPORTS,
                                 String.format(IMPORT, PackageUtils.join(exceptionPackage, ET_ARGUMENT_EXCEPTION))
@@ -67,7 +81,8 @@ public class UtilsGenerator implements ProjectArtifactGenerator {
                 )
         );
 
-        FileWriterUtils.writeToFile(outputDir, PackageUtils.computeServiceSubPackage(packageConfiguration), CLASS_NAME, sb.toString());
+        FileWriterUtils.writeToFile(outputDir, utilsSubPackage, CLASS_NAME, sb.toString());
+        FileWriterUtils.writeToFile(testOutputDir, utilsSubPackage, TEST_CLASS_NAME, testSb.toString());
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.ARGUMENT_VERIFIER);
 

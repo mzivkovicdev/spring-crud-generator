@@ -44,6 +44,9 @@ public final class TemplateContextConstants {
     public static final String CLASS_NAME = "className";
     public static final String CACHE = "cache";
     public static final String INPUT_ARGS = "inputArgs";
+    public static final String NOT_NULL_ARGS = "notNullArgs";
+    public static final String NOT_EMPTY_ARGS = "notEmptyArgs";
+    public static final String NOT_BLANK_ARGS = "notBlankArgs";
     public static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     public static final String AUDIT_ENABLED = "auditEnabled";
     public static final String AUDIT_TYPE = "auditType";

@@ -120,6 +120,9 @@ public class ServiceTemplateContext {
         context.put(TemplateContextConstants.JAVADOC_FIELDS, javadocFields);
         context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         context.put(TemplateContextConstants.ID_FIELD, idField.getName());
+        context.put(TemplateContextConstants.NOT_NULL_ARGS, FieldUtils.extractCreateNotNullArgsForService(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.NOT_EMPTY_ARGS, FieldUtils.extractCreateNotEmptyArgsForService(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.NOT_BLANK_ARGS, FieldUtils.extractCreateNotBlankArgsForService(modelDefinition.getFields()));
 
         return context;
     }

@@ -3752,6 +3752,76 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("create validation args for service: should split into notNull/notEmpty/notBlank with proper precedence")
+    void extractCreateValidationArgsForService_shouldSplitArgumentsByValidationType() {
+
+        final FieldDefinition idField = fieldWithNameAndType("id", "Long");
+        idField.setId(new IdDefinition());
+
+        final ValidationDefinition nameValidation = new ValidationDefinition()
+                .setRequired(true)
+                .setNotBlank(true);
+        final FieldDefinition nameField = fieldWithNameAndType("name", "String");
+        nameField.setValidation(nameValidation);
+
+        final ValidationDefinition tagsValidation = new ValidationDefinition()
+                .setRequired(true)
+                .setNotEmpty(true);
+        final FieldDefinition tagsField = fieldWithNameAndType("tags", "List<String>");
+        tagsField.setValidation(tagsValidation);
+
+        final ValidationDefinition amountValidation = new ValidationDefinition()
+                .setRequired(true);
+        final FieldDefinition amountField = fieldWithNameAndType("amount", "BigDecimal");
+        amountField.setValidation(amountValidation);
+
+        final FieldDefinition codeField = fieldWithNameAndType("code", "String");
+        codeField.setColumn(new ColumnDefinition().setNullable(false));
+
+        final ValidationDefinition notEmptyOnNumber = new ValidationDefinition()
+                .setRequired(true)
+                .setNotEmpty(true);
+        final FieldDefinition quantityField = fieldWithNameAndType("quantity", "Long");
+        quantityField.setValidation(notEmptyOnNumber);
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, tagsField, amountField, codeField, quantityField);
+
+        assertEquals(List.of("amount", "code", "quantity"), FieldUtils.extractCreateNotNullArgsForService(fields));
+        assertEquals(List.of("tags"), FieldUtils.extractCreateNotEmptyArgsForService(fields));
+        assertEquals(List.of("name"), FieldUtils.extractCreateNotBlankArgsForService(fields));
+    }
+
+    @Test
+    @DisplayName("create validation args for business service: should map relation arguments to <model>Id/<model>Ids")
+    void extractCreateValidationArgsForBusinessService_shouldMapRelationArgs() {
+
+        final FieldDefinition idField = fieldWithNameAndType("id", "Long");
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition titleField = fieldWithNameAndType("title", "String");
+        titleField.setValidation(new ValidationDefinition().setRequired(true));
+
+        final FieldDefinition summaryField = fieldWithNameAndType("summary", "String");
+        summaryField.setValidation(new ValidationDefinition().setNotBlank(true));
+
+        final FieldDefinition rolesField = fieldWithNameTypeAndRelation("roles", "RoleEntity", RelationTypeEnum.MANY_TO_MANY.getKey(), null, null);
+        rolesField.setValidation(new ValidationDefinition().setNotEmpty(true));
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation("owner", "OwnerEntity", RelationTypeEnum.MANY_TO_ONE.getKey(), null, null);
+        ownerField.setValidation(new ValidationDefinition().setRequired(true));
+
+        final ModelDefinition roleModel = model("RoleEntity", List.of(fieldWithNameTypeAndId("id", "Long", true)));
+        final ModelDefinition ownerModel = model("OwnerEntity", List.of(fieldWithNameTypeAndId("id", "Long", true)));
+        final List<ModelDefinition> entities = List.of(roleModel, ownerModel);
+
+        final List<FieldDefinition> fields = List.of(idField, titleField, summaryField, rolesField, ownerField);
+
+        assertEquals(List.of("title", "ownerId"), FieldUtils.extractCreateNotNullArgsForBusinessService(fields, entities));
+        assertEquals(List.of("roleIds"), FieldUtils.extractCreateNotEmptyArgsForBusinessService(fields, entities));
+        assertEquals(List.of("summary"), FieldUtils.extractCreateNotBlankArgsForBusinessService(fields, entities));
+    }
+
+    @Test
     @DisplayName("isAnyFieldNonNullable returns false when all fields are nullable or have no column")
     void isAnyFieldNonNullable_shouldReturnFalse_whenAllNullableOrNoColumn() {
 

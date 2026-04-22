@@ -60,6 +60,7 @@ public class GeneratorConstants {
         public static final String RESPONSES = "responses";
         public static final String HANDLERS = "handlers";
         public static final String REPOSITORIES = "repositories";
+        public static final String UTILS = "utils";
         public static final String SWAGGER = "swagger";
     }
 

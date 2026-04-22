@@ -173,6 +173,9 @@ class ServiceTemplateContextTest {
         final List<String> inputArgs = List.of("String name", "int age");
         final List<String> fieldNames = List.of("name", "age");
         final List<String> javadocFields = List.of("name - customer name", "age - customer age");
+        final List<String> notNullArgs = List.of("age");
+        final List<String> notEmptyArgs = List.of("tags");
+        final List<String> notBlankArgs = List.of("name");
 
         when(idField.getName()).thenReturn("id");
 
@@ -188,6 +191,12 @@ class ServiceTemplateContextTest {
                       .thenReturn(javadocFields);
             fieldUtils.when(() -> FieldUtils.extractIdField(fields))
                       .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractCreateNotNullArgsForService(fields))
+                      .thenReturn(notNullArgs);
+            fieldUtils.when(() -> FieldUtils.extractCreateNotEmptyArgsForService(fields))
+                      .thenReturn(notEmptyArgs);
+            fieldUtils.when(() -> FieldUtils.extractCreateNotBlankArgsForService(fields))
+                      .thenReturn(notBlankArgs);
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("CustomerEntity"))
                      .thenReturn("Customer");
@@ -204,6 +213,9 @@ class ServiceTemplateContextTest {
             assertEquals(javadocFields, ctx.get(TemplateContextConstants.JAVADOC_FIELDS));
             assertEquals("customer", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
             assertEquals("id", ctx.get(TemplateContextConstants.ID_FIELD));
+            assertEquals(notNullArgs, ctx.get(TemplateContextConstants.NOT_NULL_ARGS));
+            assertEquals(notEmptyArgs, ctx.get(TemplateContextConstants.NOT_EMPTY_ARGS));
+            assertEquals(notBlankArgs, ctx.get(TemplateContextConstants.NOT_BLANK_ARGS));
         }
     }
 
