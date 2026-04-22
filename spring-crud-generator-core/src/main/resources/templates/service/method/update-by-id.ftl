@@ -12,6 +12,7 @@
     @CachePut(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} updateById(<#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>) {
+        ArgumentVerifier.verifyNotNull(${idField});
 
         final ${modelName} existing = this.getById(${idField});
 

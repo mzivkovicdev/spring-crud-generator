@@ -20,6 +20,7 @@
      */</#if>
     ${transactionalAnnotation}
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}, final ${rel.relationIdType} ${relationField}Id) {
+        ArgumentVerifier.verifyNotNull(${idField}, ${relationField}Id);
 
         final ${rel.relationClassName} entity = this.${relationServiceClass}.getById(${relationField}Id);
 
