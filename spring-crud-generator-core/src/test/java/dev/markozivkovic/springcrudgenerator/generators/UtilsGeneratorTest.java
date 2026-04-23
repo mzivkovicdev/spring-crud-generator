@@ -72,8 +72,8 @@ class UtilsGeneratorTest {
                     .thenReturn("com.example.utils");
             packageUtils.when(() -> PackageUtils.computeExceptionPackage("com.example", packageConfiguration))
                     .thenReturn("com.example.exceptions");
-            packageUtils.when(() -> PackageUtils.join("com.example.exceptions", "EtArgumentException"))
-                    .thenReturn("com.example.exceptions.EtArgumentException");
+            packageUtils.when(() -> PackageUtils.join("com.example.exceptions", "InvalidArgumentException"))
+                    .thenReturn("com.example.exceptions.InvalidArgumentException");
             packageUtils.when(() -> PackageUtils.computeUtilsSubPackage(packageConfiguration))
                     .thenReturn("utils");
 
@@ -81,14 +81,14 @@ class UtilsGeneratorTest {
                     "utils/argument-verifier-template.ftl",
                     Map.of(
                             TemplateContextConstants.PROJECT_IMPORTS,
-                            "import com.example.exceptions.EtArgumentException;\n"
+                            "import com.example.exceptions.InvalidArgumentException;\n"
                     )
             )).thenReturn("ARGUMENT_VERIFIER_TEMPLATE");
             templates.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
                     "test/unit/utils/argument-verifier-test-template.ftl",
                     Map.of(
                             TemplateContextConstants.PROJECT_IMPORTS,
-                            "import com.example.exceptions.EtArgumentException;\n"
+                            "import com.example.exceptions.InvalidArgumentException;\n"
                     )
             )).thenReturn("ARGUMENT_VERIFIER_TEST_TEMPLATE");
 

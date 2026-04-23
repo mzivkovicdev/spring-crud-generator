@@ -57,7 +57,7 @@ public class GlobalGraphQlExceptionHandler {
         );
     }
 
-    @GraphQlExceptionHandler(IllegalArgumentException.class)
+    @GraphQlExceptionHandler({InvalidArgumentException.class, IllegalArgumentException.class})
     public GraphQLError handleIllegalArgument(final IllegalArgumentException ex, final DataFetchingEnvironment env) {
         return buildError(
             env,

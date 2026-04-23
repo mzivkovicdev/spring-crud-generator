@@ -33,6 +33,8 @@ class ExceptionImportsTest {
 
             pkg.when(() -> PackageUtils.join("com.example.exception", "ResourceNotFoundException"))
                     .thenReturn("com.example.exception.ResourceNotFoundException");
+            pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidArgumentException"))
+                    .thenReturn("com.example.exception.InvalidArgumentException");
             pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidResourceStateException"))
                     .thenReturn("com.example.exception.InvalidResourceStateException");
             pkg.when(() -> PackageUtils.join("com.example.exception.response", "HttpResponse"))
@@ -46,6 +48,8 @@ class ExceptionImportsTest {
 
             assertTrue(result.contains("com.example.exception.ResourceNotFoundException"),
                     "Should contain ResourceNotFoundException import");
+            assertTrue(result.contains("com.example.exception.InvalidArgumentException"),
+                    "Should contain InvalidArgumentException import");
             assertTrue(result.contains("com.example.exception.response.HttpResponse"),
                     "Should contain HttpResponse import");
             assertFalse(result.contains("InvalidResourceStateException"),
@@ -70,6 +74,8 @@ class ExceptionImportsTest {
 
             pkg.when(() -> PackageUtils.join("com.example.exception", "ResourceNotFoundException"))
                     .thenReturn("com.example.exception.ResourceNotFoundException");
+            pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidArgumentException"))
+                    .thenReturn("com.example.exception.InvalidArgumentException");
             pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidResourceStateException"))
                     .thenReturn("com.example.exception.InvalidResourceStateException");
             pkg.when(() -> PackageUtils.join("com.example.exception.response", "HttpResponse"))
@@ -83,6 +89,8 @@ class ExceptionImportsTest {
 
             assertTrue(result.contains("com.example.exception.ResourceNotFoundException"),
                     "Should contain ResourceNotFoundException import");
+            assertTrue(result.contains("com.example.exception.InvalidArgumentException"),
+                    "Should contain InvalidArgumentException import");
             assertTrue(result.contains("com.example.exception.response.HttpResponse"),
                     "Should contain HttpResponse import");
             assertTrue(result.contains("com.example.exception.InvalidResourceStateException"),
@@ -108,6 +116,8 @@ class ExceptionImportsTest {
 
             pkg.when(() -> PackageUtils.join("com.example.exception", "ResourceNotFoundException"))
                     .thenReturn("com.example.exception.ResourceNotFoundException");
+            pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidArgumentException"))
+                    .thenReturn("com.example.exception.InvalidArgumentException");
             pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidResourceStateException"))
                     .thenReturn("com.example.exception.InvalidResourceStateException");
             pkg.when(() -> PackageUtils.join("com.example.exception.response", "HttpResponse"))
@@ -121,6 +131,8 @@ class ExceptionImportsTest {
 
             assertTrue(result.contains("com.example.exception.ResourceNotFoundException"),
                     "Should contain ResourceNotFoundException import");
+            assertTrue(result.contains("com.example.exception.InvalidArgumentException"),
+                    "Should contain InvalidArgumentException import");
             assertFalse(result.contains("HttpResponse"),
                     "GraphQL handler should NOT import HttpResponse");
             assertFalse(result.contains("InvalidResourceStateException"),
@@ -144,6 +156,8 @@ class ExceptionImportsTest {
 
             pkg.when(() -> PackageUtils.join("com.example.exception", "ResourceNotFoundException"))
                     .thenReturn("com.example.exception.ResourceNotFoundException");
+            pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidArgumentException"))
+                    .thenReturn("com.example.exception.InvalidArgumentException");
             pkg.when(() -> PackageUtils.join("com.example.exception", "InvalidResourceStateException"))
                     .thenReturn("com.example.exception.InvalidResourceStateException");
             pkg.when(() -> PackageUtils.join("com.example.exception.response", "HttpResponse"))
@@ -157,6 +171,8 @@ class ExceptionImportsTest {
 
             assertTrue(result.contains("com.example.exception.ResourceNotFoundException"),
                     "Should contain ResourceNotFoundException import");
+            assertTrue(result.contains("com.example.exception.InvalidArgumentException"),
+                    "Should contain InvalidArgumentException import");
             assertTrue(result.contains("com.example.exception.InvalidResourceStateException"),
                     "Should contain InvalidResourceStateException import when hasRelations=true");
             assertFalse(result.contains("HttpResponse"),

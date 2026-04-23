@@ -11,8 +11,8 @@ class ArgumentVerifierTest {
 
     @Test
     void verifyNotNull_shouldThrowWhenNullIsProvided() {
-        final EtArgumentException ex = assertThrows(
-                EtArgumentException.class,
+        final InvalidArgumentException ex = assertThrows(
+                InvalidArgumentException.class,
                 () -> ArgumentVerifier.verifyNotNull("a", null)
         );
 
@@ -21,8 +21,8 @@ class ArgumentVerifierTest {
 
     @Test
     void verifyNotEmptyCollection_shouldThrowWhenCollectionIsEmpty() {
-        final EtArgumentException ex = assertThrows(
-                EtArgumentException.class,
+        final InvalidArgumentException ex = assertThrows(
+                InvalidArgumentException.class,
                 () -> ArgumentVerifier.verifyNotEmpty(List.of())
         );
 
@@ -31,8 +31,8 @@ class ArgumentVerifierTest {
 
     @Test
     void verifyNotEmptyText_shouldThrowWhenTextIsEmpty() {
-        final EtArgumentException ex = assertThrows(
-                EtArgumentException.class,
+        final InvalidArgumentException ex = assertThrows(
+                InvalidArgumentException.class,
                 () -> ArgumentVerifier.verifyNotEmpty("")
         );
 
@@ -41,8 +41,8 @@ class ArgumentVerifierTest {
 
     @Test
     void verifyNotBlank_shouldThrowWhenTextIsBlank() {
-        final EtArgumentException ex = assertThrows(
-                EtArgumentException.class,
+        final InvalidArgumentException ex = assertThrows(
+                InvalidArgumentException.class,
                 () -> ArgumentVerifier.verifyNotBlank("   ")
         );
 

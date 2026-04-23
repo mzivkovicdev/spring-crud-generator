@@ -37,7 +37,7 @@ public class UtilsGenerator implements ProjectArtifactGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(UtilsGenerator.class);
     private static final String CLASS_NAME = "ArgumentVerifier";
     private static final String TEST_CLASS_NAME = "ArgumentVerifierTest";
-    private static final String ET_ARGUMENT_EXCEPTION = "EtArgumentException";
+    private static final String INVALID_ARGUMENT_EXCEPTION = "InvalidArgumentException";
 
     private final PackageConfiguration packageConfiguration;
 
@@ -64,7 +64,7 @@ public class UtilsGenerator implements ProjectArtifactGenerator {
                         "utils/argument-verifier-template.ftl",
                         Map.of(
                                 TemplateContextConstants.PROJECT_IMPORTS,
-                                String.format(IMPORT, PackageUtils.join(exceptionPackage, ET_ARGUMENT_EXCEPTION))
+                                String.format(IMPORT, PackageUtils.join(exceptionPackage, INVALID_ARGUMENT_EXCEPTION))
                         )
                 )
         );
@@ -76,7 +76,7 @@ public class UtilsGenerator implements ProjectArtifactGenerator {
                         "test/unit/utils/argument-verifier-test-template.ftl",
                         Map.of(
                                 TemplateContextConstants.PROJECT_IMPORTS,
-                                String.format(IMPORT, PackageUtils.join(exceptionPackage, ET_ARGUMENT_EXCEPTION))
+                                String.format(IMPORT, PackageUtils.join(exceptionPackage, INVALID_ARGUMENT_EXCEPTION))
                         )
                 )
         );

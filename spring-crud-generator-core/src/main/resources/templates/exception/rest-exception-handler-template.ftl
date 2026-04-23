@@ -122,7 +122,7 @@ public class GlobalRestExceptionHandler {
     }
 
     </#if><#t>
-    @ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler({InvalidArgumentException.class, IllegalArgumentException.class})
     public ResponseEntity<HttpResponse> invalidArgumentError(final IllegalArgumentException e) {
 
         return new ResponseEntity<>(

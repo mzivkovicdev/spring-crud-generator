@@ -57,7 +57,7 @@ class ExceptionGeneratorTest {
         final List<String> expectedExceptions = List.of(
                 "ResourceNotFoundException",
                 "InvalidResourceStateException",
-                "EtArgumentException"
+                "InvalidArgumentException"
         );
 
         final List<InvocationOnMock> templateInvocations = new ArrayList<>();
