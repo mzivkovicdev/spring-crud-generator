@@ -12,6 +12,7 @@
      */
     public Page<${modelName}> getAll(final Integer pageNumber, final Integer pageSize<#if sortEnabled?? && sortEnabled>,
             final String sortBy, final String sortDirection</#if>) {
+        ArgumentVerifier.verifyNotNull(pageNumber, pageSize);
 
         <#if sortEnabled?? && sortEnabled>
         if (sortBy == null || sortBy.isBlank()) {

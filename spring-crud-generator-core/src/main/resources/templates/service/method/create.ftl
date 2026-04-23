@@ -15,9 +15,6 @@
     @CachePut(value = "${modelName?uncap_first}", key = "#result.${idField}")
     </#if><#t>
     public ${modelName} create(${inputArgs}) {
-
-        LOGGER.info("Creating new ${strippedModelName}");
-
         <#if notNullArgs?has_content>
         ArgumentVerifier.verifyNotNull(${notNullArgs?join(", ")});
         </#if>
@@ -27,6 +24,8 @@
         <#if notEmptyArgs?has_content>
         ArgumentVerifier.verifyNotEmpty(${notEmptyArgs?join(", ")});
         </#if>
+        
+        LOGGER.info("Creating new ${strippedModelName}");
 
         return this.repository.saveAndFlush(new ${modelName}(${fieldNames}));
     }
