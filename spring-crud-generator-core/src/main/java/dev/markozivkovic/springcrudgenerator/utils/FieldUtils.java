@@ -1431,6 +1431,42 @@ public class FieldUtils {
     }
 
     /**
+     * Extracts update-method arguments that should be validated with {@code ArgumentVerifier.verifyNotNull(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not null
+     */
+    public static List<String> extractUpdateNotNullArgsForService(final List<FieldDefinition> fields) {
+
+        return extractUpdateValidationArgsForService(fields, FieldUtils::requiresCreateNotNullValidation);
+    }
+
+    /**
+     * Extracts update-method arguments that should be validated with {@code ArgumentVerifier.verifyNotEmpty(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not empty
+     */
+    public static List<String> extractUpdateNotEmptyArgsForService(final List<FieldDefinition> fields) {
+
+        return extractUpdateValidationArgsForService(fields, FieldUtils::requiresCreateNotEmptyValidation);
+    }
+
+    /**
+     * Extracts update-method arguments that should be validated with {@code ArgumentVerifier.verifyNotBlank(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not blank
+     */
+    public static List<String> extractUpdateNotBlankArgsForService(final List<FieldDefinition> fields) {
+
+        return extractUpdateValidationArgsForService(fields, FieldUtils::requiresCreateNotBlankValidation);
+    }
+
+    /**
      * Extracts create-method validation arguments for service methods.
      *
      * @param fields model fields
@@ -1466,6 +1502,26 @@ public class FieldUtils {
                 .filter(field -> !field.equals(id))
                 .filter(validationFilter)
                 .map(field -> resolveCreateBusinessServiceArgName(field, entities))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts update-method validation arguments for service methods.
+     *
+     * @param fields model fields
+     * @param validationFilter predicate deciding whether a field should be validated
+     * @return argument names for the selected validation
+     */
+    private static List<String> extractUpdateValidationArgsForService(final List<FieldDefinition> fields,
+            final Predicate<FieldDefinition> validationFilter) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return fields.stream()
+                .filter(field -> !field.equals(id))
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .filter(validationFilter)
+                .map(FieldDefinition::getName)
                 .collect(Collectors.toList());
     }
 

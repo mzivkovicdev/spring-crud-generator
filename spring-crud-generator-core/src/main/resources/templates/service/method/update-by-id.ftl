@@ -1,3 +1,6 @@
+    <#assign notNullArgs = [idField] + (notNullArgs![])>
+    <#assign notEmptyArgs = notEmptyArgs![]>
+    <#assign notBlankArgs = notBlankArgs![]>
     <#if javadocFields?has_content>
     /**
      * Updates an existing {@link ${modelName}}
@@ -12,7 +15,13 @@
     @CachePut(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} updateById(<#list inputFields as arg>${arg}<#if arg_has_next>, </#if></#list>) {
-        ArgumentVerifier.verifyNotNull(${idField});
+        ArgumentVerifier.verifyNotNull(${notNullArgs?join(", ")});
+        <#if notBlankArgs?has_content>
+        ArgumentVerifier.verifyNotBlank(${notBlankArgs?join(", ")});
+        </#if>
+        <#if notEmptyArgs?has_content>
+        ArgumentVerifier.verifyNotEmpty(${notEmptyArgs?join(", ")});
+        </#if>
 
         final ${modelName} existing = this.getById(${idField});
 

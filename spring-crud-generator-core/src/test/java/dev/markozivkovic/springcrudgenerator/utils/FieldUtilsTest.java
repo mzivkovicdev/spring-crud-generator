@@ -3822,6 +3822,35 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("update validation args for service: should exclude id and relations and split by validation type")
+    void extractUpdateValidationArgsForService_shouldExcludeIdAndRelationsAndSplitByValidationType() {
+
+        final FieldDefinition idField = fieldWithNameAndType("id", "Long");
+        idField.setId(new IdDefinition());
+
+        final FieldDefinition nameField = fieldWithNameAndType("name", "String");
+        nameField.setValidation(new ValidationDefinition().setRequired(true).setNotBlank(true));
+
+        final FieldDefinition tagsField = fieldWithNameAndType("tags", "List<String>");
+        tagsField.setValidation(new ValidationDefinition().setNotEmpty(true));
+
+        final FieldDefinition amountField = fieldWithNameAndType("amount", "BigDecimal");
+        amountField.setValidation(new ValidationDefinition().setRequired(true));
+
+        final FieldDefinition codeField = fieldWithNameAndType("code", "String");
+        codeField.setColumn(new ColumnDefinition().setNullable(false));
+
+        final FieldDefinition ownerField = fieldWithNameTypeAndRelation("owner", "OwnerEntity", RelationTypeEnum.MANY_TO_ONE.getKey(), null, null);
+        ownerField.setValidation(new ValidationDefinition().setRequired(true));
+
+        final List<FieldDefinition> fields = List.of(idField, nameField, tagsField, amountField, codeField, ownerField);
+
+        assertEquals(List.of("amount", "code"), FieldUtils.extractUpdateNotNullArgsForService(fields));
+        assertEquals(List.of("tags"), FieldUtils.extractUpdateNotEmptyArgsForService(fields));
+        assertEquals(List.of("name"), FieldUtils.extractUpdateNotBlankArgsForService(fields));
+    }
+
+    @Test
     @DisplayName("isAnyFieldNonNullable returns false when all fields are nullable or have no column")
     void isAnyFieldNonNullable_shouldReturnFalse_whenAllNullableOrNoColumn() {
 

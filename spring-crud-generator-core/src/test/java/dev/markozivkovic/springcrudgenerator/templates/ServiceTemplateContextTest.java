@@ -311,6 +311,9 @@ class ServiceTemplateContextTest {
         final List<String> inputFields = List.of("Long id", "String name");
         final List<String> fieldNamesWithoutId = List.of("name");
         final List<String> javadocFields = List.of("name - order name");
+        final List<String> notNullArgs = List.of("amount");
+        final List<String> notEmptyArgs = List.of("tags");
+        final List<String> notBlankArgs = List.of("name");
 
         try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
              final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
@@ -324,6 +327,12 @@ class ServiceTemplateContextTest {
                       .thenReturn(fieldNamesWithoutId);
             fieldUtils.when(() -> FieldUtils.extractFieldForJavadocWithoutRelations(fields))
                       .thenReturn(javadocFields);
+            fieldUtils.when(() -> FieldUtils.extractUpdateNotNullArgsForService(fields))
+                      .thenReturn(notNullArgs);
+            fieldUtils.when(() -> FieldUtils.extractUpdateNotEmptyArgsForService(fields))
+                      .thenReturn(notEmptyArgs);
+            fieldUtils.when(() -> FieldUtils.extractUpdateNotBlankArgsForService(fields))
+                      .thenReturn(notBlankArgs);
 
             nameUtils.when(() -> ModelNameUtils.stripSuffix("OrderEntity"))
                      .thenReturn("Order");
@@ -339,6 +348,9 @@ class ServiceTemplateContextTest {
             assertEquals(inputFields, ctx.get(TemplateContextConstants.INPUT_FIELDS));
             assertEquals(fieldNamesWithoutId, ctx.get(TemplateContextConstants.FIELD_NAMES_WITHOUT_ID));
             assertEquals(javadocFields, ctx.get(TemplateContextConstants.JAVADOC_FIELDS));
+            assertEquals(notNullArgs, ctx.get(TemplateContextConstants.NOT_NULL_ARGS));
+            assertEquals(notEmptyArgs, ctx.get(TemplateContextConstants.NOT_EMPTY_ARGS));
+            assertEquals(notBlankArgs, ctx.get(TemplateContextConstants.NOT_BLANK_ARGS));
             assertEquals("order", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
             assertEquals(AnnotationConstants.TRANSACTIONAL_ANNOTATION,
                     ctx.get(TemplateContextConstants.TRANSACTIONAL_ANNOTATION));
