@@ -6,7 +6,4 @@ public interface ${className} extends MongoRepository<${modelName}, ${idType}> {
     Page<${modelName}> findAllByDeletedFalse(Pageable pageable);
 
 </#if>
-    default ${modelName} saveAndFlush(final ${modelName} entity) {
-        return this.save(entity);
-    }
 }

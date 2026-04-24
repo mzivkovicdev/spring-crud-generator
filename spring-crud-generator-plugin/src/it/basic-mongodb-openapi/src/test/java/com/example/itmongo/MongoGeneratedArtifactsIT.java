@@ -128,7 +128,6 @@ class MongoGeneratedArtifactsIT {
 
         final String repositoryContent = Files.readString(repositoryFile);
         assertTrue(repositoryContent.contains("extends MongoRepository<ProductModel, String>"));
-        assertTrue(repositoryContent.contains("saveAndFlush"));
 
         final String productsMigrationContent = Files.readString(productsMigration);
         assertTrue(productsMigrationContent.contains("@ChangeUnit"));

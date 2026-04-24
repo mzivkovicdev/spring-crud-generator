@@ -171,12 +171,17 @@ class RepositoryImportsTest {
             pkg.when(() -> PackageUtils.join("com.example.app.models", modelName)).thenReturn("com.example.app.models.UserEntity");
 
             final String result = RepositoryImports.computeMongoRepositoryImports(packagePath, pkgCfg, modelName, false);
+            final String nl = System.lineSeparator();
+            final String expected = "import " + ImportConstants.SpringData.MONGO_REPOSITORY + ";" + nl
+                    + nl
+                    + "import com.example.app.models.UserEntity;" + nl;
 
             assertTrue(result.contains("import " + ImportConstants.SpringData.MONGO_REPOSITORY));
             assertTrue(result.contains("import com.example.app.models.UserEntity"));
             assertFalse(result.contains("import " + ImportConstants.Java.OPTIONAL));
             assertFalse(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
             assertFalse(result.contains("import " + ImportConstants.SpringData.PAGEABLE));
+            assertTrue(result.equals(expected), "Expected import groups order: org, blank line, project");
         }
     }
 
@@ -194,12 +199,21 @@ class RepositoryImportsTest {
             pkg.when(() -> PackageUtils.join("com.example.app.models", modelName)).thenReturn("com.example.app.models.ProductModel");
 
             final String result = RepositoryImports.computeMongoRepositoryImports(packagePath, pkgCfg, modelName, true);
+            final String nl = System.lineSeparator();
+            final String expected = "import " + ImportConstants.Java.OPTIONAL + ";" + nl
+                    + nl
+                    + "import " + ImportConstants.SpringData.PAGE + ";" + nl
+                    + "import " + ImportConstants.SpringData.PAGEABLE + ";" + nl
+                    + "import " + ImportConstants.SpringData.MONGO_REPOSITORY + ";" + nl
+                    + nl
+                    + "import com.example.app.models.ProductModel;" + nl;
 
             assertTrue(result.contains("import " + ImportConstants.SpringData.MONGO_REPOSITORY));
             assertTrue(result.contains("import com.example.app.models.ProductModel"));
             assertTrue(result.contains("import " + ImportConstants.Java.OPTIONAL));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGE + ";"));
             assertTrue(result.contains("import " + ImportConstants.SpringData.PAGEABLE));
+            assertTrue(result.equals(expected), "Expected import groups order: java, blank line, org, blank line, project");
         }
     }
 }

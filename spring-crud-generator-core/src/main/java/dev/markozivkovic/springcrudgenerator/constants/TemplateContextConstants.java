@@ -130,6 +130,7 @@ public final class TemplateContextConstants {
     public static final String DATA_GENERATOR_SET_METHOD = "multipleUniqueObjectsMethodName";
 
     public static final String IS_SPRING_BOOT_3 = "isSpringBoot3";
+    public static final String IS_MONGO_DB = "isMongoDB";
     public static final String SCHEMA_NAME = "schemaName";
     public static final String DESCRIPTION = "description";
     public static final String PROPERTIES = "properties";

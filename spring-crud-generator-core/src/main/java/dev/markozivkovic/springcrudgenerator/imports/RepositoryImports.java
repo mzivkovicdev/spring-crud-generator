@@ -20,13 +20,13 @@ import static dev.markozivkovic.springcrudgenerator.constants.ImportConstants.IM
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
+import dev.markozivkovic.springcrudgenerator.utils.ImportUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
 public final class RepositoryImports {
@@ -54,9 +54,7 @@ public final class RepositoryImports {
             imports.add(String.format(IMPORT, ImportConstants.Java.OPTIONAL));
         }
 
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
+        return ImportUtils.sortAndJoinFormattedImports(imports);
     }
 
     /**
@@ -86,18 +84,21 @@ public final class RepositoryImports {
     public static String computeMongoRepositoryImports(final String packagePath, final PackageConfiguration packageConfiguration,
             final String modelName, final boolean softDeleteEnabled) {
 
-        final Set<String> imports = new LinkedHashSet<>();
-        imports.add(String.format(IMPORT, ImportConstants.SpringData.MONGO_REPOSITORY));
-        imports.add(computeProjectImports(packagePath, packageConfiguration, modelName));
+        final Set<String> javaImports = new LinkedHashSet<>();
+        final Set<String> orgImports = new LinkedHashSet<>();
+
+        orgImports.add(ImportConstants.SpringData.MONGO_REPOSITORY);
         if (softDeleteEnabled) {
-            imports.add(String.format(IMPORT, ImportConstants.Java.OPTIONAL));
-            imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGE));
-            imports.add(String.format(IMPORT, ImportConstants.SpringData.PAGEABLE));
+            javaImports.add(ImportConstants.Java.OPTIONAL);
+            orgImports.add(ImportConstants.SpringData.PAGE);
+            orgImports.add(ImportConstants.SpringData.PAGEABLE);
         }
 
-        return imports.stream()
-                .sorted()
-                .collect(Collectors.joining());
+        final String javaGroup = ImportUtils.sortAndFormatImports(javaImports);
+        final String orgGroup = ImportUtils.sortAndFormatImports(orgImports);
+        final String projectImport = computeProjectImports(packagePath, packageConfiguration, modelName);
+
+        return ImportUtils.joinImportGroups(javaGroup, orgGroup, projectImport);
     }
     
 }

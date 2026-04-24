@@ -27,5 +27,5 @@
         
         LOGGER.info("Creating new ${strippedModelName}");
 
-        return this.repository.saveAndFlush(new ${modelName}(${fieldNames}));
+        return this.repository.<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(new ${modelName}(${fieldNames}));
     }
