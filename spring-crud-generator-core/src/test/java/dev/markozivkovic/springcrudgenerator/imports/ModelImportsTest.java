@@ -219,6 +219,7 @@ class ModelImportsTest {
             assertTrue(result.contains("import " + ImportConstants.Java.UUID), "UUID import missing");
             assertTrue(result.contains("import " + ImportConstants.Java.OBJECTS), "Objects import missing");
             assertTrue(result.contains("import " + ImportConstants.Java.LIST), "List import missing");
+            assertTrue(result.contains("import " + ImportConstants.Java.ARRAY_LIST), "ArrayList import missing");
             assertTrue(result.contains("import java.time.Instant;"), "Auditing import missing");
             assertTrue(result.endsWith("\n"));
         }
@@ -260,7 +261,9 @@ class ModelImportsTest {
             final String result = ModelImports.getBaseImport(model, false, false);
 
             assertTrue(result.contains("import " + ImportConstants.Java.SET + ";"), "Set import missing");
+            assertTrue(result.contains("import " + ImportConstants.Java.HASH_SET + ";"), "HashSet import missing");
             assertFalse(result.contains("import " + ImportConstants.Java.LIST + ";"), "List import should be absent");
+            assertFalse(result.contains("import " + ImportConstants.Java.ARRAY_LIST + ";"), "ArrayList import should be absent");
         }
     }
 
