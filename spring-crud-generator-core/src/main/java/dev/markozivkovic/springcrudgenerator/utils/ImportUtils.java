@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dev.markozivkovic.springcrudgenerator.imports.common;
+package dev.markozivkovic.springcrudgenerator.utils;
 
 import static dev.markozivkovic.springcrudgenerator.constants.ImportConstants.IMPORT;
 
@@ -70,7 +70,7 @@ public final class ImportUtils {
     public static String joinImportGroups(final String... groups) {
 
         final List<String> nonEmptyGroups = Arrays.stream(groups)
-                .filter(group -> group != null && !group.isBlank())
+                .filter(group -> StringUtils.isNotBlank(group))
                 .collect(Collectors.toList());
 
         return String.join(System.lineSeparator(), nonEmptyGroups);

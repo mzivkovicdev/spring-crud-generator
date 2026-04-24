@@ -1,4 +1,4 @@
-package dev.markozivkovic.springcrudgenerator.imports.common;
+package dev.markozivkovic.springcrudgenerator.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

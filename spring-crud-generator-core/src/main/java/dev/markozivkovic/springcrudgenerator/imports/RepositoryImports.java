@@ -22,11 +22,11 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import dev.markozivkovic.springcrudgenerator.constants.ImportConstants;
-import dev.markozivkovic.springcrudgenerator.imports.common.ImportUtils;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
+import dev.markozivkovic.springcrudgenerator.utils.ImportUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
 public final class RepositoryImports {
