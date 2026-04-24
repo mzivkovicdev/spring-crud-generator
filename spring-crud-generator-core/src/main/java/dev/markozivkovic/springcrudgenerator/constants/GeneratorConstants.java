@@ -60,6 +60,7 @@ public class GeneratorConstants {
         public static final String RESPONSES = "responses";
         public static final String HANDLERS = "handlers";
         public static final String REPOSITORIES = "repositories";
+        public static final String UTILS = "utils";
         public static final String SWAGGER = "swagger";
     }
 
@@ -69,6 +70,7 @@ public class GeneratorConstants {
         public static final String GRAPHQL_DATE_TIME_CONFIGURATION = "graphql-date-time-configuration";
         public static final String ADDITIONAL_CONFIG = "additionalConfig";
         public static final String CACHE_CONFIGURATION = "cacheConfiguration";
+        public static final String ARGUMENT_VERIFIER = "argumentVerifier";
         public static final String OPTIMISTIC_LOCKING_RETRY = "optimisticLockingRetry";
         public static final String RETRYABLE_ANNOTATION = "retryableAnnotation";
         public static final String DOCKER_FILE = "dockerfile";

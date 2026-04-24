@@ -19,6 +19,7 @@
     @CachePut(value = "${model.modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}, final ${rel.relationClassName} ${rel.elementParam}) {
+        ArgumentVerifier.verifyNotNull(${idField}, ${rel.elementParam});
 
         final ${modelName} entity = this.getById(${idField});
         

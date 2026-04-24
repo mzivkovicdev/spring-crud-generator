@@ -653,6 +653,29 @@ public class PackageUtils {
     }
 
     /**
+     * Computes the utils package by joining the base package with the default utils package path.
+     *
+     * @param basePackage          the base package path
+     * @param packageConfiguration the package configuration object
+     * @return the computed utils package path
+     */
+    public static String computeUtilsPackage(final String basePackage, final PackageConfiguration packageConfiguration) {
+
+        return join(basePackage, computeUtilsSubPackage(packageConfiguration));
+    }
+
+    /**
+     * Computes the utils sub package path.
+     *
+     * @param packageConfiguration the package configuration object
+     * @return the computed utils sub package path
+     */
+    public static String computeUtilsSubPackage(final PackageConfiguration packageConfiguration) {
+
+        return GeneratorConstants.DefaultPackageLayout.UTILS;
+    }
+
+    /**
      * Computes the rest mapper package by joining the base package with either the user-defined rest mappers package or the default rest mappers package path.
      * If the user-defined rest mappers package is not null or empty, it is used, otherwise the default rest mappers package path is used.
      * 

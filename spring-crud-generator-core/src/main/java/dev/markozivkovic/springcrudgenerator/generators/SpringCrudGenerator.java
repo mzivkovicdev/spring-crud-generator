@@ -37,6 +37,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
 
     private static final String ENUM = "enum";
     private static final String EXCEPTION = "exception";
+    private static final String ARGUMENT_VERIFIER = "argument-verifier";
     private static final String EXCEPTION_HANDLER = "exception-handler";
     private static final String ADDITIONAL_PROPERTY = "additional-property";
     private static final String CACHE = "cache";
@@ -62,6 +63,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.ARTIFACT_GENERATORS.put(CACHE, new CacheGenerator(crudConfiguration, packageConfiguration, entities));
         this.ARTIFACT_GENERATORS.put(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata));
         this.ARTIFACT_GENERATORS.put(EXCEPTION, new ExceptionGenerator(packageConfiguration));
+        this.ARTIFACT_GENERATORS.put(ARGUMENT_VERIFIER, new UtilsGenerator(packageConfiguration));
         this.ARTIFACT_GENERATORS.put(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entities, packageConfiguration));
         this.ARTIFACT_GENERATORS.put(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entities));
         this.ARTIFACT_GENERATORS.put(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration));

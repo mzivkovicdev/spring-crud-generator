@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.markozivkovic.springcrudgenerator.enums.BasicTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.FetchTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.enums.SpecialTypeEnum;
@@ -36,6 +37,7 @@ import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 
 public class FieldUtils {
@@ -1348,6 +1350,305 @@ public class FieldUtils {
         } catch (final JsonProcessingException e) {
             throw new RuntimeException("Failed to clone FieldDefinition", e);
         }
+    }
+
+    /**
+     * Extracts create-method arguments that should be validated with {@code ArgumentVerifier.verifyNotNull(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not null
+     */
+    public static List<String> extractCreateNotNullArgsForService(final List<FieldDefinition> fields) {
+
+        return extractCreateValidationArgsForService(fields, FieldUtils::requiresCreateNotNullValidation);
+    }
+
+    /**
+     * Extracts create-method arguments that should be validated with {@code ArgumentVerifier.verifyNotEmpty(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not empty
+     */
+    public static List<String> extractCreateNotEmptyArgsForService(final List<FieldDefinition> fields) {
+
+        return extractCreateValidationArgsForService(fields, FieldUtils::requiresCreateNotEmptyValidation);
+    }
+
+    /**
+     * Extracts create-method arguments that should be validated with {@code ArgumentVerifier.verifyNotBlank(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not blank
+     */
+    public static List<String> extractCreateNotBlankArgsForService(final List<FieldDefinition> fields) {
+
+        return extractCreateValidationArgsForService(fields, FieldUtils::requiresCreateNotBlankValidation);
+    }
+
+    /**
+     * Extracts create-method arguments that should be validated with {@code ArgumentVerifier.verifyNotNull(...)}
+     * in the business service layer.
+     *
+     * @param fields model fields
+     * @param entities all model definitions
+     * @return argument names to validate as not null
+     */
+    public static List<String> extractCreateNotNullArgsForBusinessService(final List<FieldDefinition> fields,
+            final List<ModelDefinition> entities) {
+
+        return extractCreateValidationArgsForBusinessService(fields, entities, FieldUtils::requiresCreateNotNullValidation);
+    }
+
+    /**
+     * Extracts create-method arguments that should be validated with {@code ArgumentVerifier.verifyNotEmpty(...)}
+     * in the business service layer.
+     *
+     * @param fields model fields
+     * @param entities all model definitions
+     * @return argument names to validate as not empty
+     */
+    public static List<String> extractCreateNotEmptyArgsForBusinessService(final List<FieldDefinition> fields,
+            final List<ModelDefinition> entities) {
+
+        return extractCreateValidationArgsForBusinessService(fields, entities, FieldUtils::requiresCreateNotEmptyValidation);
+    }
+
+    /**
+     * Extracts create-method arguments that should be validated with {@code ArgumentVerifier.verifyNotBlank(...)}
+     * in the business service layer.
+     *
+     * @param fields model fields
+     * @param entities all model definitions
+     * @return argument names to validate as not blank
+     */
+    public static List<String> extractCreateNotBlankArgsForBusinessService(final List<FieldDefinition> fields,
+            final List<ModelDefinition> entities) {
+
+        return extractCreateValidationArgsForBusinessService(fields, entities, FieldUtils::requiresCreateNotBlankValidation);
+    }
+
+    /**
+     * Extracts update-method arguments that should be validated with {@code ArgumentVerifier.verifyNotNull(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not null
+     */
+    public static List<String> extractUpdateNotNullArgsForService(final List<FieldDefinition> fields) {
+
+        return extractUpdateValidationArgsForService(fields, FieldUtils::requiresCreateNotNullValidation);
+    }
+
+    /**
+     * Extracts update-method arguments that should be validated with {@code ArgumentVerifier.verifyNotEmpty(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not empty
+     */
+    public static List<String> extractUpdateNotEmptyArgsForService(final List<FieldDefinition> fields) {
+
+        return extractUpdateValidationArgsForService(fields, FieldUtils::requiresCreateNotEmptyValidation);
+    }
+
+    /**
+     * Extracts update-method arguments that should be validated with {@code ArgumentVerifier.verifyNotBlank(...)}
+     * in the service layer.
+     *
+     * @param fields model fields
+     * @return argument names to validate as not blank
+     */
+    public static List<String> extractUpdateNotBlankArgsForService(final List<FieldDefinition> fields) {
+
+        return extractUpdateValidationArgsForService(fields, FieldUtils::requiresCreateNotBlankValidation);
+    }
+
+    /**
+     * Extracts create-method validation arguments for service methods.
+     *
+     * @param fields model fields
+     * @param validationFilter predicate deciding whether a field should be validated
+     * @return argument names for the selected validation
+     */
+    private static List<String> extractCreateValidationArgsForService(final List<FieldDefinition> fields,
+            final Predicate<FieldDefinition> validationFilter) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return fields.stream()
+                .filter(field -> !field.equals(id))
+                .filter(validationFilter)
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts create-method validation arguments for business service methods.
+     *
+     * @param fields model fields
+     * @param entities all model definitions
+     * @param validationFilter predicate deciding whether a field should be validated
+     * @return argument names for the selected validation
+     */
+    private static List<String> extractCreateValidationArgsForBusinessService(final List<FieldDefinition> fields,
+            final List<ModelDefinition> entities, final Predicate<FieldDefinition> validationFilter) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return fields.stream()
+                .filter(field -> !field.equals(id))
+                .filter(validationFilter)
+                .map(field -> resolveCreateBusinessServiceArgName(field, entities))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts update-method validation arguments for service methods.
+     *
+     * @param fields model fields
+     * @param validationFilter predicate deciding whether a field should be validated
+     * @return argument names for the selected validation
+     */
+    private static List<String> extractUpdateValidationArgsForService(final List<FieldDefinition> fields,
+            final Predicate<FieldDefinition> validationFilter) {
+
+        final FieldDefinition id = extractIdField(fields);
+
+        return fields.stream()
+                .filter(field -> !field.equals(id))
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .filter(validationFilter)
+                .map(FieldDefinition::getName)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Resolves the generated create-method argument name in the business service layer for the given field.
+     *
+     * @param field field definition
+     * @param entities all model definitions
+     * @return generated business service argument name
+     */
+    private static String resolveCreateBusinessServiceArgName(final FieldDefinition field, final List<ModelDefinition> entities) {
+
+        if (Objects.isNull(field.getRelation())) {
+            return field.getName();
+        }
+
+        final ModelDefinition modelDefinition = entities.stream()
+                .filter(model -> model.getName().equals(field.getType()))
+                .findFirst()
+                .orElseThrow();
+        final String modelName = StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName()));
+
+        if (isCollectionRelation(field)) {
+            return modelName + "Ids";
+        }
+
+        return modelName + "Id";
+    }
+
+    /**
+     * Returns true if the field should be validated with not-null semantics during create.
+     * Fields covered by stronger checks ({@code notBlank}, {@code notEmpty}) are excluded.
+     *
+     * @param field field definition
+     * @return true when not-null validation should be generated
+     */
+    private static boolean requiresCreateNotNullValidation(final FieldDefinition field) {
+
+        return isCreateRequired(field) && !requiresCreateNotBlankValidation(field) && !requiresCreateNotEmptyValidation(field);
+    }
+
+    /**
+     * Returns true if the field should be validated with not-empty semantics during create.
+     *
+     * @param field field definition
+     * @return true when not-empty validation should be generated
+     */
+    private static boolean requiresCreateNotEmptyValidation(final FieldDefinition field) {
+
+        final ValidationDefinition validation = field.getValidation();
+        if (Objects.isNull(validation) || !Boolean.TRUE.equals(validation.getNotEmpty())) {
+            return false;
+        }
+
+        if (requiresCreateNotBlankValidation(field)) {
+            return false;
+        }
+
+        return isCreateStringField(field) || isCreateCollectionField(field);
+    }
+
+    /**
+     * Returns true if the field should be validated with not-blank semantics during create.
+     *
+     * @param field field definition
+     * @return true when not-blank validation should be generated
+     */
+    private static boolean requiresCreateNotBlankValidation(final FieldDefinition field) {
+
+        final ValidationDefinition validation = field.getValidation();
+        return Objects.nonNull(validation) && Boolean.TRUE.equals(validation.getNotBlank()) && isCreateStringField(field);
+    }
+
+    /**
+     * Returns true when the field is required for create because of {@code validation.required=true}
+     * or {@code column.nullable=false}.
+     *
+     * @param field field definition
+     * @return true when field is required
+     */
+    private static boolean isCreateRequired(final FieldDefinition field) {
+
+        final ValidationDefinition validation = field.getValidation();
+        final ColumnDefinition column = field.getColumn();
+        return (Objects.nonNull(validation) && Boolean.TRUE.equals(validation.getRequired())) ||
+                (Objects.nonNull(column) && Boolean.FALSE.equals(column.getNullable()));
+    }
+
+    /**
+     * Returns true when the create-method argument for this field is string-based.
+     *
+     * @param field field definition
+     * @return true for string arguments
+     */
+    private static boolean isCreateStringField(final FieldDefinition field) {
+
+        return BasicTypeEnum.STRING.getKey().equals(resolveCreateValidationType(field));
+    }
+
+    /**
+     * Returns true when the create-method argument for this field is collection-based.
+     *
+     * @param field field definition
+     * @return true for collection arguments
+     */
+    private static boolean isCreateCollectionField(final FieldDefinition field) {
+
+        return isCollectionRelation(field) || SpecialTypeEnum.isCollectionType(resolveCreateValidationType(field));
+    }
+
+    /**
+     * Resolves the effective type used for create-method validation checks.
+     *
+     * @param field field definition
+     * @return effective type value
+     */
+    private static String resolveCreateValidationType(final FieldDefinition field) {
+
+        if (Objects.nonNull(field.getResolvedType()) && StringUtils.isNotBlank(field.getResolvedType())) {
+            return field.getResolvedType().trim();
+        }
+
+        if (Objects.nonNull(field.getType()) && StringUtils.isNotBlank(field.getType())) {
+            return field.getType().trim();
+        }
+
+        return "";
     }
 
     /**

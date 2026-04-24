@@ -29,6 +29,7 @@ public class ExceptionImports {
 
     private static final String INVALID_RESOURCE_STATE_EXCEPTION = "InvalidResourceStateException";
     private static final String RESOURCE_NOT_FOUND_EXCEPTION = "ResourceNotFoundException";
+    private static final String INVALID_ARGUMENT_EXCEPTION = "InvalidArgumentException";
 
     private static final String HTTP_RESPONSE = "HttpResponse";
     
@@ -78,6 +79,7 @@ public class ExceptionImports {
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionPackage(packagePath, packageConfiguration), RESOURCE_NOT_FOUND_EXCEPTION)));
+        imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionPackage(packagePath, packageConfiguration), INVALID_ARGUMENT_EXCEPTION)));
         if (importHttpResponse) {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeExceptionResponsePackage(packagePath, packageConfiguration), HTTP_RESPONSE)));
         }

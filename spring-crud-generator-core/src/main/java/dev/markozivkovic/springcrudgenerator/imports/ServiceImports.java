@@ -150,6 +150,7 @@ public class ServiceImports {
         if (ServiceImportScope.SERVICE.equals(importScope)) {
             final String enumsImport = ModelImports.computeEnumsAndHelperEntitiesImport(modelDefinition, outputDir, packageConfiguration);
             imports.add(enumsImport);
+            imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeUtilsPackage(packagePath, packageConfiguration), "ArgumentVerifier")));
         }
         
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));

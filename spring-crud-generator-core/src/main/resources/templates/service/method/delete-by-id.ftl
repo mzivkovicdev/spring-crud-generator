@@ -9,6 +9,7 @@
     @CacheEvict(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public void deleteById(final ${idType} ${idField}) {
+        ArgumentVerifier.verifyNotNull(${idField});
 <#if softDeleteEnabled?? && softDeleteEnabled>
 
         LOGGER.info("Soft-deleting ${strippedModelName} with id {}", ${idField});

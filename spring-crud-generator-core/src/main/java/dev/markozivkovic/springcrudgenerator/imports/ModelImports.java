@@ -94,6 +94,8 @@ public class ModelImports {
 
         ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.LIST);
         ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.SET);
+        ImportCommon.addIf(hasRelationLists, imports, ImportConstants.Java.ARRAY_LIST);
+        ImportCommon.addIf(hasRelationSets, imports, ImportConstants.Java.HASH_SET);
 
         final String sortedImports = imports.stream()
                 .map(imp -> String.format(IMPORT, imp))

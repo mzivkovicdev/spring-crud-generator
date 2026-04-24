@@ -10,6 +10,7 @@
     @CacheEvict(value = "${modelName?uncap_first}", allEntries = true)
     </#if><#t>
     public List<${modelName}> bulkCreate(final List<${modelName}> ${strippedModelName}s) {
+        ArgumentVerifier.verifyNotEmpty(${strippedModelName}s);
 
         LOGGER.info("Creating {} ${strippedModelName} records", ${strippedModelName}s.size());
 

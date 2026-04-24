@@ -65,6 +65,7 @@ class MongoEntityGeneratorTest {
         assertTrue(content.contains("@DBRef"));
         assertTrue(content.contains("private List<UserEntity> users"));
         assertTrue(content.contains("new ArrayList<>()"));
+        assertTrue(content.contains("import java.util.ArrayList;"));
         assertTrue(content.contains("@Id"));
         assertFalse(content.contains("@Entity"));
         assertFalse(content.contains("JpaRepository"));

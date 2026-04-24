@@ -37,7 +37,7 @@ public class ExceptionGenerator implements ProjectArtifactGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionGenerator.class);
 
     private static final List<String> EXCEPTION_CLASS_LIST = List.of(
-            "ResourceNotFoundException", "InvalidResourceStateException"
+            "ResourceNotFoundException", "InvalidResourceStateException", "InvalidArgumentException"
     );
 
     private final PackageConfiguration packageConfiguration;
