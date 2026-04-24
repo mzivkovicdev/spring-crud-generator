@@ -35,6 +35,6 @@
         entity.set${rel.relationField?cap_first}(${rel.elementParam});
         </#if>
 
-        return this.repository.saveAndFlush(entity);
+        return this.repository.<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(entity);
     }
 </#list>

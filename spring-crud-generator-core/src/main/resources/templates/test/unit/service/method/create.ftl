@@ -4,7 +4,7 @@
 
         final ${modelName} ${strippedModelName?uncap_first} = ${generatorFieldName}.${singleObjectMethodName}(${modelName}.class);
 
-        when(this.${strippedModelName?uncap_first}Repository.saveAndFlush(any()))
+        when(this.${strippedModelName?uncap_first}Repository.<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(any()))
                 .thenReturn(${strippedModelName?uncap_first});
 
         final ${modelName} result = this.${strippedModelName?uncap_first}Service.create(
@@ -13,5 +13,5 @@
 
         verify${strippedModelName?cap_first}(result, ${strippedModelName?uncap_first});
 
-        verify(this.${strippedModelName?uncap_first}Repository).saveAndFlush(any());
+        verify(this.${strippedModelName?uncap_first}Repository).<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(any());
     }

@@ -21,7 +21,7 @@ class MongoRepositoryGeneratorTest {
     Path tempDir;
 
     @Test
-    void generate_shouldCreateMongoRepositoryWithSaveAndFlushBridge() throws Exception {
+    void generate_shouldCreateMongoRepository() throws Exception {
 
         final Path outputDir = tempDir.resolve("src/main/java/com/example/mongo");
         Files.createDirectories(outputDir);
@@ -42,8 +42,6 @@ class MongoRepositoryGeneratorTest {
         final String content = Files.readString(repositoryFile);
         assertTrue(content.contains("package com.example.mongo.repositories;"));
         assertTrue(content.contains("extends MongoRepository<UserEntity, String>"));
-        assertTrue(content.contains("default UserEntity saveAndFlush(final UserEntity entity)"));
-        assertTrue(content.contains("return this.save(entity);"));
     }
 
     @Test

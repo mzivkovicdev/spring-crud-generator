@@ -17,7 +17,7 @@
 
         when(this.${strippedModelName?uncap_first}Repository.<#if softDeleteEnabled?? && softDeleteEnabled>findByIdAndDeletedFalse<#else>findById</#if>(${idField}))
                 .thenReturn(Optional.of(${strippedModelName?uncap_first}));
-        when(this.${strippedModelName?uncap_first}Repository.saveAndFlush(any()))
+        when(this.${strippedModelName?uncap_first}Repository.<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(any()))
                 .thenReturn(${strippedModelName?uncap_first});
 
         final ${modelName} result = this.${strippedModelName?uncap_first}Service.${rel.methodName}(${idField}<#if rel.isCollection?? && rel.isCollection>, ${rel.relationClassName?uncap_first}</#if>);
@@ -25,7 +25,7 @@
         verify${strippedModelName?cap_first}(result, ${strippedModelName?uncap_first});
 
         verify(this.${strippedModelName?uncap_first}Repository).<#if softDeleteEnabled?? && softDeleteEnabled>findByIdAndDeletedFalse<#else>findById</#if>(${idField});
-        verify(this.${strippedModelName?uncap_first}Repository).saveAndFlush(any());
+        verify(this.${strippedModelName?uncap_first}Repository).<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(any());
     }
 
     @Test

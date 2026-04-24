@@ -173,6 +173,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         if (context.isEmpty()) {
             return null;
         }
+        context.put(TemplateContextConstants.IS_MONGO_DB, this.isMongoDB);
         context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
@@ -197,6 +198,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         if (context.isEmpty()) {
             return null;
         }
+        context.put(TemplateContextConstants.IS_MONGO_DB, this.isMongoDB);
         context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
@@ -229,6 +231,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateUpdateMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = ServiceTemplateContext.computeUpdateByIdContext(modelDefinition);
+        context.put(TemplateContextConstants.IS_MONGO_DB, this.isMongoDB);
         context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
@@ -245,6 +248,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
     private String generateCreateMethod(final ModelDefinition modelDefinition) {
         
         final Map<String, Object> context = ServiceTemplateContext.computeCreateContext(modelDefinition);
+        context.put(TemplateContextConstants.IS_MONGO_DB, this.isMongoDB);
         context.put("fieldNamesList", FieldUtils.extractNonIdFieldNames(modelDefinition.getFields()));
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));

@@ -31,5 +31,5 @@
 
         LOGGER.info("Updating ${strippedModelName} with id {}", ${idField});
 
-        return this.repository.saveAndFlush(existing);
+        return this.repository.<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(existing);
     }
