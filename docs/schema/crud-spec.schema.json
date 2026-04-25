@@ -203,6 +203,9 @@
         "security": {
           "$ref": "#/$defs/security"
         },
+        "ai": {
+          "$ref": "#/$defs/ai"
+        },
         "additionalProperties": {
           "$ref": "#/$defs/additionalProperties"
         }
@@ -497,6 +500,21 @@
         }
       }
     },
+    "ai": {
+      "type": "object",
+      "description": "AI context artifact generation settings.",
+      "additionalProperties": false,
+      "properties": {
+        "claude": {
+          "type": "boolean",
+          "description": "When true, generates CLAUDE.md context file."
+        },
+        "agents": {
+          "type": "boolean",
+          "description": "When true, generates AGENTS.md context file."
+        }
+      }
+    },
     "additionalProperties": {
       "type": "object",
       "description": "Additional feature flags and tuning options. Unknown keys are allowed.",
@@ -636,11 +654,62 @@
           "$ref": "#/$defs/sort",
           "description": "Optional entity-level sorting configuration for REST list endpoints and GraphQL list queries."
         },
+        "security": {
+          "$ref": "#/$defs/entitySecurity",
+          "description": "Optional entity-level role mapping for CRUD operations."
+        },
         "fields": {
           "type": "array",
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/field"
+          }
+        }
+      }
+    },
+    "entitySecurity": {
+      "type": "object",
+      "description": "Per-entity operation security mapping. If omitted, operation defaults to authenticated access when global security is enabled.",
+      "additionalProperties": false,
+      "properties": {
+        "getAll": {
+          "type": "array",
+          "description": "Allowed roles for list/getAll operation.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "getById": {
+          "type": "array",
+          "description": "Allowed roles for get-by-id operation.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "create": {
+          "type": "array",
+          "description": "Allowed roles for create operation.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "update": {
+          "type": "array",
+          "description": "Allowed roles for update operation.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "delete": {
+          "type": "array",
+          "description": "Allowed roles for delete operation.",
+          "items": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }
