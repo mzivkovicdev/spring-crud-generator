@@ -204,8 +204,10 @@ class SecurityImportsTest {
         assertTrue(result.contains("import java.util.Collection;"));
         assertTrue(result.contains("import java.util.List;"));
         assertTrue(result.contains("import java.util.Map;"));
+        assertTrue(result.contains("import org.springframework.security.authentication.AbstractAuthenticationToken;"));
+        assertTrue(result.contains("import org.springframework.stereotype.Component;"));
         assertTrue(result.contains("import org.springframework.security.oauth2.jwt.Jwt;"));
-        assertTrue(result.contains("import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;"));
+        assertTrue(result.contains("import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;"));
         assertTrue(result.contains("import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;"));
     }
 

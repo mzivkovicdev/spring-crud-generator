@@ -269,12 +269,14 @@ public final class SecurityImports {
                     ImportConstants.Java.MAP),
             List.of(),
             List.of(ImportConstants.SpringBean.VALUE,
+                    ImportConstants.SpringSecurity.ABSTRACT_AUTH_TOKEN,
                     ImportConstants.SpringCore.CONVERTER,
                     ImportConstants.SpringSecurity.GRANTED_AUTHORITY,
-                    ImportConstants.SpringSecurity.JWT_AUTHENTICATION_CONVERTER,
+                    ImportConstants.SpringSecurity.JWT_AUTHENTICATION_TOKEN,
                     ImportConstants.SpringSecurity.JWT_GRANTED_AUTHORITIES_CONVERTER,
                     ImportConstants.SpringSecurity.JWT_OAUTH2,
-                    ImportConstants.SpringSecurity.SIMPLE_GRANTED_AUTHORITY),
+                    ImportConstants.SpringSecurity.SIMPLE_GRANTED_AUTHORITY,
+                    ImportConstants.SpringStereotype.COMPONENT),
             List.of()
         );
     }

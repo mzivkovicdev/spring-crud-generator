@@ -263,7 +263,7 @@ public final class ImportConstants {
         public static final String PASSWORD_ENCODER = "org.springframework.security.crypto.password.PasswordEncoder";
         public static final String IN_MEMORY_USER_DETAILS_MANAGER = "org.springframework.security.provisioning.InMemoryUserDetailsManager";
         public static final String JWT_OAUTH2 = "org.springframework.security.oauth2.jwt.Jwt";
-        public static final String JWT_AUTHENTICATION_CONVERTER = "org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter";
+        public static final String JWT_AUTHENTICATION_TOKEN = "org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken";
         public static final String JWT_GRANTED_AUTHORITIES_CONVERTER = "org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter";
         public static final String SECURITY_FILTER_CHAIN = "org.springframework.security.web.SecurityFilterChain";
         public static final String USERNAME_PASSWORD_AUTH_FILTER = "org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter";

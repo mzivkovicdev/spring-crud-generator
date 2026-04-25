@@ -67,11 +67,12 @@ public class SecurityConfiguration {
 </#if>
 <#if type?string == "OAUTH2_RESOURCE_SERVER">
     @Bean
-    public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(final HttpSecurity http,
+            final JwtRoleConverter jwtRoleConverter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(new JwtRoleConverter())))
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtRoleConverter)))
             .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
         return http.build();
     }

@@ -79,7 +79,7 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
                 generateUserDetailsService(outputDir, packagePath, isSpringBoot3);
                 generateAuthRequest(outputDir, packagePath, isSpringBoot3);
                 generateAuthResponse(outputDir, packagePath, isSpringBoot3);
-                generateAuthController(outputDir, packagePath, security, isSpringBoot3);
+                generateAuthController(outputDir, packagePath, isSpringBoot3);
                 break;
             case OAUTH2_RESOURCE_SERVER:
                 generateJwtRoleConverter(outputDir, packagePath, security, isSpringBoot3);
@@ -219,7 +219,7 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
     }
 
     private void generateAuthController(final String outputDir, final String packagePath,
-            final SecurityConfiguration security, final boolean isSpringBoot3) {
+            final boolean isSpringBoot3) {
 
         final Map<String, Object> context = new HashMap<>();
         context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
