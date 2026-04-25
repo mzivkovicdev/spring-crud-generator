@@ -523,6 +523,8 @@ class ServiceImportsTest {
                     .thenReturn("com.shop.exception");
             pkg.when(() -> PackageUtils.computeAnnotationPackage("com.shop", packageConfiguration))
                     .thenReturn("com.shop.annotation");
+            pkg.when(() -> PackageUtils.computeUtilsPackage("com.shop", packageConfiguration))
+                    .thenReturn("com.shop.utils");
 
             pkg.when(() -> PackageUtils.join("com.shop.entity", "Order"))
                     .thenReturn("com.shop.entity.Order");
@@ -536,6 +538,8 @@ class ServiceImportsTest {
                     .thenReturn("com.shop.entity.Customer");
             pkg.when(() -> PackageUtils.join("com.shop.annotation", GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY))
                     .thenReturn("com.shop.annotation." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY);
+            pkg.when(() -> PackageUtils.join("com.shop.utils", "ArgumentVerifier"))
+                    .thenReturn("com.shop.utils.ArgumentVerifier");
 
             names.when(() -> ModelNameUtils.stripSuffix("Order"))
                     .thenReturn("Order");
@@ -564,6 +568,7 @@ class ServiceImportsTest {
             assertTrue(result.contains("import com.shop.exception.ResourceNotFoundException;"), "ResourceNotFoundException import");
             assertTrue(result.contains("import com.shop.exception.InvalidResourceStateException;"), "InvalidResourceStateException import");
             assertTrue(result.contains("import com.shop.entity.Customer;"), "Relation entity import");
+            assertTrue(result.contains("import com.shop.utils.ArgumentVerifier;"), "ArgumentVerifier import");
             assertTrue(result.contains("import com.shop.annotation." + GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY + ";"),
                     "Retryable annotation import");
         }
@@ -635,6 +640,8 @@ class ServiceImportsTest {
             assertTrue(result.contains("import com.example.exception.ResourceNotFoundException;"));
             assertFalse(result.contains("InvalidResourceStateException"),
                     "No relations => InvalidResourceStateException should NOT be imported");
+            assertFalse(result.contains("ArgumentVerifier"),
+                    "SERVICE_TEST scope => ArgumentVerifier should NOT be imported");
             assertFalse(result.contains(GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY),
                     "SERVICE_TEST scope => retry annotation should NOT be imported");
         }

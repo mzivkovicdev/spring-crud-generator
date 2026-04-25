@@ -165,6 +165,7 @@ public class BusinessServiceImports {
         
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), modelDefinition.getName())));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeServicePackage(packagePath, packageConfiguration), String.format("%sService", modelWithoutSuffix))));
+        imports.add(String.format(IMPORT, String.format("%s.ArgumentVerifier", PackageUtils.computeUtilsPackage(packagePath, packageConfiguration))));
 
         relationModels.forEach(relation -> {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeEntityPackage(packagePath, packageConfiguration), relation.getType())));

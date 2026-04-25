@@ -49,7 +49,7 @@ Full documentation is available in [`/docs`](./docs/README.md).
 - [Full MongoDB spec example](./docs/examples/mongo-crud-spec-full.yaml)
 - [JSON Schema](./docs/schema/crud-spec.schema.json)
 
-> Maven Central: `dev.markozivkovic:spring-crud-generator:1.7.0`  
+> Maven Central: `dev.markozivkovic:spring-crud-generator:1.8.0`  
 > Artifact page: https://central.sonatype.com/artifact/dev.markozivkovic/spring-crud-generator
 
 ---
@@ -111,7 +111,7 @@ Add the following `profile` section to your `pom.xml`:
                 <plugin>
                     <groupId>dev.markozivkovic</groupId>
                     <artifactId>spring-crud-generator</artifactId>
-                    <version>1.7.0</version>
+                    <version>1.8.0</version>
                     <executions>
                         <execution>
                             <id>generate-spring-crud</id>

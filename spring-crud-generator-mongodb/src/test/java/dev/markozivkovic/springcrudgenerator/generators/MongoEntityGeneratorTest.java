@@ -65,6 +65,7 @@ class MongoEntityGeneratorTest {
         assertTrue(content.contains("@DBRef"));
         assertTrue(content.contains("private List<UserEntity> users"));
         assertTrue(content.contains("new ArrayList<>()"));
+        assertTrue(content.contains("import java.util.ArrayList;"));
         assertTrue(content.contains("@Id"));
         assertFalse(content.contains("@Entity"));
         assertFalse(content.contains("JpaRepository"));
@@ -199,5 +200,36 @@ class MongoEntityGeneratorTest {
         final String documentContent = Files.readString(outputDir.resolve("models/OrderModel.java"));
         assertTrue(documentContent.contains("@Version"),
                 "Main document should still contain @Version when optimistic locking is enabled");
+    }
+
+    @Test
+    void generate_shouldIncludeSoftDeleteFieldAndAccessors_whenSoftDeleteEnabled() throws Exception {
+
+        final Path outputDir = tempDir.resolve("src/main/java/com/example/softdelete");
+        Files.createDirectories(outputDir);
+
+        final ModelDefinition product = new ModelDefinition()
+                .setName("ProductModel")
+                .setStorageName("products")
+                .setSoftDelete(true)
+                .setFields(List.of(
+                        new FieldDefinition().setName("id").setType("String").setId(new IdDefinition()),
+                        new FieldDefinition().setName("name").setType("String")
+                ));
+
+        final CrudConfiguration configuration = new CrudConfiguration().setDatabase(DatabaseType.MONGODB);
+        final MongoEntityGenerator generator = new MongoEntityGenerator(
+                configuration, List.of(product), new PackageConfiguration()
+        );
+
+        generator.generate(product, outputDir.toAbsolutePath().toString());
+
+        final String content = Files.readString(outputDir.resolve("models/ProductModel.java"));
+        assertTrue(content.contains("private boolean deleted = Boolean.FALSE;"),
+                "Document should contain soft-delete field");
+        assertTrue(content.contains("public boolean getDeleted()"),
+                "Document should contain soft-delete getter");
+        assertTrue(content.contains("public ProductModel setDeleted(final boolean deleted)"),
+                "Document should contain soft-delete setter");
     }
 }

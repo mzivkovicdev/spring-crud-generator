@@ -7,7 +7,7 @@
     * @return A {@link List} of found {@link ${modelName}}.
     */</#if>
     public List<${modelName}> getAllByIds(final List<${idType}> ids) {
+        ArgumentVerifier.verifyNotEmpty(ids);
 
         return this.repository.findAllById(ids);
     }
-    

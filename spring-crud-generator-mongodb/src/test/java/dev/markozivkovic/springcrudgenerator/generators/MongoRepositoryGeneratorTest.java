@@ -21,7 +21,7 @@ class MongoRepositoryGeneratorTest {
     Path tempDir;
 
     @Test
-    void generate_shouldCreateMongoRepositoryWithSaveAndFlushBridge() throws Exception {
+    void generate_shouldCreateMongoRepository() throws Exception {
 
         final Path outputDir = tempDir.resolve("src/main/java/com/example/mongo");
         Files.createDirectories(outputDir);
@@ -42,8 +42,6 @@ class MongoRepositoryGeneratorTest {
         final String content = Files.readString(repositoryFile);
         assertTrue(content.contains("package com.example.mongo.repositories;"));
         assertTrue(content.contains("extends MongoRepository<UserEntity, String>"));
-        assertTrue(content.contains("default UserEntity saveAndFlush(final UserEntity entity)"));
-        assertTrue(content.contains("return this.save(entity);"));
     }
 
     @Test
@@ -89,11 +87,18 @@ class MongoRepositoryGeneratorTest {
         generator.generate(model, outputDir.toAbsolutePath().toString());
 
         final String content = Files.readString(outputDir.resolve("repositories/UserRepository.java"));
+        final String nl = System.lineSeparator();
         assertTrue(content.contains("Optional<UserEntity> findByIdAndDeletedFalse(String id)"));
         assertTrue(content.contains("Page<UserEntity> findAllByDeletedFalse(Pageable pageable)"));
         assertTrue(content.contains("import java.util.Optional"));
         assertTrue(content.contains("import org.springframework.data.domain.Page;"));
         assertTrue(content.contains("import org.springframework.data.domain.Pageable"));
+        final String pattern = "(?s).*import java\\.util\\.Optional;" + nl + nl
+                + "import org\\.springframework\\.data\\.domain\\.Page;" + nl
+                + "import org\\.springframework\\.data\\.domain\\.Pageable;" + nl
+                + "import org\\.springframework\\.data\\.mongodb\\.repository\\.MongoRepository;" + nl + nl
+                + "import [^;]+UserEntity;.*";
+        assertTrue(content.matches(pattern), "Generated imports:\n" + content);
     }
 
     @Test

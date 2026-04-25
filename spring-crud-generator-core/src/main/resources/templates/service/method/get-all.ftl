@@ -12,10 +12,11 @@
      */
     public Page<${modelName}> getAll(final Integer pageNumber, final Integer pageSize<#if sortEnabled?? && sortEnabled>,
             final String sortBy, final String sortDirection</#if>) {
+        ArgumentVerifier.verifyNotNull(pageNumber, pageSize);
 
         <#if sortEnabled?? && sortEnabled>
         if (sortBy == null || sortBy.isBlank()) {
-            return repository.<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize));
+            return repository.<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize));
         }
 
         if (!isAllowedSortField(sortBy)) {
@@ -36,9 +37,9 @@
         }
 
         final Sort sort = Sort.by(direction, sortBy);
-        return repository.<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort));
+        return repository.<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize, sort));
         <#else>
-        return repository.<#if mongoSoftDelete?? && mongoSoftDelete>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize));
+        return repository.<#if softDeleteEnabled?? && softDeleteEnabled>findAllByDeletedFalse<#else>findAll</#if>(PageRequest.of(pageNumber, pageSize));
         </#if>
     }
     <#if sortEnabled?? && sortEnabled>

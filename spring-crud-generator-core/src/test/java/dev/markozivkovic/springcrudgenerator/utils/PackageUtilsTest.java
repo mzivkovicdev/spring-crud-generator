@@ -2285,4 +2285,21 @@ class PackageUtilsTest {
         assertEquals(expected, result);
     }
 
+    @Test
+    @DisplayName("computeUtilsSubPackage: should always return default utils package")
+    void computeUtilsSubPackage_shouldReturnDefault() {
+
+        assertEquals(GeneratorConstants.DefaultPackageLayout.UTILS, PackageUtils.computeUtilsSubPackage(null));
+        assertEquals(GeneratorConstants.DefaultPackageLayout.UTILS, PackageUtils.computeUtilsSubPackage(new PackageConfiguration()));
+    }
+
+    @Test
+    @DisplayName("computeUtilsPackage: should join base package with utils subpackage")
+    void computeUtilsPackage_shouldJoinBaseAndUtilsSubPackage() {
+
+        final String result = PackageUtils.computeUtilsPackage("com.example", new PackageConfiguration());
+
+        assertEquals("com.example." + GeneratorConstants.DefaultPackageLayout.UTILS, result);
+    }
+
 }

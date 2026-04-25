@@ -10,6 +10,7 @@
      */
     ${transactionalAnnotation}
     public List<${modelName}> bulkCreate(final List<${modelName}> models) {
+        ArgumentVerifier.verifyNotEmpty(models);
 
         final List<${modelName}> resolvedModels = models.stream()
                 .map(model -> {

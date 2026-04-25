@@ -42,6 +42,9 @@ configuration:
   tests:
     unit: true
     dataGenerator: instancio
+  ai:
+    claude: true
+    agents: true
   additionalProperties:
     rest.basePath: /api/v1
     rest.response.excludeNull: true

@@ -36,6 +36,7 @@ public class CrudConfiguration {
     private Boolean dependencyCheck = false;
     private TestConfiguration tests;
     private SecurityConfiguration security;
+    private AiContextConfiguration ai;
     private Map<String, Object> additionalProperties = new HashMap<>();
 
     public CrudConfiguration() {
@@ -46,7 +47,8 @@ public class CrudConfiguration {
             final Boolean optimisticLocking, final DockerConfiguration docker, final CacheConfiguration cache,
             final OpenApiDefinition openApi, final GraphQLDefinition graphql, final ErrorResponse errorResponse,
             final Boolean migrationScripts, final Boolean dependencyCheck, final TestConfiguration tests,
-            final SecurityConfiguration security, final Map<String, Object> additionalProperties) {
+            final SecurityConfiguration security, final AiContextConfiguration ai,
+            final Map<String, Object> additionalProperties) {
         this.database = database;
         this.javaVersion = javaVersion;
         this.springBootVersion = springBootVersion;
@@ -60,6 +62,7 @@ public class CrudConfiguration {
         this.dependencyCheck = dependencyCheck;
         this.tests = tests;
         this.security = security;
+        this.ai = ai;
         this.additionalProperties = additionalProperties;
     }
 
@@ -184,6 +187,15 @@ public class CrudConfiguration {
         return this;
     }
 
+    public AiContextConfiguration getAi() {
+        return this.ai;
+    }
+
+    public CrudConfiguration setAi(final AiContextConfiguration ai) {
+        this.ai = ai;
+        return this;
+    }
+
     public Map<String, Object> getAdditionalProperties() {
         return this.additionalProperties;
     }
@@ -214,6 +226,7 @@ public class CrudConfiguration {
                 Objects.equals(dependencyCheck, crudConfiguration.dependencyCheck) &&
                 Objects.equals(tests, crudConfiguration.tests) &&
                 Objects.equals(security, crudConfiguration.security) &&
+                Objects.equals(ai, crudConfiguration.ai) &&
                 Objects.equals(additionalProperties, crudConfiguration.additionalProperties);
     }
 
@@ -221,7 +234,7 @@ public class CrudConfiguration {
     public int hashCode() {
         return Objects.hash(
             database, javaVersion, springBootVersion, optimisticLocking, docker, cache, openApi,
-            graphql, errorResponse, migrationScripts, dependencyCheck, tests, security, additionalProperties
+            graphql, errorResponse, migrationScripts, dependencyCheck, tests, security, ai, additionalProperties
         );
     }
 
@@ -241,6 +254,7 @@ public class CrudConfiguration {
             ", dependencyCheck='" + getDependencyCheck() + "'" +
             ", tests='" + getTests() + "'" +
             ", security='" + getSecurity() + "'" +
+            ", ai='" + getAi() + "'" +
             ", additionalProperties='" + getAdditionalProperties() + "'" +
             "}";
     }
@@ -704,6 +718,62 @@ public class CrudConfiguration {
                 " image='" + getImage() + "'" +
                 ", tag='" + getTag() + "'" +
                 ", port='" + getPort() + "'" +
+                "}";
+        }
+    }
+
+    public static class AiContextConfiguration {
+
+        private Boolean claude;
+        private Boolean agents;
+
+        public AiContextConfiguration() {}
+
+        public AiContextConfiguration(final Boolean claude, final Boolean agents) {
+            this.claude = claude;
+            this.agents = agents;
+        }
+
+        public Boolean getClaude() {
+            return this.claude;
+        }
+
+        public AiContextConfiguration setClaude(final Boolean claude) {
+            this.claude = claude;
+            return this;
+        }
+
+        public Boolean getAgents() {
+            return this.agents;
+        }
+
+        public AiContextConfiguration setAgents(final Boolean agents) {
+            this.agents = agents;
+            return this;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this)
+                return true;
+            if (!(o instanceof AiContextConfiguration)) {
+                return false;
+            }
+            final AiContextConfiguration aiConfiguration = (AiContextConfiguration) o;
+            return Objects.equals(claude, aiConfiguration.claude) &&
+                    Objects.equals(agents, aiConfiguration.agents);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(claude, agents);
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                " claude='" + getClaude() + "'" +
+                ", agents='" + getAgents() + "'" +
                 "}";
         }
     }

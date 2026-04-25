@@ -120,6 +120,9 @@ public class ServiceTemplateContext {
         context.put(TemplateContextConstants.JAVADOC_FIELDS, javadocFields);
         context.put(TemplateContextConstants.STRIPPED_MODEL_NAME, StringUtils.uncapitalize(ModelNameUtils.stripSuffix(modelDefinition.getName())));
         context.put(TemplateContextConstants.ID_FIELD, idField.getName());
+        context.put(TemplateContextConstants.NOT_NULL_ARGS, FieldUtils.extractCreateNotNullArgsForService(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.NOT_EMPTY_ARGS, FieldUtils.extractCreateNotEmptyArgsForService(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.NOT_BLANK_ARGS, FieldUtils.extractCreateNotBlankArgsForService(modelDefinition.getFields()));
 
         return context;
     }
@@ -165,6 +168,9 @@ public class ServiceTemplateContext {
         context.put(TemplateContextConstants.INPUT_FIELDS, FieldUtils.generateInputArgsWithoutRelations(modelDefinition.getFields()));
         context.put(TemplateContextConstants.FIELD_NAMES_WITHOUT_ID, FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
         context.put(TemplateContextConstants.JAVADOC_FIELDS, FieldUtils.extractFieldForJavadocWithoutRelations(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.NOT_NULL_ARGS, FieldUtils.extractUpdateNotNullArgsForService(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.NOT_EMPTY_ARGS, FieldUtils.extractUpdateNotEmptyArgsForService(modelDefinition.getFields()));
+        context.put(TemplateContextConstants.NOT_BLANK_ARGS, FieldUtils.extractUpdateNotBlankArgsForService(modelDefinition.getFields()));
         if (GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION)) {
             context.put(TemplateContextConstants.TRANSACTIONAL_ANNOTATION, GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION);
         } else {

@@ -20,6 +20,7 @@
     @CachePut(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} ${rel.methodName}(final ${idType} ${idField}<#if rel.isCollection?? && rel.isCollection>, final ${rel.relationClassName} ${rel.elementParam}</#if>) {
+        ArgumentVerifier.verifyNotNull(${idField}<#if rel.isCollection?? && rel.isCollection>, ${rel.elementParam}</#if>);
 
         final ${modelName} entity = this.getById(${idField});
 
@@ -36,6 +37,6 @@
         entity.set${rel.relationField?cap_first}(null);
         </#if>
 
-        return this.repository.saveAndFlush(entity);
+        return this.repository.<#if isMongoDB?? && isMongoDB>save<#else>saveAndFlush</#if>(entity);
     }
 </#list>

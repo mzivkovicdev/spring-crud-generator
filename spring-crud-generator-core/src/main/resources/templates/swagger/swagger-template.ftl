@@ -7,7 +7,7 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:8080/
+  - url: ${serverUrl}
 
 tags:
   - name: "${modelName}"

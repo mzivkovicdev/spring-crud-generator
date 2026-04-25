@@ -389,6 +389,7 @@ class GlobalExceptionHandlerGeneratorTest {
         assertTrue(result.contains("import org.springframework.web.method.annotation.HandlerMethodValidationException;"));
         assertTrue(result.contains("@ExceptionHandler(ConstraintViolationException.class)"));
         assertTrue(result.contains("@ExceptionHandler(HandlerMethodValidationException.class)"));
+        assertTrue(result.contains("@ExceptionHandler({InvalidArgumentException.class, IllegalArgumentException.class})"));
     }
 
     @Test
@@ -434,5 +435,20 @@ class GlobalExceptionHandlerGeneratorTest {
         assertFalse(result.contains("import org.springframework.web.method.annotation.HandlerMethodValidationException;"));
         assertFalse(result.contains("@ExceptionHandler(ConstraintViolationException.class)"));
         assertFalse(result.contains("@ExceptionHandler(HandlerMethodValidationException.class)"));
+    }
+
+    @Test
+    void graphqlExceptionHandlerTemplate_shouldHandleInvalidArgumentException() {
+
+        final String result = FreeMarkerTemplateProcessorUtils.processTemplate(
+                "exception/graphql-exception-handler-template.ftl",
+                Map.of(
+                        TemplateContextConstants.PROJECT_IMPORTS, "",
+                        TemplateContextConstants.HAS_RELATIONS, false,
+                        TemplateContextConstants.IS_DETAILED, false
+                )
+        );
+
+        assertTrue(result.contains("@GraphQlExceptionHandler({InvalidArgumentException.class, IllegalArgumentException.class})"));
     }
 }

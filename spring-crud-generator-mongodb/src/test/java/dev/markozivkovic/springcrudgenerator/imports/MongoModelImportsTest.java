@@ -19,7 +19,7 @@ import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 class MongoModelImportsTest {
 
     @Test
-    @DisplayName("computeMongoModelImports includes document/id/dbref/audit/collection imports when needed")
+    @DisplayName("computeMongoModelImports includes document/id/dbref/audit imports when needed")
     void computeMongoModelImports_includesAllRelevantImports() {
 
         final ModelDefinition model = new ModelDefinition()
@@ -44,8 +44,6 @@ class MongoModelImportsTest {
         assertTrue(imports.contains("import " + ImportConstants.SpringData.MONGO_DB_REF));
         assertTrue(imports.contains("import " + ImportConstants.SpringData.CREATED_DATE));
         assertTrue(imports.contains("import " + ImportConstants.SpringData.LAST_MODIFIED_DATE));
-        assertTrue(imports.contains("import " + ImportConstants.Java.ARRAY_LIST));
-        assertTrue(imports.contains("import " + ImportConstants.Java.HASH_SET));
         assertFalse(imports.contains("import " + ImportConstants.SpringData.VERSION));
     }
 

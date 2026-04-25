@@ -6,7 +6,7 @@
   <groupId>dev.markozivkovic</groupId>
   <artifactId>spring-crud-generator-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.7.0</version>
+  <version>1.8.0</version>
   <name>spring-crud-generator-parent</name>
   <description>Parent POM for spring-crud-generator multi-module project</description>
   <url>https://github.com/mzivkovicdev/spring-crud-generator</url>
@@ -142,6 +142,18 @@
   </dependencyManagement>
 
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <version>${central-publishing-maven-plugin.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <publishingServerId>central</publishingServerId>
+          <autoPublish>false</autoPublish>
+        </configuration>
+      </plugin>
+    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -171,16 +183,6 @@
             <effort>Max</effort>
             <threshold>High</threshold>
             <failOnError>true</failOnError>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.sonatype.central</groupId>
-          <artifactId>central-publishing-maven-plugin</artifactId>
-          <version>${central-publishing-maven-plugin.version}</version>
-          <extensions>true</extensions>
-          <configuration>
-            <publishingServerId>central</publishingServerId>
-            <autoPublish>false</autoPublish>
           </configuration>
         </plugin>
       </plugins>

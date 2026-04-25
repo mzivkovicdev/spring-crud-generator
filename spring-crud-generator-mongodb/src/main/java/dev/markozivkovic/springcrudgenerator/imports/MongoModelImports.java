@@ -69,14 +69,6 @@ public final class MongoModelImports {
             imports.add(ImportConstants.SpringData.VERSION);
         }
 
-        if (FieldUtils.isAnyRelationCollectionList(modelDefinition.getFields())) {
-            imports.add(ImportConstants.Java.ARRAY_LIST);
-        }
-
-        if (FieldUtils.isAnyRelationCollectionSet(modelDefinition.getFields())) {
-            imports.add(ImportConstants.Java.HASH_SET);
-        }
-
         return imports.stream()
                 .map(imp -> String.format(IMPORT, imp))
                 .collect(Collectors.joining());

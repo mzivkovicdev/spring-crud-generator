@@ -37,6 +37,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
 
     private static final String ENUM = "enum";
     private static final String EXCEPTION = "exception";
+    private static final String ARGUMENT_VERIFIER = "argument-verifier";
     private static final String EXCEPTION_HANDLER = "exception-handler";
     private static final String ADDITIONAL_PROPERTY = "additional-property";
     private static final String CACHE = "cache";
@@ -50,6 +51,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     private static final String SWAGGER = "swagger";
     private static final String OPENAPI_CODEGEN = "openapi-codegen";
     private static final String GRAPHQL = "graphql";
+    private static final String AI_CONTEXT = "ai-context";
 
     private final Map<String, ProjectArtifactGenerator> ARTIFACT_GENERATORS;
     private final Map<String, CodeGenerator> GENERATORS;
@@ -63,9 +65,11 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.ARTIFACT_GENERATORS.put(SECURITY, new SecurityGenerator(crudConfiguration, packageConfiguration));
         this.ARTIFACT_GENERATORS.put(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata));
         this.ARTIFACT_GENERATORS.put(EXCEPTION, new ExceptionGenerator(packageConfiguration));
+        this.ARTIFACT_GENERATORS.put(ARGUMENT_VERIFIER, new UtilsGenerator(packageConfiguration));
         this.ARTIFACT_GENERATORS.put(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entities, packageConfiguration));
         this.ARTIFACT_GENERATORS.put(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entities));
         this.ARTIFACT_GENERATORS.put(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration));
+        this.ARTIFACT_GENERATORS.put(AI_CONTEXT, new AiContextGenerator(crudConfiguration, projectMetadata, entities));
 
         this.GENERATORS = new LinkedHashMap<>();
         this.GENERATORS.put(ENUM, new EnumGenerator(packageConfiguration));

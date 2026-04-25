@@ -175,6 +175,9 @@ public class BusinessServiceTemplateContext {
         model.put(TemplateContextConstants.INPUT_ARGS, inputArgs);
         model.put(TemplateContextConstants.FIELD_NAMES, fieldNames);
         model.put(TemplateContextConstants.TEST_INPUT_ARGS, testInputArgs);
+        model.put(TemplateContextConstants.NOT_NULL_ARGS, FieldUtils.extractCreateNotNullArgsForBusinessService(modelDefinition.getFields(), entities));
+        model.put(TemplateContextConstants.NOT_EMPTY_ARGS, FieldUtils.extractCreateNotEmptyArgsForBusinessService(modelDefinition.getFields(), entities));
+        model.put(TemplateContextConstants.NOT_BLANK_ARGS, FieldUtils.extractCreateNotBlankArgsForBusinessService(modelDefinition.getFields(), entities));
 
         relationFields.forEach(field -> {
             relations.add(computeRelationContext(field, idField, manyToManyFields, oneToManyFields, true, entities));

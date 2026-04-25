@@ -44,6 +44,9 @@ public final class TemplateContextConstants {
     public static final String CLASS_NAME = "className";
     public static final String CACHE = "cache";
     public static final String INPUT_ARGS = "inputArgs";
+    public static final String NOT_NULL_ARGS = "notNullArgs";
+    public static final String NOT_EMPTY_ARGS = "notEmptyArgs";
+    public static final String NOT_BLANK_ARGS = "notBlankArgs";
     public static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     public static final String AUDIT_ENABLED = "auditEnabled";
     public static final String AUDIT_TYPE = "auditType";
@@ -127,6 +130,7 @@ public final class TemplateContextConstants {
     public static final String DATA_GENERATOR_SET_METHOD = "multipleUniqueObjectsMethodName";
 
     public static final String IS_SPRING_BOOT_3 = "isSpringBoot3";
+    public static final String IS_MONGO_DB = "isMongoDB";
     public static final String SCHEMA_NAME = "schemaName";
     public static final String DESCRIPTION = "description";
     public static final String PROPERTIES = "properties";

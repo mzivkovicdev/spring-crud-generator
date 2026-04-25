@@ -8,8 +8,9 @@
     @Cacheable(value = "${modelName?uncap_first}", key = "#${idField}")
     </#if><#t>
     public ${modelName} getById(final ${idType} ${idField}) {
+        ArgumentVerifier.verifyNotNull(${idField});
 
-        return this.repository.<#if mongoSoftDelete?? && mongoSoftDelete>findByIdAndDeletedFalse<#else>findById</#if>(${idField})
+        return this.repository.<#if softDeleteEnabled?? && softDeleteEnabled>findByIdAndDeletedFalse<#else>findById</#if>(${idField})
             .orElseThrow(() -> new ResourceNotFoundException(
                 String.format("${strippedModelName?cap_first} with id not found: %s", ${idField})
             ));
