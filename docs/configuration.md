@@ -121,6 +121,101 @@ configuration:
 
 ---
 
+## `configuration.security`
+
+Controls generated Spring Security setup.
+
+| Property | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enables security generation and endpoint protection. |
+| `type` | string | `BASIC_AUTH` (when enabled) | Security mode: `BASIC_AUTH`, `JWT`, `OAUTH2_RESOURCE_SERVER`, `API_KEY`. |
+| `basicAuth` | object | `null` | Basic auth user definitions (`users`). |
+| `jwt` | object | `null` | JWT settings (`secret`, `expirationMs`, `issuer`). |
+| `oauth2` | object | `null` | OAuth2 resource server settings (`issuerUri`, `jwkSetUri`, `rolesClaim`). |
+| `apiKey` | object | `null` | API key settings (`headerName`, `keys`). |
+
+Security type matching is case-insensitive in the generator.
+
+### Basic Auth (`BASIC_AUTH`)
+
+```yaml
+configuration:
+  security:
+    enabled: true
+    type: BASIC_AUTH
+    basicAuth:
+      users:
+        - username: admin
+          password: admin
+          roles: [ADMIN]
+        - username: user
+          password: user
+          roles: [USER]
+```
+
+If `basicAuth.users` is omitted, generator falls back to an in-memory `admin/admin` user with role `ADMIN`.
+
+### JWT (`JWT`)
+
+```yaml
+configuration:
+  security:
+    enabled: true
+    type: JWT
+    jwt:
+      secret: "change-me-very-long-secret-key-at-least-32-chars"
+      expirationMs: 3600000
+      issuer: "my-crud-app"
+```
+
+Generated JWT mode includes:
+- `POST /auth/login` endpoint (public)
+- JWT auth filter + token provider
+- starter `UserDetailsServiceImpl` stub
+
+Important:
+- Replace the generated `UserDetailsServiceImpl` stub with your repository-backed implementation.
+- JWT token provider reads `jwt.secret`, `jwt.expiration-ms`, and `jwt.issuer` Spring properties (defaults exist in generated code).
+
+### OAuth2 Resource Server (`OAUTH2_RESOURCE_SERVER`)
+
+```yaml
+configuration:
+  security:
+    enabled: true
+    type: OAUTH2_RESOURCE_SERVER
+    oauth2:
+      rolesClaim: realm_access.roles
+      issuerUri: https://idp.example.com/realms/myrealm
+      jwkSetUri: https://idp.example.com/realms/myrealm/protocol/openid-connect/certs
+```
+
+Notes:
+- Generated `JwtRoleConverter` maps roles from `security.oauth2.roles-claim` (default `realm_access.roles`).
+- Resource server issuer/JWK endpoint should be configured in Spring security properties for your runtime environment.
+
+### API Key (`API_KEY`)
+
+```yaml
+configuration:
+  security:
+    enabled: true
+    type: API_KEY
+    apiKey:
+      headerName: X-API-Key
+      keys:
+        - name: internal-client
+          value: "dev-key-123"
+          roles: [ADMIN]
+        - name: readonly-client
+          value: "dev-key-456"
+          roles: [USER]
+```
+
+If `headerName` is omitted, default header is `X-API-Key`.
+
+---
+
 ## `configuration.tests`
 
 Controls test generation.

@@ -31,6 +31,7 @@ entities:
 | `audit`       | object  | optional  | Audit configuration for `createdAt` / `updatedAt` fields                                 |
 | `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create)                         |
 | `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries                               |
+| `security`    | object  | optional  | Entity-level role mapping for CRUD and relation endpoints                                 |
 | `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)                                   |
 | `fields`      | list    | ✅        | List of fields for the entity                                                             |
 
@@ -125,6 +126,42 @@ bulk:
 ```
 
 If `bulk` is absent, bulk create generation is disabled for that entity.
+
+---
+
+## Entity security configuration
+
+Per-entity security lets you override role requirements for generated endpoints.
+
+```yaml
+entities:
+  - name: ProductModel
+    storageName: product_table
+    security:
+      getAll: [ADMIN, USER]
+      getById: [ADMIN, USER]
+      create: [ADMIN]
+      update: [ADMIN]
+      delete: [ADMIN]
+      addRelation: [ADMIN]
+      removeRelation: [ADMIN]
+    fields: []
+```
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `getAll` | list | Allowed roles for list endpoint (`GET /...`). |
+| `getById` | list | Allowed roles for get-by-id endpoint. |
+| `create` | list | Allowed roles for create endpoint. |
+| `update` | list | Allowed roles for update endpoint. |
+| `delete` | list | Allowed roles for delete endpoint. |
+| `addRelation` | list | Allowed roles for add-relation endpoints. |
+| `removeRelation` | list | Allowed roles for remove-relation endpoints. |
+
+Behavior notes:
+- Security annotations are generated only when global `configuration.security.enabled: true`.
+- If operation roles are omitted, generated endpoint falls back to authenticated access (`isAuthenticated()`).
+- If the whole entity `security` block is omitted, all endpoints for that entity fall back to authenticated access.
 
 ---
 
