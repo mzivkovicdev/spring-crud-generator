@@ -37,6 +37,7 @@ import dev.markozivkovic.springcrudgenerator.models.ColumnDefinition;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
+import dev.markozivkovic.springcrudgenerator.models.ValidationDefinition;
 import dev.markozivkovic.springcrudgenerator.resolvers.FieldValidationResolver;
 
 public class FieldUtils {
