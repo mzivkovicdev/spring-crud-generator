@@ -96,6 +96,15 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.SECURITY_CONFIGURATION);
     }
 
+    /**
+     * Generates the main security configuration class for the selected security type.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param type          selected security type
+     * @param security      security configuration section from the CRUD specification
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateSecurityConfiguration(final String outputDir, final String packagePath,
             final SecurityTypeEnum type, final SecurityConfiguration security, final boolean isSpringBoot3) {
 
@@ -134,6 +143,14 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the JWT token provider class.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param security      security configuration section from the CRUD specification
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateJwtTokenProvider(final String outputDir, final String packagePath,
             final SecurityConfiguration security, final boolean isSpringBoot3) {
 
@@ -156,6 +173,13 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the JWT authentication filter class.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateJwtAuthenticationFilter(final String outputDir, final String packagePath,
             final boolean isSpringBoot3) {
 
@@ -172,6 +196,13 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the user details service implementation used by JWT authentication flow.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateUserDetailsService(final String outputDir, final String packagePath,
             final boolean isSpringBoot3) {
 
@@ -188,6 +219,13 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the authentication request DTO.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateAuthRequest(final String outputDir, final String packagePath,
             final boolean isSpringBoot3) {
 
@@ -203,6 +241,13 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the authentication response DTO.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateAuthResponse(final String outputDir, final String packagePath,
             final boolean isSpringBoot3) {
 
@@ -218,6 +263,13 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the authentication controller used in JWT mode.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateAuthController(final String outputDir, final String packagePath,
             final boolean isSpringBoot3) {
 
@@ -234,6 +286,14 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the JWT role converter used for OAuth2 resource server setup.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param security      security configuration section from the CRUD specification
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateJwtRoleConverter(final String outputDir, final String packagePath,
             final SecurityConfiguration security, final boolean isSpringBoot3) {
 
@@ -256,6 +316,13 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the API key authentication token class.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateApiKeyAuthenticationToken(final String outputDir, final String packagePath,
             final boolean isSpringBoot3) {
 
@@ -272,6 +339,14 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         );
     }
 
+    /**
+     * Generates the API key authentication filter class.
+     * 
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param security      security configuration section from the CRUD specification
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
     private void generateApiKeyAuthenticationFilter(final String outputDir, final String packagePath,
             final SecurityConfiguration security, final boolean isSpringBoot3) {
 

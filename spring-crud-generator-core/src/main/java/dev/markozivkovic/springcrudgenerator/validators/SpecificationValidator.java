@@ -630,6 +630,12 @@ public class SpecificationValidator {
         return Objects.isNull(database) || database.isSql();
     }
 
+    /**
+     * Checks whether the identifier definition contains any SQL-specific options.
+     * 
+     * @param idDefinition identifier definition from the parsed specification
+     * @return true if the condition is satisfied, otherwise false
+     */
     private static boolean hasAnySqlIdOptions(final IdDefinition idDefinition) {
 
         return Objects.nonNull(idDefinition.getStrategy())
