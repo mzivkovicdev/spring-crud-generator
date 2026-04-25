@@ -37,6 +37,7 @@ public final class ImportConstants {
         public static final String SET = "java.util.Set";
         public static final String ARRAY_LIST = "java.util.ArrayList";
         public static final String HASH_SET = "java.util.HashSet";
+        public static final String COLLECTIONS = "java.util.Collections";
         public static final String MAP = "java.util.Map";
         public static final String DATE = "java.util.Date";
         public static final String COLLECTORS = "java.util.stream.Collectors";

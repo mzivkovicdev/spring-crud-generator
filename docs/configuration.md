@@ -170,12 +170,15 @@ configuration:
 
 Generated JWT mode includes:
 - `POST /auth/login` endpoint (public)
+- `POST /auth/refresh` endpoint (public)
 - JWT auth filter + token provider
 - starter `UserDetailsServiceImpl` stub
 
 Important:
 - Replace the generated `UserDetailsServiceImpl` stub with your repository-backed implementation.
-- JWT token provider reads `jwt.secret`, `jwt.expiration-ms`, and `jwt.issuer` Spring properties (defaults exist in generated code).
+- `POST /auth/login` returns both access token (`token`) and refresh token (`refreshToken`) in `AuthResponse`.
+- `POST /auth/refresh` accepts `refreshToken` and issues a fresh access+refresh token pair.
+- JWT token provider reads `jwt.secret`, `jwt.expiration-ms`, `jwt.refresh-expiration-ms`, and `jwt.issuer` Spring properties (defaults exist in generated code).
 
 ### OAuth2 Resource Server (`OAUTH2_RESOURCE_SERVER`)
 

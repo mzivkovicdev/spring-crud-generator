@@ -133,7 +133,8 @@ public final class SecurityImports {
      */
     public static String getJwtTokenProviderImports() {
         return buildGroupedImports(
-            List.of(ImportConstants.Java.COLLECTORS,
+            List.of(ImportConstants.Java.COLLECTIONS,
+                    ImportConstants.Java.COLLECTORS,
                     ImportConstants.Java.DATE,
                     ImportConstants.Java.LIST),
             List.of(ImportConstants.Javax.SECRET_KEY),
@@ -159,8 +160,7 @@ public final class SecurityImports {
                     ImportConstants.Jakarta.HTTP_SERVLET_REQUEST,
                     ImportConstants.Jakarta.HTTP_SERVLET_RESPONSE,
                     ImportConstants.Jakarta.SERVLET_EXCEPTION),
-            List.of(ImportConstants.SpringBean.AUTOWIRED,
-                    ImportConstants.SpringSecurity.ONCE_PER_REQUEST_FILTER,
+            List.of(ImportConstants.SpringSecurity.ONCE_PER_REQUEST_FILTER,
                     ImportConstants.SpringSecurity.SECURITY_CONTEXT_HOLDER,
                     ImportConstants.SpringSecurity.USER_DETAILS,
                     ImportConstants.SpringSecurity.USERNAME_PASSWORD_AUTH_TOKEN,
@@ -174,24 +174,45 @@ public final class SecurityImports {
      * Returns the import block for the {@code AuthController} REST controller.
      * Includes Spring web, security authentication, and HTTP response imports.
      *
+     * @param configurationPackage package that contains generated security provider/service types
+     * @param restTransferObjectPackage package that contains generated REST auth DTO types
      * @return formatted import block string
      */
-    public static String getAuthControllerImports() {
+    public static String getAuthControllerImports(final String configurationPackage,
+            final String restTransferObjectPackage) {
+
+        final List<String> generatedSecurityImports = List.of(
+            joinPackageAndClass(restTransferObjectPackage, "AuthRefreshRequest"),
+            joinPackageAndClass(restTransferObjectPackage, "AuthRequest"),
+            joinPackageAndClass(restTransferObjectPackage, "AuthResponse"),
+            joinPackageAndClass(configurationPackage, "JwtTokenProvider"),
+            joinPackageAndClass(configurationPackage, "UserDetailsServiceImpl")
+        ).stream().filter(value -> value != null && !value.isBlank()).collect(Collectors.toList());
+
         return buildGroupedImports(
+            List.of(ImportConstants.Java.COLLECTORS,
+                    ImportConstants.Java.LIST),
             List.of(),
-            List.of(),
-            List.of(ImportConstants.SpringBean.AUTOWIRED,
+            List.of(ImportConstants.SpringHttp.HTTP_STATUS,
                     ImportConstants.SpringHttp.RESPONSE_ENTITY,
                     ImportConstants.SpringSecurity.AUTHENTICATION,
                     ImportConstants.SpringSecurity.AUTHENTICATION_MANAGER,
                     ImportConstants.SpringSecurity.SECURITY_CONTEXT_HOLDER,
+                    ImportConstants.SpringSecurity.USER_DETAILS,
                     ImportConstants.SpringSecurity.USERNAME_PASSWORD_AUTH_TOKEN,
                     ImportConstants.SpringWeb.POST_MAPPING,
                     ImportConstants.SpringWeb.REQUEST_BODY,
                     ImportConstants.SpringWeb.REQUEST_MAPPING,
                     ImportConstants.SpringWeb.REST_CONTROLLER),
-            List.of()
+            generatedSecurityImports
         );
+    }
+
+    private static String joinPackageAndClass(final String packagePath, final String className) {
+        if (packagePath == null || packagePath.isBlank()) {
+            return "";
+        }
+        return packagePath + "." + className;
     }
 
     /**

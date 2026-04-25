@@ -105,6 +105,7 @@ class SecurityImportsTest {
         final String result = SecurityImports.getJwtTokenProviderImports();
 
         assertFalse(result.isBlank());
+        assertTrue(result.contains("import java.util.Collections;"));
         assertTrue(result.contains("import java.util.Date;"));
         assertTrue(result.contains("import java.util.List;"));
         assertTrue(result.contains("import javax.crypto.SecretKey;"));
@@ -145,14 +146,21 @@ class SecurityImportsTest {
     }
 
     @Test
-    @DisplayName("getAuthControllerImports: contains spring web and security imports")
+    @DisplayName("getAuthControllerImports: contains generated security, spring web and security imports")
     void getAuthControllerImports_containsExpectedImports() {
-        final String result = SecurityImports.getAuthControllerImports();
+        final String result = SecurityImports.getAuthControllerImports(
+                "com.example.configuration", "com.example.transferobjects.rest");
 
         assertFalse(result.isBlank());
+        assertTrue(result.contains("import java.util.List;"));
         assertTrue(result.contains("import org.springframework.security.authentication.AuthenticationManager;"));
         assertTrue(result.contains("import org.springframework.web.bind.annotation.PostMapping;"));
         assertTrue(result.contains("import org.springframework.web.bind.annotation.RestController;"));
+        assertTrue(result.contains("import com.example.transferobjects.rest.AuthRefreshRequest;"));
+        assertTrue(result.contains("import com.example.transferobjects.rest.AuthRequest;"));
+        assertTrue(result.contains("import com.example.transferobjects.rest.AuthResponse;"));
+        assertTrue(result.contains("import com.example.configuration.JwtTokenProvider;"));
+        assertTrue(result.contains("import com.example.configuration.UserDetailsServiceImpl;"));
     }
 
     @Test

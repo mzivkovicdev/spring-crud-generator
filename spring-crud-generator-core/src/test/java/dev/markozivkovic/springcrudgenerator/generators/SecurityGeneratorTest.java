@@ -189,6 +189,8 @@ class SecurityGeneratorTest {
             pkgUtils.when(() -> PackageUtils.computeConfigurationSubPackage(pkg)).thenReturn("configurations");
             pkgUtils.when(() -> PackageUtils.computeControllerPackage("com.example", pkg)).thenReturn("com.example.controllers");
             pkgUtils.when(() -> PackageUtils.computeControllerSubPackage(pkg)).thenReturn("controllers");
+            pkgUtils.when(() -> PackageUtils.computeRestTransferObjectPackage("com.example", pkg)).thenReturn("com.example.transferobjects.rest");
+            pkgUtils.when(() -> PackageUtils.computeRestTransferObjectSubPackage(pkg)).thenReturn("transferobjects/rest");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(anyString(), anyMap())).thenReturn("// GENERATED");
 
@@ -199,6 +201,7 @@ class SecurityGeneratorTest {
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), anyString(), eq("JwtAuthenticationFilter.java"), anyString()));
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), anyString(), eq("UserDetailsServiceImpl.java"), anyString()));
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), anyString(), eq("AuthRequest.java"), anyString()));
+            writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), anyString(), eq("AuthRefreshRequest.java"), anyString()));
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), anyString(), eq("AuthResponse.java"), anyString()));
             writer.verify(() -> FileWriterUtils.writeToFile(eq("out"), anyString(), eq("AuthController.java"), anyString()));
 

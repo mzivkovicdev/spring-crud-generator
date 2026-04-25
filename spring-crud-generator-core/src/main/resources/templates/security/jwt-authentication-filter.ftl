@@ -3,11 +3,14 @@ ${imports}
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UserDetailsServiceImpl userDetailsService;
 
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService;
+    public JwtAuthenticationFilter(final JwtTokenProvider jwtTokenProvider,
+            final UserDetailsServiceImpl userDetailsService) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response,
@@ -22,7 +25,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String token = authHeader.substring(7);
 
-        if (jwtTokenProvider.validateToken(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (jwtTokenProvider.validateAccessToken(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
             final String username = jwtTokenProvider.extractUsername(token);
             final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             final UsernamePasswordAuthenticationToken authentication =

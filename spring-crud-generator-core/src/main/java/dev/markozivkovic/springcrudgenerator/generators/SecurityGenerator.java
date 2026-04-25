@@ -78,6 +78,7 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
                 generateJwtAuthenticationFilter(outputDir, packagePath, isSpringBoot3);
                 generateUserDetailsService(outputDir, packagePath, isSpringBoot3);
                 generateAuthRequest(outputDir, packagePath, isSpringBoot3);
+                generateAuthRefreshRequest(outputDir, packagePath, isSpringBoot3);
                 generateAuthResponse(outputDir, packagePath, isSpringBoot3);
                 generateAuthController(outputDir, packagePath, isSpringBoot3);
                 break;
@@ -233,11 +234,11 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate("security/auth-request.ftl", context));
 
         FileWriterUtils.writeToFile(
-            outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "AuthRequest.java", sb.toString()
+            outputDir, PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration), "AuthRequest.java", sb.toString()
         );
     }
 
@@ -255,11 +256,33 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
         context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format(PACKAGE, PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration)))
+        sb.append(String.format(PACKAGE, PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration)))
                 .append(FreeMarkerTemplateProcessorUtils.processTemplate("security/auth-response.ftl", context));
 
         FileWriterUtils.writeToFile(
-            outputDir, PackageUtils.computeConfigurationSubPackage(packageConfiguration), "AuthResponse.java", sb.toString()
+            outputDir, PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration), "AuthResponse.java", sb.toString()
+        );
+    }
+
+    /**
+     * Generates the authentication refresh request DTO.
+     *
+     * @param outputDir     output directory where generated artifacts are written
+     * @param packagePath   base package path resolved from the output directory
+     * @param isSpringBoot3 whether generated imports should target Spring Boot 3 variants
+     */
+    private void generateAuthRefreshRequest(final String outputDir, final String packagePath,
+            final boolean isSpringBoot3) {
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(String.format(PACKAGE, PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration)))
+                .append(FreeMarkerTemplateProcessorUtils.processTemplate("security/auth-refresh-request.ftl", context));
+
+        FileWriterUtils.writeToFile(
+            outputDir, PackageUtils.computeRestTransferObjectSubPackage(packageConfiguration), "AuthRefreshRequest.java", sb.toString()
         );
     }
 
@@ -275,7 +298,13 @@ public class SecurityGenerator implements ProjectArtifactGenerator {
 
         final Map<String, Object> context = new HashMap<>();
         context.put(TemplateContextConstants.IS_SPRING_BOOT_3, isSpringBoot3);
-        context.put("imports", SecurityImports.getAuthControllerImports());
+        context.put(
+            "imports",
+            SecurityImports.getAuthControllerImports(
+                PackageUtils.computeConfigurationPackage(packagePath, packageConfiguration),
+                PackageUtils.computeRestTransferObjectPackage(packagePath, packageConfiguration)
+            )
+        );
 
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)))
