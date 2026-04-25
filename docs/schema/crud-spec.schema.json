@@ -200,6 +200,9 @@
         "tests": {
           "$ref": "#/$defs/tests"
         },
+        "security": {
+          "$ref": "#/$defs/security"
+        },
         "additionalProperties": {
           "$ref": "#/$defs/additionalProperties"
         }
@@ -333,6 +336,164 @@
             "podam",
             "instancio"
           ]
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "description": "Security configuration for generated application endpoints.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enables generation of security-related classes and endpoint protection."
+        },
+        "type": {
+          "type": "string",
+          "description": "Security mode. Value matching is case-insensitive in the generator.",
+          "enum": [
+            "BASIC_AUTH",
+            "JWT",
+            "OAUTH2_RESOURCE_SERVER",
+            "API_KEY",
+            "basic_auth",
+            "jwt",
+            "oauth2_resource_server",
+            "api_key"
+          ]
+        },
+        "basicAuth": {
+          "$ref": "#/$defs/securityBasicAuth"
+        },
+        "jwt": {
+          "$ref": "#/$defs/securityJwt"
+        },
+        "oauth2": {
+          "$ref": "#/$defs/securityOauth2"
+        },
+        "apiKey": {
+          "$ref": "#/$defs/securityApiKey"
+        }
+      }
+    },
+    "securityBasicAuth": {
+      "type": "object",
+      "description": "Basic authentication configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "users": {
+          "type": "array",
+          "description": "In-memory users used for generated basic authentication setup.",
+          "items": {
+            "$ref": "#/$defs/securityBasicAuthUser"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "securityBasicAuthUser": {
+      "type": "object",
+      "description": "Single Basic Auth user entry.",
+      "additionalProperties": false,
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Username used for authentication."
+        },
+        "password": {
+          "type": "string",
+          "description": "Raw password that will be encoded in generated setup."
+        },
+        "roles": {
+          "type": "array",
+          "description": "Granted roles for this user.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "securityJwt": {
+      "type": "object",
+      "description": "JWT token settings used in generated token provider.",
+      "additionalProperties": false,
+      "properties": {
+        "secret": {
+          "type": "string",
+          "description": "Signing secret used to issue and validate JWT tokens."
+        },
+        "expirationMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Token expiration time in milliseconds."
+        },
+        "issuer": {
+          "type": "string",
+          "description": "JWT issuer claim value."
+        }
+      }
+    },
+    "securityOauth2": {
+      "type": "object",
+      "description": "OAuth2 resource server settings.",
+      "additionalProperties": false,
+      "properties": {
+        "issuerUri": {
+          "type": "string",
+          "description": "Issuer URI used by Spring Security resource server."
+        },
+        "jwkSetUri": {
+          "type": "string",
+          "description": "JWK Set URI used to fetch signing keys."
+        },
+        "rolesClaim": {
+          "type": "string",
+          "description": "Claim path used to resolve roles from JWT payload (for example realm_access.roles)."
+        }
+      }
+    },
+    "securityApiKey": {
+      "type": "object",
+      "description": "API key security settings.",
+      "additionalProperties": false,
+      "properties": {
+        "headerName": {
+          "type": "string",
+          "description": "HTTP header name expected to carry the API key."
+        },
+        "keys": {
+          "type": "array",
+          "description": "Allowed API key entries.",
+          "items": {
+            "$ref": "#/$defs/securityApiKeyEntry"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "securityApiKeyEntry": {
+      "type": "object",
+      "description": "Single API key definition with assigned roles.",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Logical key name used for identification."
+        },
+        "value": {
+          "type": "string",
+          "description": "Secret API key value accepted by generated filter."
+        },
+        "roles": {
+          "type": "array",
+          "description": "Roles granted when this API key is presented.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
         }
       }
     },
