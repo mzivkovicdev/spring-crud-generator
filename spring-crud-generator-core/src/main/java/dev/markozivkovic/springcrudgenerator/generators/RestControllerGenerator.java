@@ -114,8 +114,8 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition, swagger, securityEnabled));
         context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition, swagger, securityEnabled));
         context.put("deleteResource", generateDeleteResourceEndpoint(modelDefinition, swagger, securityEnabled));
-        context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition, swagger));
-        context.put("removeResourceRelation", generateRemoveResourceRelationEndpoint(modelDefinition, swagger));
+        context.put("addResourceRelation", generateAddResourceRelationEndpoint(modelDefinition, swagger, securityEnabled));
+        context.put("removeResourceRelation", generateRemoveResourceRelationEndpoint(modelDefinition, swagger, securityEnabled));
         context.put(TemplateContextConstants.SWAGGER, swagger);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/controller-template.ftl", context);
@@ -126,7 +126,8 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the create resource 
      *                        endpoint is to be generated.
-     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @param swagger         Indicates whether Swagger generatror is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the create resource endpoint method.
      */
     private String generateCreateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
@@ -143,7 +144,8 @@ public class RestControllerGenerator implements CodeGenerator {
      * Generates the REST endpoint for creating multiple resources in a single request.
      *
      * @param modelDefinition The model definition for which the bulk create resource endpoint is generated.
-     * @param swagger Indicates whether Swagger generator is enabled.
+     * @param swagger         Indicates whether Swagger generator is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the bulk create resource endpoint method, or null when disabled.
      */
     private String generateCreateBulkResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
@@ -165,7 +167,8 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the get resource 
      *                        endpoint is to be generated.
-     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @param swagger         Indicates whether Swagger generatror is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the get resource endpoint method.
      */
     private String generateGetResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
@@ -183,7 +186,8 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the get all resources 
      *                        endpoint is to be generated.
-     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @param swagger         Indicates whether Swagger generatror is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the get all resources endpoint method.
      */
     private String generateGetAllResourcesEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
@@ -204,7 +208,8 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the update resource 
      *                        endpoint is to be generated.
-     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @param swagger         Indicates whether Swagger generatror is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the update resource endpoint method.
      */
     private String generateUpdateResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
@@ -222,7 +227,8 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the delete resource 
      *                        endpoint is to be generated.
-     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @param swagger         Indicates whether Swagger generatror is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the delete resource endpoint method.
      */
     private String generateDeleteResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
@@ -240,10 +246,12 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the add resource 
      *                        relation endpoint is to be generated.
-     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @param swagger         Indicates whether Swagger generatror is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the add resource relation endpoint method.
      */
-    private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateAddResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
         
         final Map<String, Object> context = RestControllerTemplateContext.computeAddResourceRelationEndpointContext(modelDefinition, entities);
         
@@ -252,6 +260,7 @@ public class RestControllerGenerator implements CodeGenerator {
         }
 
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "addRelation", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/add-resource-relation.ftl", context);
     }
@@ -261,11 +270,13 @@ public class RestControllerGenerator implements CodeGenerator {
      * 
      * @param modelDefinition The model definition for which the remove resource 
      *                        relation endpoint is to be generated.
-     * @param swagger Indicates whether Swagger generatror is enabled.
+     * @param swagger         Indicates whether Swagger generatror is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
      * @return A string representation of the remove resource relation endpoint method,
      *         or null if the context is empty.
      */
-    private String generateRemoveResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger) {
+    private String generateRemoveResourceRelationEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
 
         final Map<String, Object> context = RestControllerTemplateContext.computeRemoveResourceRelationEndpointContext(modelDefinition, entities);
 
@@ -274,6 +285,7 @@ public class RestControllerGenerator implements CodeGenerator {
         }
 
         context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "removeRelation", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/remove-resource-relation.ftl", context);
     }
@@ -283,7 +295,7 @@ public class RestControllerGenerator implements CodeGenerator {
      * When security is enabled but the entity has no per-operation roles, returns "authenticated()" as default.
      *
      * @param securityDefinition the entity-level security definition (may be null)
-     * @param operation          the operation name: create, getAll, getById, update, delete
+     * @param operation          the operation name: create, getAll, getById, update, delete, addRelation, removeRelation
      * @param securityEnabled    whether global security is enabled
      * @return the PreAuthorize expression string, or null
      */
@@ -314,6 +326,12 @@ public class RestControllerGenerator implements CodeGenerator {
                 break;
             case "delete":
                 roles = securityDefinition.getDelete();
+                break;
+            case "addRelation":
+                roles = securityDefinition.getAddRelation();
+                break;
+            case "removeRelation":
+                roles = securityDefinition.getRemoveRelation();
                 break;
             default:
                 roles = null;

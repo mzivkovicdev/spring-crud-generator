@@ -31,16 +31,21 @@ public class SecurityDefinition {
     private List<String> create;
     private List<String> update;
     private List<String> delete;
+    private List<String> addRelation;
+    private List<String> removeRelation;
 
     public SecurityDefinition() {}
 
     public SecurityDefinition(final List<String> getAll, final List<String> getById,
-            final List<String> create, final List<String> update, final List<String> delete) {
+            final List<String> create, final List<String> update, final List<String> delete,
+            final List<String> addRelation, final List<String> removeRelation) {
         this.getAll = getAll;
         this.getById = getById;
         this.create = create;
         this.update = update;
         this.delete = delete;
+        this.addRelation = addRelation;
+        this.removeRelation = removeRelation;
     }
 
     public List<String> getGetAll() {
@@ -88,6 +93,24 @@ public class SecurityDefinition {
         return this;
     }
 
+    public List<String> getAddRelation() {
+        return this.addRelation;
+    }
+
+    public SecurityDefinition setAddRelation(final List<String> addRelation) {
+        this.addRelation = addRelation;
+        return this;
+    }
+
+    public List<String> getRemoveRelation() {
+        return this.removeRelation;
+    }
+
+    public SecurityDefinition setRemoveRelation(final List<String> removeRelation) {
+        this.removeRelation = removeRelation;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -100,12 +123,14 @@ public class SecurityDefinition {
                 Objects.equals(getById, sd.getById) &&
                 Objects.equals(create, sd.create) &&
                 Objects.equals(update, sd.update) &&
-                Objects.equals(delete, sd.delete);
+                Objects.equals(delete, sd.delete) &&
+                Objects.equals(addRelation, sd.addRelation) &&
+                Objects.equals(removeRelation, sd.removeRelation);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getAll, getById, create, update, delete);
+        return Objects.hash(getAll, getById, create, update, delete, addRelation, removeRelation);
     }
 
     @Override
@@ -116,6 +141,8 @@ public class SecurityDefinition {
             ", create='" + getCreate() + "'" +
             ", update='" + getUpdate() + "'" +
             ", delete='" + getDelete() + "'" +
+            ", addRelation='" + getAddRelation() + "'" +
+            ", removeRelation='" + getRemoveRelation() + "'" +
             "}";
     }
 }
