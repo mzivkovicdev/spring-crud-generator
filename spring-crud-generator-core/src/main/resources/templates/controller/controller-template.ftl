@@ -22,7 +22,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;</#if>
 import org.springframework.web.bind.annotation.RequestMapping;<#if !swagger>
 import org.springframework.web.bind.annotation.RequestParam;</#if>
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RestController;<#if securityEnabled?? && securityEnabled>
+import org.springframework.security.access.prepost.PreAuthorize;</#if>
 
 ${projectImports}
 @RestController

@@ -41,6 +41,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     private static final String EXCEPTION_HANDLER = "exception-handler";
     private static final String ADDITIONAL_PROPERTY = "additional-property";
     private static final String CACHE = "cache";
+    private static final String SECURITY = "security";
     private static final String SERVICE = "service";
     private static final String BUSINESS_SERVICE = "business-service";
     private static final String TRANSFER_OBJECT = "transfer-object";
@@ -61,6 +62,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.ARTIFACT_GENERATORS = new LinkedHashMap<>();
         this.ARTIFACT_GENERATORS.put(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration, projectMetadata));
         this.ARTIFACT_GENERATORS.put(CACHE, new CacheGenerator(crudConfiguration, packageConfiguration, entities));
+        this.ARTIFACT_GENERATORS.put(SECURITY, new SecurityGenerator(crudConfiguration, packageConfiguration));
         this.ARTIFACT_GENERATORS.put(DOCKER, new DockerGenerator(crudConfiguration, projectMetadata));
         this.ARTIFACT_GENERATORS.put(EXCEPTION, new ExceptionGenerator(packageConfiguration));
         this.ARTIFACT_GENERATORS.put(ARGUMENT_VERIFIER, new UtilsGenerator(packageConfiguration));

@@ -400,6 +400,15 @@ public final class ValidationContextBuilder {
         return String.format("new %s(\"%s\")", ImportConstants.Java.BIG_DECIMAL, value.toPlainString());
     }
 
+    /**
+     * Builds collection override.
+     * 
+     * @param type                   field Java type
+     * @param v                      validation definition
+     * @param generatorFieldName     generator field name used for size constraints
+     * @param singleObjectMethodName instancio method used to generate single collection elements
+     * @return the built collection override
+     */
     private static CollectionOverride buildCollectionOverride(final String type, final ValidationDefinition v,
                 final String generatorFieldName, final String singleObjectMethodName) {
         
