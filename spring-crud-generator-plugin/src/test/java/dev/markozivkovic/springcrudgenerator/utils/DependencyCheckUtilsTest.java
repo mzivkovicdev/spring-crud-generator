@@ -148,7 +148,7 @@ class DependencyCheckUtilsTest {
     }
 
     @Test
-    void findMissingDependencies_securityJwtMissingJjwtApi_returnsWarning() {
+    void findMissingDependencies_securityJwtMissingJjwtDependencies_returnsWarnings() {
 
         final CrudConfiguration configuration = new CrudConfiguration()
                 .setDatabase(DatabaseType.POSTGRESQL)
@@ -167,6 +167,36 @@ class DependencyCheckUtilsTest {
         final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
 
         assertTrue(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-api"));
+        assertTrue(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-impl"));
+        assertTrue(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-jackson"));
+    }
+
+    @Test
+    void findMissingDependencies_securityJwtWithGsonSerializer_isValid() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.POSTGRESQL)
+                .setSpringBootVersion("3")
+                .setSecurity(new SecurityConfiguration().setEnabled(true).setType(SecurityTypeEnum.JWT));
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-web"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.springframework.boot", "spring-boot-starter-security"),
+                dep("org.mapstruct", "mapstruct"),
+                dep("org.postgresql", "postgresql"),
+                dep("io.jsonwebtoken", "jjwt-api"),
+                dep("io.jsonwebtoken", "jjwt-impl"),
+                dep("io.jsonwebtoken", "jjwt-gson")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertFalse(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-api"));
+        assertFalse(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-impl"));
+        assertFalse(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-jackson"));
+        assertFalse(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-gson"));
     }
 
     @Test

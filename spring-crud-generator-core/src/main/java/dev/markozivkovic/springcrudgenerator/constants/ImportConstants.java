@@ -260,7 +260,7 @@ public final class ImportConstants {
         public static final String USER_DETAILS = "org.springframework.security.core.userdetails.UserDetails";
         public static final String USER_DETAILS_SERVICE = "org.springframework.security.core.userdetails.UserDetailsService";
         public static final String USERNAME_NOT_FOUND_EXCEPTION = "org.springframework.security.core.userdetails.UsernameNotFoundException";
-        public static final String BCRYPT_PASSWORD_ENCODER = "org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder";
+        public static final String PASSWORD_ENCODER_FACTORIES = "org.springframework.security.crypto.factory.PasswordEncoderFactories";
         public static final String PASSWORD_ENCODER = "org.springframework.security.crypto.password.PasswordEncoder";
         public static final String IN_MEMORY_USER_DETAILS_MANAGER = "org.springframework.security.provisioning.InMemoryUserDetailsManager";
         public static final String JWT_OAUTH2 = "org.springframework.security.oauth2.jwt.Jwt";

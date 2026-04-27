@@ -35,7 +35,7 @@ class SecurityImportsTest {
         assertTrue(result.contains("import org.springframework.context.annotation.Bean;"));
         assertTrue(result.contains("import org.springframework.context.annotation.Configuration;"));
         assertTrue(result.contains("import org.springframework.security.core.userdetails.User;"));
-        assertTrue(result.contains("import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;"));
+        assertTrue(result.contains("import org.springframework.security.crypto.factory.PasswordEncoderFactories;"));
         assertTrue(result.contains("import org.springframework.security.provisioning.InMemoryUserDetailsManager;"));
         assertTrue(result.contains("import org.springframework.security.web.SecurityFilterChain;"));
     }
@@ -63,7 +63,7 @@ class SecurityImportsTest {
         assertFalse(result.isBlank());
         assertTrue(result.contains("import org.springframework.context.annotation.Bean;"));
         assertTrue(result.contains("import org.springframework.security.authentication.AuthenticationManager;"));
-        assertTrue(result.contains("import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;"));
+        assertTrue(result.contains("import org.springframework.security.crypto.factory.PasswordEncoderFactories;"));
         assertTrue(result.contains("import org.springframework.security.web.SecurityFilterChain;"));
         assertTrue(result.contains("import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;"));
     }

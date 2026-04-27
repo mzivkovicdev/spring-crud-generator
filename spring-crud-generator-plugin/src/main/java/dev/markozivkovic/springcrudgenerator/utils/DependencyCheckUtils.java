@@ -228,8 +228,15 @@ public final class DependencyCheckUtils {
 
             final SecurityTypeEnum securityType = resolveSecurityType(configuration);
             switch (securityType) {
-                case JWT -> addRequirement(requirements, "security.type=JWT",
-                        coordinate("io.jsonwebtoken", "jjwt-api"));
+                case JWT -> {
+                    addRequirement(requirements, "security.type=JWT",
+                            coordinate("io.jsonwebtoken", "jjwt-api"));
+                    addRequirement(requirements, "security.type=JWT (runtime)",
+                            coordinate("io.jsonwebtoken", "jjwt-impl"));
+                    addRequirement(requirements, "security.type=JWT (json serializer)",
+                            coordinate("io.jsonwebtoken", "jjwt-jackson"),
+                            coordinate("io.jsonwebtoken", "jjwt-gson"));
+                }
                 case OAUTH2_RESOURCE_SERVER -> addRequirement(requirements, "security.type=OAUTH2_RESOURCE_SERVER",
                         coordinate("org.springframework.boot", "spring-boot-starter-oauth2-resource-server"),
                         coordinate("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"));
