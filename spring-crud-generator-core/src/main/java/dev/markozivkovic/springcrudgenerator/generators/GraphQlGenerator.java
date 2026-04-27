@@ -21,6 +21,7 @@ import static dev.markozivkovic.springcrudgenerator.constants.ImportConstants.PA
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
+import dev.markozivkovic.springcrudgenerator.models.SecurityDefinition;
 import dev.markozivkovic.springcrudgenerator.templates.GraphQlTemplateContext;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
@@ -146,7 +148,9 @@ public class GraphQlGenerator implements CodeGenerator {
         final Map<String, Object> context = GraphQlTemplateContext.computeGraphQlResolver(modelDefinition);
         context.put("queries", this.generateQueryMappings(modelDefinition));
         context.put("mutations", this.generateMutationMappings(modelDefinition));
-        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(modelDefinition, outputDir, packageConfiguration));
+        context.put("projectImports", ResolverImports.computeGraphQlResolverImports(
+                modelDefinition, outputDir, packageConfiguration, isSecurityEnabled(this.configuration)
+        ));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/resolver-template.ftl", context
@@ -163,6 +167,12 @@ public class GraphQlGenerator implements CodeGenerator {
     private String generateMutationMappings(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = GraphQlTemplateContext.computeMutationMappingGraphQL(modelDefinition, entities);
+        final boolean securityEnabled = isSecurityEnabled(this.configuration);
+        context.put("createPreAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "create", securityEnabled));
+        context.put("updatePreAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "update", securityEnabled));
+        context.put("deletePreAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "delete", securityEnabled));
+        context.put("addRelationPreAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "addRelation", securityEnabled));
+        context.put("removeRelationPreAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "removeRelation", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate(
             "graphql/mapping/mutations.ftl", context
@@ -179,6 +189,9 @@ public class GraphQlGenerator implements CodeGenerator {
     private String generateQueryMappings(final ModelDefinition modelDefinition) {
 
         final Map<String, Object> context = GraphQlTemplateContext.computeQueryMappingGraphQL(modelDefinition);
+        final boolean securityEnabled = isSecurityEnabled(this.configuration);
+        context.put("getByIdPreAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "getById", securityEnabled));
+        context.put("getAllPreAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "getAll", securityEnabled));
         context.put(
             TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties())
         );
@@ -252,6 +265,76 @@ public class GraphQlGenerator implements CodeGenerator {
         );
 
         GeneratorContext.markGenerated(GeneratorConstants.GeneratorContextKeys.GRAPHQL_CONFIGURATION);
+    }
+
+    /**
+     * Returns a @PreAuthorize expression for the given operation, or null when security is disabled.
+     * When security is enabled and operation roles are missing, defaults to "isAuthenticated()".
+     *
+     * @param securityDefinition entity-level security definition (may be null)
+     * @param operation operation name: create, getAll, getById, update, delete, addRelation, removeRelation
+     * @param securityEnabled whether global security is enabled
+     * @return the PreAuthorize expression or null
+     */
+    private static String computePreAuthorize(final SecurityDefinition securityDefinition,
+            final String operation, final boolean securityEnabled) {
+
+        if (!securityEnabled) {
+            return null;
+        }
+
+        if (Objects.isNull(securityDefinition)) {
+            return "isAuthenticated()";
+        }
+
+        final List<String> roles;
+        switch (operation) {
+            case "create":
+                roles = securityDefinition.getCreate();
+                break;
+            case "getAll":
+                roles = securityDefinition.getGetAll();
+                break;
+            case "getById":
+                roles = securityDefinition.getGetById();
+                break;
+            case "update":
+                roles = securityDefinition.getUpdate();
+                break;
+            case "delete":
+                roles = securityDefinition.getDelete();
+                break;
+            case "addRelation":
+                roles = securityDefinition.getAddRelation();
+                break;
+            case "removeRelation":
+                roles = securityDefinition.getRemoveRelation();
+                break;
+            default:
+                roles = null;
+        }
+
+        if (Objects.isNull(roles) || roles.isEmpty()) {
+            return "isAuthenticated()";
+        }
+
+        final String roleList = roles.stream()
+                .map(role -> "'" + role + "'")
+                .collect(Collectors.joining(", "));
+
+        return "hasAnyRole(" + roleList + ")";
+    }
+
+    /**
+     * Returns true if security is globally enabled.
+     * 
+     * @param configuration the CRUD configuration to check
+     * @return true if security is enabled, false otherwise
+     */
+    private static boolean isSecurityEnabled(final CrudConfiguration configuration) {
+        return Objects.nonNull(configuration)
+                && Objects.nonNull(configuration.getSecurity())
+                && Boolean.TRUE.equals(configuration.getSecurity().getEnabled());
     }
     
 }

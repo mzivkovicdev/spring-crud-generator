@@ -135,6 +135,7 @@ Controls generated Spring Security setup.
 | `apiKey` | object | `null` | API key settings (`headerName`, `keys`). |
 
 Security type matching is case-insensitive in the generator.
+When GraphQL is enabled, generated resolver methods also receive operation-level security annotations based on entity `security` mapping.
 
 ### Basic Auth (`BASIC_AUTH`)
 

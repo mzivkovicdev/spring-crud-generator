@@ -9,6 +9,9 @@
     <#assign serviceField = strippedModelName?uncap_first + "Service">
 </#if>
 
+    <#if createPreAuthorize?? && createPreAuthorize?has_content>
+    @PreAuthorize("${createPreAuthorize}")
+    </#if>
     @MutationMapping
     @Validated
     public ${transferObjectClass} create${strippedModelName}(@Argument @Valid final ${createInputToClass} input) {
@@ -19,6 +22,9 @@
         );
     }
 
+    <#if updatePreAuthorize?? && updatePreAuthorize?has_content>
+    @PreAuthorize("${updatePreAuthorize}")
+    </#if>
     @MutationMapping
     @Validated
     public ${transferObjectClass} update${strippedModelName}(@Argument final ${idType} id, @Argument @Valid final ${updateInputToClass} input) {
@@ -28,6 +34,9 @@
         );
     }
 
+    <#if deletePreAuthorize?? && deletePreAuthorize?has_content>
+    @PreAuthorize("${deletePreAuthorize}")
+    </#if>
     @MutationMapping
     public boolean delete${strippedModelName}(@Argument final ${idType} id) {
         
@@ -40,6 +49,9 @@
 <#assign relationField = rel.relationField?uncap_first>
 <#assign relationIdType = rel.relationIdType>
 
+    <#if addRelationPreAuthorize?? && addRelationPreAuthorize?has_content>
+    @PreAuthorize("${addRelationPreAuthorize}")
+    </#if>
     @MutationMapping
     public ${transferObjectClass} add${relationField?cap_first}To${strippedModelName?cap_first}(@Argument final ${idType} id, @Argument final ${relationIdType} ${relationField}Id) {
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
@@ -47,6 +59,9 @@
         );
     }
 
+    <#if removeRelationPreAuthorize?? && removeRelationPreAuthorize?has_content>
+    @PreAuthorize("${removeRelationPreAuthorize}")
+    </#if>
     @MutationMapping
     public ${transferObjectClass} remove${relationField?cap_first}From${strippedModelName?cap_first}(@Argument final ${idType} id<#if rel.isCollection>, @Argument final ${relationIdType} ${relationField}Id</#if>) {
 

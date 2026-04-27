@@ -160,6 +160,7 @@ entities:
 
 Behavior notes:
 - Security annotations are generated only when global `configuration.security.enabled: true`.
+- The same operation mapping is applied to generated REST endpoints and GraphQL resolver methods (when GraphQL is enabled).
 - If operation roles are omitted, generated endpoint falls back to authenticated access (`isAuthenticated()`).
 - If the whole entity `security` block is omitted, all endpoints for that entity fall back to authenticated access.
 
