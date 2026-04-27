@@ -43,11 +43,14 @@ public class AuthController {
     }
 
     private AuthResponse createAuthResponse(final String username, final UserDetails userDetails) {
+
         final List<String> roles = userDetails.getAuthorities().stream()
-            .map(authority -> authority.getAuthority().replace("ROLE_", ""))
-            .collect(Collectors.toList());
+                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                .collect(Collectors.toList());
+
         final String accessToken = jwtTokenProvider.generateToken(username, roles);
         final String refreshToken = jwtTokenProvider.generateRefreshToken(username, roles);
+        
         return new AuthResponse(accessToken, refreshToken, "Bearer");
     }
 }
