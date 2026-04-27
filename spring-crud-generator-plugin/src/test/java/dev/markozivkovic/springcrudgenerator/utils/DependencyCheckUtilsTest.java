@@ -21,6 +21,8 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfi
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.GraphQLDefinition;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.OpenApiDefinition;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.SecurityConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.SecurityConfiguration.SecurityTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 
@@ -122,6 +124,73 @@ class DependencyCheckUtilsTest {
         final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
 
         assertTrue(missingDependencies.isEmpty());
+    }
+
+    @Test
+    void findMissingDependencies_securityEnabledMissingStarterSecurity_returnsWarning() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.POSTGRESQL)
+                .setSpringBootVersion("3")
+                .setSecurity(new SecurityConfiguration().setEnabled(true).setType(SecurityTypeEnum.BASIC_AUTH));
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-web"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.mapstruct", "mapstruct"),
+                dep("org.postgresql", "postgresql")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertTrue(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-security"));
+    }
+
+    @Test
+    void findMissingDependencies_securityJwtMissingJjwtApi_returnsWarning() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.POSTGRESQL)
+                .setSpringBootVersion("3")
+                .setSecurity(new SecurityConfiguration().setEnabled(true).setType(SecurityTypeEnum.JWT));
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-web"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.springframework.boot", "spring-boot-starter-security"),
+                dep("org.mapstruct", "mapstruct"),
+                dep("org.postgresql", "postgresql")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertTrue(containsDependency(missingDependencies, "io.jsonwebtoken:jjwt-api"));
+    }
+
+    @Test
+    void findMissingDependencies_securityOAuth2ResourceServerWithSecurityStarterVariant_isValid() {
+
+        final CrudConfiguration configuration = new CrudConfiguration()
+                .setDatabase(DatabaseType.POSTGRESQL)
+                .setSpringBootVersion("4")
+                .setSecurity(new SecurityConfiguration().setEnabled(true).setType(SecurityTypeEnum.OAUTH2_RESOURCE_SERVER));
+
+        final MavenProject project = createProjectWithDependencies(
+                dep("org.springframework.boot", "spring-boot-starter-webmvc"),
+                dep("org.springframework.boot", "spring-boot-starter-data-jpa"),
+                dep("org.springframework.boot", "spring-boot-starter-validation"),
+                dep("org.springframework.boot", "spring-boot-starter-security"),
+                dep("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"),
+                dep("org.mapstruct", "mapstruct"),
+                dep("org.postgresql", "postgresql")
+        );
+
+        final List<String> missingDependencies = DependencyCheckUtils.findMissingDependencies(configuration, project);
+
+        assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-security"));
+        assertFalse(containsDependency(missingDependencies, "org.springframework.boot:spring-boot-starter-oauth2-resource-server"));
     }
 
     @Test
