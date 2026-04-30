@@ -70,6 +70,8 @@ Full documentation is available in [`/docs`](./docs/README.md).
 - Docker resources
 - Caching
 - Optimistic locking
+- Security (Basic Auth, JWT, OAuth2 Resource Server, API Key)
+- AI context files (`CLAUDE.md`, `AGENTS.md`)
 
 ### Developer experience
 - Unit tests
@@ -261,6 +263,7 @@ After execution:
 - Flyway migration scripts are generated (if enabled, SQL databases)
 - Mongock `@ChangeUnit` classes are generated (if enabled, MongoDB)
 - Swagger/OpenAPI resources are generated (if enabled)
+- GraphQL resources are generated (if enabled)
 - Docker and Docker Compose files are generated (if enabled)
 
 ### Step 5: Configuration parameters
@@ -277,7 +280,8 @@ For the `validate` goal, only `inputSpecFile` is required.
 
 Incremental generation is enabled by default:
 
-- Generator state is stored in: `generator-state.json` and `migration-state.json`
+- Generator state is stored in: `.crud-generator/generator-state.json`
+- Migration state is stored in: `.crud-generator/migration-state.json` (SQL) or `.crud-generator/mongock-state.json` (MongoDB)
 - Setting `forceRegeneration=true` ignores these files
 - Database tables are never dropped automatically
 

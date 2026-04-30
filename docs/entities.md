@@ -26,7 +26,7 @@ entities:
 | Property      | Type    | Required  | Description                                                                              |
 | ------------- | ------- | ----------| ------------------------------------------------------------------------------------------|
 | `name`        | string  | ✅        | Java class name of the entity/model                                                       |
-| `storageName` | string  | ✅        | SQL: table name. MongoDB: collection name.                                                |
+| `storageName` | string  | conditional | SQL: table name. MongoDB: collection name. Optional only for models used exclusively as inner JSON types. |
 | `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable)                          |
 | `audit`       | object  | optional  | Audit configuration for `createdAt` / `updatedAt` fields                                 |
 | `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create)                         |
@@ -183,7 +183,7 @@ fields:
 | `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, entity name for relations, or `List<BasicType>` / `Set<BasicType>`) |
 | `description` | string | optional            | Used for Javadoc and API documentation                                                               |
 | `example`     | string | optional            | Example value emitted in generated OpenAPI schema (`components/schemas/...`)                         |
-| `id`          | object | optional            | Marks the field as primary key and defines generation strategy                                       |
+| `id`          | object or boolean | optional | SQL: object with `strategy` and optional generator fields. MongoDB: use marker `id: true`. |
 | `column`      | object | optional            | Column constraints (unique, nullable, insertable, updateable, length etc.)                           |
 | `relation`    | object | optional            | Relationship definition (JPA-style)                                                                  |
 | `values`      | list   | required for `Enum` | Enum constant values (only when `type: Enum`)                                                        |
@@ -271,7 +271,7 @@ Supported strategies:
 
 | Property          | Type   | Required | Applies to          | Description                                                                         |
 | ----------------- | ------ | -------- | ------------------- | ------------------------------------------------------------------------------------|
-| `strategy`        | enum   | ✅       | all                 | ID generation strategy                                                              |
+| `strategy`        | enum   | ✅       | SQL object form     | ID generation strategy                                                              |
 | `generatorName`   | string | optional | `SEQUENCE`, `TABLE` | DB object name. For `SEQUENCE`: DB sequence name. For `TABLE`: generator table name.|
 | `allocationSize`  | number | optional | `SEQUENCE`, `TABLE` | Allocation size for sequence/table generators (defaults to `50`).                   |
 | `initialValue`    | number | optional | `SEQUENCE`, `TABLE` | Initial value for ID generation (defaults to `1`).                                  |

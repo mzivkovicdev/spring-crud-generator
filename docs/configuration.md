@@ -14,7 +14,7 @@ All options are defined under the root `configuration` key.
 | `optimisticLocking` | boolean | `false` | Enables optimistic locking. Generates a `@Version` field on each entity/document and a `@OptimisticLockingRetry` annotation. See details below. |
 | `errorResponse`     | string  | `-`     | Error response strategy (`simple`, `detailed`, `minimal`, `none`)                                                                                                                                                                                                                                                                            |
 | `migrationScripts`  | boolean | `false` | Enables migration generation. For SQL databases: Flyway `.sql` scripts. For MongoDB: Mongock `@ChangeUnit` Java classes. See [migrations](migrations.md).                                                                                                                                                                                    |
-| `dependencyCheck`   | boolean | `false` | Enables post-validation check that scans the host project `pom.xml` and prints warnings for missing dependencies required by selected features (database driver, GraphQL, Flyway, Mongock, cache, OpenAPI resources, tests, etc.)                                                                                                             |
+| `dependencyCheck`   | boolean | `false` | Enables post-validation check that scans the host project `pom.xml` and prints warnings for missing dependencies required by enabled features (core web/data/validation/mapstruct, database driver, OpenAPI resources, GraphQL, security mode, cache, unit tests, optimistic-locking retry, and current migration checks). |
 
 ### Optimistic locking behavior
 
@@ -39,6 +39,8 @@ Controls per-entity OpenAPI / Swagger generation.
 | `apiSpec`            | boolean | `false` | Generates a separate OpenAPI/Swagger specification file **for each entity** (e.g. `product-api.yaml`).|
 | `generateResources`  | boolean | `false` | Generates REST resources/controllers based on the per-entity OpenAPI specs.                           |
 
+`generateResources` is effective only when `apiSpec: true` is also enabled.
+
 ---
 
 ## `configuration.docker`
@@ -56,7 +58,7 @@ Controls Docker and Docker Compose generation.
 |--------|------|---------|-------------|
 | `image` | string | `eclipse-temurin` | Base Docker image for the application |
 | `port` | number | `8080` | Exposed application port |
-| `tag` | string | `alpine` | Docker image tag |
+| `tag` | string | not set | Optional image tag suffix appended as `${javaVersion}-${tag}` (example: `21-alpine`) |
 
 ### `configuration.docker.db`
 
@@ -180,6 +182,7 @@ Important:
 - `POST /auth/login` returns both access token (`token`) and refresh token (`refreshToken`) in `AuthResponse`.
 - `POST /auth/refresh` accepts `refreshToken` and issues a fresh access+refresh token pair.
 - JWT token provider reads `jwt.secret`, `jwt.expiration-ms`, `jwt.refresh-expiration-ms`, and `jwt.issuer` Spring properties (defaults exist in generated code).
+- Runtime JWT support requires JJWT implementation modules in addition to `jjwt-api` (for example `jjwt-impl` and `jjwt-jackson` or `jjwt-gson`).
 
 ### OAuth2 Resource Server (`OAUTH2_RESOURCE_SERVER`)
 
@@ -227,6 +230,7 @@ Controls test generation.
 | Property | Type | Default | Description |
 |--------|------|---------|-------------|
 | `unit` | boolean | `false` | Enables unit test generation |
+| `integration` | boolean | `false` | Integration-test intent flag (currently consumed by generated AI context files). |
 | `dataGenerator` | string | `instancio` | Test data generator (`instancio`, `podam`) |
 
 **Validation rules**
@@ -243,6 +247,17 @@ The generator validates the test configuration:
 
 ---
 
+## `configuration.ai`
+
+Controls generation of AI context artifacts in the project root.
+
+| Property | Type | Default | Description |
+|--------|------|---------|-------------|
+| `claude` | boolean | `false` | Generates `CLAUDE.md` with project-specific context and workflows. |
+| `agents` | boolean | `false` | Generates `AGENTS.md` with project-specific context and workflows. |
+
+---
+
 ## `configuration.additionalProperties`
 
 Advanced and feature-specific configuration options.
@@ -250,6 +265,7 @@ Advanced and feature-specific configuration options.
 | Property                               | Type    | Default | Description                                                                                           |
 | -------------------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------- |
 | `rest.basePath`                        | string  | `/api`  | Base path for generated REST endpoints. Example: `/api/v1`                                            |
+| `rest.basepath`                        | string  | `/api`  | Legacy alias for `rest.basePath` (backward compatibility).                                            |
 | `rest.response.excludeNull`            | boolean | `false` | When enabled, exclude `null` fields from JSON responses globally (Jackson `NON_NULL`).                |
 | `optimisticLocking.retry.config`       | boolean | `false` | Enables generation of a dedicated `@EnableRetry` Spring configuration class.                          |
 | `optimisticLocking.retry.maxAttempts`  | number  | `3`     | Maximum retry attempts for the generated `@OptimisticLockingRetry` annotation.                        |
