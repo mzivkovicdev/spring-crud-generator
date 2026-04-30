@@ -33,6 +33,7 @@ import dev.markozivkovic.springcrudgenerator.constants.AdditionalConfigurationCo
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.CacheConfiguration.CacheTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
+import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.SecurityConfiguration.SecurityTypeEnum;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.TestConfiguration.DataGeneratorEnum;
 
 /**
@@ -172,7 +173,7 @@ public final class DependencyCheckUtils {
      * Computes a list of dependency requirements for the given configuration.
      * The method resolves the list of required dependencies based on the configuration options.
      * It checks if the configuration has enabled core CRUD generation, openApi resources, graphql, caching,
-     * migration scripts, unit tests, and optimistic locking retry configuration.
+     * security, migration scripts, unit tests, and optimistic locking retry configuration.
      * For each enabled feature, it adds a dependency requirement to the list.
      * 
      * @param configuration the CRUD configuration
@@ -218,6 +219,29 @@ public final class DependencyCheckUtils {
             if (Objects.nonNull(configuration.getGraphql()) && Boolean.TRUE.equals(configuration.getGraphql().getScalarConfig())) {
                 addRequirement(requirements, "graphql.scalarConfig=true",
                         coordinate("com.graphql-java", "graphql-java-extended-scalars"));
+            }
+        }
+
+        if (isSecurityEnabled(configuration)) {
+            addRequirement(requirements, "security.enabled=true",
+                    coordinate("org.springframework.boot", "spring-boot-starter-security"));
+
+            final SecurityTypeEnum securityType = resolveSecurityType(configuration);
+            switch (securityType) {
+                case JWT -> {
+                    addRequirement(requirements, "security.type=JWT",
+                            coordinate("io.jsonwebtoken", "jjwt-api"));
+                    addRequirement(requirements, "security.type=JWT (runtime)",
+                            coordinate("io.jsonwebtoken", "jjwt-impl"));
+                    addRequirement(requirements, "security.type=JWT (json serializer)",
+                            coordinate("io.jsonwebtoken", "jjwt-jackson"),
+                            coordinate("io.jsonwebtoken", "jjwt-gson"));
+                }
+                case OAUTH2_RESOURCE_SERVER -> addRequirement(requirements, "security.type=OAUTH2_RESOURCE_SERVER",
+                        coordinate("org.springframework.boot", "spring-boot-starter-oauth2-resource-server"),
+                        coordinate("org.springframework.boot", "spring-boot-starter-security-oauth2-resource-server"));
+                case BASIC_AUTH, API_KEY -> { }
+                default -> { }
             }
         }
 
@@ -306,6 +330,29 @@ public final class DependencyCheckUtils {
      */
     private static boolean isGraphQlEnabled(final CrudConfiguration configuration) {
         return Objects.nonNull(configuration.getGraphql()) && Boolean.TRUE.equals(configuration.getGraphql().getEnabled());
+    }
+
+    /**
+     * Returns true if security is enabled in the given configuration.
+     * Security is enabled if the security configuration is not null and the enabled flag is true.
+     *
+     * @param configuration the Crud configuration
+     * @return true if the security feature is enabled, false otherwise
+     */
+    private static boolean isSecurityEnabled(final CrudConfiguration configuration) {
+        return Objects.nonNull(configuration.getSecurity()) && Boolean.TRUE.equals(configuration.getSecurity().getEnabled());
+    }
+
+    /**
+     * Resolves security type from the given configuration.
+     * If security type is not explicitly configured, BASIC_AUTH is used as default.
+     *
+     * @param configuration the Crud configuration
+     * @return resolved security type
+     */
+    private static SecurityTypeEnum resolveSecurityType(final CrudConfiguration configuration) {
+        return Objects.nonNull(configuration.getSecurity().getType())
+                ? configuration.getSecurity().getType() : SecurityTypeEnum.BASIC_AUTH;
     }
 
     /**

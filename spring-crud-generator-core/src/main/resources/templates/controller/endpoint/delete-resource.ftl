@@ -1,6 +1,9 @@
 <#assign uncapModelName = modelName?uncap_first>
 <#assign serviceField = modelName?uncap_first + "Service">
     
+    <#if preAuthorize?? && preAuthorize?has_content>
+    @PreAuthorize("${preAuthorize}")
+    </#if>
     <#if swagger>@Override<#else>@DeleteMapping("/{id}")</#if>
     public ResponseEntity<Void> ${uncapModelName}sIdDelete(<#if !swagger>@PathVariable </#if>final ${idType} id) {
 

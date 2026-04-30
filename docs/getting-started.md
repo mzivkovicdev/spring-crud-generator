@@ -117,6 +117,7 @@ Full example specs:
 - MongoDB: [mongo-crud-spec-full.yaml](./examples/mongo-crud-spec-full.yaml)
 
 Schema for validation and editor autocomplete: [crud-spec.schema.json](./schema/crud-spec.schema.json)
+Security configuration reference (all supported modes and examples): [configuration.md#configurationsecurity](./configuration.md#configurationsecurity)
 
 ### Schema-based autocomplete and validation
 

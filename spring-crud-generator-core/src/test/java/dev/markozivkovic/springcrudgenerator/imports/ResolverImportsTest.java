@@ -125,7 +125,8 @@ class ResolverImportsTest {
             final String result = ResolverImports.computeGraphQlResolverImports(
                     model,
                     outputDir,
-                    packageConfiguration
+                    packageConfiguration,
+                    false
             );
 
             assertTrue(result.contains("import com.example.entity.User;"));
@@ -135,11 +136,80 @@ class ResolverImportsTest {
             assertTrue(result.contains("import com.example.graphql.to.UserUpdateTO;"));
             assertTrue(result.contains("import com.example.graphql.mapper.UserGraphQLMapper;"));
             assertTrue(result.contains("import com.example.to.PageTO;"));
+            assertFalse(result.contains("import " + ImportConstants.SpringSecurity.PRE_AUTHORIZE + ";"),
+                    "@PreAuthorize import should NOT be present when security is disabled");
 
             assertFalse(result.contains("GraphQLMapper;") && result.contains("Helper"),
                     "No helper GraphQL mappers expected without JSON fields");
             assertFalse(result.contains("BusinessService"),
                     "BusinessService should not be imported when there are no relations");
+        }
+    }
+
+    @Test
+    @DisplayName("computeGraphQlResolverImports: security enabled → @PreAuthorize import added")
+    void computeGraphQlResolverImports_securityEnabled_addsPreAuthorizeImport() {
+
+        final String outputDir = "/some/output/dir";
+        final PackageConfiguration packageConfiguration = new PackageConfiguration();
+
+        final ModelDefinition model = new ModelDefinition();
+        model.setName("User");
+        model.setFields(Collections.emptyList());
+
+        try (final MockedStatic<PackageUtils> pkg = Mockito.mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> names = Mockito.mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
+                    .thenReturn("com.example");
+
+            names.when(() -> ModelNameUtils.stripSuffix("User"))
+                    .thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldJson(model.getFields()))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.extractRelationTypes(model.getFields()))
+                    .thenReturn(Collections.emptyList());
+
+            pkg.when(() -> PackageUtils.computeEntityPackage("com.example", packageConfiguration))
+                    .thenReturn("com.example.entity");
+            pkg.when(() -> PackageUtils.join("com.example.entity", "User"))
+                    .thenReturn("com.example.entity.User");
+
+            pkg.when(() -> PackageUtils.computeServicePackage("com.example", packageConfiguration))
+                    .thenReturn("com.example.service");
+            pkg.when(() -> PackageUtils.join("com.example.service", "UserService"))
+                    .thenReturn("com.example.service.UserService");
+
+            pkg.when(() -> PackageUtils.computeGraphqlTransferObjectPackage("com.example", packageConfiguration))
+                    .thenReturn("com.example.graphql.to");
+            pkg.when(() -> PackageUtils.join("com.example.graphql.to", "UserTO"))
+                    .thenReturn("com.example.graphql.to.UserTO");
+            pkg.when(() -> PackageUtils.join("com.example.graphql.to", "UserCreateTO"))
+                    .thenReturn("com.example.graphql.to.UserCreateTO");
+            pkg.when(() -> PackageUtils.join("com.example.graphql.to", "UserUpdateTO"))
+                    .thenReturn("com.example.graphql.to.UserUpdateTO");
+
+            pkg.when(() -> PackageUtils.computeGraphQlMapperPackage("com.example", packageConfiguration))
+                    .thenReturn("com.example.graphql.mapper");
+            pkg.when(() -> PackageUtils.join("com.example.graphql.mapper", "UserGraphQLMapper"))
+                    .thenReturn("com.example.graphql.mapper.UserGraphQLMapper");
+
+            pkg.when(() -> PackageUtils.computeTransferObjectPackage("com.example", packageConfiguration))
+                    .thenReturn("com.example.to");
+            pkg.when(() -> PackageUtils.join("com.example.to", "PageTO"))
+                    .thenReturn("com.example.to.PageTO");
+
+            final String result = ResolverImports.computeGraphQlResolverImports(
+                    model,
+                    outputDir,
+                    packageConfiguration,
+                    true
+            );
+
+            assertTrue(result.contains("import " + ImportConstants.SpringSecurity.PRE_AUTHORIZE + ";"),
+                    "@PreAuthorize import should be present when security is enabled");
         }
     }
 
@@ -211,7 +281,8 @@ class ResolverImportsTest {
             final String result = ResolverImports.computeGraphQlResolverImports(
                     model,
                     outputDir,
-                    packageConfiguration
+                    packageConfiguration,
+                    false
             );
 
             assertTrue(result.contains("import com.shop.graphql.helper.mapper.ShippingGraphQLMapper;"),
@@ -291,7 +362,8 @@ class ResolverImportsTest {
             final String result = ResolverImports.computeGraphQlResolverImports(
                     model,
                     outputDir,
-                    packageConfiguration
+                    packageConfiguration,
+                    false
             );
 
             assertTrue(result.contains("import com.billing.business.InvoiceBusinessService;"),

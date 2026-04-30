@@ -11,6 +11,9 @@
 <#assign relationId = rel.relationIdField>
 <#assign openApiReturnModel = model.strippedModelName + "Payload">
 
+    <#if preAuthorize?? && preAuthorize?has_content>
+    @PreAuthorize("${preAuthorize}")
+    </#if>
     <#if swagger>@Override<#else>@PostMapping("/{id}/${relationField}s")</#if>
     public ResponseEntity<<#if !swagger>${transferObjectClass}<#else>${openApiReturnModel}</#if>> ${rel.methodName}(<#if !swagger>@PathVariable </#if>final ${idType} id,
             <#if !swagger>@RequestBody </#if>final <#if !swagger>${relationInputTO}<#else>${relationInput}</#if> body) {

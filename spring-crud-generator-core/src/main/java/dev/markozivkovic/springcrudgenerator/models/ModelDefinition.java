@@ -20,16 +20,17 @@ import java.util.List;
 import java.util.Objects;
 
 public class ModelDefinition {
-    
+
     private String name;
     private String storageName;
     private String description;
     private Boolean ignore = false;
-    private List<FieldDefinition> fields; 
+    private List<FieldDefinition> fields;
     private AuditDefinition audit;
     private Boolean softDelete = Boolean.FALSE;
     private BulkDefinition bulk;
     private SortDefinition sort;
+    private SecurityDefinition security;
 
     public ModelDefinition() {
 
@@ -37,7 +38,8 @@ public class ModelDefinition {
 
     public ModelDefinition(final String name, final String storageName, final String description,
             final Boolean ignore, final List<FieldDefinition> fields, final AuditDefinition audit,
-            final Boolean softDelete, final BulkDefinition bulk, final SortDefinition sort) {
+            final Boolean softDelete, final BulkDefinition bulk, final SortDefinition sort,
+            final SecurityDefinition security) {
         this.name = name;
         this.storageName = storageName;
         this.description = description;
@@ -47,6 +49,7 @@ public class ModelDefinition {
         this.softDelete = softDelete;
         this.bulk = bulk;
         this.sort = sort;
+        this.security = security;
     }
 
     public String getName() {
@@ -136,6 +139,15 @@ public class ModelDefinition {
         return this;
     }
 
+    public SecurityDefinition getSecurity() {
+        return this.security;
+    }
+
+    public ModelDefinition setSecurity(final SecurityDefinition security) {
+        this.security = security;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -152,12 +164,13 @@ public class ModelDefinition {
                 Objects.equals(audit, modelDefinition.audit) &&
                 Objects.equals(softDelete, modelDefinition.softDelete) &&
                 Objects.equals(bulk, modelDefinition.bulk) &&
-                Objects.equals(sort, modelDefinition.sort);
+                Objects.equals(sort, modelDefinition.sort) &&
+                Objects.equals(security, modelDefinition.security);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, storageName, description, ignore, fields, audit, softDelete, bulk, sort);
+        return Objects.hash(name, storageName, description, ignore, fields, audit, softDelete, bulk, sort, security);
     }
 
     @Override
@@ -172,7 +185,10 @@ public class ModelDefinition {
             ", softDelete='" + getSoftDelete() + "'" +
             ", bulk='" + getBulk() + "'" +
             ", sort='" + getSort() + "'" +
+            ", security='" + getSecurity() + "'" +
             "}";
-    }    
+    }
 
 }
+
+

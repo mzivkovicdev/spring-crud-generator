@@ -25,6 +25,19 @@ configuration:
   graphql:
     enabled: true
     scalarConfig: true
+  security:
+    enabled: true
+    type: BASIC_AUTH
+    basicAuth:
+      users:
+        - username: admin
+          password: admin
+          roles:
+            - ADMIN
+        - username: user
+          password: user
+          roles:
+            - USER
   errorResponse: simple
   migrationScripts: true
   tests:
@@ -58,6 +71,14 @@ entities:
   - name: ProductModel
     storageName: product_table
     description: "Represents a product"
+    security:
+      getAll: [ADMIN, USER]
+      getById: [ADMIN, USER]
+      create: [ADMIN]
+      update: [ADMIN]
+      delete: [ADMIN]
+      addRelation: [ADMIN]
+      removeRelation: [ADMIN]
     bulk:
       create:
         enabled: true

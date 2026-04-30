@@ -26,11 +26,12 @@ entities:
 | Property      | Type    | Required  | Description                                                                              |
 | ------------- | ------- | ----------| ------------------------------------------------------------------------------------------|
 | `name`        | string  | ✅        | Java class name of the entity/model                                                       |
-| `storageName` | string  | ✅        | SQL: table name. MongoDB: collection name.                                                |
+| `storageName` | string  | conditional | SQL: table name. MongoDB: collection name. Optional only for models used exclusively as inner JSON types. |
 | `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable)                          |
 | `audit`       | object  | optional  | Audit configuration for `createdAt` / `updatedAt` fields                                 |
 | `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create)                         |
 | `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries                               |
+| `security`    | object  | optional  | Entity-level role mapping for CRUD and relation endpoints                                 |
 | `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)                                   |
 | `fields`      | list    | ✅        | List of fields for the entity                                                             |
 
@@ -128,6 +129,43 @@ If `bulk` is absent, bulk create generation is disabled for that entity.
 
 ---
 
+## Entity security configuration
+
+Per-entity security lets you override role requirements for generated endpoints.
+
+```yaml
+entities:
+  - name: ProductModel
+    storageName: product_table
+    security:
+      getAll: [ADMIN, USER]
+      getById: [ADMIN, USER]
+      create: [ADMIN]
+      update: [ADMIN]
+      delete: [ADMIN]
+      addRelation: [ADMIN]
+      removeRelation: [ADMIN]
+    fields: []
+```
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `getAll` | list | Allowed roles for list endpoint (`GET /...`). |
+| `getById` | list | Allowed roles for get-by-id endpoint. |
+| `create` | list | Allowed roles for create endpoint. |
+| `update` | list | Allowed roles for update endpoint. |
+| `delete` | list | Allowed roles for delete endpoint. |
+| `addRelation` | list | Allowed roles for add-relation endpoints. |
+| `removeRelation` | list | Allowed roles for remove-relation endpoints. |
+
+Behavior notes:
+- Security annotations are generated only when global `configuration.security.enabled: true`.
+- The same operation mapping is applied to generated REST endpoints and GraphQL resolver methods (when GraphQL is enabled).
+- If operation roles are omitted, generated endpoint falls back to authenticated access (`isAuthenticated()`).
+- If the whole entity `security` block is omitted, all endpoints for that entity fall back to authenticated access.
+
+---
+
 ## Field schema
 
 ```yaml
@@ -145,7 +183,7 @@ fields:
 | `type`        | string | ✅                  | Java type (e.g. `String`, `Long`, `UUID`, `LocalDate`, `Enum`, `JSON<Type>`, entity name for relations, or `List<BasicType>` / `Set<BasicType>`) |
 | `description` | string | optional            | Used for Javadoc and API documentation                                                               |
 | `example`     | string | optional            | Example value emitted in generated OpenAPI schema (`components/schemas/...`)                         |
-| `id`          | object | optional            | Marks the field as primary key and defines generation strategy                                       |
+| `id`          | object or boolean | optional | SQL: object with `strategy` and optional generator fields. MongoDB: use marker `id: true`. |
 | `column`      | object | optional            | Column constraints (unique, nullable, insertable, updateable, length etc.)                           |
 | `relation`    | object | optional            | Relationship definition (JPA-style)                                                                  |
 | `values`      | list   | required for `Enum` | Enum constant values (only when `type: Enum`)                                                        |
@@ -233,7 +271,7 @@ Supported strategies:
 
 | Property          | Type   | Required | Applies to          | Description                                                                         |
 | ----------------- | ------ | -------- | ------------------- | ------------------------------------------------------------------------------------|
-| `strategy`        | enum   | ✅       | all                 | ID generation strategy                                                              |
+| `strategy`        | enum   | ✅       | SQL object form     | ID generation strategy                                                              |
 | `generatorName`   | string | optional | `SEQUENCE`, `TABLE` | DB object name. For `SEQUENCE`: DB sequence name. For `TABLE`: generator table name.|
 | `allocationSize`  | number | optional | `SEQUENCE`, `TABLE` | Allocation size for sequence/table generators (defaults to `50`).                   |
 | `initialValue`    | number | optional | `SEQUENCE`, `TABLE` | Initial value for ID generation (defaults to `1`).                                  |

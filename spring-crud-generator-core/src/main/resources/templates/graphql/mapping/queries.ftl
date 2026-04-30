@@ -3,6 +3,9 @@
 <#assign transferObjectClass = strippedModelName?cap_first + "TO">
 <#assign mapperClass = strippedModelName?uncap_first + "Mapper">
 
+    <#if getByIdPreAuthorize?? && getByIdPreAuthorize?has_content>
+    @PreAuthorize("${getByIdPreAuthorize}")
+    </#if>
     @QueryMapping
     public ${transferObjectClass} ${uncapModelName}ById(@Argument final ${idType} id) {
         return ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
@@ -10,6 +13,9 @@
         );
     }
 
+    <#if getAllPreAuthorize?? && getAllPreAuthorize?has_content>
+    @PreAuthorize("${getAllPreAuthorize}")
+    </#if>
     @QueryMapping
     public PageTO<${transferObjectClass}> ${uncapModelName}sPage(@Argument final Integer pageNumber,
                                     @Argument final Integer pageSize<#if sortEnabled?? && sortEnabled>,

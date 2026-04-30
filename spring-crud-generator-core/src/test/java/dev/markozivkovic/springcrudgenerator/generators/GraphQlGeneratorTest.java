@@ -188,7 +188,7 @@ class GraphQlGeneratorTest {
             gqlCtx.when(() -> GraphQlTemplateContext.computeQueryMappingGraphQL(model)).thenReturn(queriesCtx);
 
             resolverImports.when(() -> ResolverImports.computeResolverBaseImports(model)).thenReturn("BASE_IMPORTS;");
-            resolverImports.when(() -> ResolverImports.computeGraphQlResolverImports(model, outputDir, pkgCfg)).thenReturn("RESOLVER_IMPORTS;");
+            resolverImports.when(() -> ResolverImports.computeGraphQlResolverImports(model, outputDir, pkgCfg, false)).thenReturn("RESOLVER_IMPORTS;");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
                     eq("graphql/entity.graphql.ftl"), eq(schemaCtx)
@@ -333,7 +333,7 @@ class GraphQlGeneratorTest {
             gqlCtx.when(() -> GraphQlTemplateContext.computeQueryMappingGraphQL(model)).thenReturn(new HashMap<>());
 
             resolverImports.when(() -> ResolverImports.computeResolverBaseImports(model)).thenReturn("");
-            resolverImports.when(() -> ResolverImports.computeGraphQlResolverImports(model, "out", pkgCfg)).thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeGraphQlResolverImports(model, "out", pkgCfg, false)).thenReturn("");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("graphql/entity.graphql.ftl"), anyMap())).thenReturn("ENTITY_GRAPHQL");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("graphql/scalars.graphql.ftl"), eq(Map.of()))).thenReturn("SCALARS");
@@ -421,7 +421,7 @@ class GraphQlGeneratorTest {
             gqlCtx.when(() -> GraphQlTemplateContext.computeQueryMappingGraphQL(model)).thenReturn(new HashMap<>());
 
             resolverImports.when(() -> ResolverImports.computeResolverBaseImports(model)).thenReturn("");
-            resolverImports.when(() -> ResolverImports.computeGraphQlResolverImports(model, "out", pkgCfg)).thenReturn("");
+            resolverImports.when(() -> ResolverImports.computeGraphQlResolverImports(model, "out", pkgCfg, false)).thenReturn("");
 
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("graphql/entity.graphql.ftl"), anyMap())).thenReturn("ENTITY_GRAPHQL");
             tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("graphql/scalars.graphql.ftl"), eq(Map.of()))).thenReturn("SCALARS");

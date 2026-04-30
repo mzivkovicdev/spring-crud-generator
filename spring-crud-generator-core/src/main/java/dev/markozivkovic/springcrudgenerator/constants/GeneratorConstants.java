@@ -87,6 +87,7 @@ public class GeneratorConstants {
         public static final String CLAUDE_MD = "claude-md";
         public static final String AGENTS_MD = "agents-md";
         public static final String MONGOCK_MIGRATION_SCRIPT = "mongock-migration-script";
+        public static final String SECURITY_CONFIGURATION = "security-configuration";
     }
 
 }

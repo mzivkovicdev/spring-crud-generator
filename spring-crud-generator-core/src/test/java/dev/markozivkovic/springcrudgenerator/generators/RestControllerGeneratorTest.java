@@ -25,6 +25,7 @@ import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.models.SecurityDefinition;
 import dev.markozivkovic.springcrudgenerator.templates.RestControllerTemplateContext;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
@@ -434,5 +435,110 @@ class RestControllerGeneratorTest {
 
         final Map<String, Object> ctx = controllerTemplateContexts.get(0);
         assertEquals("CREATE_BULK_ENDPOINT", ctx.get("createBulkResource"));
+    }
+
+    @Test
+    void generate_shouldApplyRelationSecurityPreAuthorizeToRelationEndpoints() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.getOpenApi()).thenReturn(null);
+        when(cfg.getSecurity()).thenReturn(new CrudConfiguration.SecurityConfiguration().setEnabled(true));
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final ModelDefinition model = newModel("UserEntity", List.of(idField));
+        when(model.getSecurity()).thenReturn(
+            new SecurityDefinition()
+                .setAddRelation(List.of("ADMIN", "USER"))
+                .setRemoveRelation(List.of("ADMIN"))
+        );
+
+        final List<ModelDefinition> allEntities = List.of(model);
+        final RestControllerGenerator generator = new RestControllerGenerator(cfg, allEntities, pkgCfg);
+        final String outputDir = "out";
+
+        final List<Map<String, Object>> addRelationEndpointContexts = new ArrayList<>();
+        final List<Map<String, Object>> removeRelationEndpointContexts = new ArrayList<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<RestControllerImports> imports = mockStatic(RestControllerImports.class);
+             final MockedStatic<RestControllerTemplateContext> controllerCtx = mockStatic(RestControllerTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class);
+             final MockedStatic<AdditionalPropertiesUtils> addProps = mockStatic(AdditionalPropertiesUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields()))
+                    .thenReturn(true);
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
+                    .thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeControllerPackage("com.example.app", pkgCfg))
+                    .thenReturn("com.example.app.web");
+            pkg.when(() -> PackageUtils.computeControllerSubPackage(pkgCfg))
+                    .thenReturn("controller/rest");
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
+                    .thenReturn("User");
+
+            imports.when(() -> RestControllerImports.computeControllerBaseImports(model, allEntities))
+                    .thenReturn("import BASE;\n");
+            imports.when(() -> RestControllerImports.computeControllerProjectImports(
+                    model, outputDir, false, pkgCfg))
+                    .thenReturn("import PROJECT;\n");
+
+            addProps.when(() -> AdditionalPropertiesUtils.resolveBasePath(cfg))
+                    .thenReturn("/api");
+            addProps.when(() -> AdditionalPropertiesUtils.isOpenInViewEnabled(anyMap()))
+                    .thenReturn(true);
+
+            controllerCtx.when(() -> RestControllerTemplateContext.computeControllerClassContext(model))
+                    .thenReturn(new HashMap<>());
+            controllerCtx.when(() -> RestControllerTemplateContext.computeCreateEndpointContext(model, allEntities))
+                    .thenReturn(new HashMap<>());
+            controllerCtx.when(() -> RestControllerTemplateContext.computeGetByIdEndpointContext(model))
+                    .thenReturn(new HashMap<>());
+            controllerCtx.when(() -> RestControllerTemplateContext.computeGetAllEndpointContext(model))
+                    .thenReturn(new HashMap<>());
+            controllerCtx.when(() -> RestControllerTemplateContext.computeUpdateEndpointContext(model, false))
+                    .thenReturn(new HashMap<>());
+            controllerCtx.when(() -> RestControllerTemplateContext.computeDeleteEndpointContext(model))
+                    .thenReturn(new HashMap<>());
+            controllerCtx.when(() -> RestControllerTemplateContext.computeAddResourceRelationEndpointContext(model, allEntities))
+                    .thenReturn(new HashMap<>(Map.of("relations", List.of("dummy"))));
+            controllerCtx.when(() -> RestControllerTemplateContext.computeRemoveResourceRelationEndpointContext(model, allEntities))
+                    .thenReturn(new HashMap<>(Map.of("relations", List.of("dummy"))));
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/endpoint/create-resource.ftl"), anyMap()))
+                    .thenReturn("CREATE_ENDPOINT");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/endpoint/get-resource.ftl"), anyMap()))
+                    .thenReturn("GET_ENDPOINT");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/endpoint/get-all-resources.ftl"), anyMap()))
+                    .thenReturn("GET_ALL_ENDPOINT");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/endpoint/update-resource.ftl"), anyMap()))
+                    .thenReturn("UPDATE_ENDPOINT");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/endpoint/delete-resource.ftl"), anyMap()))
+                    .thenReturn("DELETE_ENDPOINT");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/endpoint/add-resource-relation.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        final Map<String, Object> context = inv.getArgument(1);
+                        addRelationEndpointContexts.add(new HashMap<>(context));
+                        return "ADD_RELATION_ENDPOINT";
+                    });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/endpoint/remove-resource-relation.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        final Map<String, Object> context = inv.getArgument(1);
+                        removeRelationEndpointContexts.add(new HashMap<>(context));
+                        return "REMOVE_RELATION_ENDPOINT";
+                    });
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(eq("controller/controller-template.ftl"), anyMap()))
+                    .thenReturn("CONTROLLER_CLASS");
+
+            generator.generate(model, outputDir);
+        }
+
+        assertEquals("hasAnyRole('ADMIN', 'USER')", addRelationEndpointContexts.get(0).get("preAuthorize"));
+        assertEquals("hasAnyRole('ADMIN')", removeRelationEndpointContexts.get(0).get("preAuthorize"));
     }
 }

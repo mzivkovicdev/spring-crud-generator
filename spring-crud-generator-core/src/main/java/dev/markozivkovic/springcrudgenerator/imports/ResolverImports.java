@@ -64,10 +64,11 @@ public class ResolverImports {
      * @param modelDefinition      the model definition containing the class name, table name, and field definitions
      * @param outputDir            the directory where the generated code will be written
      * @param packageConfiguration the package configuration for the project
+     * @param securityEnabled      whether global security is enabled for generated resolvers
      * @return A string containing the necessary import statements for the given model.
      */
     public static String computeGraphQlResolverImports(final ModelDefinition modelDefinition, final String outputDir,
-                final PackageConfiguration packageConfiguration) {
+                final PackageConfiguration packageConfiguration, final boolean securityEnabled) {
         
         final Set<String> imports = new LinkedHashSet<>();
 
@@ -93,6 +94,7 @@ public class ResolverImports {
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphqlTransferObjectPackage(packagePath, packageConfiguration), String.format("%sUpdateTO", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeGraphQlMapperPackage(packagePath, packageConfiguration), String.format("%sGraphQLMapper", modelWithoutSuffix))));
         imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeTransferObjectPackage(packagePath, packageConfiguration), "PageTO")));
+        ImportCommon.addIf(securityEnabled, imports, String.format(IMPORT, ImportConstants.SpringSecurity.PRE_AUTHORIZE));
 
         if (!FieldUtils.extractRelationTypes(modelDefinition.getFields()).isEmpty()) {
             imports.add(String.format(IMPORT, PackageUtils.join(PackageUtils.computeBusinessServicePackage(packagePath, packageConfiguration), String.format("%sBusinessService", modelWithoutSuffix))));
