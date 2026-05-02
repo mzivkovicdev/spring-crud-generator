@@ -110,6 +110,7 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put("securityEnabled", securityEnabled);
         context.put("createResource", generateCreateResourceEndpoint(modelDefinition, swagger, securityEnabled));
         context.put("createBulkResource", generateCreateBulkResourceEndpoint(modelDefinition, swagger, securityEnabled));
+        context.put("deleteBulkResource", generateDeleteBulkResourceEndpoint(modelDefinition, swagger, securityEnabled));
         context.put("getResource", generateGetResourceEndpoint(modelDefinition, swagger, securityEnabled));
         context.put("getAllResources", generateGetAllResourcesEndpoint(modelDefinition, swagger, securityEnabled));
         context.put("updateResource", generateUpdateResourceEndpoint(modelDefinition, swagger, securityEnabled));
@@ -160,6 +161,28 @@ public class RestControllerGenerator implements CodeGenerator {
         context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "create", securityEnabled));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/create-bulk-resource.ftl", context);
+    }
+
+    /**
+     * Generates the REST endpoint for deleting multiple resources in a single request.
+     *
+     * @param modelDefinition The model definition for which the bulk delete resource endpoint is generated.
+     * @param swagger         Indicates whether Swagger generator is enabled.
+     * @param securityEnabled Indicates whether security is enabled.
+     * @return A string representation of the bulk delete resource endpoint method, or null when disabled.
+     */
+    private String generateDeleteBulkResourceEndpoint(final ModelDefinition modelDefinition, final boolean swagger,
+            final boolean securityEnabled) {
+
+        if (!modelDefinition.isBulkDeleteEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = RestControllerTemplateContext.computeDeleteEndpointContext(modelDefinition);
+        context.put(TemplateContextConstants.SWAGGER, swagger);
+        context.put("preAuthorize", computePreAuthorize(modelDefinition.getSecurity(), "delete", securityEnabled));
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("controller/endpoint/delete-bulk-resource.ftl", context);
     }
 
     /**

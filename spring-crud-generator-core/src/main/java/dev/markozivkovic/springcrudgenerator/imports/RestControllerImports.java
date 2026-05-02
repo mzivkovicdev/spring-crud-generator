@@ -65,6 +65,7 @@ public class RestControllerImports {
         final boolean hasRelationListCollections = FieldUtils.isAnyRelationCollectionList(modelDefinition.getFields());
         final boolean hasRelationSetCollections = FieldUtils.isAnyRelationCollectionSet(modelDefinition.getFields());
         final boolean bulkCreateEnabled = modelDefinition.isBulkCreateEnabled();
+        final boolean bulkDeleteEnabled = modelDefinition.isBulkDeleteEnabled();
 
         if (hasRelationCollections) {
             ImportCommon.addIf(hasRelationListCollections, imports, String.format(IMPORT, ImportConstants.Java.LIST));
@@ -72,6 +73,7 @@ public class RestControllerImports {
             imports.add(String.format(IMPORT, ImportConstants.Java.COLLECTORS));
         }
         ImportCommon.addIf(bulkCreateEnabled, imports, String.format(IMPORT, ImportConstants.Java.LIST));
+        ImportCommon.addIf(bulkDeleteEnabled, imports, String.format(IMPORT, ImportConstants.Java.LIST));
 
         relations.forEach(realtionField -> {
 
@@ -328,6 +330,39 @@ public class RestControllerImports {
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
         imports.add(String.format(IMPORT, ImportConstants.SpringTest.RESULT_ACTIONS));
+        imports.add(String.format(IMPORT, ImportConstants.Java.LIST));
+
+        return imports.stream()
+                .sorted()
+                .collect(Collectors.joining());
+    }
+
+    /**
+     * Compute the necessary imports for a controller delete-bulk endpoint test.
+     *
+     * @param isInstancioEnabled whether Instancio is enabled
+     * @param springBootVersion  the Spring Boot version
+     * @return a string containing the necessary import statements for a controller delete-bulk endpoint test
+     */
+    public static String computeDeleteBulkEndpointTestImports(final boolean isInstancioEnabled, final String springBootVersion) {
+
+        final Set<String> imports = new LinkedHashSet<>();
+        ImportCommon.addIf(isInstancioEnabled, imports, String.format(IMPORT, ImportConstants.INSTANCIO.INSTANCIO));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.AFTER_EACH));
+        imports.add(String.format(IMPORT, ImportConstants.JUnit.TEST));
+        imports.add(String.format(IMPORT, ImportConstants.SpringBean.AUTOWIRED));
+
+        addOAuth2WebMvcTestImports(imports, springBootVersion);
+
+        if (SpringBootVersionUtils.isSpringBoot3(springBootVersion)) {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCK_BEAN));
+        } else {
+            imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKITO_BEAN));
+        }
+
+        imports.add(String.format(IMPORT, ImportConstants.SpringHttp.MEDIA_TYPE));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.CONTEXT_CONFIGURATION));
+        imports.add(String.format(IMPORT, ImportConstants.SpringTest.MOCKMVC));
         imports.add(String.format(IMPORT, ImportConstants.Java.LIST));
 
         return imports.stream()
