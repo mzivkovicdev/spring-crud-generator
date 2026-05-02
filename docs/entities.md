@@ -29,7 +29,7 @@ entities:
 | `storageName` | string  | conditional | SQL: table name. MongoDB: collection name. Optional only for models used exclusively as inner JSON types. |
 | `description` | string  | optional  | Used to generate Javadoc and enrich API docs (where applicable)                          |
 | `audit`       | object  | optional  | Audit configuration for `createdAt` / `updatedAt` fields                                 |
-| `bulk`        | object  | optional  | Entity-level bulk operation configuration (currently bulk create)                         |
+| `bulk`        | object  | optional  | Entity-level bulk operation configuration (`bulk create` and `bulk delete`)               |
 | `sort`        | object  | optional  | Per-entity sorting configuration for list endpoints/queries                               |
 | `security`    | object  | optional  | Entity-level role mapping for CRUD and relation endpoints                                 |
 | `softDelete`  | boolean | optional  | Enables soft delete for this entity (default: `false`)                                   |
@@ -113,9 +113,11 @@ Runtime behavior:
 
 ---
 
-## Bulk create configuration
+## Bulk operations configuration
 
-Bulk create is opt-in per entity and generates `POST /{entity-path}/bulk`.
+Bulk operations are opt-in per entity and currently support:
+- `POST /{entity-path}/bulk` for bulk create
+- `DELETE /{entity-path}/bulk` for bulk delete
 
 Preferred shape:
 
@@ -123,9 +125,11 @@ Preferred shape:
 bulk:
   create:
     enabled: true
+  delete:
+    enabled: true
 ```
 
-If `bulk` is absent, bulk create generation is disabled for that entity.
+If `bulk` is absent, both bulk create and bulk delete generation are disabled for that entity.
 
 ---
 
