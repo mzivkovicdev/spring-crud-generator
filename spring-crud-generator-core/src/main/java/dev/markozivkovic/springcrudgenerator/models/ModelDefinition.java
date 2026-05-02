@@ -130,6 +130,12 @@ public class ModelDefinition {
                 && Boolean.TRUE.equals(this.bulk.getCreate().getEnabled());
     }
 
+    public boolean isBulkDeleteEnabled() {
+        return Objects.nonNull(this.bulk)
+                && Objects.nonNull(this.bulk.getDelete())
+                && Boolean.TRUE.equals(this.bulk.getDelete().getEnabled());
+    }
+
     public SortDefinition getSort() {
         return this.sort;
     }
@@ -190,5 +196,4 @@ public class ModelDefinition {
     }
 
 }
-
 
