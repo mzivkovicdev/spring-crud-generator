@@ -127,6 +127,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         context.put("getAllMethod", this.generateGetAllMethod(modelDefinition));
         context.put("createMethod", this.generateCreateMethod(modelDefinition));
         context.put("createBulkMethod", this.generateCreateBulkMethod(modelDefinition));
+        context.put("deleteBulkMethod", this.generateDeleteBulkMethod(modelDefinition));
         context.put("updateMethod", this.generateUpdateMethod(modelDefinition));
         context.put("deleteMethod", this.generateDeleteByIdMethod(modelDefinition));
         context.put("addRelationMethod", this.addRelationMethod(modelDefinition));
@@ -273,6 +274,26 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/create-bulk.ftl", context);
+    }
+
+    /**
+     * Generates the bulk delete method as a string for the given model definition.
+     *
+     * @param modelDefinition the model definition containing the class name and field definitions
+     * @return a string representation of the bulk delete method unit test, or null when disabled
+     */
+    private String generateDeleteBulkMethod(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkDeleteEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = ServiceTemplateContext.computeBulkDeleteContext(modelDefinition);
+        context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("test/unit/service/method/delete-bulk.ftl", context);
     }
 
     /**
