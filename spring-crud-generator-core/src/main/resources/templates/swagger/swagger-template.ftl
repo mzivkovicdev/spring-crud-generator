@@ -16,10 +16,15 @@ paths:
   /${uncapModelName}s:
     ${create}
     ${getAll}
-  <#if createBulk?? && createBulk?has_content>
+  <#if (createBulk?? && createBulk?has_content) || (deleteBulk?? && deleteBulk?has_content)>
 
   /${uncapModelName}s/bulk:
+  <#if createBulk?? && createBulk?has_content>
     ${createBulk}
+  </#if>
+  <#if deleteBulk?? && deleteBulk?has_content>
+    ${deleteBulk}
+  </#if>
   </#if>
 
   /${uncapModelName}s/{${idField}}:

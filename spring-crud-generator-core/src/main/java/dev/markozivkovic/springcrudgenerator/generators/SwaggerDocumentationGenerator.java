@@ -238,6 +238,7 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         context.put("id", idProperty);
         context.put("create", createEndpoint(e));
         context.put("createBulk", createBulkEndpoint(e));
+        context.put("deleteBulk", deleteBulkEndpoint(e));
         context.put("getAll", getAllEndpoint(e));
         context.put("getById", getByIdEndpoint(e));
         context.put("deleteById", deleteByIdEndpoint(e));
@@ -358,6 +359,25 @@ public class SwaggerDocumentationGenerator implements ProjectArtifactGenerator {
         final Map<String, Object> context = SwaggerTemplateContext.computeBaseContext(modelDefinition);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/create-bulk-endpoint.ftl", context);
+    }
+
+    /**
+     * Generates the bulk delete endpoint for the given model definition and returns it as a string.
+     *
+     * @param modelDefinition The model definition for which the bulk delete endpoint is generated.
+     * @return The bulk delete endpoint as a string, or null when disabled.
+     */
+    private String deleteBulkEndpoint(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkDeleteEnabled()) {
+            return null;
+        }
+
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final Map<String, Object> context = SwaggerTemplateContext.computeContextWithId(modelDefinition);
+        context.put("id", SwaggerUtils.toSwaggerProperty(idField));
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("swagger/endpoint/delete-bulk-endpoint.ftl", context);
     }
 
     /**
