@@ -270,6 +270,7 @@ public class ServiceUnitTestGenerator implements CodeGenerator {
         }
 
         final Map<String, Object> context = ServiceTemplateContext.computeBulkCreateContext(modelDefinition);
+        context.put(TemplateContextConstants.IS_MONGO_DB, this.isMongoDB);
         final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
 

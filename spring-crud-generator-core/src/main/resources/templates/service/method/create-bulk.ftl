@@ -14,5 +14,5 @@
 
         LOGGER.info("Creating {} ${strippedModelName} records", ${strippedModelName}s.size());
 
-        return this.repository.saveAllAndFlush(${strippedModelName}s);
+        return this.repository.<#if isMongoDB?? && isMongoDB>saveAll<#else>saveAllAndFlush</#if>(${strippedModelName}s);
     }
