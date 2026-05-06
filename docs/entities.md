@@ -118,6 +118,8 @@ Runtime behavior:
 Bulk operations are opt-in per entity and currently support:
 - `POST /{entity-path}/bulk` for bulk create
 - `DELETE /{entity-path}/bulk` for bulk delete
+- GraphQL `createBulk<Entity>` mutation for bulk create
+- GraphQL `deleteBulk<Entity>` mutation for bulk delete
 
 Preferred shape:
 

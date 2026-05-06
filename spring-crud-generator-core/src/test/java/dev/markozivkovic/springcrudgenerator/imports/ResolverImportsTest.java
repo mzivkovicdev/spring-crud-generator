@@ -65,6 +65,46 @@ class ResolverImportsTest {
     }
 
     @Test
+    @DisplayName("computeResolverBaseImports: bulk create enabled -> List import present")
+    void computeResolverBaseImports_bulkCreateEnabled_addsListImport() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        Mockito.when(model.getFields()).thenReturn(List.of(idField));
+        Mockito.when(model.isBulkCreateEnabled()).thenReturn(true);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                    .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
+                    .thenReturn(false);
+
+            final String result = ResolverImports.computeResolverBaseImports(model);
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+        }
+    }
+
+    @Test
+    @DisplayName("computeResolverBaseImports: bulk delete enabled -> List import present")
+    void computeResolverBaseImports_bulkDeleteEnabled_addsListImport() {
+
+        final ModelDefinition model = Mockito.mock(ModelDefinition.class);
+        final FieldDefinition idField = new FieldDefinition();
+        Mockito.when(model.getFields()).thenReturn(List.of(idField));
+        Mockito.when(model.isBulkDeleteEnabled()).thenReturn(true);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = Mockito.mockStatic(FieldUtils.class)) {
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                    .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.isIdFieldUUID(idField))
+                    .thenReturn(false);
+
+            final String result = ResolverImports.computeResolverBaseImports(model);
+            assertTrue(result.contains("import " + ImportConstants.Java.LIST + ";"));
+        }
+    }
+
+    @Test
     @DisplayName("computeGraphQlResolverImports: no JSON fields, no relations → basic GraphQL imports only (no helper mappers, no BusinessService)")
     void computeGraphQlResolverImports_noJson_noRelations() {
         

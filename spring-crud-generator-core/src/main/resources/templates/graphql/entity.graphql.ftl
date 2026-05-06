@@ -100,8 +100,14 @@ extend type Query {
 
 extend type Mutation {
   create${name}(input: ${name}CreateInput!): ${name}!
+  <#if bulkCreateEnabled?? && bulkCreateEnabled>
+  createBulk${name}(input: [${name}CreateInput!]!): [${name}!]!
+  </#if><#t>
   update${name}(id: ID!, input: ${name}UpdateInput!): ${name}!
   delete${name}(id: ID!): Boolean!
+  <#if bulkDeleteEnabled?? && bulkDeleteEnabled>
+  deleteBulk${name}(ids: [ID!]!): Boolean!
+  </#if><#t>
   <#list fields?filter(f -> hasRelation(f)) as field>
   <#assign relCap = field.name?cap_first>
   add${relCap}To${name}(id: ID!, ${field.name}Id: ID!): ${name}!

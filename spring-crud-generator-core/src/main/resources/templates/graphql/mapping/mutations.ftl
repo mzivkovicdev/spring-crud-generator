@@ -21,6 +21,23 @@
             )
         );
     }
+    <#if bulkCreateEnabled?? && bulkCreateEnabled>
+
+    <#if createPreAuthorize?? && createPreAuthorize?has_content>
+    @PreAuthorize("${createPreAuthorize}")
+    </#if>
+    @MutationMapping
+    @Validated
+    public List<${transferObjectClass}> createBulk${strippedModelName}(@Argument @Valid final List<${createInputToClass}> input) {
+        return input.stream()
+                .map(item -> ${mapperClass}.map${modelName?cap_first}To${transferObjectClass}(
+                        this.${serviceField}.create(
+                                <#list inputFieldsWithRelations as arg>${arg?replace("input.", "item.")}<#if arg_has_next>, </#if></#list>
+                        )
+                ))
+                .toList();
+    }
+    </#if><#t>
 
     <#if updatePreAuthorize?? && updatePreAuthorize?has_content>
     @PreAuthorize("${updatePreAuthorize}")
@@ -44,6 +61,19 @@
         
         return true;
     }
+    <#if bulkDeleteEnabled?? && bulkDeleteEnabled>
+
+    <#if deletePreAuthorize?? && deletePreAuthorize?has_content>
+    @PreAuthorize("${deletePreAuthorize}")
+    </#if>
+    @MutationMapping
+    public boolean deleteBulk${strippedModelName}(@Argument final List<${idType}> ids) {
+        
+        this.${baseServiceField}.bulkDelete(ids);
+        
+        return true;
+    }
+    </#if><#t>
 <#if relations?has_content>
 <#list relations as rel>
 <#assign relationField = rel.relationField?uncap_first>

@@ -315,6 +315,8 @@ class GraphQlTemplateContextTest {
             assertEquals("Long", ctx.get(TemplateContextConstants.ID_TYPE));
             assertEquals(noRelArgs, ctx.get(TemplateContextConstants.INPUT_FIELDS_WITHOUT_RELATIONS));
             assertEquals(withRelArgs, ctx.get(TemplateContextConstants.INPUT_FIELDS_WITH_RELATIONS));
+            assertEquals(false, ctx.get("bulkCreateEnabled"));
+            assertEquals(false, ctx.get("bulkDeleteEnabled"));
 
             @SuppressWarnings("unchecked")
             final List<Map<String, Object>> relations = (List<Map<String, Object>>) ctx.get(TemplateContextConstants.RELATIONS);
@@ -325,6 +327,43 @@ class GraphQlTemplateContextTest {
             assertEquals("Orders", relCtx.get(TemplateContextConstants.RELATION_FIELD));
             assertEquals(true, relCtx.get(TemplateContextConstants.IS_COLLECTION));
             assertEquals("java.util.UUID", relCtx.get(TemplateContextConstants.RELATION_ID_TYPE));
+        }
+    }
+
+    @Test
+    void computeMutationMappingGraphQL_shouldExposeBulkFlags() {
+
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("Long");
+
+        final List<FieldDefinition> fields = List.of(idField);
+        final ModelDefinition model = newModel("UserEntity", fields);
+        when(model.isBulkCreateEnabled()).thenReturn(true);
+        when(model.isBulkDeleteEnabled()).thenReturn(true);
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("UserEntity"))
+                    .thenReturn("User");
+
+            fieldUtils.when(() -> FieldUtils.extractIdField(fields))
+                    .thenReturn(idField);
+            fieldUtils.when(() -> FieldUtils.extractNonIdNonRelationFieldNamesForResolver(fields))
+                    .thenReturn(List.of("input.name()"));
+            fieldUtils.when(() -> FieldUtils.extractNonIdFieldNamesForResolver(fields))
+                    .thenReturn(List.of("input.name()"));
+            fieldUtils.when(() -> FieldUtils.extractRelationFields(fields))
+                    .thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractManyToManyRelations(fields))
+                    .thenReturn(List.of());
+            fieldUtils.when(() -> FieldUtils.extractOneToManyRelations(fields))
+                    .thenReturn(List.of());
+
+            final Map<String, Object> ctx = GraphQlTemplateContext.computeMutationMappingGraphQL(model, List.of(model));
+
+            assertEquals(true, ctx.get("bulkCreateEnabled"));
+            assertEquals(true, ctx.get("bulkDeleteEnabled"));
         }
     }
 
