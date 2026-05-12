@@ -94,6 +94,7 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         this.generateUpdateByIdEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
         this.generateCreateEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
         this.generateCreateBulkEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
+        this.generateDeleteBulkEndpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, isGlobalExceptionHandlerEnabled);
         this.generateAddRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
         this.generateRemoveRelationEdnpointTest(modelDefinition, outputDir, testOutputDir, packagePath, modelWithoutSuffix, swagger, isGlobalExceptionHandlerEnabled);
     }
@@ -364,6 +365,60 @@ public class RestControllerUnitTestGenerator implements CodeGenerator {
         sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
         sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
                 "test/unit/controller/endpoint/create-bulk-resource.ftl",
+                context
+        ));
+
+        FileWriterUtils.writeToFile(testOutputDir, PackageUtils.computeControllerSubPackage(packageConfiguration), className, sb.toString());
+    }
+
+    /**
+     * Generates a unit test for the bulk delete endpoint of the REST controller
+     * for the given model definition.
+     *
+     * @param modelDefinition                 the model definition containing the class name and field definitions
+     * @param outputDir                       the directory where the generated code will be written
+     * @param testOutputDir                   the directory where the generated unit test will be written
+     * @param packagePath                     the package path of the directory where the generated code will be written
+     * @param modelWithoutSuffix              the model name without the suffix
+     * @param isGlobalExceptionHandlerEnabled indicates if the global exception handler is enabled
+     */
+    private void generateDeleteBulkEndpointTest(final ModelDefinition modelDefinition, final String outputDir, final String testOutputDir,
+            final String packagePath, final String modelWithoutSuffix, final Boolean isGlobalExceptionHandlerEnabled) {
+
+        if (!modelDefinition.isBulkDeleteEnabled()) {
+            return;
+        }
+
+        final StringBuilder sb = new StringBuilder();
+        final FieldDefinition idField = FieldUtils.extractIdField(modelDefinition.getFields());
+        final String className = String.format("%sDeleteBulkMockMvcTest", modelWithoutSuffix);
+        final String controllerClassName = String.format("%sController", modelWithoutSuffix);
+        final TestDataGeneratorConfig generatorConfig = UnitTestUtils.resolveGeneratorConfig(configuration.getTests().getDataGenerator());
+        final String basePath = AdditionalPropertiesUtils.resolveBasePath(configuration);
+        final boolean springBoot3 = SpringBootVersionUtils.isSpringBoot3(this.configuration.getSpringBootVersion());
+
+        final Map<String, Object> context = new HashMap<>();
+        context.put("isIdUuid", FieldUtils.isIdFieldUUID(idField));
+        context.put("basePath", basePath);
+        context.put("controllerClassName", controllerClassName);
+        context.put("className", className);
+        context.put("strippedModelName", modelWithoutSuffix);
+        context.put("hasRelations", !FieldUtils.extractRelationFields(modelDefinition.getFields()).isEmpty());
+        context.put("idType", idField.getType());
+        context.put("idField", idField.getName());
+        context.put("projectImports", RestControllerImports.computeControllerTestProjectImports(
+                modelDefinition, outputDir, false, RestEndpointOperation.DELETE, packageConfiguration, isGlobalExceptionHandlerEnabled
+        ));
+        context.put("testImports", RestControllerImports.computeDeleteBulkEndpointTestImports(
+                UnitTestUtils.isInstancioEnabled(configuration), configuration.getSpringBootVersion()
+        ));
+        context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
+        context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);
+        context.put(TemplateContextConstants.IS_SPRING_BOOT_3, springBoot3);
+
+        sb.append(String.format(PACKAGE, PackageUtils.computeControllerPackage(packagePath, packageConfiguration)));
+        sb.append(FreeMarkerTemplateProcessorUtils.processTemplate(
+                "test/unit/controller/endpoint/delete-bulk-resource.ftl",
                 context
         ));
 

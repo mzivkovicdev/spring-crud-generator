@@ -548,4 +548,93 @@ class ServiceGeneratorTest {
         assertNotNull(serviceClassCtx);
         assertEquals("CREATE_BULK_METHOD", serviceClassCtx.get("createBulkMethod"));
     }
+
+    @Test
+    void generate_shouldGenerateBulkDeleteMethodWhenBulkDeleteEnabled() {
+
+        final CrudConfiguration cfg = mock(CrudConfiguration.class);
+        when(cfg.getCache()).thenReturn(null);
+
+        final PackageConfiguration pkgCfg = mock(PackageConfiguration.class);
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        final ModelDefinition model = newModel("ProductEntity", List.of(idField));
+        when(model.isBulkDeleteEnabled()).thenReturn(true);
+        final List<ModelDefinition> allEntities = List.of(model);
+        final ServiceGenerator generator = new ServiceGenerator(cfg, allEntities, pkgCfg);
+
+        final String outputDir = "out";
+        final AtomicReference<Map<String, Object>> serviceClassContextRef = new AtomicReference<>();
+
+        try (final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<PackageUtils> pkg = mockStatic(PackageUtils.class);
+             final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<ServiceImports> svcImports = mockStatic(ServiceImports.class);
+             final MockedStatic<ServiceTemplateContext> svcCtx = mockStatic(ServiceTemplateContext.class);
+             final MockedStatic<FreeMarkerTemplateProcessorUtils> tpl = mockStatic(FreeMarkerTemplateProcessorUtils.class);
+             final MockedStatic<FileWriterUtils> writer = mockStatic(FileWriterUtils.class)) {
+
+            fieldUtils.when(() -> FieldUtils.isAnyFieldId(model.getFields()))
+                    .thenReturn(true);
+            fieldUtils.when(() -> FieldUtils.hasCollectionRelation(model, allEntities))
+                    .thenReturn(false);
+            fieldUtils.when(() -> FieldUtils.hasRelation(model, allEntities))
+                    .thenReturn(false);
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("ProductEntity"))
+                    .thenReturn("Product");
+
+            pkg.when(() -> PackageUtils.getPackagePathFromOutputDir(outputDir))
+                    .thenReturn("com.example.app");
+            pkg.when(() -> PackageUtils.computeServicePackage("com.example.app", pkgCfg))
+                    .thenReturn("com.example.app.service");
+            pkg.when(() -> PackageUtils.computeServiceSubPackage(pkgCfg))
+                    .thenReturn("service");
+
+            svcImports.when(() -> ServiceImports.getBaseImport(model, true))
+                    .thenReturn("//BASE_IMPORTS\n");
+            svcImports.when(() -> ServiceImports.computeJpaServiceBaseImport(false, false))
+                    .thenReturn("//JPA_BASE_IMPORTS\n");
+            svcImports.when(() -> ServiceImports.computeModelsEnumsAndRepositoryImports(
+                    eq(model), eq(outputDir), eq(ServiceImportScope.SERVICE), eq(pkgCfg)))
+                    .thenReturn("//MODELS_IMPORTS\n");
+
+            svcCtx.when(() -> ServiceTemplateContext.computeCreateContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeBulkDeleteContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeGetAllContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeGetByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeUpdateByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.computeDeleteByIdContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.createAddRelationMethodContext(model)).thenReturn(Collections.emptyMap());
+            svcCtx.when(() -> ServiceTemplateContext.createRemoveRelationMethodContext(model, allEntities)).thenReturn(Collections.emptyMap());
+            svcCtx.when(() -> ServiceTemplateContext.createGetAllByIdsMethodContext(model)).thenReturn(new HashMap<>());
+            svcCtx.when(() -> ServiceTemplateContext.createServiceClassContext(model)).thenReturn(new HashMap<>());
+
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("service/method/get-by-id.ftl"), anyMap())).thenReturn("GET_BY_ID_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("service/method/get-all.ftl"), anyMap())).thenReturn("GET_ALL_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("service/method/create.ftl"), anyMap())).thenReturn("CREATE_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("service/method/delete-bulk.ftl"), anyMap())).thenReturn("DELETE_BULK_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("service/method/update-by-id.ftl"), anyMap())).thenReturn("UPDATE_BY_ID_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("service/method/delete-by-id.ftl"), anyMap())).thenReturn("DELETE_BY_ID_METHOD");
+            tpl.when(() -> FreeMarkerTemplateProcessorUtils.processTemplate(
+                    eq("service/service-class-template.ftl"), anyMap()))
+                    .thenAnswer(inv -> {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> ctx = inv.getArgument(1, Map.class);
+                        serviceClassContextRef.set(ctx);
+                        return "SERVICE_CLASS_TEMPLATE";
+                    });
+
+            generator.generate(model, outputDir);
+        }
+
+        final Map<String, Object> serviceClassCtx = serviceClassContextRef.get();
+        assertNotNull(serviceClassCtx);
+        assertEquals("DELETE_BULK_METHOD", serviceClassCtx.get("deleteBulkMethod"));
+    }
 }

@@ -52,6 +52,9 @@ public class ResolverImports {
         if (FieldUtils.isIdFieldUUID(idField)) {
             imports.add(String.format(IMPORT, ImportConstants.Java.UUID));
         }
+        if (modelDefinition.isBulkCreateEnabled() || modelDefinition.isBulkDeleteEnabled()) {
+            imports.add(String.format(IMPORT, ImportConstants.Java.LIST));
+        }
 
         return imports.stream()
                 .sorted()

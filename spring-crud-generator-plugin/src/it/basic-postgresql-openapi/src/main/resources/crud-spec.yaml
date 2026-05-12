@@ -14,6 +14,8 @@ entities:
     bulk:
       create:
         enabled: true
+      delete:
+        enabled: true
     fields:
       - name: id
         type: Long

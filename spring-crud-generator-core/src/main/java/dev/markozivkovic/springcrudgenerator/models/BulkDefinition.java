@@ -21,13 +21,15 @@ import java.util.Objects;
 public class BulkDefinition {
 
     private BulkCreateDefinition create = new BulkCreateDefinition();
+    private BulkDeleteDefinition delete = new BulkDeleteDefinition();
 
     public BulkDefinition() {
 
     }
 
-    public BulkDefinition(final BulkCreateDefinition create) {
+    public BulkDefinition(final BulkCreateDefinition create, final BulkDeleteDefinition delete) {
         this.create = create;
+        this.delete = delete;
     }
 
     public BulkCreateDefinition getCreate() {
@@ -39,6 +41,15 @@ public class BulkDefinition {
         return this;
     }
 
+    public BulkDeleteDefinition getDelete() {
+        return this.delete;
+    }
+
+    public BulkDefinition setDelete(final BulkDeleteDefinition delete) {
+        this.delete = delete;
+        return this;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
@@ -47,18 +58,20 @@ public class BulkDefinition {
             return false;
         }
         final BulkDefinition bulkDefinition = (BulkDefinition) o;
-        return Objects.equals(create, bulkDefinition.create);
+        return Objects.equals(create, bulkDefinition.create)
+                && Objects.equals(delete, bulkDefinition.delete);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(create);
+        return Objects.hash(create, delete);
     }
 
     @Override
     public String toString() {
         return "{" +
             " create='" + getCreate() + "'" +
+            ", delete='" + getDelete() + "'" +
             "}";
     }
 }

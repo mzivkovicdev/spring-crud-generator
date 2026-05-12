@@ -48,6 +48,7 @@ public class ${className}<#if swagger> implements ${strippedModelName}sApi</#if>
     }
     <#if createResource?? && createResource?has_content>${createResource}</#if>
     <#if createBulkResource?? && createBulkResource?has_content>${createBulkResource}</#if>
+    <#if deleteBulkResource?? && deleteBulkResource?has_content>${deleteBulkResource}</#if>
     <#if getResource?? && getResource?has_content>${getResource}</#if>
     <#if getAllResources?? && getAllResources?has_content>${getAllResources}</#if>
     <#if updateResource?? && updateResource?has_content>${updateResource}</#if>

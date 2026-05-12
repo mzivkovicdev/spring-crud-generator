@@ -77,7 +77,10 @@ public class ServiceGenerator implements CodeGenerator {
         final StringBuilder sb = new StringBuilder();
         sb.append(String.format(PACKAGE, PackageUtils.computeServicePackage(packagePath, packageConfiguration)));
         sb.append(ServiceImports.getBaseImport(
-                modelDefinition, FieldUtils.hasCollectionRelation(modelDefinition, entities) || modelDefinition.isBulkCreateEnabled())
+                modelDefinition,
+                FieldUtils.hasCollectionRelation(modelDefinition, entities)
+                        || modelDefinition.isBulkCreateEnabled()
+                        || modelDefinition.isBulkDeleteEnabled())
         );
         
         sb.append(ServiceImports.computeJpaServiceBaseImport(
@@ -119,6 +122,7 @@ public class ServiceGenerator implements CodeGenerator {
         context.put("getAllMethod", generateGetAllMethod(modelDefinition));
         context.put("createMethod", generateCreateMethod(modelDefinition));
         context.put("createBulkMethod", generateCreateBulkMethod(modelDefinition));
+        context.put("deleteBulkMethod", generateDeleteBulkMethod(modelDefinition));
         context.put("updateMethod", generateUpdateByIdMethod(modelDefinition));
         context.put("deleteMethod", generateDeleteByIdMethod(modelDefinition));
         context.put("addRelationMethod", addRelationMethod(modelDefinition));
@@ -236,6 +240,25 @@ public class ServiceGenerator implements CodeGenerator {
         this.putPersistenceFlagsToContext(context);
 
         return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/create-bulk.ftl", context);
+    }
+
+    /**
+     * Generates the bulk delete method as a string for the given model definition.
+     *
+     * @param modelDefinition The model definition for which the bulk delete method is to be generated.
+     * @return A string representation of the bulk delete method, or null when disabled.
+     */
+    public String generateDeleteBulkMethod(final ModelDefinition modelDefinition) {
+
+        if (!modelDefinition.isBulkDeleteEnabled()) {
+            return null;
+        }
+
+        final Map<String, Object> context = ServiceTemplateContext.computeBulkDeleteContext(modelDefinition);
+        context.put(TemplateContextConstants.SOFT_DELETE_ENABLED, this.isMongoDB && Boolean.TRUE.equals(modelDefinition.getSoftDelete()));
+        this.putPersistenceFlagsToContext(context);
+
+        return FreeMarkerTemplateProcessorUtils.processTemplate("service/method/delete-bulk.ftl", context);
     }
 
     /**

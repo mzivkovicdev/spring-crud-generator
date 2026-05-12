@@ -756,10 +756,22 @@
       "properties": {
         "create": {
           "$ref": "#/$defs/bulkCreate"
+        },
+        "delete": {
+          "$ref": "#/$defs/bulkDelete"
         }
       }
     },
     "bulkCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "bulkDelete": {
       "type": "object",
       "additionalProperties": false,
       "properties": {

@@ -297,6 +297,56 @@ class ServiceTemplateContextTest {
     }
 
     @Test
+    void computeBulkDeleteContext_shouldSetModelIdAndTransactionalDefaults() {
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("Long");
+        final ModelDefinition model = newModel("CustomerEntity", List.of(idField));
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("CustomerEntity"))
+                    .thenReturn("Customer");
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                    .thenReturn(idField);
+            genCtx.when(() -> GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION))
+                    .thenReturn(false);
+
+            final Map<String, Object> ctx = ServiceTemplateContext.computeBulkDeleteContext(model);
+
+            assertEquals("CustomerEntity", ctx.get(TemplateContextConstants.MODEL_NAME));
+            assertEquals("customer", ctx.get(TemplateContextConstants.STRIPPED_MODEL_NAME));
+            assertEquals("Long", ctx.get(TemplateContextConstants.ID_TYPE));
+            assertEquals(AnnotationConstants.TRANSACTIONAL_ANNOTATION, ctx.get(TemplateContextConstants.TRANSACTIONAL_ANNOTATION));
+        }
+    }
+
+    @Test
+    void computeBulkDeleteContext_shouldUseRetryableTransactionalAnnotationWhenGenerated() {
+        final FieldDefinition idField = mock(FieldDefinition.class);
+        when(idField.getType()).thenReturn("Long");
+        final ModelDefinition model = newModel("CustomerEntity", List.of(idField));
+
+        try (final MockedStatic<ModelNameUtils> nameUtils = mockStatic(ModelNameUtils.class);
+             final MockedStatic<FieldUtils> fieldUtils = mockStatic(FieldUtils.class);
+             final MockedStatic<GeneratorContext> genCtx = mockStatic(GeneratorContext.class)) {
+
+            nameUtils.when(() -> ModelNameUtils.stripSuffix("CustomerEntity"))
+                    .thenReturn("Customer");
+            fieldUtils.when(() -> FieldUtils.extractIdField(model.getFields()))
+                    .thenReturn(idField);
+            genCtx.when(() -> GeneratorContext.isGenerated(TemplateContextConstants.RETRYABLE_ANNOTATION))
+                    .thenReturn(true);
+
+            final Map<String, Object> ctx = ServiceTemplateContext.computeBulkDeleteContext(model);
+
+            assertEquals(GeneratorConstants.Transaction.OPTIMISTIC_LOCKING_RETRY_ANNOTATION,
+                    ctx.get(TemplateContextConstants.TRANSACTIONAL_ANNOTATION));
+        }
+    }
+
+    @Test
     void computeUpdateByIdContext_shouldFillAllFieldsAndUseTransactionalOrOptimisticLocking() {
         final FieldDefinition idField = mock(FieldDefinition.class);
         when(idField.getName()).thenReturn("id");

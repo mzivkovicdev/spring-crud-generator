@@ -100,6 +100,8 @@ public class GraphQlTemplateContext {
                 TemplateContextConstants.FIELDS, fields,
                 TemplateContextConstants.JSON_MODELS, jsonModels
         ));
+        context.put("bulkCreateEnabled", modelDefinition.isBulkCreateEnabled());
+        context.put("bulkDeleteEnabled", modelDefinition.isBulkDeleteEnabled());
 
         if (Objects.nonNull(modelDefinition.getAudit()) && Boolean.TRUE.equals(modelDefinition.getAudit().getEnabled())) {
             context.put(TemplateContextConstants.AUDIT_TYPE, AuditUtils.resolveAuditType(modelDefinition.getAudit().getType()));
@@ -127,6 +129,8 @@ public class GraphQlTemplateContext {
         context.put(TemplateContextConstants.ID_TYPE, idField.getType());
         context.put(TemplateContextConstants.INPUT_FIELDS_WITHOUT_RELATIONS, FieldUtils.extractNonIdNonRelationFieldNamesForResolver(modelDefinition.getFields()));
         context.put(TemplateContextConstants.INPUT_FIELDS_WITH_RELATIONS, FieldUtils.extractNonIdFieldNamesForResolver(modelDefinition.getFields()));
+        context.put("bulkCreateEnabled", modelDefinition.isBulkCreateEnabled());
+        context.put("bulkDeleteEnabled", modelDefinition.isBulkDeleteEnabled());
         final List<Map<String, Object>> relations = new ArrayList<>();
 
         final List<FieldDefinition> relationFields = FieldUtils.extractRelationFields(modelDefinition.getFields());
@@ -220,6 +224,8 @@ public class GraphQlTemplateContext {
 
         context.put(TemplateContextConstants.FIELD_NAMES, FieldUtils.generateFieldNamesForCreateInputTO(modelDefinition.getFields()));
         context.put("fieldNamesWithoutRelations", FieldUtils.extractNonIdNonRelationFieldNames(modelDefinition.getFields()));
+        context.put("bulkCreateEnabled", modelDefinition.isBulkCreateEnabled());
+        context.put("bulkDeleteEnabled", modelDefinition.isBulkDeleteEnabled());
         context.put("projectImports", ResolverImports.computeProjectImportsForMutationUnitTests(outputDir, modelDefinition, packageConfiguration, isGlobalExceptionHandlerEnabled));
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
         context.put("isGlobalExceptionHandlerEnabled", isGlobalExceptionHandlerEnabled);

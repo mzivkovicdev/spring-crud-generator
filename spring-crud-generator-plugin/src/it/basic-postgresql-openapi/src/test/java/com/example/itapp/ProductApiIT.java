@@ -53,6 +53,17 @@ class ProductApiIT {
         final JsonNode bulkCreated = OBJECT_MAPPER.readTree(bulkCreateResponse.body());
         assertTrue(bulkCreated.isArray(), "Expected bulk create response to be an array");
         assertEquals(2, bulkCreated.size(), "Expected two created products in bulk response");
+        final long bulkProductOneId = bulkCreated.get(0).path("id").asLong(-1L);
+        final long bulkProductTwoId = bulkCreated.get(1).path("id").asLong(-1L);
+        assertTrue(bulkProductOneId > 0, "Expected first bulk-created ID to be > 0");
+        assertTrue(bulkProductTwoId > 0, "Expected second bulk-created ID to be > 0");
+
+        final HttpResponse<String> bulkDeleteResponse = send(
+                "/api/products/bulk",
+                "DELETE",
+                String.format("[%d, %d]", bulkProductOneId, bulkProductTwoId)
+        );
+        assertEquals(204, bulkDeleteResponse.statusCode());
 
         final HttpResponse<String> getAllResponse = send("/api/products?pageNumber=0&pageSize=20", "GET", null);
         assertEquals(200, getAllResponse.statusCode());
@@ -100,7 +111,9 @@ class ProductApiIT {
         final HttpRequest request = switch (method) {
             case "POST" -> requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body)).build();
             case "PUT" -> requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(body)).build();
-            case "DELETE" -> requestBuilder.DELETE().build();
+            case "DELETE" -> body == null
+                    ? requestBuilder.DELETE().build()
+                    : requestBuilder.method("DELETE", HttpRequest.BodyPublishers.ofString(body)).build();
             default -> requestBuilder.GET().build();
         };
 

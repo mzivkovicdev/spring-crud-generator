@@ -162,6 +162,32 @@ class CrudMojoUtilsTest {
     }
 
     @Test
+    void createSpecMapper_yaml_canDeserializeEntityBulkDeleteConfiguration_nestedShape() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                    bulk:
+                      delete:
+                        enabled: true
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertEquals(true, spec.getEntities().get(0).isBulkDeleteEnabled());
+    }
+
+    @Test
     void createSpecMapper_yaml_rejectsEntityBulkCreateConfiguration_legacyBooleanShape() {
         final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
 
@@ -205,6 +231,29 @@ class CrudMojoUtilsTest {
         final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
         assertNotNull(spec);
         assertEquals(false, spec.getEntities().get(0).isBulkCreateEnabled());
+    }
+
+    @Test
+    void createSpecMapper_yaml_bulkDeleteDisabledWhenBulkConfigurationMissing() throws Exception {
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper("crud-spec.yaml");
+
+        final String yaml = """
+                configuration:
+                  database: postgresql
+                entities:
+                  - name: ProductModel
+                    fields:
+                      - name: id
+                        type: Long
+                        id:
+                          strategy: IDENTITY
+                      - name: name
+                        type: String
+                """;
+
+        final CrudSpecification spec = mapper.readValue(yaml, CrudSpecification.class);
+        assertNotNull(spec);
+        assertEquals(false, spec.getEntities().get(0).isBulkDeleteEnabled());
     }
 
     @Test
