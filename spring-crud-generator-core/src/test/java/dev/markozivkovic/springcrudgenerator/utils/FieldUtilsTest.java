@@ -1415,6 +1415,26 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("extractNonIdNonRelationFieldNamesForController converts OpenAPI temporal values")
+    void extractNonIdNonRelationFieldNamesForController_shouldConvertTemporalValues_whenSwagger() {
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final List<FieldDefinition> fields = List.of(
+                idField,
+                fieldWithNameAndType("triggeredAt", "LocalDateTime"),
+                fieldWithNameAndType("processedAt", "OffsetDateTime"),
+                fieldWithNameAndType("publishedAt", "Instant")
+        );
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForController(fields, true);
+
+        assertEquals(List.of(
+                "body.getTriggeredAt() != null ? body.getTriggeredAt().toLocalDateTime() : null",
+                "body.getProcessedAt()",
+                "body.getPublishedAt() != null ? body.getPublishedAt().toInstant() : null"
+        ), result);
+    }
+
+    @Test
     @DisplayName("extractNonIdNonRelationFieldNamesForController maps JSON field using mapper when swagger=false")
     void extractNonIdNonRelationFieldNamesForController_shouldMapJsonField_whenNonSwagger() {
         
