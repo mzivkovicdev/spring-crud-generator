@@ -59,6 +59,14 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         this.packageConfiguration = packageConfiguration;
     }
 
+    /**
+     * Generates mapper tests enabled for the supplied model and configured API styles.
+     * Models used exclusively as JSON fields are handled through their parent model's
+     * helper mapper and are therefore skipped here.
+     *
+     * @param modelDefinition the model for which mapper tests are generated
+     * @param outputDir the main source output directory used to derive the test output directory
+     */
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
@@ -221,6 +229,12 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         FileWriterUtils.writeToFile(outputDir, filePathResolved, className, sb.toString());
     }
 
+    /**
+     * Extracts non-relation, non-enum, and non-JSON fields used by mapper test assertions.
+     *
+     * @param modelDefinition the model containing fields to extract
+     * @return field template contexts containing field names and resolved types
+     */
     private static List<Map<String, String>> extractNonRelationNonEnumAndNonJsonFields(final ModelDefinition modelDefinition) {
 
         return modelDefinition.getFields().stream()
@@ -231,6 +245,12 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Extracts all fields used by helper mapper test assertions.
+     *
+     * @param modelDefinition the helper model containing fields to extract
+     * @return field template contexts containing field names and resolved types
+     */
     private static List<Map<String, String>> extractFields(final ModelDefinition modelDefinition) {
 
         return modelDefinition.getFields().stream()
@@ -238,12 +258,19 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Converts a field definition to the minimal FreeMarker context required by mapper tests.
+     *
+     * @param field the field definition to convert
+     * @return a template context containing the field name and resolved type
+     */
     private static Map<String, String> toFieldContext(final FieldDefinition field) {
 
-        return Map.of(
-                TemplateContextConstants.NAME, field.getName(),
-                TemplateContextConstants.FIELD_TYPE, field.getResolvedType()
-        );
+        final Map<String, String> context = new HashMap<>();
+        context.put(TemplateContextConstants.NAME, field.getName());
+        context.put(TemplateContextConstants.FIELD_TYPE, field.getResolvedType());
+
+        return context;
     }
     
 }
