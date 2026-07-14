@@ -314,8 +314,14 @@ class ${className} {
     private void verify${modelName}(final ${modelName} result, final ${swaggerModel} ${swaggerModel?uncap_first}) {
 
         assertThat(result).isNotNull();
-        <#list fieldNames as field>
-        assertThat(result.get${field?cap_first}()).isEqualTo(${swaggerModel?uncap_first}.get${field?cap_first}());
+        <#list basicFields as field>
+        <#if field.fieldType == "LocalDateTime">
+        assertThat(result.get${field.name?cap_first}()).isEqualTo(${swaggerModel?uncap_first}.get${field.name?cap_first}() == null ? null : ${swaggerModel?uncap_first}.get${field.name?cap_first}().toLocalDateTime());
+        <#elseif field.fieldType == "Instant">
+        assertThat(result.get${field.name?cap_first}()).isEqualTo(${swaggerModel?uncap_first}.get${field.name?cap_first}() == null ? null : ${swaggerModel?uncap_first}.get${field.name?cap_first}().toInstant());
+        <#else>
+        assertThat(result.get${field.name?cap_first}()).isEqualTo(${swaggerModel?uncap_first}.get${field.name?cap_first}());
+        </#if>
         </#list>
         <#list enumFields as field>
         assertThat(result.get${field?cap_first}().name()).isEqualTo(${swaggerModel?uncap_first}.get${field?cap_first}().name());
@@ -364,8 +370,12 @@ class ${className} {
     private void verify${swaggerModel}(final ${swaggerModel} result, final ${transferObjectName} ${transferObjectUncapFirst}) {
 
         assertThat(result).isNotNull();
-        <#list fieldNames as field>
-        assertThat(result.get${field?cap_first}()).isEqualTo(${transferObjectUncapFirst?uncap_first}.${field?uncap_first}());
+        <#list basicFields as field>
+        <#if field.fieldType == "LocalDateTime" || field.fieldType == "Instant">
+        assertThat(result.get${field.name?cap_first}()).isEqualTo(${transferObjectUncapFirst?uncap_first}.${field.name?uncap_first}() == null ? null : ${transferObjectUncapFirst?uncap_first}.${field.name?uncap_first}().atOffset(java.time.ZoneOffset.UTC));
+        <#else>
+        assertThat(result.get${field.name?cap_first}()).isEqualTo(${transferObjectUncapFirst?uncap_first}.${field.name?uncap_first}());
+        </#if>
         </#list>
         <#list enumFields as field>
         assertThat(result.get${field?cap_first}().name()).isEqualTo(${transferObjectUncapFirst?uncap_first}.${field?uncap_first}().name());

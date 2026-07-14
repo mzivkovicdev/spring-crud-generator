@@ -131,6 +131,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("idField", idField.getName());
         context.put("isGraphQL", isGraphQl);
         context.put("fieldNames", FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(modelDefinition.getFields()));
+        context.put("basicFields", extractNonRelationNonEnumAndNonJsonFields(modelDefinition));
         context.put("enumFields", FieldUtils.extractNamesOfEnumFields(modelDefinition.getFields()));
         context.put("swagger", swagger);
         context.put(TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties()));
@@ -195,6 +196,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(strippedModelName));
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
+        context.put("basicFields", extractFields(jsonModel));
         context.put("enumFields", enumFields);
         context.put(TemplateContextConstants.HELPER_MAPPER, true);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
@@ -217,6 +219,31 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                 .append(mapperTemplate);
         
         FileWriterUtils.writeToFile(outputDir, filePathResolved, className, sb.toString());
+    }
+
+    private static List<Map<String, String>> extractNonRelationNonEnumAndNonJsonFields(final ModelDefinition modelDefinition) {
+
+        return modelDefinition.getFields().stream()
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .filter(field -> !FieldUtils.isFieldEnum(field))
+                .filter(field -> !FieldUtils.isJsonField(field))
+                .map(MapperUnitTestGenerator::toFieldContext)
+                .collect(Collectors.toList());
+    }
+
+    private static List<Map<String, String>> extractFields(final ModelDefinition modelDefinition) {
+
+        return modelDefinition.getFields().stream()
+                .map(MapperUnitTestGenerator::toFieldContext)
+                .collect(Collectors.toList());
+    }
+
+    private static Map<String, String> toFieldContext(final FieldDefinition field) {
+
+        return Map.of(
+                TemplateContextConstants.NAME, field.getName(),
+                TemplateContextConstants.FIELD_TYPE, field.getResolvedType()
+        );
     }
     
 }

@@ -66,6 +66,8 @@ public class MapperTemplateContexts {
         context.put(TemplateContextConstants.BASE_COLLECTION_FIELDS, FieldUtils.extractBaseCollectionFieldNames(modelDefinition.getFields()));
         if (swagger) {
             context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(modelDefinition.getName()));
+            context.put(TemplateContextConstants.HAS_INSTANT_FIELD, FieldUtils.isAnyFieldInstant(modelDefinition.getFields()));
+            context.put(TemplateContextConstants.HAS_LOCAL_DATE_TIME_FIELD, FieldUtils.isAnyFieldLocalDateTime(modelDefinition.getFields()));
         }
         
         if (!relationFields.isEmpty() || !jsonFields.isEmpty()) {

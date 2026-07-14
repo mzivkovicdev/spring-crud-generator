@@ -1100,6 +1100,32 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("isAnyFieldOffsetDateTime returns true when at least one field is of type OffsetDateTime")
+    void isAnyFieldOffsetDateTime_shouldReturnTrue_whenOffsetDateTimeFieldPresent() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("processedAt", "OffsetDateTime"),
+                fieldWithNameAndType("name", "String")
+        );
+
+        final boolean result = FieldUtils.isAnyFieldOffsetDateTime(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldInstant returns true when at least one field is of type Instant")
+    void isAnyFieldInstant_shouldReturnTrue_whenInstantFieldPresent() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("publishedAt", "Instant"),
+                fieldWithNameAndType("name", "String")
+        );
+
+        final boolean result = FieldUtils.isAnyFieldInstant(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
     @DisplayName("isAnyFieldBigDecimal returns false when there are no BigDecimal fields")
     void isAnyFieldBigDecimal_shouldReturnFalse_whenNoBigDecimalFields() {
         

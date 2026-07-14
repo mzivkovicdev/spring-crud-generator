@@ -57,7 +57,7 @@ public class SwaggerUtils {
      * <li>double -> number with format double</li>
      * <li>big decimal -> number</li>
      * <li>LocalDate -> string with format date</li>
-     * <li>LocalDateTime, Instant, Date -> string with format date-time</li>
+     * <li>LocalDateTime, OffsetDateTime, Instant, Date -> string with format date-time</li>
      * <li>enum -> string with enum values</li>
      * <li>all others -> string</li>
      * </ul>
@@ -122,6 +122,7 @@ public class SwaggerUtils {
                 return typeContext;
 
             case "LOCALDATETIME":
+            case "OFFSETDATETIME":
             case "INSTANT":
             case "DATE":
                 typeContext.put("type", "string");

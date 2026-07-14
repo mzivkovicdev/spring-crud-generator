@@ -44,7 +44,7 @@
                     </#list>
 
                     return new ${modelName?cap_first}(
-                        <#list inputFields as arg><#if arg.isRelation>${arg.field}<#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}<#if !swagger>TO<#else>Payload</#if>To${arg.fieldType?cap_first}(item.<#if !swagger>${arg.field}()<#else>get${arg.field?cap_first}()</#if>)<#else><#if swagger && arg.isEnum>${arg.field}Enum<#else>item.<#if !swagger>${arg.field}()<#else>get${arg.field?cap_first}()</#if></#if></#if></#if><#if arg_has_next>, </#if></#list>
+                        <#list inputFields as arg><#if arg.isRelation>${arg.field}<#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}<#if !swagger>TO<#else>Payload</#if>To${arg.fieldType?cap_first}(item.<#if !swagger>${arg.field}()<#else>get${arg.field?cap_first}()</#if>)<#else><#if swagger && arg.isEnum>${arg.field}Enum<#elseif swagger && arg.fieldType == "LocalDateTime">item.get${arg.field?cap_first}() != null ? item.get${arg.field?cap_first}().toLocalDateTime() : null<#elseif swagger && arg.fieldType == "Instant">item.get${arg.field?cap_first}() != null ? item.get${arg.field?cap_first}().toInstant() : null<#else>item.<#if !swagger>${arg.field}()<#else>get${arg.field?cap_first}()</#if></#if></#if></#if><#if arg_has_next>, </#if></#list>
                     );
                 })
                 .toList();
