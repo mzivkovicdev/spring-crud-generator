@@ -45,8 +45,10 @@ public class FieldUtils {
     private static final String BIG_INTEGER = "BigInteger";
     private static final String BIG_DECIMAL = "BigDecimal";
     private static final String UUID = "UUID";
+    private static final String INSTANT = "Instant";
     private static final String LOCAL_DATE = "LocalDate";
     private static final String LOCAL_DATE_TIME = "LocalDateTime";
+    private static final String OFFSET_DATE_TIME = "OffsetDateTime";
     private static final String ENUM = "Enum";
 
     private static final Pattern jsonPattern = Pattern.compile("^JSONB?<(.+)>$");
@@ -448,6 +450,30 @@ public class FieldUtils {
     }
 
     /**
+     * Returns true if any field in the given list of fields is of type OffsetDateTime,
+     * false otherwise.
+     *
+     * @param fields The list of fields to check.
+     * @return True if any field is of type OffsetDateTime, false otherwise.
+     */
+    public static boolean isAnyFieldOffsetDateTime(final List<FieldDefinition> fields) {
+
+        return fields.stream().anyMatch(field -> OFFSET_DATE_TIME.equalsIgnoreCase(field.getType()));
+    }
+
+    /**
+     * Returns true if any field in the given list of fields is of type Instant,
+     * false otherwise.
+     *
+     * @param fields The list of fields to check.
+     * @return True if any field is of type Instant, false otherwise.
+     */
+    public static boolean isAnyFieldInstant(final List<FieldDefinition> fields) {
+
+        return fields.stream().anyMatch(field -> INSTANT.equalsIgnoreCase(field.getType()));
+    }
+
+    /**
      * Returns true if any field in the given list of fields is of type BigDecimal,
      * false otherwise.
      * 
@@ -579,6 +605,22 @@ public class FieldUtils {
                             "body.get%s() != null ? %s.valueOf(body.get%s().name()) : null",
                             StringUtils.capitalize(field.getName()),
                             StringUtils.capitalize(field.getResolvedType()),
+                            StringUtils.capitalize(field.getName())
+                        );
+                    }
+
+                    if (swagger && LOCAL_DATE_TIME.equalsIgnoreCase(field.getResolvedType())) {
+                        return String.format(
+                            "body.get%s() != null ? body.get%s().toLocalDateTime() : null",
+                            StringUtils.capitalize(field.getName()),
+                            StringUtils.capitalize(field.getName())
+                        );
+                    }
+
+                    if (swagger && INSTANT.equalsIgnoreCase(field.getResolvedType())) {
+                        return String.format(
+                            "body.get%s() != null ? body.get%s().toInstant() : null",
+                            StringUtils.capitalize(field.getName()),
                             StringUtils.capitalize(field.getName())
                         );
                     }

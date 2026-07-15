@@ -1100,6 +1100,32 @@ class FieldUtilsTest {
     }
 
     @Test
+    @DisplayName("isAnyFieldOffsetDateTime returns true when at least one field is of type OffsetDateTime")
+    void isAnyFieldOffsetDateTime_shouldReturnTrue_whenOffsetDateTimeFieldPresent() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("processedAt", "OffsetDateTime"),
+                fieldWithNameAndType("name", "String")
+        );
+
+        final boolean result = FieldUtils.isAnyFieldOffsetDateTime(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("isAnyFieldInstant returns true when at least one field is of type Instant")
+    void isAnyFieldInstant_shouldReturnTrue_whenInstantFieldPresent() {
+        final List<FieldDefinition> fields = List.of(
+                fieldWithNameAndType("publishedAt", "Instant"),
+                fieldWithNameAndType("name", "String")
+        );
+
+        final boolean result = FieldUtils.isAnyFieldInstant(fields);
+
+        assertTrue(result);
+    }
+
+    @Test
     @DisplayName("isAnyFieldBigDecimal returns false when there are no BigDecimal fields")
     void isAnyFieldBigDecimal_shouldReturnFalse_whenNoBigDecimalFields() {
         
@@ -1386,6 +1412,26 @@ class FieldUtilsTest {
 
         assertEquals(1, result.size());
         assertEquals("body.getName()", result.get(0));
+    }
+
+    @Test
+    @DisplayName("extractNonIdNonRelationFieldNamesForController converts OpenAPI temporal values")
+    void extractNonIdNonRelationFieldNamesForController_shouldConvertTemporalValues_whenSwagger() {
+        final FieldDefinition idField = fieldWithNameTypeAndId("id", "Long", true);
+        final List<FieldDefinition> fields = List.of(
+                idField,
+                fieldWithNameAndType("triggeredAt", "LocalDateTime"),
+                fieldWithNameAndType("processedAt", "OffsetDateTime"),
+                fieldWithNameAndType("publishedAt", "Instant")
+        );
+
+        final List<String> result = FieldUtils.extractNonIdNonRelationFieldNamesForController(fields, true);
+
+        assertEquals(List.of(
+                "body.getTriggeredAt() != null ? body.getTriggeredAt().toLocalDateTime() : null",
+                "body.getProcessedAt()",
+                "body.getPublishedAt() != null ? body.getPublishedAt().toInstant() : null"
+        ), result);
     }
 
     @Test

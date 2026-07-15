@@ -120,7 +120,7 @@ class ${className} {
                 <#if !swagger>
                 <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.${arg.field}())<#else>body.${arg.field}()</#if></#if><#if arg_has_next>, </#if></#list>
                 <#else>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
+                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if arg.isEnum>${arg.field}Enum<#elseif arg.fieldType == "LocalDateTime">body.get${arg.field?cap_first}() != null ? body.get${arg.field?cap_first}().toLocalDateTime() : null<#elseif arg.fieldType == "Instant">body.get${arg.field?cap_first}() != null ? body.get${arg.field?cap_first}().toInstant() : null<#else>body.get${arg.field?cap_first}()</#if></#if></#if><#if arg_has_next>, </#if></#list>
                 </#if>
         )).thenReturn(${modelName?uncap_first});
 
@@ -140,7 +140,7 @@ class ${className} {
                 <#if !swagger>
                 <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}TOTo${arg.fieldType?cap_first}(body.${arg.field}())<#else>body.${arg.field}()</#if></#if><#if arg_has_next>, </#if></#list>
                 <#else>
-                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if !arg.isEnum>body.get${arg.field?cap_first}()<#else>${arg.field}Enum</#if></#if></#if><#if arg_has_next>, </#if></#list>
+                <#list inputFields as arg><#if arg.isRelation><#if arg.isCollection>${arg.field}Ids<#else>${arg.field}Id</#if><#else><#if arg.isJsonField><#assign jsonMapperClass = arg.fieldType?uncap_first + "Mapper">${jsonMapperClass}.map${arg.fieldType?cap_first}PayloadTo${arg.fieldType?cap_first}(body.get${arg.field?cap_first}())<#else><#if arg.isEnum>${arg.field}Enum<#elseif arg.fieldType == "LocalDateTime">body.get${arg.field?cap_first}() != null ? body.get${arg.field?cap_first}().toLocalDateTime() : null<#elseif arg.fieldType == "Instant">body.get${arg.field?cap_first}() != null ? body.get${arg.field?cap_first}().toInstant() : null<#else>body.get${arg.field?cap_first}()</#if></#if></#if><#if arg_has_next>, </#if></#list>
                 </#if>
         );
     }

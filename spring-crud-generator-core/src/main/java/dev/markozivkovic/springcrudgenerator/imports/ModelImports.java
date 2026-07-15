@@ -76,8 +76,10 @@ public class ModelImports {
         ImportCommon.importListAndSetForJsonFields(modelDefinition, imports, CollectionImplImportsMode.INCLUDE_DEFAULT_IMPLS);
         ImportCommon.addIf(FieldUtils.isAnyFieldBigDecimal(fields), imports, ImportConstants.Java.BIG_DECIMAL);
         ImportCommon.addIf(FieldUtils.isAnyFieldBigInteger(fields), imports, ImportConstants.Java.BIG_INTEGER);
+        ImportCommon.addIf(FieldUtils.isAnyFieldInstant(fields), imports, ImportConstants.Java.INSTANT);
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDate(fields), imports, ImportConstants.Java.LOCAL_DATE);
         ImportCommon.addIf(FieldUtils.isAnyFieldLocalDateTime(fields), imports, ImportConstants.Java.LOCAL_DATE_TIME);
+        ImportCommon.addIf(FieldUtils.isAnyFieldOffsetDateTime(fields), imports, ImportConstants.Java.OFFSET_DATE_TIME);
         ImportCommon.addIf(importObjects, imports, ImportConstants.Java.OBJECTS);
         
         if (modelDefinition.getAudit() != null) {

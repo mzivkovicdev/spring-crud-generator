@@ -50,6 +50,8 @@ public final class TemplateContextConstants {
     public static final String NON_ID_FIELD_NAMES = "nonIdFieldNames";
     public static final String AUDIT_ENABLED = "auditEnabled";
     public static final String AUDIT_TYPE = "auditType";
+    public static final String HAS_INSTANT_FIELD = "hasInstantField";
+    public static final String HAS_LOCAL_DATE_TIME_FIELD = "hasLocalDateTimeField";
     public static final String SORT_ENABLED = "sortEnabled";
     public static final String SORT_ALLOWED_FIELDS = "sortAllowedFields";
     public static final String SORT_ALLOWED_FIELDS_CSV = "sortAllowedFieldsCsv";

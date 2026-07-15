@@ -59,6 +59,14 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         this.packageConfiguration = packageConfiguration;
     }
 
+    /**
+     * Generates mapper tests enabled for the supplied model and configured API styles.
+     * Models used exclusively as JSON fields are handled through their parent model's
+     * helper mapper and are therefore skipped here.
+     *
+     * @param modelDefinition the model for which mapper tests are generated
+     * @param outputDir the main source output directory used to derive the test output directory
+     */
     @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
         
@@ -131,6 +139,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put("idField", idField.getName());
         context.put("isGraphQL", isGraphQl);
         context.put("fieldNames", FieldUtils.extractNonRelationNonEnumAndNonJsonFieldNames(modelDefinition.getFields()));
+        context.put("basicFields", extractNonRelationNonEnumAndNonJsonFields(modelDefinition));
         context.put("enumFields", FieldUtils.extractNamesOfEnumFields(modelDefinition.getFields()));
         context.put("swagger", swagger);
         context.put(TemplateContextConstants.OPEN_IN_VIEW_ENABLED, AdditionalPropertiesUtils.isOpenInViewEnabled(this.configuration.getAdditionalProperties()));
@@ -195,6 +204,7 @@ public class MapperUnitTestGenerator implements CodeGenerator {
         context.put(TemplateContextConstants.SWAGGER_MODEL, ModelNameUtils.computeOpenApiModelName(strippedModelName));
         context.put("generateAllHelperMethods", swagger);
         context.put("fieldNames", FieldUtils.extractFieldNames(jsonModel.getFields()));
+        context.put("basicFields", extractFields(jsonModel));
         context.put("enumFields", enumFields);
         context.put(TemplateContextConstants.HELPER_MAPPER, true);
         context.putAll(DataGeneratorTemplateContext.computeDataGeneratorContext(generatorConfig));
@@ -217,6 +227,50 @@ public class MapperUnitTestGenerator implements CodeGenerator {
                 .append(mapperTemplate);
         
         FileWriterUtils.writeToFile(outputDir, filePathResolved, className, sb.toString());
+    }
+
+    /**
+     * Extracts non-relation, non-enum, and non-JSON fields used by mapper test assertions.
+     *
+     * @param modelDefinition the model containing fields to extract
+     * @return field template contexts containing field names and resolved types
+     */
+    private static List<Map<String, String>> extractNonRelationNonEnumAndNonJsonFields(final ModelDefinition modelDefinition) {
+
+        return modelDefinition.getFields().stream()
+                .filter(field -> Objects.isNull(field.getRelation()))
+                .filter(field -> !FieldUtils.isFieldEnum(field))
+                .filter(field -> !FieldUtils.isJsonField(field))
+                .map(MapperUnitTestGenerator::toFieldContext)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extracts all fields used by helper mapper test assertions.
+     *
+     * @param modelDefinition the helper model containing fields to extract
+     * @return field template contexts containing field names and resolved types
+     */
+    private static List<Map<String, String>> extractFields(final ModelDefinition modelDefinition) {
+
+        return modelDefinition.getFields().stream()
+                .map(MapperUnitTestGenerator::toFieldContext)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Converts a field definition to the minimal FreeMarker context required by mapper tests.
+     *
+     * @param field the field definition to convert
+     * @return a template context containing the field name and resolved type
+     */
+    private static Map<String, String> toFieldContext(final FieldDefinition field) {
+
+        final Map<String, String> context = new HashMap<>();
+        context.put(TemplateContextConstants.NAME, field.getName());
+        context.put(TemplateContextConstants.FIELD_TYPE, field.getResolvedType());
+
+        return context;
     }
     
 }

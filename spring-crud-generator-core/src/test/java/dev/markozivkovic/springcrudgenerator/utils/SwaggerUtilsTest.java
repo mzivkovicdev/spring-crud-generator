@@ -169,6 +169,14 @@ class SwaggerUtilsTest {
     }
 
     @Test
+    @DisplayName("resolve: OFFSETDATETIME -> string/date-time")
+    void resolve_offsetDateTime_returnsStringDateTime() {
+        final Map<String, Object> result = SwaggerUtils.resolve("OffsetDateTime", null);
+
+        assertEquals(mapOf("type", "string", "format", "date-time"), result);
+    }
+
+    @Test
     @DisplayName("resolve: INSTANT -> string/date-time")
     void resolve_instant_returnsStringDateTime() {
         final Map<String, Object> result = SwaggerUtils.resolve("Instant", null);

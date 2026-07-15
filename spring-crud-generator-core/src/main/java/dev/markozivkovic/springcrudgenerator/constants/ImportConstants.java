@@ -46,6 +46,7 @@ public final class ImportConstants {
         public static final String INSTANT = "java.time.Instant";
         public static final String LOCAL_DATE = "java.time.LocalDate";
         public static final String LOCAL_DATE_TIME = "java.time.LocalDateTime";
+        public static final String OFFSET_DATE_TIME = "java.time.OffsetDateTime";
     }
 
     public static final class Javax {

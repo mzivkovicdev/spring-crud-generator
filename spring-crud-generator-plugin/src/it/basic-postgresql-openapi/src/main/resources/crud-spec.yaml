@@ -30,3 +30,9 @@ entities:
           updateable: true
           unique: true
           length: 10000
+      - name: triggeredAt
+        type: LocalDateTime
+      - name: processedAt
+        type: OffsetDateTime
+      - name: publishedAt
+        type: Instant
