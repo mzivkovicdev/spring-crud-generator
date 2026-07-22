@@ -62,7 +62,7 @@ src/main/java/com/example/myapp/
 │   └── UserRepository.java
 ├── model/                         # Entities
 │   └── UserEntity.java
-├── transferobjects/               # Transfer objects
+├── transferobject/               # Transfer objects
 │   ├── request/
 │   │   └── UserCreateTO.java
 │   └── response/
