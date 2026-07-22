@@ -66,6 +66,7 @@ src/main/java/com/example/myapp/
 │   ├── request/
 │   │   └── UserCreateTO.java
 │   └── response/
+│       ├── PageTO.java
 │       └── UserTO.java
 ├── exception/                     # Custom exceptions
 │   ├── ResourceNotFoundException.java
@@ -181,12 +182,6 @@ Controller rules:
 TO means transport object in this skill. Use records for immutable request and response TOs when compatible with the serializer and project conventions.
 
 ```java
-/**
- * Request to register a customer.
- *
- * @param name  customer name; must not be blank and must contain at most 120 characters
- * @param email customer email; must be valid and contain at most 254 characters
- */
 public record CreateCustomerRequest(
         @NotBlank @Size(max = 120) String name,
         @NotBlank @Email @Size(max = 254) String email) {
@@ -196,14 +191,6 @@ public record CreateCustomerRequest(
     }
 }
 
-/**
- * Customer data returned by the API.
- *
- * @param id        customer identifier; never {@code null}
- * @param name      customer name; never {@code null}
- * @param email     customer email; never {@code null}
- * @param createdAt creation timestamp; never {@code null}
- */
 public record CustomerResponse(UUID id, String name, String email, Instant createdAt) {
 
     static CustomerResponse from(CustomerView customer) {
@@ -537,7 +524,6 @@ At minimum, decide and implement the relevant levels:
 - REST controller slice test for routing, serialization, content type, validation, status, security, and errors; use `@WebMvcTest` with `MockMvc` or `MockMvcTester` for the servlet stack already used by the project;
 - persistence integration test for queries, constraints, transaction behavior, and MySQL semantics;
 - client/cache test for external failure, timeout, retry, serialization, TTL, or invalidation;
-- assembled application test only when cross-layer wiring is the behavior under test.
 
 Every bug fix needs a regression test that demonstrates the previous failure.
 
