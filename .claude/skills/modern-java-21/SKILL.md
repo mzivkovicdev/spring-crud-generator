@@ -1,0 +1,361 @@
+---
+name: modern-java-21
+description: Modern Java 21+ coding standard for every creation, edit, refactor, bug fix, or review of a .java file. Use whenever Java source is touched. Enforces import cleanup and ordering, readability, immutability, Javadoc, exception handling, method and class size, null safety, and modern language features without copying legacy anti-patterns.
+---
+
+# Modern Java 21+ Coding Skill
+
+Write production-grade Java that is easy to understand, test, change, and operate. Existing code is context for behavior, not automatic permission to repeat its design mistakes.
+
+## Non-negotiable rule for every touched Java file
+
+Whenever a `.java` file is created or modified, even for a one-line change:
+
+1. Remove every unused, duplicate, and obsolete import from that file.
+2. Add explicit imports for referenced types; do not use fully qualified names in normal code to avoid an import conflict unless the conflict is real.
+3. Never introduce wildcard imports such as `java.util.*` or `import static ...*`.
+4. Organize imports into the exact groups below. Sort every group lexicographically by the complete import statement.
+5. Separate consecutive non-empty groups with exactly one blank line. Do not leave blank lines for empty groups.
+6. If the repository has an enforced formatter, Checkstyle, Spotless, or IDE import layout that conflicts with this order, follow the build-enforced layout and report the conflict instead of repeatedly fighting the formatter.
+7. Run the formatter or the narrowest available compile/static-analysis check to confirm imports are valid.
+
+Use this group order:
+
+1. all `import static ...` statements;
+2. Java SE imports: `java.*`;
+3. Jakarta EE imports: `jakarta.*`;
+4. legacy Java EE/JDK extension imports: `javax.*`;
+5. imports from the current project's base package, inferred from its `package` declarations, for example `com.acme.*`;
+6. Spring imports: `org.springframework.*`;
+7. all remaining third-party imports, for example `com.fasterxml.*`, `io.*`, `org.hibernate.*`, `org.junit.*`, `reactor.*`, and `software.amazon.*`.
+
+Do not classify every `com.*` import as project code. Only the repository's actual base package belongs to the project group; libraries such as `com.fasterxml.*` belong to the remaining third-party group.
+
+Correct default ordering:
+
+
+```java
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+import jakarta.persistence.Entity;
+import jakarta.validation.Valid;
+import javax.crypto.Cipher;
+import javax.sql.DataSource;
+
+import com.acme.customer.Customer;
+import com.acme.customer.CustomerRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import reactor.core.publisher.Mono;
+import software.amazon.awssdk.services.s3.S3Client;
+
+```
+
+Incorrect:
+
+```java
+import java.util.*;                     // wildcard
+import org.junit.jupiter.api.Test;
+import java.time.Instant;               // not sorted
+import com.acme.customer.Customer;
+import java.util.Optional;              // duplicate java.util group
+import static org.mockito.Mockito.*;    // wildcard static import
+import java.time.Clock;                 // unused import
+```
+
+Do not reorganize imports across untouched files as part of an unrelated feature. The rule applies to every file actually touched by the change.
+
+## Modernity and compatibility
+
+- Inspect the configured Java release before coding. Java 21 is the minimum expected baseline, but use only stable features supported by the project.
+- Do not enable preview features or change the Java version unless the task explicitly requires it.
+- Prefer a modern construct when it makes the code clearer, safer, or more exhaustive; do not modernize merely to make syntax shorter.
+- Preserve existing public behavior and serialized contracts unless the feature intentionally changes them.
+- When nearby legacy code conflicts with this skill, keep compatibility at the boundary and make new internals clean. Do not expand the refactor outside the task.
+
+## Type and data design
+
+### Prefer immutable data
+
+- Make dependencies and fields `final` unless mutation is part of the object's responsibility.
+- Return immutable snapshots or unmodifiable views at boundaries; never leak a mutable internal collection.
+- Use records for immutable request/response DTOs, commands, query results, events, and value objects when their semantics fit.
+- Do not use records as JPA entities.
+- Validate record invariants in a compact constructor when they are intrinsic to the value.
+
+```java
+public record Money(BigDecimal amount, Currency currency) {
+
+    public Money {
+        Objects.requireNonNull(amount, "amount must not be null");
+        Objects.requireNonNull(currency, "currency must not be null");
+        if (amount.signum() < 0) {
+            throw new IllegalArgumentException("amount must not be negative");
+        }
+    }
+}
+```
+
+### Use domain types
+
+Prefer a meaningful type such as `CustomerId`, `EmailAddress`, `Money`, or `OrderNumber` when it prevents mixing values or centralizes a real invariant. Do not wrap every primitive without a domain reason.
+
+### Null and Optional
+
+- Return empty collections, arrays, streams, or maps rather than `null`.
+- Use `Optional<T>` mainly as a return type for a value that may legitimately be absent.
+- Do not use `Optional` for fields, record components, entity attributes, collection elements, or method parameters.
+- Do not call `Optional.get()` without proving presence. Prefer `orElseThrow`, `map`, `flatMap`, or an explicit branch.
+- Make nullability explicit through validation and contracts. Do not scatter defensive null checks when null should be impossible.
+
+## Language features
+
+### Records
+
+Use a record for transparent immutable data:
+
+```java
+public record CreateCustomerCommand(String name, String email) {}
+```
+
+Do not put mutable collections into records without making defensive copies:
+
+```java
+public record CustomerView(UUID id, List<AddressView> addresses) {
+
+    public CustomerView {
+        addresses = List.copyOf(addresses);
+    }
+}
+```
+
+### Pattern matching and switch expressions
+
+Use exhaustive switch expressions for closed domain variants:
+
+```java
+return switch (paymentResult) {
+    case PaymentSucceeded success -> receiptFor(success);
+    case PaymentRejected rejected -> rejectionFor(rejected);
+    case PaymentPending pending -> pendingFor(pending);
+};
+```
+
+Use a sealed hierarchy only when the variants are intentionally closed and controlled by the same domain.
+
+### Explicit local variable types
+
+Never use Java local-variable type inference. The `var` keyword is forbidden in production code, test code, examples, generated code, and refactoring output.
+
+Always write the explicit type:
+
+```java
+final Customer customer = customerRepository.getRequired(customerId);
+final CalculationResult result = calculate(input);
+```
+
+Do not preserve an existing `var` declaration in a Java file that is already being modified when it can be safely converted within the task. Do not perform a repository-wide replacement in untouched files as part of an unrelated change.
+
+### Streams
+
+- Use streams for readable transformations, filtering, grouping, and aggregation.
+- Use a loop when it is clearer, needs early exit, handles checked failures, or performs several stateful steps.
+- Do not hide remote calls or repository calls inside stream operations.
+- Do not use parallel streams in request handling or for blocking I/O.
+- Avoid deeply nested stream pipelines and side effects in `map`, `filter`, or `peek`.
+
+## Classes and methods
+
+- Give each class one cohesive reason to change.
+- Keep methods at one level of abstraction and name extracted operations by intent.
+- Prefer guard clauses over deep nesting.
+- A method over roughly 40 lines requires scrutiny. A method over 60 lines or a class over 1000 lines must be refactored unless a concrete reason is documented.
+- Treat more than seven parameters, boolean behavior flags, nested conditionals, and high cognitive complexity as design warnings.
+- Do not game size rules by extracting meaningless one-line methods or creating generic `Utils` dumping grounds.
+- Prefer composition over inheritance.
+- Create an interface for a real boundary, multiple behavior, a plugin strategy, or a useful port. Do not mechanically create `FooService` plus `FooServiceImpl` for every service.
+
+Example of cohesive orchestration:
+
+```java
+public class CustomerRegistrationService {
+
+    private final CustomerRepository customerRepository;
+    private final CustomerEventPublisher eventPublisher;
+    private final Clock clock;
+
+    public CustomerRegistrationService(
+            final CustomerRepository customerRepository,
+            final CustomerEventPublisher eventPublisher,
+            final Clock clock) {
+
+        this.customerRepository = customerRepository;
+        this.eventPublisher = eventPublisher;
+        this.clock = clock;
+    }
+
+    public CustomerId register(final RegisterCustomer command) {
+        ensureEmailIsAvailable(command.email());
+
+        final Customer customer = Customer.register(command.name(), command.email(), Instant.now(clock));
+        customerRepository.add(customer);
+        eventPublisher.publish(new CustomerRegistered(customer.id()));
+
+        return customer.id();
+    }
+
+    private void ensureEmailIsAvailable(final EmailAddress email) {
+        if (customerRepository.existsByEmail(email)) {
+            throw new EmailAlreadyUsedException(email);
+        }
+    }
+}
+```
+
+## Dependency injection
+
+- Use constructor injection.
+- Do not use field injection, static mutable dependencies, or service locators.
+- Prefer an explicit constructor. Lombok `@RequiredArgsConstructor` is acceptable only when Lombok is already approved by the project and the generated constructor does not hide an oversized dependency list.
+- Many constructor dependencies usually indicate too many responsibilities; split the class by behavior instead of hiding them.
+
+## Exceptions
+
+- Throw a domain/application exception that communicates the failure to its caller.
+- Preserve the original cause when translating infrastructure failures.
+- Catch an exception only when adding context, translating at a boundary, compensating, retrying under an explicit policy, or producing a stable external response.
+- Never swallow an exception or return fake success.
+- Do not catch `Throwable`; avoid broad `Exception` catches except at a true top-level boundary.
+- Do not log and rethrow the same failure at every layer. Log once at the boundary that owns operational handling.
+- Exception messages must be actionable but must not expose secrets or sensitive personal data.
+
+```java
+try {
+    return paymentClient.charge(request);
+} catch (PaymentProviderException exception) {
+    throw new PaymentUnavailableException(orderId, exception);
+}
+```
+
+## Time, IDs, and nondeterminism
+
+- Inject `Clock` rather than calling `Instant.now()` or `LocalDateTime.now()` throughout business logic.
+- Inject an ID generator when deterministic testing or provider-specific formats matter.
+- Use `Instant` for a point on the timeline, `LocalDate` for a calendar date, and an explicit `ZoneId` for business-zone conversion.
+- Store and exchange timestamps with an explicit UTC/offset policy.
+- Do not use `Thread.sleep` for coordination.
+
+## Javadoc and comments
+
+Add complete Javadoc to:
+
+- public and protected APIs;
+- extension points and interfaces implemented outside the package;
+- non-obvious invariants, preconditions, side effects, blocking behavior, concurrency guarantees, transaction requirements, retry behavior, and failure modes;
+- methods whose contract cannot be understood from their signature and type names.
+
+Javadoc should explain the contract and the reason, not narrate the implementation. A public or protected method Javadoc is incomplete unless it contains every applicable tag:
+
+- `@param parameterName` for every method or constructor parameter, including semantic meaning, accepted range/format, nullability, units, and ownership when relevant;
+- `@param <T>` for every generic type parameter;
+- `@return` for every non-`void` method, describing the returned value/type, nullability, mutability/ownership, and important state guarantees;
+- `@throws ExceptionType` for every checked exception and every runtime exception that is part of the public contract, with the exact condition that causes it;
+- `@deprecated` with the replacement and migration direction whenever `@Deprecated` is used.
+
+Do not add `@return` to constructors or `void` methods. Do not document internal implementation exceptions that cannot escape the API. Keep tags in the order: type parameters, value parameters in signature order, return value, exceptions, then optional `@since`, `@see`, or `@deprecated` metadata.
+
+```java
+/**
+ * Reserves inventory for the supplied order.
+ *
+ * <p>The operation is idempotent for the same order identifier. A successful return guarantees
+ * that the reservation is visible to subsequent inventory reads.
+ *
+ * @param orderId the unique identifier of the order requesting inventory; must not be {@code null}
+ * @param lines   the non-empty immutable list of order lines to reserve; must not be {@code null}
+ *                and must not contain {@code null} elements
+ * @return        a {@link Reservation} containing the reserved quantities and reservation identifier;
+ *                never {@code null}
+ * @throws InsufficientInventoryException when any requested item cannot be reserved
+ * @throws InventoryUnavailableException when the inventory provider cannot be reached
+ */
+Reservation reserve(final OrderId orderId, final List<OrderLine> lines);
+```
+
+Complete generic-type example:
+
+```java
+/**
+ * Returns a page of values matching the supplied query.
+ *
+ * @param <T>         the immutable result element type
+ * @param query       the query criteria; must not be {@code null}
+ * @param pageRequest the zero-based page request including deterministic sorting; must not be
+ *                    {@code null}
+ * @return             a {@link Page} of matching values; never {@code null}
+ * @throws InvalidQueryException when the query contains an unsupported filter or sort field
+ */
+<T> Page<T> search(final SearchQuery query, final PageRequest pageRequest);
+```
+
+For records, document every component with `@param`. For public classes/interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. For an override, use `{@inheritDoc}` only when the inherited contract is fully accurate; otherwise document the additional guarantees, restrictions, or exceptions.
+
+Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remove stale comments when the implementation changes.
+
+## Logging
+
+- Use parameterized logging rather than string concatenation.
+- Log stable identifiers and outcomes, not entire objects or payloads.
+- Never log credentials, tokens, cookies, authorization headers, secrets, or unnecessary personal data.
+- Use `ERROR` for failures that require action, `WARN` for degraded/expected exceptional conditions, `INFO` for significant lifecycle/business events, and `DEBUG` for diagnostic detail.
+- Avoid duplicate logging of the same exception across layers.
+
+## Tests are part of the code change
+
+- Every new behavior requires automated tests.
+- Every bug fix requires a regression test.
+- Refactoring risky legacy code requires characterization tests before behavior changes.
+- Test externally observable behavior rather than private methods.
+- Use fixed time and deterministic data.
+- Do not delete, disable, weaken, or ignore a failing test to make the build pass.
+- A change is incomplete when required tests fail or could not be run; report the exact blocker.
+
+## Forbidden patterns
+
+- wildcard or unused imports;
+- the `var` keyword;
+- field injection;
+- `Optional` fields or parameters;
+- `null` collections;
+- 100+ line methods;
+- God classes and generic utility dumping grounds;
+- business logic in controllers or persistence callbacks;
+- broad exception swallowing;
+- mutable global state;
+- hardcoded secrets or environment values;
+- copying a legacy pattern without evaluating it;
+- generated code without tests.
+
+## Completion checklist
+
+Before finishing any Java task:
+
+- [ ] Every touched Java file has clean, correctly ordered imports.
+- [ ] The configured formatter and relevant static checks were run.
+- [ ] New code uses the project's Java version and no unapproved preview feature.
+- [ ] Methods and classes remain cohesive and reasonably sized.
+- [ ] Nullability, exceptions, time, and mutability are explicit.
+- [ ] Required Javadoc documents contracts and non-obvious behavior.
+- [ ] Tests cover new or changed behavior and pass.
+- [ ] The diff contains no forbidden pattern listed above.

@@ -33,4 +33,4 @@ build/
 .vscode/
 TODO.txt
 output/
-.claude
+.claude/settings.local.json
