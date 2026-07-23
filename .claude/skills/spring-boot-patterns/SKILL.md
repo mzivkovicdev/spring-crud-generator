@@ -240,15 +240,6 @@ public interface UserService {
     UserEntity getById(final Long id);
 
     /**
-     * Returns a bounded page of users.
-     *
-     * @param pageNumber zero-based page index; must not be negative
-     * @param pageSize   page size; must be between 1 and 100
-     * @return           the requested page; never {@code null}
-     */
-    Page<UserEntity> getAll(final Integer pageNumber, final Integer pageSize);
-
-    /**
      * Creates a user.
      *
      * @param username username; must satisfy the validated API contract
@@ -274,12 +265,12 @@ public interface UserService {
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private final UserMapper userMapper = Mappers.getMapper(UserMapper.java);
+    private final UserMapper userMapper = Mappers.getMapper(UserMapper.class);
     private final UserRepository userRepository;
 
     /** {@inheritDoc} */
     @Override
-    public UserResponse findById(final Long id) {
+    public UserResponse getById(final Long id) {
         return this.userRepository.findById(id)
             .map(userMapper::toResponse)
             .orElseThrow(() -> new ResourceNotFoundException("User", id));
