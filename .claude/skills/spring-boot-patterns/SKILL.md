@@ -11,7 +11,7 @@ Implement vertical, tested features using the project's supported Spring Boot ve
 
 Apply the repository skill `modern-java-21` to every Java file touched by this workflow. Its rules for explicit types, complete Javadoc, imports, null safety, exceptions, class/method size, and tests are mandatory here as well.
 
-`modern-java-21` owns Java language and source-style rules; this skill owns Spring Boot architecture and framework usage. The stricter compatible rule wins. In particular, never use `var`, and document every public or protected type, constructor, and method with the complete Javadoc required by `modern-java-21`.
+`modern-java-21` owns Java language and source-style rules; this skill owns Spring Boot architecture and framework usage. The stricter compatible rule wins. In particular, never use `var`. Add Javadoc only for actual APIs and non-obvious contracts, as required by `modern-java-21`; the `public` or `protected` modifier alone does not require Javadoc.
 
 This skill may retain established project choices such as explicit `final` parameters and local variables, `this.` for field access, TO terminology, and a layered package layout. Those choices supplement `modern-java-21`; they do not override it.
 
@@ -205,13 +205,21 @@ public record CustomerResponse(UUID id, String name, String email, Instant creat
 @Mapper()
 public interface UserMapper {
 
-    UserResponse toResponse(User entity);
+    UserResponse toResponse(final User entity);
 
     List<UserResponse> toResponseList(List<User> entities);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     User toEntity(CreateUserRequest request);
+}
+
+@Mapper()
+public interface UserRestMapper {
+
+    UserTO mapUserEntityToUserTO(final UserEntity entity);
+
+    List<UserTO> mapUserEntityToUserTOSimple(final List<UserEntity> entities);
 }
 ```
 
@@ -313,7 +321,7 @@ Service rules:
 
 ### JPA Repository
 ```java
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     // Derived query
     /**
@@ -408,7 +416,7 @@ final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
         final ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Customer not found");
-        problem.setDetail(exception.getMessage());
+        problem.setDetail("The requested customer does not exist.");
         problem.setProperty("code", "CUSTOMER_NOT_FOUND");
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
