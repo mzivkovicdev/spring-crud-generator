@@ -1,0 +1,498 @@
+---
+name: spring-data-jpa
+description: Production Spring Data JPA and Hibernate patterns for Java 21+ applications using any supported relational database. Covers entity mapping, repositories, associations, fetch plans, JPQL, native SQL, transactions, pagination, bulk work, locking, migrations, query performance, and persistence tests. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, schema migrations, database reads or writes, or transactional persistence behavior.
+---
+
+# Spring Data JPA Skill
+
+Design persistence for correctness, predictable SQL, and verified performance. JPA does not remove the need to understand relational modeling, indexes, query plans, transactions, and locking.
+
+## Coordination with other skills
+
+Apply `modern-java-21` to every touched Java file and `spring-boot-patterns` to controller, service, domain, mapper, and transaction boundaries. Those skills own general Java style, imports, Javadoc, tests, TOs, domain models, service parameters, non-bean mappers, and service update structure. Do not repeat their rules here.
+
+Use their established terminology consistently:
+
+| Type | Boundary |
+|---|---|
+| `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
+| `UserDomain` | Domain/service result |
+| `UserEntity` | JPA persistence |
+| `UserSummaryProjection` | Repository read projection |
+| `UserRestMapper` | REST TO ↔ domain |
+| `UserDomainMapper` | Entity/projection ↔ domain |
+
+Repositories return entities or persistence projections. Services map them to domain objects before returning. This skill owns the JPA behavior beneath that boundary.
+
+This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier strategies.
+
+## Before changing persistence
+
+Inspect:
+
+1. Spring Boot, Spring Data JPA, Jakarta Persistence, Hibernate, JDBC driver, database, and migration-tool versions;
+2. entity mappings, association ownership, converters, listeners, inheritance, identifier generation, and equality;
+3. service transaction boundaries and every caller affected by the change;
+4. schema migrations, constraints, indexes, column types, defaults, and expected data volume;
+5. query cardinality, selectivity, ordering, pagination, read/write ratio, and concurrency;
+6. generated SQL and database execution plans for important access paths;
+7. repository, migration, locking, query-count, and database integration tests.
+
+Do not copy a nearby persistence pattern before understanding its generated SQL and lifecycle behavior.
+
+## Entity mapping
+
+Good:
+
+```java
+@Entity
+@Table(
+        name = "users",
+        uniqueConstraints = {
+            @UniqueConstraint(name = "uk_users_email", columnNames = "email")
+        })
+public class UserEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
+    @Version
+    private Long version;
+
+    @Column(nullable = false, length = 120)
+    private String username;
+
+    @Column(nullable = false, length = 254)
+    private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private UserStatus status;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    protected UserEntity() {
+    }
+
+    public UserEntity setUsername(final String username) {
+        this.username = username;
+        return this;
+    }
+
+    public UserEntity setEmail(final String email) {
+        this.email = email;
+        return this;
+    }
+}
+```
+
+Entity rules:
+
+- Do not use records as entities. Records may be embeddables only when supported by the configured provider and project version.
+- Keep entities and persistent accessors non-final unless verified bytecode enhancement removes proxy limitations.
+- Provide a `protected` no-argument constructor when possible.
+- Use field or property access consistently; place mapping annotations according to the chosen strategy.
+- Keep entity mappings, migrations, and database definitions aligned for names, nullability, length, precision, scale, uniqueness, defaults, foreign keys, and indexes.
+- Database constraints enforce integrity; application validation does not replace them.
+- Use `@Version` when concurrent updates must not silently overwrite each other. Never modify the version value in application code.
+- Prefer `EnumType.STRING`; treat enum renames as data migrations.
+- Define timestamp/timezone policy explicitly and use `BigDecimal` precision and scale for fixed-decimal columns.
+- Choose identifier generation for the actual database and verify its effect on batching and round trips.
+- Never use Lombok `@Data` on entities.
+- Exclude lazy associations and mutable state from `equals`, `hashCode`, and `toString`.
+- Test equality across transient, managed, detached, and proxied instances when entities enter sets or maps.
+- Keep entity listeners limited to persistence concerns; never perform repository or remote calls from callbacks.
+
+## Association ownership
+
+Good:
+
+```java
+@ManyToOne(fetch = FetchType.LAZY, optional = false)
+@JoinColumn(
+        name = "customer_id",
+        nullable = false,
+        foreignKey = @ForeignKey(name = "fk_orders_customer"))
+private CustomerEntity customer;
+```
+
+- Set to-one associations to `LAZY` explicitly unless a measured access path proves another choice.
+- Treat fetching as a query/use-case decision, not an entity-wide default.
+- Cascade only lifecycle operations owned by the aggregate; never default to `CascadeType.ALL`.
+- Never cascade remove from a child or shared reference to its parent.
+- Use `orphanRemoval` only when removing the child from the owning collection must delete it.
+- Use unidirectional associations by default.
+- Introduce a bidirectional association only when concrete use cases require navigation in both directions.
+- Keep both sides of every bidirectional association synchronized through explicit helper methods.
+- Choose `List`, `Set`, or `Map` from business and ordering semantics.
+- Query large child sets separately instead of exposing unbounded entity collections.
+- Model a many-to-many join table as an entity when it has attributes, ordering, audit data, identity, lifecycle, or independent constraints.
+
+## Repository design
+
+Good:
+
+```java
+public interface UserRepository
+        extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
+
+    boolean existsByEmail(final String email);
+
+    Optional<UserEntity> findByEmail(final String email);
+
+    @EntityGraph(attributePaths = {"roles"})
+    Optional<UserEntity> findWithRolesById(final Long id);
+
+    Slice<UserEntity> findByStatusOrderByCreatedAtDescIdDesc(
+            final UserStatus status,
+            final Pageable pageable);
+}
+```
+
+Bad:
+
+```java
+public interface UserRepository extends JpaRepository<UserEntity, Long> {
+
+    List<UserEntity> findAllByStatus(final UserStatus status);
+}
+```
+
+- Use derived queries while their names remain short and their generated predicates are appropriate.
+- Use explicit JPQL when derivation becomes ambiguous or hides important joins.
+- JPQL uses entity and attribute names, not table and column names.
+- Bind values through parameters; never concatenate data into JPQL or SQL.
+- Use `Optional` for an optional single result and `existsBy...` when only presence is needed.
+- Bound every result that can grow with production data.
+- Do not expose destructive or unbounded methods through generic base repositories without a real use case.
+- Use a custom repository for queries clearer with Specifications, Criteria, Querydsl, `EntityManager`, or native SQL.
+- Add Javadoc only when locking, timeout, fetch, ordering, native-SQL, or consistency semantics are non-obvious.
+
+## Read projections
+
+Good:
+
+```java
+public interface UserSummaryProjection {
+
+    Long getId();
+
+    String getUsername();
+
+    UserStatus getStatus();
+}
+```
+
+```java
+@Query("""
+        select
+            user.id as id,
+            user.username as username,
+            user.status as status
+        from UserEntity user
+        where user.status = :status
+        order by user.createdAt desc, user.id desc
+        """)
+Slice<UserSummaryProjection> findSummariesByStatus(
+        @Param("status") final UserStatus status,
+        final Pageable pageable);
+```
+
+- Use projections for bounded read paths that need only selected columns.
+- A persistence projection is neither a TO nor a domain result; map it before leaving the service.
+- Keep interface projections closed and top-level. Nested properties can materialize joins and more data than expected.
+- Avoid `Object[]`, raw `Tuple`, and `Map<String, Object>` as cross-layer contracts.
+- Cover native projections with integration tests against the supported database.
+
+## N+1 and fetch plans
+
+Bad:
+
+```java
+final List<OrderEntity> orders = this.orderRepository.findAll();
+
+for (final OrderEntity order : orders) {
+    LOGGER.debug("Customer: {}", order.getCustomer().getName());
+}
+```
+
+Good for a bounded page with a to-one association:
+
+```java
+@EntityGraph(attributePaths = {"customer"})
+Slice<OrderEntity> findByStatusOrderByCreatedAtDescIdDesc(
+        final OrderStatus status,
+        final Pageable pageable);
+```
+
+Choose the smallest suitable fetch mechanism:
+
+1. projection for a read-only subset;
+2. `@EntityGraph` for a known entity graph;
+3. fetch join for a controlled association shape;
+4. provider-supported batch fetching for intentional lazy traversal.
+
+- Do not solve N+1 with blanket `EAGER` fetching.
+- Disable Open EntityManager in View for REST services:
+
+```properties
+spring.jpa.open-in-view=false
+```
+
+- Resolve `LazyInitializationException` by fetching required state inside the service transaction.
+- Check mapper, logging, debugger, `equals`, `hashCode`, and `toString` access for accidental lazy loading.
+- Do not fetch-join multiple collections without proving cardinality and provider behavior.
+- Do not combine collection fetch joins with pagination. Page root identifiers first and load the required graph in a bounded second query, or use a projection.
+- Do not use `distinct` to hide a cartesian product or incorrect fetch plan.
+- Add query-count tests for N+1-sensitive flows.
+
+## Sargable and dynamic queries
+
+Bad:
+
+```java
+@Query("""
+        select user
+        from UserEntity user
+        where (:email is null or lower(user.email) = lower(:email))
+          and (:status is null or user.status = :status)
+        """)
+List<UserEntity> search(
+        @Param("email") final String email,
+        @Param("status") final UserStatus status);
+```
+
+Good:
+
+```java
+public final class UserSpecifications {
+
+    private UserSpecifications() {
+    }
+
+    public static Specification<UserEntity> withFilters(
+            final String email,
+            final UserStatus status) {
+
+        return (root, query, criteriaBuilder) -> {
+            final List<Predicate> predicates = new ArrayList<>();
+
+            if (email != null) {
+                predicates.add(criteriaBuilder.equal(root.get("email"), email));
+            }
+            if (status != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+        };
+    }
+}
+```
+
+- Build only required predicates for optional filters.
+- Normalize values according to the business contract before querying; do not apply functions to indexed columns by habit.
+- Functions, casts, arithmetic, and implicit type conversion on indexed columns can prevent normal index access.
+- Avoid leading-wildcard searches on large tables unless a suitable search/index feature is deliberately used.
+- Bound `IN` collections; use chunking or a measured database-specific bulk strategy for very large sets.
+- Never issue a repository query inside a per-row loop when one set-based query can retrieve the data.
+- Allowlist sort fields and directions; never pass user input to `JpaSort.unsafe`.
+
+## Pagination and scrolling
+
+Bad:
+
+```java
+@Query("""
+        select order
+        from OrderEntity order
+        join fetch order.items
+        order by order.createdAt desc
+        """)
+Page<OrderEntity> findPageWithItems(final Pageable pageable);
+```
+
+- Enforce maximum page size at the REST boundary.
+- Always sort deterministically with a unique tie-breaker.
+- Use `Page` only when the caller needs a total and the count query is acceptably cheap.
+- Use `Slice` when only next-page information is needed.
+- Prefer keyset scrolling for deep or high-volume traversal when the API can represent a cursor.
+- Keyset sort columns must be non-null, deterministic, and supported by an effective index.
+- Never paginate or sort database-sized results in memory.
+- Supply an explicit `countQuery` when a complex or native paged query cannot be derived correctly or efficiently.
+
+## SQL and index performance
+
+Bad:
+
+```sql
+SELECT *
+FROM users
+WHERE LOWER(email) = LOWER(?);
+```
+
+Good when the application stores a normalized email:
+
+```sql
+SELECT id, username, status
+FROM users
+WHERE email = ?;
+```
+
+```sql
+CREATE UNIQUE INDEX uk_users_email
+    ON users (email);
+```
+
+- Inspect generated SQL for every complex or high-volume query.
+- Use the supported database's execution-plan tool with representative statistics and data volume.
+- Select only required columns for read-heavy paths; avoid loading full entities and LOBs for summaries.
+- Align composite index order with actual equality, range, join, and sort predicates.
+- Avoid redundant and speculative indexes because each index adds storage and write cost.
+- Index foreign-key and join columns when required by the database and access paths.
+- Prevent accidental cartesian products and duplicate rows from incorrect joins.
+- Use existence queries instead of counting all rows when only presence is required.
+- Apply tenant and soft-delete predicates to derived, JPQL, native, bulk, and count queries.
+- Include tenant keys in relevant unique constraints and indexes for tenant-scoped data.
+- Configure query or transaction timeouts for bounded operational work.
+- Use native SQL only for a concrete feature, portability, or measured performance reason.
+
+## Transactions and flush behavior
+
+- Keep transaction boundaries on public service methods reached through the Spring proxy.
+- Use `readOnly = true` for read operations as an optimization hint, not as an authorization guarantee.
+- Keep transactions short; do not perform remote calls, unbounded iteration, or long CPU work inside them.
+- Do not rely on self-invocation. Move a separate transaction boundary to another bean when required.
+- Use `REQUIRES_NEW` only for a documented consistency reason and account for extra connection demand.
+- Follow the `spring-boot-patterns` update structure: load the entity, call explicit setters, invoke `saveAndFlush` once, and map the saved entity to domain.
+- Do not call `saveAndFlush` for every item in a loop.
+- Remember that JPQL/HQL and some native queries can trigger an automatic flush before query execution.
+- Choose isolation levels from actual anomalies and database behavior.
+
+## Bulk DML and large batches
+
+Good:
+
+```java
+@Modifying(flushAutomatically = true, clearAutomatically = true)
+@Query("""
+        update UserEntity user
+        set user.status = :newStatus
+        where user.status = :oldStatus
+        """)
+int updateStatus(
+        @Param("oldStatus") final UserStatus oldStatus,
+        @Param("newStatus") final UserStatus newStatus);
+```
+
+Bad:
+
+```java
+final UserEntity user = this.userRepository.findById(id).orElseThrow();
+
+this.userRepository.updateStatus(UserStatus.ACTIVE, UserStatus.SUSPENDED);
+
+return this.userMapper.mapUserEntityToUserDomain(user);
+```
+
+The loaded entity can be stale after bulk DML.
+
+- Bulk JPQL/Criteria updates and deletes bypass entity synchronization, callbacks, cascades, and optimistic-lock checks.
+- Flush pending changes first when required and clear or refresh affected managed state deliberately.
+- Pair `clearAutomatically = true` with `flushAutomatically = true` when pending changes must not be discarded.
+- Return and verify the affected row count when it is part of correctness.
+- Prefer set-based DML over loading thousands of entities only to update or delete them.
+- Process large entity batches in bounded chunks and clear the persistence context between chunks.
+- `saveAll` is not proof of JDBC batching; configure and verify batching for the provider, database, and identifier strategy.
+- Never retain an unbounded number of managed entities in one persistence context.
+
+## Concurrency and locking
+
+Good for a justified blocking invariant:
+
+```java
+/**
+ * Loads inventory for an update while holding a pessimistic database lock.
+ *
+ * @param sku inventory identifier; must not be {@code null}
+ * @return the locked inventory, or empty when it does not exist; never {@code null}
+ * @throws PessimisticLockingFailureException when the lock cannot be acquired before the
+ *                                             configured timeout expires
+ */
+@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("select inventory from InventoryEntity inventory where inventory.sku = :sku")
+Optional<InventoryEntity> findForUpdate(@Param("sku") final String sku);
+```
+
+- Prefer optimistic locking with `@Version` for normal concurrent editing.
+- Translate lock failures into a stable conflict or retry contract at the service boundary.
+- Retry only when the complete operation is safe to repeat.
+- Use pessimistic locking only when measured contention and invariants justify blocking.
+- Configure lock timeouts where supported and lock multiple rows in a consistent order.
+- Keep locked transactions especially short.
+- Enforce uniqueness with a database constraint and handle the race after an application existence check.
+- Remember that bulk DML bypasses normal optimistic version checks.
+
+## Schema migrations
+
+- Use the project's Flyway or Liquibase convention as schema source of truth.
+- Do not use Hibernate auto-DDL to create or update production schemas.
+- Give constraints and indexes stable, explicit names.
+- Keep migrations compatible with rolling deployments.
+- Use expand-and-contract for incompatible changes.
+- Do not run massive blocking backfills in application-startup migrations without lock, duration, recovery, and rollout analysis.
+- Separate large data backfills from schema changes when operational control is required.
+- Evaluate vendor-specific online/concurrent index features for large production tables.
+- Test migrations from the previous supported schema on the production database engine and major version.
+
+## Persistence tests and observability
+
+- Use Testcontainers or an equivalent environment with the actual supported database engine; H2-only tests are not evidence of production behavior.
+- Test entity mappings, converters, constraints, generated identifiers, repository queries, projections, entity graphs, pagination, locking, bulk DML, and migrations where relevant.
+- Assert query counts for N+1-sensitive flows.
+- Test deterministic ordering and count queries separately from result queries.
+- Test uniqueness races, optimistic conflicts, pessimistic timeouts, commit, and rollback behavior.
+- Enable SQL and bind logging only in safe local/test environments.
+- Compare representative execution plans before and after performance-sensitive query changes.
+- Monitor slow queries, transaction duration, connection-pool saturation, lock waits, deadlocks, rows examined, and database CPU/I/O.
+
+## JPA-specific anti-patterns
+
+Reject:
+
+- records used as entities;
+- Lombok `@Data` on entities;
+- blanket `FetchType.EAGER`;
+- Open EntityManager in View and `hibernate.enable_lazy_load_no_trans`;
+- N+1 queries hidden in mappers, serializers, logging, loops, or accessors;
+- collection fetch joins combined with pagination;
+- multiple collection fetch joins that create cartesian multiplication;
+- `distinct` used to hide an incorrect join or fetch plan;
+- detached entities reconstructed from client input and saved as updates;
+- unbounded repository reads, streams, or association traversal;
+- full-entity loading when a bounded projection is sufficient;
+- query-per-row loops;
+- optional-filter `OR` queries and functions on indexed columns on hot paths without verified plans;
+- leading-wildcard searches on large tables without a suitable search index;
+- unbounded `IN` predicates;
+- unsafe user-controlled sorting;
+- missing, ineffective, redundant, or speculative indexes;
+- `CascadeType.ALL` without aggregate lifecycle ownership;
+- cascade remove from a child or shared reference to its parent;
+- lazy or mutable associations in `equals`, `hashCode`, or `toString`;
+- `saveAndFlush` inside per-row loops;
+- bulk DML followed by use of stale managed entities;
+- pessimistic locks without bounded scope and timeout consideration;
+- production schema mutation through Hibernate auto-DDL;
+- destructive one-step migrations and uncontrolled startup backfills;
+- H2-only persistence verification for another production database.
+
+## Completion checklist
+
+- [ ] Mappings, migrations, associations, cascades, and orphan behavior agree.
+- [ ] Fetch plans are explicit and N+1 risk is tested.
+- [ ] Queries are bounded, deterministic, and verified with generated SQL and representative plans.
+- [ ] Pagination, projections, transactions, bulk DML, and locking match the access path.
+- [ ] Tests run against the supported database and cover changed persistence behavior.

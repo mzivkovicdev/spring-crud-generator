@@ -145,10 +145,8 @@ public class UserController {
 
         return ResponseEntity.ok().body(
             new PageTO<>(
-                pageObject.getTotalPages(),
-                pageObject.getTotalElements(),
-                pageObject.getSize(),
-                pageObject.getNumber(),
+                pageObject.getTotalPages(), pageObject.getTotalElements(),
+                pageObject.getSize(), pageObject.getNumber(),
                 this.userMapper.mapUserDomainToUserTOSimple(pageObject.getContent())
             )
         );
@@ -156,9 +154,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     @Validated
-    public ResponseEntity<UserTO> usersIdPut(
-            @PathVariable final Long id,
-            @RequestBody @Valid final UserUpdateTO body) {
+    public ResponseEntity<UserTO> usersIdPut(@PathVariable final Long id, @RequestBody @Valid final UserUpdateTO body) {
 
         return ResponseEntity.ok(
             this.userMapper.mapUserDomainToUserTO(
@@ -236,10 +232,7 @@ public interface UserDomainMapper {
     @Mapping(target = "username", source = "username")
     @Mapping(target = "email", source = "email")
     @Mapping(target = "password", source = "password")
-    UserEntity mapToUserEntity(
-            final String username,
-            final String email,
-            final String password);
+    UserEntity mapToUserEntity(final String username, final String email, final String password);
 }
 ```
 
@@ -259,9 +252,7 @@ public record UserUpdateDomain(
 ```java
 public interface UserService {
 
-    UserDomain updateById(
-            final Long userId,
-            final UserUpdateDomain userUpdate);
+    UserDomain updateById(final Long userId, final UserUpdateDomain userUpdate);
 }
 ```
 
@@ -377,10 +368,7 @@ public class UserServiceImpl implements UserService {
     /** {@inheritDoc} */
     @Override
     @Transactional  // Write transaction
-    public UserDomain create(
-            final String username,
-            final String email,
-            final String password) {
+    public UserDomain create(final String username, final String email, final String password) {
 
         final UserEntity user = this.userMapper.mapToUserEntity(
                 username, email, password
@@ -403,11 +391,7 @@ public class UserServiceImpl implements UserService {
     /** {@inheritDoc} */
     @Override
     @Transactional
-    public UserDomain updateById(
-            final Long id,
-            final String username,
-            final String email,
-            final String password) {
+    public UserDomain updateById(final Long id, final String username, final String email, final String password) {
 
         final UserEntity existing = this.getEntityById(id);
 
@@ -416,7 +400,6 @@ public class UserServiceImpl implements UserService {
             .setPassword(password);
 
         final UserEntity updated = this.userRepository.saveAndFlush(existing);
-
         return this.userMapper.mapUserEntityToUserDomain(updated);
     }
 
