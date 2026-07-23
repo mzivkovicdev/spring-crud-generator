@@ -240,16 +240,6 @@ public interface UserDomainMapper {
             final String username,
             final String email,
             final String password);
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "username", source = "username")
-    @Mapping(target = "email", source = "email")
-    @Mapping(target = "password", source = "password")
-    void updateUserEntity(
-            final String username,
-            final String email,
-            final String password,
-            @MappingTarget final UserEntity entity);
 }
 ```
 
@@ -421,9 +411,9 @@ public class UserServiceImpl implements UserService {
 
         final UserEntity existing = this.getEntityById(id);
 
-        this.userMapper.updateUserEntity(
-                username, email, password, existing
-        );
+        existing.setUsername(username)
+            .setEmail(email)
+            .setPassword(password);
 
         final UserEntity updated = this.userRepository.saveAndFlush(existing);
 
@@ -452,6 +442,7 @@ Service rules:
 - Use Lombok constructor generation only when Lombok is an established project dependency and the generated constructor remains obvious; otherwise write the constructor explicitly.
 - Do not accept REST request/response TOs and do not return JPA entities.
 - Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
+- For update operations, load the existing entity, apply changes through explicit entity setters in the service, call `saveAndFlush`, and map the saved entity to a domain object. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity.
 - Prefer explicit separate parameters for service operations. Do not create a parameter object merely to wrap fewer than seven method parameters.
 - Count every declared method parameter, including identifiers, collections, and existing value objects. When an operation would require seven or more parameters, a cohesive parameter object is allowed and normally preferred.
 - Keep an identifier as a separate parameter when it identifies the target resource; group the remaining values in the parameter object.
