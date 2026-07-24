@@ -146,9 +146,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
     @EntityGraph(attributePaths = {"roles"})
     Optional<UserEntity> findWithRolesById(final Long id);
 
-    Slice<UserEntity> findByStatusOrderByCreatedAtDescIdDesc(
-            final UserStatus status,
-            final Pageable pageable);
+    Slice<UserEntity> findByStatusOrderByCreatedAtDescIdDesc(final UserStatus status, final Pageable pageable);
 }
 ```
 
@@ -197,9 +195,7 @@ public interface UserSummaryProjection {
         where user.status = :status
         order by user.createdAt desc, user.id desc
         """)
-Slice<UserSummaryProjection> findSummariesByStatus(
-        @Param("status") final UserStatus status,
-        final Pageable pageable);
+Slice<UserSummaryProjection> findSummariesByStatus(@Param("status") final UserStatus status, final Pageable pageable);
 ```
 
 - Use projections for bounded read paths that need only selected columns.
