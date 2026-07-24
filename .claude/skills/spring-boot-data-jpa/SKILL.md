@@ -19,8 +19,8 @@ Use their established terminology consistently:
 | `UserDomain` | Domain/service result |
 | `UserEntity` | JPA persistence |
 | `UserSummaryProjection` | Repository read projection |
-| `UserRestMapper` | REST TO ↔ domain |
-| `UserDomainMapper` | Entity/projection ↔ domain |
+| `UserRestMapper` | Domain → response TO; request TO → focused domain input object only for a justified operation with seven or more service parameters |
+| `UserDomainMapper` | Entity/projection → domain; explicit creation values → entity |
 
 Repositories return entities or persistence projections. Services map them to domain objects before returning. This skill owns the JPA behavior beneath that boundary.
 
@@ -76,6 +76,7 @@ public class UserEntity {
     protected UserEntity() {
     }
 
+    // Getters used by persistence-to-domain mapping are omitted for brevity.
     public UserEntity setUsername(final String username) {
         this.username = username;
         return this;
@@ -94,6 +95,7 @@ Entity rules:
 - Keep entities and persistent accessors non-final unless verified bytecode enhancement removes proxy limitations.
 - Provide a `protected` no-argument constructor when possible.
 - Use field or property access consistently; place mapping annotations according to the chosen strategy.
+- Expose the getters required by persistence-to-domain mapping. With field access, JPA does not require public accessors, but mapping code must still be able to read the selected state.
 - Keep entity mappings, migrations, and database definitions aligned for names, nullability, length, precision, scale, uniqueness, defaults, foreign keys, and indexes.
 - Database constraints enforce integrity; application validation does not replace them.
 - Use `@Version` when concurrent updates must not silently overwrite each other. Never modify the version value in application code.
@@ -135,8 +137,7 @@ private CustomerEntity customer;
 Good:
 
 ```java
-public interface UserRepository
-        extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
+public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
 
     boolean existsByEmail(final String email);
 
@@ -168,6 +169,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 - Bound every result that can grow with production data.
 - Do not expose destructive or unbounded methods through generic base repositories without a real use case.
 - Use a custom repository for queries clearer with Specifications, Criteria, Querydsl, `EntityManager`, or native SQL.
+- Consume repository `Stream<T>` results inside the required transaction and close them with try-with-resources; never return an open stream across the service boundary.
 - Add Javadoc only when locking, timeout, fetch, ordering, native-SQL, or consistency semantics are non-obvious.
 
 ## Read projections
@@ -222,9 +224,7 @@ Good for a bounded page with a to-one association:
 
 ```java
 @EntityGraph(attributePaths = {"customer"})
-Slice<OrderEntity> findByStatusOrderByCreatedAtDescIdDesc(
-        final OrderStatus status,
-        final Pageable pageable);
+Slice<OrderEntity> findByStatusOrderByCreatedAtDescIdDesc(final OrderStatus status, final Pageable pageable);
 ```
 
 Choose the smallest suitable fetch mechanism:
@@ -259,9 +259,7 @@ Bad:
         where (:email is null or lower(user.email) = lower(:email))
           and (:status is null or user.status = :status)
         """)
-List<UserEntity> search(
-        @Param("email") final String email,
-        @Param("status") final UserStatus status);
+List<UserEntity> search(@Param("email") final String email, @Param("status") final UserStatus status);
 ```
 
 Good:
@@ -293,6 +291,7 @@ public final class UserSpecifications {
 ```
 
 - Build only required predicates for optional filters.
+- Prefer the JPA static metamodel or Querydsl for non-trivial dynamic queries; raw attribute-name strings fail only at runtime after incompatible refactoring.
 - Normalize values according to the business contract before querying; do not apply functions to indexed columns by habit.
 - Functions, casts, arithmetic, and implicit type conversion on indexed columns can prevent normal index access.
 - Avoid leading-wildcard searches on large tables unless a suitable search/index feature is deliberately used.
@@ -328,22 +327,17 @@ Page<OrderEntity> findPageWithItems(final Pageable pageable);
 Bad:
 
 ```sql
-SELECT *
-FROM users
-WHERE LOWER(email) = LOWER(?);
+SELECT * FROM users WHERE LOWER(email) = LOWER(?);
 ```
 
 Good when the application stores a normalized email:
 
 ```sql
-SELECT id, username, status
-FROM users
-WHERE email = ?;
+SELECT id, username, status FROM users WHERE email = ?;
 ```
 
 ```sql
-CREATE UNIQUE INDEX uk_users_email
-    ON users (email);
+CREATE UNIQUE INDEX uk_users_email ON users (email);
 ```
 
 - Inspect generated SQL for every complex or high-volume query.
@@ -382,9 +376,7 @@ Good:
         set user.status = :newStatus
         where user.status = :oldStatus
         """)
-int updateStatus(
-        @Param("oldStatus") final UserStatus oldStatus,
-        @Param("newStatus") final UserStatus newStatus);
+int updateStatus(@Param("oldStatus") final UserStatus oldStatus, @Param("newStatus") final UserStatus newStatus);
 ```
 
 Bad:
@@ -400,6 +392,7 @@ return this.userMapper.mapUserEntityToUserDomain(user);
 The loaded entity can be stale after bulk DML.
 
 - Bulk JPQL/Criteria updates and deletes bypass entity synchronization, callbacks, cascades, and optimistic-lock checks.
+- Invoke bulk DML through an active write transaction owned by a public service method.
 - Flush pending changes first when required and clear or refresh affected managed state deliberately.
 - Pair `clearAutomatically = true` with `flushAutomatically = true` when pending changes must not be discarded.
 - Return and verify the affected row count when it is part of correctness.
@@ -430,6 +423,7 @@ Optional<InventoryEntity> findForUpdate(@Param("sku") final String sku);
 - Translate lock failures into a stable conflict or retry contract at the service boundary.
 - Retry only when the complete operation is safe to repeat.
 - Use pessimistic locking only when measured contention and invariants justify blocking.
+- Invoke pessimistic-lock repository methods only inside an active transaction and complete all locked work before that transaction ends.
 - Configure lock timeouts where supported and lock multiple rows in a consistent order.
 - Keep locked transactions especially short.
 - Enforce uniqueness with a database constraint and handle the race after an application existence check.
