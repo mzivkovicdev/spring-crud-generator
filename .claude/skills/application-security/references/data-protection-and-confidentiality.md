@@ -13,7 +13,7 @@
 
 ## Mandatory root instruction
 
-Copy the following block into the repository-root `AGENTS.md` and the equivalent repository-root Claude instruction file. Preserve stronger existing rules.
+Copy the following block into both repository-root `AGENTS.md` and repository-root `CLAUDE.md`. Preserve stronger existing rules. Copy only this block, not the entire skill.
 
 ```markdown
 ## Confidentiality and external disclosure
@@ -102,6 +102,8 @@ Do not send a complete repository or production dataset when a small, approved, 
 - Treat IP addresses, user IDs, tenant IDs, resource IDs, device identifiers, and user agents according to policy; collect only what is operationally justified.
 - Prevent high-cardinality or attacker-controlled metric labels.
 - Apply access control, integrity protection, retention, deletion, and monitoring to telemetry.
+- Define auditable events for authentication and recovery, authorization denials, privilege and security-configuration changes, API-key lifecycle, administrative actions, sensitive exports, signature or replay failures, and incident actions where applicable.
+- Alert on meaningful patterns rather than treating every individual denial as an incident. Document thresholds, suppression, escalation, and ownership.
 
 ## AI agents and external tools
 
@@ -134,7 +136,7 @@ Do not publish exploit details or affected customer information during remediati
 - [ ] External destinations and tools are approved and receive only minimized data.
 - [ ] Test data is synthetic or approved and de-identified.
 - [ ] Retention, deletion, and incident handling are defined.
-- [ ] The mandatory confidentiality block exists in both repository-root agent instruction systems.
+- [ ] The mandatory confidentiality block exists in repository-root `AGENTS.md` and `CLAUDE.md`.
 
 ## References
 

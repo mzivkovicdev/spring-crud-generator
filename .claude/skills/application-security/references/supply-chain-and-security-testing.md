@@ -11,7 +11,7 @@
 
 ## Security requirements and threat analysis
 
-Use OWASP ASVS as a control catalog and verification baseline. Use the current OWASP Top 10 to prompt risk discussion, not as proof that the application is secure.
+Use the project-pinned OWASP ASVS version and applicable requirement set as the verification baseline. Record versioned identifiers such as `v5.0.0-1.2.5`; do not silently change the baseline during a feature. Use the current OWASP Top 10 and API Security Top 10 to prompt risk discussion, not as proof that the application is secure.
 
 For a new or materially changed feature, record:
 
@@ -21,6 +21,7 @@ For a new or materially changed feature, record:
 - external providers and failure modes;
 - abuse cases and expected security behavior;
 - selected controls, test evidence, assumptions, and residual risk.
+- applicable ASVS identifiers and approved exceptions with owner and expiry.
 
 Revisit the analysis when authentication, authorization, data sensitivity, tenancy, deployment topology, external integrations, or attacker capability changes.
 
@@ -31,10 +32,11 @@ Security requirements must be testable. Replace “secure endpoint” with concr
 - Prefer the supported Spring Boot dependency-management baseline or an approved BOM.
 - Use only approved artifact and plugin repositories over authenticated TLS.
 - Pin build plugins and direct dependencies according to the project's reproducibility policy.
+- Use a trusted committed Maven or Gradle wrapper where the project standard requires it; review wrapper, distribution URL, checksum, and build-image changes.
 - Do not run a blanket “upgrade everything to latest.” Review release notes, compatibility, migrations, transitive changes, provenance, known vulnerabilities, and tests.
 - Remove unused dependencies and plugins to reduce attack surface.
 - Review dependencies that execute code during build, annotation processing, tests, deserialization, parsing, templating, file conversion, or startup.
-- Generate an SBOM in an approved format when required and retain it with the release.
+- Generate and retain an SBOM for production releases when supported by project policy and delivery tooling; document any approved alternative.
 - Verify artifact provenance, signatures, checksums, attestations, or repository controls supported by the delivery platform.
 - Keep dependency resolution reproducible. Detect unexpected repository, lockfile, checksum, and dependency-tree changes.
 - Triage vulnerabilities by reachable behavior, exposure, exploit prerequisites, compensating controls, affected versions, and vendor guidance. A CVSS number alone is not the decision.
@@ -92,6 +94,10 @@ Match the test to the control:
 | WebClient and SSRF | Mock remote service, destination-policy tests, redirects, timeouts, and response limits |
 | File processing | Type, traversal, authorization, archive-bomb, cleanup, and size-limit tests |
 | Redis isolation | Key, tenant, TTL, serialization, invalidation, and sensitive-value tests |
+| API inventory and lifecycle | Contract/deployment comparison plus tests proving obsolete or debug routes are unavailable |
+| Business-flow abuse | Actor-, tenant-, operation-, batch-, quota-, and cost-limit tests |
+| Messaging and jobs | Duplicate, replay, stale, poison, DLQ, redrive, concurrency, and authorization tests |
+| Cloud permissions | Deployment-policy tests and evidence for workload identity, resource policy, network, key, and public-access controls |
 | Vulnerability remediation | A failing-before, passing-after regression test at the exploitable boundary |
 
 Include happy paths, negative cases, boundary values, and dependency failures. Do not test only annotations or mocks when the real security behavior depends on filters, proxies, serializers, database constraints, network configuration, or cloud policies.
@@ -138,6 +144,7 @@ For a suspected secret:
 Before a production release:
 
 - [ ] Security requirements and abuse cases for changed behavior are covered.
+- [ ] Applicable versioned ASVS requirements have verification evidence or approved, expiring exceptions.
 - [ ] Confidential data and tools remained within approved boundaries.
 - [ ] Authentication, authorization, tenant isolation, validation, errors, logging, and resource limits are verified.
 - [ ] Dependencies, plugins, repositories, artifact provenance, and SBOM meet project policy.

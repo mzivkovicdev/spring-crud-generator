@@ -6,7 +6,7 @@
 2. [Authorization](#authorization)
 3. [Authentication and password storage](#authentication-and-password-storage)
 4. [Tokens](#tokens)
-5. [API keys, delegated login, and webhooks](#api-keys-delegated-login-and-webhooks)
+5. [API keys and delegated login](#api-keys-and-delegated-login)
 6. [Sessions, cookies, and CSRF](#sessions-cookies-and-csrf)
 7. [CORS and headers](#cors-and-headers)
 8. [Management endpoints and proxies](#management-endpoints-and-proxies)
@@ -31,29 +31,40 @@ Keep framework defaults unless a verified requirement justifies a change. A comm
 
 ## Authorization
 
-Configure HTTP rules with public endpoints listed explicitly and a protected fallback:
+The following example is a complete configuration class and follows the import order from `modern-java-21`. It intentionally makes no CSRF or session decision; add those controls only after evaluating the actual credential model.
 
 ```java
-@Bean
-SecurityFilterChain apiSecurity(final HttpSecurity http) throws Exception {
-    http
-        .authorizeHttpRequests(authorize -> authorize
-            .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-            .requestMatchers("/api/admin/**").hasAuthority("user:admin")
-            .anyRequest().authenticated())
-        .oauth2ResourceServer(oauth2 -> oauth2
-            .jwt(Customizer.withDefaults()));
+package com.acme.security;
 
-    return http.build();
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration(proxyBeanMethods = false)
+public class ApiSecurityConfiguration {
+
+    @Bean
+    SecurityFilterChain apiSecurity(final HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                .requestMatchers("/api/admin/**").hasAuthority("user:admin")
+                .anyRequest().authenticated())
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(Customizer.withDefaults()));
+
+        return http.build();
+    }
 }
 ```
-
-This example intentionally makes no CSRF or session decision. Add those controls only after evaluating the credential model.
 
 - Use exact matchers and verify matcher ordering.
 - Do not rely only on URL rules. Enforce operation, object, field, and tenant authorization in the service and persistence path.
 - Derive subject and tenant from the authenticated principal, not from request TO values.
-- Prefer scoped lookup:
+- Prefer scoped lookup. The following declaration is intentionally a repository-method excerpt; the containing repository and imports are omitted:
 
 ```java
 Optional<DocumentEntity> findByIdAndTenantId(
@@ -69,19 +80,10 @@ Optional<DocumentEntity> findByIdAndTenantId(
 
 Prefer OIDC/OAuth2 or another approved identity provider. Do not invent authentication, password recovery, MFA, or token protocols.
 
-When the application stores passwords:
-
-```java
-@Bean
-PasswordEncoder passwordEncoder() {
-    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-}
-```
-
 - Use an adaptive one-way function supported by Spring Security.
 - Benchmark the work factor on representative production hardware and review it periodically.
 - Store the encoded representation only.
-- Support algorithm migration rather than assuming one fixed algorithm and cost forever.
+- Configure a `DelegatingPasswordEncoder` or equivalent migration-capable strategy with a project-approved default encoder and benchmarked parameters. Retain only the legacy encoders needed to verify and migrate existing hashes; do not assume a factory default satisfies every deployment.
 - Protect registration, login, password reset, verification, recovery, and MFA endpoints against enumeration, brute force, replay, and abuse.
 - Use single-use, high-entropy, short-lived recovery values and invalidate them after use or credential changes.
 - Require current credentials or stronger verification for sensitive account changes when appropriate.
@@ -101,19 +103,24 @@ Reject algorithm confusion, unsigned tokens, unexpected key sources, tokens for 
 
 JWT payloads are encoded and usually signed, not encrypted. Do not include secrets, excessive personal data, or internal state. Keep access tokens short-lived. Define refresh-token rotation, reuse detection, revocation, storage, and logout where refresh tokens exist.
 
+Choose JWT or opaque access tokens from the actual requirements:
+
+- use locally verified JWTs when offline validation, latency, and authorization-server availability justify the trade-off;
+- consider opaque-token introspection when central revocation and current authorization state are more important;
+- define introspection authentication, timeouts, caching, outage behavior, and data minimization;
+- for multiple issuers, allowlist issuers and bind issuer resolution to the expected tenant and audience before trusting tenant or authorization claims;
+- never resolve a decoder, key source, or introspection endpoint from an arbitrary unverified token claim.
+
 Do not log complete tokens or expose them in URLs, query parameters, error bodies, metrics, traces, or browser storage without an explicit threat-model decision.
 
-## API keys, delegated login, and webhooks
+## API keys and delegated login
 
-- Put API keys in an authorization header, never in a URL. Store only a protected verifier when the original key does not need to be recovered.
+- Generate API keys with a cryptographically secure random generator and sufficient entropy. Show the secret only when issued; store a non-reversible verifier plus a non-secret lookup identifier or prefix when recovery is unnecessary.
+- Put API keys in an authorization header, never in a URL. Compare verifiers in constant time where the chosen construction requires it.
 - Give every key an owner, purpose, narrow scope, environment, creation time, expiry or review date, rotation path, revocation path, and last-used audit signal.
 - Do not use one shared key across users, tenants, environments, or unrelated integrations.
 - For OAuth2/OIDC authorization flows, use exact registered redirect URIs, authorization code flow with PKCE where applicable, and validated `state` and `nonce` values.
 - Never accept an identity or authorization decision merely because a callback contains an email address or another user attribute.
-- Verify webhook signatures over the exact raw bytes required by the provider protocol before parsing or mutating state.
-- Validate signature algorithm, key identity, timestamp and allowed skew; use constant-time comparison where the protocol requires a shared-secret digest.
-- Prevent replay with a provider event ID or nonce, bounded retention, and idempotent processing.
-- Authenticate webhook configuration and rotation separately from webhook delivery. Return minimal errors that do not provide a signature oracle.
 
 ## Sessions, cookies, and CSRF
 
@@ -180,8 +187,8 @@ Add tests for:
 
 - public endpoint access and protected fallback;
 - missing, malformed, expired, wrong-issuer, wrong-audience, and insufficient-scope tokens;
+- wrong-tenant, unapproved-issuer, unavailable-introspection, and key-rotation behavior where applicable;
 - revoked, expired, wrongly scoped, and cross-environment API keys;
-- invalid, stale, replayed, and duplicate webhooks;
 - OAuth2/OIDC state, nonce, PKCE, and redirect-URI failures where delegated login exists;
 - permitted and forbidden roles or authorities;
 - cross-user and cross-tenant access;

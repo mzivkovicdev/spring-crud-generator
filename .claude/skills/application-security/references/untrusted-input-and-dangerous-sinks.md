@@ -14,7 +14,7 @@
 
 ## Trace sources to sinks
 
-Treat request bodies, paths, query parameters, headers, cookies, multipart content, filenames, database values originally supplied by users, messages, webhooks, partner responses, files, DNS, environment values, and external tool output as untrusted until proven otherwise.
+Treat request bodies, paths, query parameters, headers, cookies, multipart content, filenames, database values originally supplied by users, messages, webhooks, partner responses, files, DNS, environment values, and external tool output as untrusted until proven otherwise. Follow [cloud, messaging, and jobs](cloud-messaging-and-jobs.md) for message authentication, replay, duplicate delivery, DLQ, and worker behavior.
 
 For each flow, identify:
 
@@ -31,7 +31,7 @@ Validation at one boundary does not make a value safe for every later context.
 
 ## Queries and identifiers
 
-Bind query values:
+Bind query values. Both query examples below are intentionally repository or method excerpts; containing types and imports are omitted:
 
 ```java
 @Query("""
@@ -45,7 +45,7 @@ Optional<UserEntity> findByEmail(@Param("email") final String email);
 Reject concatenation:
 
 ```java
-String jpql = "select user from UserEntity user where user.email = '" + email + "'";
+final String jpql = "select user from UserEntity user where user.email = '" + email + "'";
 ```
 
 - Parameterize JPQL, native SQL, JDBC, search expressions, and stored-procedure values.
@@ -79,7 +79,7 @@ REST APIs can create stored XSS when another client later renders returned data.
 
 ## URLs, redirects, and WebClient
 
-Prefer a configured base URL and internally constructed relative paths:
+Prefer a configured base URL and internally constructed relative paths. The following method is an excerpt for an already-established reactive outbound adapter; the containing class, field, response type, and imports are omitted:
 
 ```java
 public Mono<PartnerResponse> fetchOrder(final String orderId) {
@@ -94,6 +94,8 @@ public Mono<PartnerResponse> fetchOrder(final String orderId) {
 ```
 
 The configured client must still enforce timeouts, TLS, response limits, and the approved destination.
+
+Do not expose `Mono` or another reactive type through service contracts solely because `WebClient` is used. Follow the application's established servlet or reactive execution model from `spring-boot-patterns`.
 
 For any caller-influenced destination:
 
