@@ -1,6 +1,6 @@
 ---
 name: spring-boot-code-review
-description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, and application-security without redefining their rules. Produce evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and for review-before-fix workflows.
+description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, and application-security without redefining their rules. Produce revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
 ---
 
 # Spring Boot Code Review
@@ -16,9 +16,17 @@ Apply the normative skills as follows:
 | Skill | Apply when | Treat as owner of |
 |---|---|---|
 | `modern-java-21` | Every review containing Java source | Java 21 usage, explicit types, imports, Javadoc, nullability, exceptions, source structure, and general test rules |
-| `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, transactions, and feature structure |
-| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, transactions, locking, migrations, and persistence tests |
+| `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, service transaction boundaries, and feature structure |
+| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and persistence tests |
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
+
+Resolve every applicable owner skill before evaluating compliance:
+
+1. Use the active skill catalog when the exact skill name is available.
+2. Otherwise, find an exact matching `name` in repository-controlled skill locations such as `.agents/skills/<name>/SKILL.md` or `.claude/skills/<name>/SKILL.md`. If the repository uses another layout, search its tracked `SKILL.md` files by exact frontmatter name.
+3. Read the owner skill completely and load only the references it routes for the reviewed change.
+
+Never substitute remembered guidance, a similarly named public skill, or an internet result for a missing owner skill. Continue a general defect review when useful, but list the missing owner skill as a coverage gap and do not claim compliance with its rules. If the requested decision materially depends on that unavailable standard, stop that part of the review and ask for the approved source.
 
 Honor the always-on confidentiality instruction from `application-security` before inspecting, copying, searching, or sharing commercial-project material. Use only generic, anonymized internet searches and approved project tools.
 
@@ -52,12 +60,17 @@ Resolve the target in this order:
 
 Do not guess between materially different targets. Ask one focused question when choosing the wrong base or range could invalidate the review.
 
+Record the reviewed base and head revisions before starting. For working-tree reviews, record that staged and unstaged changes were included and preserve the reviewed diff. Recheck the head and working tree before a final merge or release disposition. If the change moved, review the new delta and any invalidated conclusions before finishing.
+
 Before judging the diff:
 
+- inspect repository instructions, contribution rules, architecture decisions, security profile, data-classification policy, API and event contracts, migration conventions, and CI quality gates relevant to the change;
 - inspect the configured Java, Spring Boot, Spring Framework, build-plugin, and dependency versions relevant to the change;
 - identify the intended behavior from the task, acceptance criteria, API or event contract, migration, tests, and established behavior;
 - inspect enough callers, implementations, configuration, data access, tests, and downstream consumers to validate the changed path;
 - identify generated files and review their source template, annotation, schema, or generator instead of reporting style defects in generated output.
+
+Create a coverage record for multi-file reviews: reviewed revision, changed files, traced execution paths, generated or mechanical files, and anything not reviewed. If the change is too large for complete review, request a split or explicitly deliver a partial review; never mark unreviewed files or paths as complete.
 
 ## Review in risk order
 
@@ -80,8 +93,9 @@ Report a finding only when all of the following are true:
 - the change introduces, exposes, or materially worsens the issue;
 - a reachable input, state, timing, deployment, or failure scenario triggers it;
 - the relevant code, configuration, contract, or missing boundary check supports the claim;
-- the impact is concrete;
-- a practical remediation direction exists.
+- the impact is concrete.
+
+Provide the smallest safe remediation direction when it is known. Never suppress a verified defect because the final implementation is uncertain. For an urgent issue without a proven fix, state safe containment, the decision or expertise required, and how to verify the eventual remediation.
 
 Trace framework behavior before claiming a defect. Account for proxies, transactions, validation, serialization, generated code, annotation processors, configuration properties, profiles, and the project's actual versions. Do not infer a compile error, N+1 query, authorization bypass, race, memory leak, or performance regression from a pattern alone.
 
@@ -107,6 +121,14 @@ Inspect the build before selecting commands. Run the narrowest safe checks that 
 - generated SQL, query counts, and representative execution plans for performance-sensitive persistence claims;
 - security tests and project-approved scanners for changed trust boundaries and dependencies.
 
+Treat source, tests, build scripts, wrappers, Maven or Gradle plugins, annotation processors, container definitions, and generated-code tools from an untrusted change as executable code. Before running them:
+
+- inspect changes to the build and CI execution path;
+- use an isolated, least-privileged environment without production credentials, cloud identity, signing keys, privileged sockets, or unrelated project secrets;
+- restrict network access to approved artifact and test services and prevent access to shared production or staging resources;
+- avoid reusable privileged caches or workspaces that the change can poison;
+- do not execute the check when the required isolation is unavailable; report the verification gap instead.
+
 Do not use H2 behavior as proof for another production database. Do not use a mocked unit test as proof of proxy, transaction, serialization, database, network, or container behavior.
 
 Record each command or check that ran, its result, and material limitations. If checks cannot run, preserve the finding only when code evidence is sufficient and state the verification gap. Never say that a change compiles, passes, is secure, or is production-ready without evidence.
@@ -126,6 +148,8 @@ List findings first, ordered by severity and then by execution path or source lo
 
 After findings, list unresolved questions or assumptions, checks performed and gaps, then a short summary. Do not bury findings in a long narrative or dump a completed checklist.
 
+Include the reviewed revision and coverage record. When the user requests a merge or release decision, state each finding's disposition as blocker, non-blocker, or needs decision. Record the owner, reason, expiry, and residual risk for any explicitly accepted blocker; do not invent acceptance.
+
 If no actionable finding remains after verification, say:
 
 > No actionable findings found in the reviewed scope.
@@ -135,12 +159,14 @@ Then state the exact scope and any checks not run. Do not translate “no findin
 ## Complete the review
 
 - [ ] The exact diff or target and intended behavior are identified.
+- [ ] The reviewed base/head or working-tree scope is recorded and unchanged, or the final delta was re-reviewed.
 - [ ] Applicable owner skills were used without redefining their rules.
-- [ ] Every changed file and every affected execution path was examined.
+- [ ] Every changed file and affected execution path was examined, or exclusions are explicit in the coverage record.
 - [ ] Security, correctness, failure, data, performance, rollout, and test risks were considered proportionately.
-- [ ] Every finding has evidence, a trigger, impact, remediation direction, and verification.
+- [ ] Every finding has evidence, a trigger, impact, verification, and either a remediation direction or explicit containment/escalation.
 - [ ] Questions, suggestions, pre-existing issues, and verification gaps are not presented as defects.
 - [ ] Findings are deduplicated, severity-ranked, concise, and limited to the requested scope.
+- [ ] Untrusted review commands ran only in an approved isolated environment, or were not run and are reported as gaps.
 - [ ] No commercial-project information left an approved boundary.
 
 ## Primary guidance
@@ -148,4 +174,7 @@ Then state the exact scope and any checks not run. Do not translate “no findin
 - [Google Engineering Practices: The Standard of Code Review](https://google.github.io/eng-practices/review/reviewer/standard.html)
 - [Google Engineering Practices: What to Look For](https://google.github.io/eng-practices/review/reviewer/looking-for.html)
 - [Google Engineering Practices: Writing Review Comments](https://google.github.io/eng-practices/review/reviewer/comments.html)
+- [Spring Framework: Proxying Mechanisms](https://docs.spring.io/spring-framework/reference/core/aop/proxying.html)
 - [Spring Framework Testing Reference](https://docs.spring.io/spring-framework/reference/testing.html)
+- [Spring Framework: Test-managed Transactions](https://docs.spring.io/spring-framework/reference/testing/testcontext-framework/tx.html)
+- [NIST Secure Software Development Framework](https://csrc.nist.gov/pubs/sp/800/218/final)

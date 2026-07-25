@@ -7,13 +7,14 @@ Use these lenses to trace the changed behavior. Apply only the sections relevant
 1. [Change design and blast radius](#change-design-and-blast-radius)
 2. [REST contract and boundary](#rest-contract-and-boundary)
 3. [Service, domain, and mapping](#service-domain-and-mapping)
-4. [Transactions and concurrency](#transactions-and-concurrency)
-5. [Persistence and database behavior](#persistence-and-database-behavior)
-6. [Security and confidentiality](#security-and-confidentiality)
-7. [External systems, Redis, messaging, and jobs](#external-systems-redis-messaging-and-jobs)
-8. [Configuration, observability, and operations](#configuration-observability-and-operations)
-9. [Build, dependencies, and delivery](#build-dependencies-and-delivery)
-10. [Tests and review completeness](#tests-and-review-completeness)
+4. [Spring proxies and advice](#spring-proxies-and-advice)
+5. [Transactions and concurrency](#transactions-and-concurrency)
+6. [Persistence and database behavior](#persistence-and-database-behavior)
+7. [Security and confidentiality](#security-and-confidentiality)
+8. [External systems, Redis, messaging, and jobs](#external-systems-redis-messaging-and-jobs)
+9. [Configuration, observability, and operations](#configuration-observability-and-operations)
+10. [Build, dependencies, and delivery](#build-dependencies-and-delivery)
+11. [Tests and review completeness](#tests-and-review-completeness)
 
 ## Change design and blast radius
 
@@ -62,6 +63,19 @@ Apply `spring-boot-patterns` for the normative TO–Domain–Entity architecture
 - Check exception translation at the owning boundary and verify that causes, stable error semantics, and rollback behavior remain correct.
 
 Do not suggest making mappers Spring beans when the established project skill uses non-bean mappers. Do not rename Domain objects to View, DTO, command, or query terminology.
+
+## Spring proxies and advice
+
+Apply `spring-boot-patterns`, `application-security`, and the feature-specific owner skill. Review proxy behavior for `@Transactional`, `@Async`, cache annotations, retry annotations, method validation, method security, and custom aspects when present.
+
+- Trace the actual call site and verify that the invocation crosses the configured proxy or woven boundary.
+- Check self-invocation, method and class visibility, final methods or classes, annotation placement, bean ownership, proxy mode, initialization timing, and direct construction outside the container.
+- Check combinations and ordering of transaction, retry, cache, async, validation, security, and custom advice for changed failure semantics or duplicated work.
+- Verify that async return types surface failures and that callers do not mistake scheduling for successful completion.
+- Verify that cache advice uses the intended key, condition, result, transaction timing, and invalidation path without re-defining cache policy owned elsewhere.
+- Exercise proxy-dependent behavior through a Spring-managed bean at the appropriate integration boundary; a directly constructed unit test does not prove interception.
+
+Do not prescribe AspectJ, self-injection, or another proxy workaround by default. Report the missing behavior and let the relevant owner skill and project architecture determine the fix.
 
 ## Transactions and concurrency
 
@@ -133,6 +147,8 @@ For messages and jobs:
 
 - Trace schema compatibility, producer and consumer deployment order, duplicate and out-of-order delivery, poison messages, retry and dead-letter policy, acknowledgement timing, idempotency, and tenant context.
 - Verify scheduler overlap, distributed execution, clock behavior, bounded batches, progress checkpoints, cancellation, and restart safety.
+- Check executor ownership, concurrency and queue bounds, rejection policy, error handling, shutdown behavior, and saturation impact.
+- Verify explicit propagation or reconstruction of security, tenant, locale, logging, and tracing context across async boundaries. Do not assume thread-local state survives executor or virtual-thread transitions.
 
 ## Configuration, observability, and operations
 
@@ -152,6 +168,7 @@ Report missing dashboards, alerts, or runbook changes as findings only when the 
 Apply the supply-chain rules from `application-security` and the version-compatibility rules from each relevant owner skill.
 
 - Inspect Maven or Gradle dependency, plugin, repository, annotation-processor, compiler, test, packaging, and container changes.
+- Treat wrappers, build scripts, tests, plugins, annotation processors, container entrypoints, and code generators as executable review inputs; inspect their changes before running them.
 - Verify that a new dependency has a concrete need, an approved source, compatible licensing and support posture, and no avoidable overlap with existing functionality.
 - Check direct and transitive version alignment with the project's Spring Boot dependency management. Do not recommend a blind upgrade solely because a newer release exists.
 - Treat dependency and secret scanners as evidence sources that require reachability, configuration, exploitability, and project-policy analysis.
@@ -172,6 +189,10 @@ Apply the test rules from all active owner skills.
 - Prefer behavior assertions over implementation-detail assertions and mock-interaction counts.
 - Verify that unit tests do not claim framework guarantees and that integration tests exercise the real boundary under review.
 - Use the supported database for database-specific behavior and representative external stubs or contract tests for provider behavior.
+- For ORM integration tests, verify that constraints, SQL, lifecycle callbacks, and write failures are forced through the required flush; clear the persistence context when the assertion must prove a database reload.
+- Verify commit and rollback behavior outside a test-managed rollback transaction when the production contract depends on commit-time effects.
+- Reject preemptive test timeouts that move transactional work to another thread unless the test deliberately accounts for the resulting transaction boundary.
+- Exercise `@Transactional`, `@Async`, cache, retry, method-validation, and method-security behavior through the configured Spring proxy rather than a directly constructed target.
 - Reject current time, uncontrolled randomness, sleeps, real external networks, order dependence, disabled assertions, swallowed failures, and tests weakened solely to pass the build.
 - Check whether changed tests would have failed before the production fix. A regression test that passes both before and after may not prove the defect.
 - Inspect test data for secrets, production identifiers, personal data, and invalid anonymization.

@@ -10,8 +10,9 @@ Use this reference to decide what belongs in a review report and to express each
 4. [Assign confidence](#assign-confidence)
 5. [Write an actionable finding](#write-an-actionable-finding)
 6. [Deduplicate and order findings](#deduplicate-and-order-findings)
-7. [Report checks and gaps](#report-checks-and-gaps)
-8. [Use the final report structure](#use-the-final-report-structure)
+7. [Track revision and re-review](#track-revision-and-re-review)
+8. [Report checks and gaps](#report-checks-and-gaps)
+9. [Use the final report structure](#use-the-final-report-structure)
 
 ## Classify review observations
 
@@ -35,11 +36,11 @@ Before reporting a finding, answer:
 2. Which reachable input, state, concurrency sequence, dependency failure, or deployment sequence triggers the problem?
 3. What code, configuration, contract, query, migration, or missing enforcement proves the claim?
 4. What user, data, security, performance, cost, or operational impact follows?
-5. Which owner skill or established project contract is violated?
-6. What is the smallest safe direction for resolving it?
+5. Which expected behavior, business invariant, owner-skill rule, or established project contract is violated?
+6. What is the smallest safe direction for resolving it, when known?
 7. Which test or check would fail before the fix and pass after it?
 
-If answers 2, 3, or 4 are missing, classify the observation as a question or gap. If only answer 6 is missing, report the finding but avoid prescribing an unverified implementation.
+If answers 2, 3, or 4 are missing, classify the observation as a question or gap. A missing answer to 5 can indicate undocumented expected behavior; state the supporting assumption. If only answer 6 is missing, report the finding and state containment, required expertise, or the decision needed instead of inventing a fix.
 
 Use static-analysis and scanner output as a lead, not proof. Confirm reachability, sanitization, framework behavior, configuration, dependency version, and compensating controls.
 
@@ -154,7 +155,8 @@ For `Impact`:
 
 For `Fix direction`:
 
-- describe the smallest safe outcome and boundary that should own it;
+- describe the smallest safe outcome and boundary that should own it when the remediation is known;
+- when it is not known, state safe containment and the decision or specialist input required;
 - preserve the TO–Domain–Entity terminology and mapper/service ownership from `spring-boot-patterns`;
 - defer persistence and security mechanics to their owner skills;
 - avoid writing a full replacement implementation unless the user asked for fixes.
@@ -184,6 +186,20 @@ Order findings by:
 
 Do not count findings or add a score unless the user requests metrics. Counts can reward fragmentation and hide impact.
 
+## Track revision and re-review
+
+Record the reviewed base and head commit, pull-request revision, or working-tree scope. Include a coverage record for multi-file reviews: reviewed files and execution paths, generated or mechanical files, explicit exclusions, and unavailable owner skills.
+
+Before giving a merge or release disposition:
+
+1. Recheck that the reviewed head and working tree have not changed.
+2. If they changed, inspect the delta from the last reviewed revision and revisit conclusions invalidated by it.
+3. Close a previous finding only after the new code and its verification address the original scenario.
+4. Review fixes for new defects, scope expansion, weakened tests, or unrelated changes.
+5. State the newest reviewed revision; do not carry approval or “no findings” forward to unseen code.
+
+For a partial review, name what remains unreviewed. Do not use a successful focused review as a decision for the entire change.
+
 ## Report checks and gaps
 
 List checks with their actual result:
@@ -194,6 +210,7 @@ Checks:
 - `./mvnw -q -Dtest=UserServiceTest test`: passed
 - Supported-database integration tests: not run; container runtime unavailable
 - Representative query plan: not available; production-like statistics were not accessible
+- Full build: not run; the untrusted change could not be executed in an approved isolated environment
 ```
 
 Do not claim a command passed when it was not run to completion. Distinguish:
@@ -220,12 +237,18 @@ Questions and assumptions
 Suggestions
 - ...  (omit when empty)
 
+Reviewed revision and coverage
+- Base/head or working-tree scope
+- Reviewed paths and explicit exclusions
+- Missing owner skills
+
 Checks and verification gaps
 - ...
 
 Summary
 - Reviewed scope
 - Merge/release blockers, if any
+- Disposition, only when requested
 - Residual risk
 ```
 
@@ -236,6 +259,9 @@ If there are no findings, use:
 ```text
 No actionable findings found in the reviewed scope.
 
+Reviewed revision and coverage
+- ...
+
 Checks and verification gaps
 - ...
 
@@ -244,4 +270,6 @@ Summary
 - Residual risk remains in ...
 ```
 
-Do not say “LGTM”, “approved”, “safe”, “secure”, or “production-ready” unless the user explicitly asks for that decision and the available evidence supports its limited scope. Even then, state verification gaps and residual risk.
+Do not say “LGTM”, “approved”, “safe”, “secure”, or “production-ready” unless the user explicitly asks for that decision, the reviewed revision is still current, and the available evidence supports its limited scope. Even then, state verification gaps and residual risk.
+
+When a merge or release decision is requested, use `Blocker`, `Non-blocker`, or `Needs decision` independently of severity. For an explicitly accepted blocker, record the accountable owner, reason, expiry, compensating controls, and residual risk. Never infer acceptance from silence.
