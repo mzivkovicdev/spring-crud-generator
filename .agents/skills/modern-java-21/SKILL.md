@@ -33,7 +33,6 @@ Do not classify every `com.*` import as project code. Only the repository's actu
 
 Correct default ordering:
 
-
 ```java
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -45,6 +44,7 @@ import java.util.Optional;
 
 import jakarta.persistence.Entity;
 import jakarta.validation.Valid;
+
 import javax.crypto.Cipher;
 import javax.sql.DataSource;
 
@@ -258,12 +258,21 @@ try {
 
 ## Javadoc and comments
 
+Javadoc is contract documentation, not a coverage metric. Do not add it based only on `public` or `protected`; a declaration can be publicly accessible for framework, proxy, serialization, code-generation, or testing reasons without being a published Java API.
+
 Add complete Javadoc to:
 
 - public and protected APIs;
 - extension points and interfaces implemented outside the package;
 - non-obvious invariants, preconditions, side effects, blocking behavior, concurrency guarantees, transaction requirements, retry behavior, and failure modes;
 - methods whose contract cannot be understood from their signature and type names.
+
+Do not add Javadoc by default to:
+
+- self-explanatory DTOs, TOs, records, enum constants, exceptions, constructors, getters, setters, and accessors;
+- routine framework adapters, generated-code contracts, mappers, repositories, dependency-injection configuration, and wiring classes whose behavior is clear from types and annotations;
+- overriding methods when the inherited contract is accurate;
+- private methods and tests whose purpose is clear from names, types, and structure.
 
 Javadoc should explain the contract and the reason, not narrate the implementation. A public or protected method Javadoc is incomplete unless it contains every applicable tag:
 
