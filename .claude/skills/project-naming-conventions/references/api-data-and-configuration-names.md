@@ -19,12 +19,12 @@ Use this reference for REST paths and parameters, JSON fields, OpenAPI component
 
 ## Preserve contracts before style
 
-Treat these names as contracts once consumed outside one atomically deployable unit:
+Treat these application-owned names as contracts once consumed outside one atomically deployable unit:
 
 - URL paths, parameter names, headers, media types, JSON fields, enum wire values, and error codes;
 - OpenAPI `operationId`, schema, security-scheme, and component names used by generators or policy;
 - tables, columns, constraints, indexes, sequences, triggers, views, stored routines, and migration identifiers;
-- configuration keys, environment variables, profile names, and feature flags.
+- configuration keys, directly bound environment variables, profile names, and feature flags.
 
 Do not rename them with a source-only refactor. Inventory clients, migrations, data, deployment configuration, generated code, gateways, policies, dashboards, and support tooling first.
 
@@ -264,24 +264,24 @@ Rules:
 
 ## Name environment variables and profiles
 
-Derive environment variables from canonical property names using the platform and Spring Boot rules. Default to uppercase underscore form:
+When Spring Boot binds an environment variable directly to a canonical property, derive it using the documented rules: replace dots with underscores, remove dashes, and convert to uppercase.
 
 ```text
-CLIENTS_CATALOG_BASE_URL
-CLIENTS_CATALOG_CONNECT_TIMEOUT
-FEATURES_ORDER_CANCELLATION_ENABLED
+clients.catalog.base-url                 -> CLIENTS_CATALOG_BASEURL
+clients.catalog.connect-timeout          -> CLIENTS_CATALOG_CONNECTTIMEOUT
+features.order-cancellation.enabled      -> FEATURES_ORDERCANCELLATION_ENABLED
 ```
 
 Verify the exact binding of list indices and other complex keys rather than guessing.
 
-Name deployment variables and secret references by capability and purpose:
+Prefer the canonical Spring property as the application contract. A platform may expose a differently named deployment variable and map it explicitly, for example:
 
 ```text
 CATALOG_CLIENT_ID
 CATALOG_CLIENT_SECRET
 ```
 
-The name may describe a secret's purpose; it must never contain the secret value. Avoid personal names, ticket numbers, and temporary labels in long-lived configuration.
+Treat that alias and any secret-store path as platform-owned naming. Do not claim that a custom alias binds directly through Spring relaxed binding unless the deployment mapping proves it. The name may describe a secret's purpose; it must never contain the secret value. Avoid personal names, ticket numbers, and temporary labels in long-lived configuration.
 
 Use a small approved profile vocabulary:
 
@@ -293,6 +293,8 @@ production
 ```
 
 Preserve the organization's environment names when they differ. Do not use profiles as a substitute for typed feature or subsystem configuration, and do not create combinatorial profiles such as `production-aws-eu-new-feature`.
+
+Do not define Kubernetes Secret names, cloud secret-store paths, Helm value names, or CI/CD variable namespaces in this reference. Use the approved platform standard and map them to the application's canonical properties.
 
 ## Name feature flags
 
@@ -320,6 +322,7 @@ Rules:
 - Distinguish release, experiment, permission, operational, and kill-switch flags according to the project's flag platform.
 - Keep the name stable during rollout; record owner and retirement criteria in the system that owns flag lifecycle.
 - Remove code, configuration, tests, and observability for a retired flag in a controlled change.
+- Treat provider-side project, environment, segment, and targeting-resource names as platform-owned; this reference owns the application flag key and its semantics.
 
 ## Migrate escaped names
 
@@ -331,7 +334,7 @@ Use the appropriate migration:
 | `operationId` or schema | Regenerate and verify consumers; preserve aliases or versions when tooling permits |
 | Database object | Use forward migration, compatible application rollout, data backfill where needed, and rollback/roll-forward plan |
 | Configuration key | Bind old and new temporarily, define precedence, warn without exposing values, update deployments, then remove |
-| Environment variable | Coordinate every deployment source and secret reference before removal |
+| Directly bound environment variable or explicit alias | Coordinate every deployment source and platform mapping before removal |
 | Feature flag | Migrate targeting and telemetry, then retire old evaluation and cleanup |
 | Error code or problem type | Version or accept both where clients branch on the identifier |
 
@@ -339,17 +342,17 @@ Test mixed-version deployment when old and new application versions can coexist.
 
 ## Review examples
 
-| Weak | Prefer                                | Reason |
-|---|---------------------------------------|---|
-| `/getUsers` | `/users` with `GET`                   | Use HTTP method plus resource noun |
-| `/user_data/{id}` | `/users/{userId}`                     | Use consistent resource, delimiter, and identifier |
-| `UserDto` | `UserTO`                              | Preserve project terminology |
-| `get_user` JSON field | `userId` or the actual field          | Use the API's `lowerCamelCase` convention |
-| `findUser` operation ID | `usersUserIdGet`                      | State operation and lookup key |
-| `user_entity` | `users`                               | Keep persistence name independent of Java suffix |
-| `idx1` | `ix_orders_customer_id_created_at`    | Make operational purpose searchable |
-| `fk_123` | `fk_orders_customer`                  | Name relationship |
-| `catalog.timeout-ms` | `clients.catalog.read-timeout`        | State subsystem, phase, and bindable duration |
+| Weak | Prefer | Reason |
+|---|---|---|
+| `/getUsers` | `/users` with `GET` | Use HTTP method plus resource noun |
+| `/user_data/{id}` | `/users/{userId}` | Use consistent resource, delimiter, and identifier |
+| `UserDto` | `UserTO` | Preserve project terminology |
+| `get_user` JSON field | `userId` or the actual field | Use the API's `lowerCamelCase` convention |
+| `findUser` operation ID | `usersUserIdGet` | State operation and lookup key |
+| `user_entity` | `users` | Keep persistence name independent of Java suffix |
+| `idx1` | `ix_orders_customer_id_created_at` | Make operational purpose searchable |
+| `fk_123` | `fk_orders_customer` | Name relationship |
+| `catalog.timeout-ms` | `clients.catalog.read-timeout` | State subsystem, phase, and bindable duration |
 | `use-new-flow` | `features.order-cancellation.enabled` | Name stable capability, not rollout age |
 
 ## Primary guidance

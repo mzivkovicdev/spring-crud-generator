@@ -1,6 +1,6 @@
 ---
 name: project-naming-conventions
-description: Define, apply, review, and safely migrate names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, configuration properties, environment variables, feature flags, cache keys, events, topics, queues, jobs, metrics, traces, logs, or cloud resources; when resolving inconsistent terminology; and when reviewing naming-related changes. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, and spring-boot-code-review without redefining their rules.
+description: Define, apply, review, and safely migrate developer-owned names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, Spring configuration, feature flags, cache keys, application messages, jobs, metrics, traces, or structured-log fields; when resolving inconsistent terminology; and when reviewing naming-related changes. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, and spring-boot-code-review without redefining their rules. Defer physical cloud, IAM, Kubernetes, CI/CD, container, DNS, and infrastructure-resource naming to the approved platform standard.
 ---
 
 # Project Naming Conventions
@@ -19,7 +19,7 @@ Treat this skill as the owner of naming vocabulary, identifier form, cross-bound
 | `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
 | `spring-boot-code-review` | Review scope, evidence, severity, reporting, and merge-readiness decisions |
 
-Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric, feature flag, or cloud resource that the design does not require.
+Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric, feature flag, or infrastructure resource that the design does not require.
 
 Preserve the established project terminology:
 
@@ -29,16 +29,35 @@ Preserve the established project terminology:
 | `UserDomain` | Domain/service result |
 | `UserEntity` | JPA persistence model |
 | `UserSummaryProjection` | Repository read projection |
-| `UserRestMapper` | REST TO ↔ domain mapping |
-| `UserDomainMapper` | Entity or projection ↔ domain mapping |
+| `UserRestMapper` | Domain → response TO; request TO → focused domain/service input only when `spring-boot-patterns` permits that input |
+| `UserDomainMapper` | Entity/projection → domain; explicit creation values → new entity |
 
 Do not replace these terms with DTO, View, Model, Command, Query, or similarly overlapping terminology unless the project explicitly adopts a different architecture and migration.
+
+Treat generic DTO, View, Command, or Query examples in another skill as structural illustrations, not permission to replace this project's terminology or boundaries. Follow `spring-boot-patterns` when a summary table or bidirectional arrow in another document is less precise about mapper direction.
+
+## Keep application and platform naming separate
+
+Apply this skill directly to names owned by application code or its public/runtime contracts:
+
+- Java source, packages, modules, and tests;
+- REST, JSON, OpenAPI, errors, database objects, migrations, and Spring configuration;
+- application event types and schemas, publisher/consumer classes, logical destination properties, scheduled jobs, executors, cache names and keys, Micrometer meters, custom spans, and structured-log fields.
+
+Defer physical infrastructure names to the repository's approved platform or DevOps standard:
+
+- AWS and other cloud resources, IAM roles and policies, buckets, physical queues/topics, KMS aliases, and secret-store paths;
+- Kubernetes, Helm, Terraform, CloudFormation, DNS, container repositories/tags, CI/CD jobs, infrastructure labels, and cost-allocation tags.
+
+Ownership follows the artifact and repository policy, not a person's job title. When the same repository contains infrastructure as code, load its platform naming standard before editing those artifacts. If no approved standard is available, do not invent a universal physical naming scheme; ask for the missing convention. Still apply `application-security` to prevent confidential data from appearing in any name.
+
+Application code should refer to physical resources through typed configuration named by application purpose. The platform supplies the environment-specific physical value. Use a provider-specific property namespace only when provider behavior is intentionally part of the application contract.
 
 ## Route the references
 
 - Read [Java, Spring, and test names](references/java-spring-and-test-names.md) for identifiers, packages, modules, architectural roles, Spring components, exceptions, tests, and acronyms.
 - Read [API, data, and configuration names](references/api-data-and-configuration-names.md) for REST, JSON, OpenAPI, error codes, database objects, migrations, configuration, environment variables, profiles, and feature flags.
-- Read [messaging, observability, and cloud names](references/messaging-observability-and-cloud-names.md) for events, queues, topics, jobs, Redis keys, metrics, tags, spans, structured logs, AWS, and other infrastructure.
+- Read [application messaging and observability names](references/application-messaging-and-observability-names.md) for event/message types, publisher and consumer classes, logical destination properties, jobs, executors, Redis keys, metrics, tags, custom spans, and structured-log fields.
 - Load every reference whose resource type is created, renamed, serialized, persisted, published, monitored, or provisioned by the change. Avoid loading unrelated references for a narrow local rename.
 
 ## Apply the rule hierarchy
@@ -66,7 +85,7 @@ Do not convert subjective readability advice into a blocking rule when multiple 
 
 Before naming:
 
-1. Inspect the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, infrastructure modules, and nearby sound code.
+1. Inspect the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code.
 2. Identify the business concept, its owner, lifecycle, scope, and whether the name is internal, public, persisted, externally provisioned, or operationally queried.
 3. Reuse the approved domain term for the same concept across layers. Use different names only when the concepts or contracts genuinely differ.
 4. Resolve synonyms and overloaded words with the domain owner. Do not guess between materially different business meanings.
@@ -140,36 +159,36 @@ Check that the name:
 
 - uses the approved domain term and correct architectural role;
 - follows the convention for its resource type;
-- remains unambiguous in logs, stack traces, dashboards, generated clients, database tools, and infrastructure consoles;
-- is valid for every target compiler, serializer, database, broker, registry, operating system, and cloud service;
+- remains unambiguous in logs, stack traces, dashboards, generated clients, database tools, and broker consoles used by the application team;
+- is valid for every target compiler, serializer, database, broker, registry, and operating system that consumes it;
 - respects case folding, reserved words, delimiter, character, and length limits;
 - does not expose secrets, personal data, tenant names, customer names, internal vulnerabilities, or other confidential information;
 - avoids collisions after normalization by frameworks, providers, exporters, and case-insensitive filesystems;
 - remains stable under scaling, deployment, and multi-environment operation;
-- can be discovered with an exact repository, log, metric, or infrastructure search.
+- can be discovered with an exact repository, log, metric, or contract search.
 
-Use automated formatters, compiler checks, schema validators, migration validators, OpenAPI validation, infrastructure plans, and project linters when they enforce the convention. Do not claim a name is provider-valid or backward-compatible without checking the actual target and project version.
+Use automated formatters, compiler checks, schema validators, migration validators, OpenAPI validation, and project linters when they enforce the convention. Do not claim a name is provider-valid or backward-compatible without checking the actual target and project version.
 
 ## Rename safely
 
 Treat a rename as a migration when the name can escape the local compilation unit.
 
 1. Inventory definitions and consumers with exact searches, generated-code inspection, schema or infrastructure references, and runtime configuration.
-2. Classify the name as internal source, public API, serialized data, persisted schema, configuration, message contract, cache namespace, observability contract, or provisioned resource.
+2. Classify the name as internal source, public API, serialized data, persisted schema, configuration, message contract, cache namespace, or observability contract.
 3. Determine whether consumers can upgrade atomically. Assume they cannot unless deployment evidence proves otherwise.
 4. Choose direct rename only for fully internal, atomically deployable names.
 5. For contracts, use an approved compatibility mechanism: additive alias, deprecation, expand-and-contract migration, dual read/write, versioned schema, or resource replacement plan.
 6. Define removal criteria and an owner for every temporary alias. Do not leave compatibility names indefinitely.
-7. Update code, tests, schemas, documentation, generated clients, migrations, dashboards, alerts, runbooks, deployment manifests, and consumers in the required order.
+7. Update code, tests, schemas, documentation, generated clients, migrations, dashboards, alerts, configuration, and consumers in the required order. Coordinate platform-owned changes instead of editing them implicitly.
 8. Verify old, mixed-version, rollback, and new-only states when rolling deployment is possible.
 
 Avoid mixing an otherwise mechanical rename with unrelated behavior changes. If separation is impractical, make the behavioral delta explicit and test it independently.
 
 Do not rename:
 
-- a public field, endpoint, error code, event type, topic, configuration key, metric, or cloud resource merely for aesthetic consistency;
+- a public field, endpoint, error code, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
 - a table, column, constraint, or index outside a migration;
-- an infrastructure resource before checking whether the change causes replacement, data loss, downtime, or policy drift;
+- a physical infrastructure resource under this skill alone; use the approved platform standard and replacement plan;
 - a security-sensitive identifier without applying `application-security`.
 
 ## Review naming changes
@@ -187,10 +206,10 @@ During code review:
 
 - [ ] The relevant owner skills and resource references were applied.
 - [ ] The approved business term and architectural role are clear.
-- [ ] The name follows the relevant Java, API, data, configuration, messaging, observability, or cloud convention.
+- [ ] The name follows the relevant Java, API, data, configuration, messaging, cache, or observability convention.
 - [ ] Acronyms, singular/plural form, predicates, suffixes, and delimiters are consistent.
 - [ ] Confidential values and unbounded-cardinality identifiers are absent.
-- [ ] Compiler, schema, provider, and normalization constraints were checked where applicable.
+- [ ] Compiler, schema, broker/exporter, and normalization constraints were checked where applicable.
 - [ ] Definitions, consumers, generated artifacts, tests, documentation, and operational dependencies were updated.
 - [ ] Compatibility, deployment order, rollback, and temporary alias removal were handled for escaped names.
 - [ ] The final change avoids unrelated naming churn and preserves the established TO–Domain–Entity terminology.

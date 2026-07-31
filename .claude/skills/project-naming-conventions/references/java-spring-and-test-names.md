@@ -45,17 +45,22 @@ Use lowercase package and Java module names. Use the organization's approved rev
 com.acme.customer
 com.acme.order
 com.acme.order.controller
-com.acme.order.domain
-com.acme.order.entity
 com.acme.order.mapper.rest
 com.acme.order.mapper.domain
-com.acme.order.repository
 com.acme.order.service
+com.acme.order.service.impl
+com.acme.order.domain
+com.acme.order.repository
+com.acme.order.model
 com.acme.order.transferobject.request
 com.acme.order.transferobject.response
+com.acme.order.exception
+com.acme.order.config
 ```
 
 Follow the package architecture selected by `spring-boot-patterns`; this skill controls the words and casing, not the choice between sound layered and feature-oriented structures.
+
+The example mirrors the layered package vocabulary in `spring-boot-patterns`. Include `service.impl` only for an intentional interface/implementation split. Do not create missing packages before a type with that responsibility exists.
 
 Rules:
 
@@ -64,9 +69,9 @@ Rules:
 - Keep package segments lowercase ASCII without underscores or camel case.
 - Use a singular or plural capability form consistently; prefer the established ubiquitous-language form.
 - Avoid package names tied to temporary initiatives, team names, ticket numbers, people, or deployment environments.
-- Avoid dumping grounds such as `common`, `misc`, `general`, `stuff`, `helpers`, or broad `util` packages.
-- Allow a narrowly named utility package only for cohesive, stateless technical functions, such as `time` or `encoding`; prefer the actual capability name over `util`.
-- Do not create `impl` solely to hold one `*Impl` class.
+- Avoid dumping grounds such as `common`, `misc`, `general`, `stuff`, `helpers`, or a broad `util` package.
+- When the established layered layout contains `util`, keep it limited to focused stateless helpers with meaningful type names. Prefer a specific responsibility package for new code when that is clearer; do not migrate packages solely to remove the word `util`.
+- Use `service.impl` and an `*Impl` class only when `spring-boot-patterns` justifies the interface/implementation split. Preserve a justified established split.
 - Keep Java source filenames identical to their top-level public type names.
 
 Name Maven or Gradle modules by durable capability or deployable responsibility:
@@ -118,14 +123,15 @@ Use a suffix only when the type owns that responsibility:
 | Role | Form | Example |
 |---|---|---|
 | REST controller | `<Resource>Controller` | `UserController` |
-| Service boundary | `<Capability>Service` | `UserService` |
+| Service contract or single concrete service | `<Capability>Service` | `UserService` |
+| Intentional service implementation | Established `*Impl` form or a distinguishing implementation name | `UserServiceImpl`, `CachedCatalogService` |
 | JPA repository | `<Aggregate>Repository` | `UserRepository` |
 | JPA entity | `<Concept>Entity` | `UserEntity` |
 | REST transfer object | Established `<Concept>TO` form | `UserCreateTO`, `UserTO` |
 | Domain/service result | `<Concept>Domain` | `UserDomain` |
 | Repository projection | `<Purpose>Projection` | `UserSummaryProjection` |
-| REST mapper | `<Concept>RestMapper` | `UserRestMapper` |
-| Entity/domain mapper | `<Concept>DomainMapper` | `UserDomainMapper` |
+| REST mapper | `<Concept>RestMapper` | `UserRestMapper` maps domain → response TO and, only when justified, request TO → focused service/domain input |
+| Entity/domain mapper | `<Concept>DomainMapper` | `UserDomainMapper` maps entity/projection → domain and explicit creation values → new entity |
 | Configuration properties | `<Subsystem>Properties` | `CatalogClientProperties` |
 | Bean configuration | `<Subsystem>Configuration` | `CatalogClientConfiguration` |
 | Outbound client | `<ProviderOrCapability>Client` | `CatalogClient` |
@@ -138,6 +144,8 @@ Use a suffix only when the type owns that responsibility:
 Do not rename `UserController` to `UserRestController` merely because the application is REST-only when the package and project convention already make that clear.
 
 Do not use `Manager`, `Coordinator`, `Processor`, `Handler`, `Helper`, `Utils`, or `Facade` as default escape hatches. Use them only when the pattern and exact responsibility are real and documented by the owning architecture.
+
+Do not interpret `UserServiceImpl` as automatically wrong. It is valid when the interface is an intentional boundary, as shown by `spring-boot-patterns`. When implementations differ by real behavior or mechanism, a distinguishing name is usually clearer than several unrelated `*Impl` classes.
 
 ## Name methods
 
@@ -163,7 +171,9 @@ Choose verbs by semantics, not habit:
 | Create and persist | `create` |
 | Change an existing aggregate | `updateById` |
 | Remove by identity | `deleteById` |
-| Convert between representations | `mapUserEntityToUserDomain` |
+| Map a service result to a response TO | `mapUserDomainToUserTO` |
+| Map persistence output to domain | `mapUserEntityToUserDomain` |
+| Map explicit creation values to a new entity | `mapToUserEntity` |
 | Validate and throw on failure | `validateOrderTransition` or a domain-specific verb |
 | Boolean query | `isActive`, `hasPermission`, `canRetry` |
 
@@ -190,6 +200,8 @@ findByStatusOrderByCreatedAtDescIdDesc
 ```
 
 Move a complex query to an explicitly named repository method or custom repository implementation according to `spring-data-jpa`; do not encode an unreadable query solely to avoid `@Query`.
+
+Follow the repository's established controller-handler naming style. An OpenAPI `operationId` is a public tooling contract and does not have to equal the Java controller method name. Do not rename handler methods solely to make those two names identical.
 
 ## Name fields, parameters, and local variables
 
@@ -319,7 +331,7 @@ Reject or question:
 | Weak | Prefer | Reason |
 |---|---|---|
 | `UserData` | `UserDomain` or `UserTO` | State the actual boundary role |
-| `UserServiceImpl` | `UserService` | Avoid an unjustified interface/implementation pair |
+| `UserServiceImpl` created only to implement an otherwise unnecessary empty interface | One concrete `UserService` | Avoid an unjustified interface/implementation pair; preserve justified `UserServiceImpl` usage |
 | `processUser` | `activateUser` | State the domain action |
 | `checkEmail` | `existsByEmail` or `validateEmail` | State whether the method queries or validates |
 | `flag` | `emailVerified` | State the predicate |
