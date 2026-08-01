@@ -119,7 +119,7 @@ Define enum wire values explicitly when stability matters. Treat case or spellin
 
 Use standard HTTP header names when the standard defines the semantics. Name organization-specific headers from a documented namespace and compatibility policy; do not create `X-*` headers by habit or leak internal topology in names.
 
-## Name OpenAPI operations, schemas, and controller methods
+## Name OpenAPI operations and schemas
 
 Treat every OpenAPI `operationId` as a public tooling contract. It must be unique, stable, case-consistent, deterministic from the API path, and suitable for use as a generated client or controller method name.
 
@@ -146,10 +146,12 @@ Apply these normalization rules in order:
 7. Do not include query parameters, headers, request bodies, media types, controller names, or API version text unless they are actual path segments.
 8. Do not add generic verbs such as `find`, `list`, `create`, `update`, or `delete` independently of the HTTP-method suffix.
 
+For URI major versioning, declare the common `/api/v1` prefix in the OpenAPI `servers.url` and keep Path Items resource-relative, such as `/users/{userId}`. The version prefix therefore does not become part of `operationId`.
+
 Examples:
 
 | HTTP operation | `operationId` |
-|---|---|
+| --- | --- |
 | `GET /users/{userId}` | `usersUserIdGet` |
 | `GET /users` | `usersGet` |
 | `POST /users` | `usersPost` |
@@ -166,7 +168,8 @@ The controller handler method name must exactly match the corresponding `operati
 @GetMapping("/{userId}")
 public UserTO usersUserIdGet(@PathVariable final Long userId) {
     return UserRestMapper.INSTANCE.mapUserDomainToUserTO(
-            this.userService.getById(userId));
+            this.userService.getById(userId)
+    );
 }
 ```
 
@@ -236,7 +239,7 @@ Apply `application-security` to error details and identifiers. A stable name mus
 Follow `spring-data-jpa` and the migration baseline. Default to lowercase `snake_case` physical identifiers when the database and project permit it.
 
 | Object | Default | Example |
-|---|---|---|
+| --- | --- | --- |
 | Table | plural domain noun | `users`, `order_items` |
 | Column | attribute noun | `email`, `created_at` |
 | Primary key column | `id` when unambiguous | `id` |
@@ -394,7 +397,7 @@ Rules:
 Use the appropriate migration:
 
 | Name type | Safe migration direction |
-|---|---|
+| --- | --- |
 | REST path or field | Add the new contract, deprecate the old, support both for the agreed window, migrate consumers, then remove |
 | `operationId` or schema | Regenerate and verify consumers; preserve aliases or versions when tooling permits |
 | Database object | Use forward migration, compatible application rollout, data backfill where needed, and rollback/roll-forward plan |
@@ -408,12 +411,12 @@ Test mixed-version deployment when old and new application versions can coexist.
 ## Review examples
 
 | Weak | Prefer | Reason |
-|---|---|---|
+| --- | --- | --- |
 | `/getUsers` | `/users` with `GET` | Use HTTP method plus resource noun |
 | `/user_data/{id}` | `/users/{userId}` | Use consistent resource, delimiter, and identifier |
 | `UserDto` | `UserTO` | Preserve project terminology |
 | `get_user` JSON field | `userId` or the actual field | Use the API's `lowerCamelCase` convention |
-| `usersUserIdGet` generated for a new hand-authored API | `getUser` | Prefer a stable domain operation when no generator convention must be preserved |
+| `getUser` for `GET /users/{userId}` | `usersUserIdGet` | Derive the controller and OpenAPI operation name from the Path Item and HTTP method |
 | `user_entity` | `users` | Keep persistence name independent of Java suffix |
 | `idx1` | `ix_orders_customer_id_created_at` | Make operational purpose searchable |
 | `fk_123` | `fk_orders_customer` | Name relationship |

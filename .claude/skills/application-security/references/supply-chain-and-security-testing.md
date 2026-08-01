@@ -82,7 +82,7 @@ Protect runtime deployment:
 Match the test to the control:
 
 | Control | Minimum useful evidence |
-|---|---|
+| --- | --- |
 | HTTP authentication and route rules | Spring Security integration test through the filter chain |
 | Object and tenant authorization | Service plus database-backed integration test with two users or tenants |
 | Input constraints | Boundary tests for valid, invalid, oversized, and malformed values |

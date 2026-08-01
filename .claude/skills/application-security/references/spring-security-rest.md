@@ -31,7 +31,7 @@ Keep framework defaults unless a verified requirement justifies a change. A comm
 
 ## Authorization
 
-The following example is a complete configuration class and follows the import order from `modern-java-21`. It intentionally makes no CSRF or session decision; add those controls only after evaluating the actual credential model.
+The following authorization/filter-chain excerpt follows the import order from `modern-java-21`. It is not a complete resource-server configuration: JWT trust and validation properties remain mandatory. It intentionally makes no CSRF or session decision; add those controls only after evaluating the actual credential model.
 
 ```java
 package com.acme.security;
@@ -60,6 +60,21 @@ public class ApiSecurityConfiguration {
     }
 }
 ```
+
+For a single approved issuer, configure issuer and audience explicitly when the supported Spring Boot version provides these properties:
+
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+          audiences:
+            - ${API_AUDIENCE}
+```
+
+If the supported version or identity-provider model requires custom handling, configure an explicit `JwtDecoder` with equivalent issuer, audience, timestamp, and approved-algorithm validators. Do not consider the resource server complete until the full token-validation policy is configured and tested.
 
 - Use exact matchers and verify matcher ordering.
 - Do not rely only on URL rules. Enforce operation, object, field, and tenant authorization in the service and persistence path.
@@ -127,7 +142,7 @@ Do not log complete tokens or expose them in URLs, query parameters, error bodie
 Determine CSRF protection from how credentials are attached:
 
 | Client and credential behavior | CSRF posture |
-|---|---|
+| --- | --- |
 | Browser automatically sends session cookie, Basic credentials, client certificate, or authentication cookie | Keep CSRF protection and integrate the client with the token mechanism |
 | Browser stores a bearer value in a cookie | Treat it as cookie authentication; keep CSRF protection |
 | Non-browser client explicitly sets an `Authorization` bearer header and no ambient browser credential authenticates the request | CSRF may be disabled after documenting and testing this assumption |

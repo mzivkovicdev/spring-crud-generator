@@ -54,7 +54,7 @@ Apply the complete `modern-java-21` workflow to every created or modified `.java
 Use the repository's existing sound structure instead of performing a broad package migration. Keep these responsibilities explicit regardless of package names:
 
 | Boundary | Responsibility |
-|---|---|
+| --- | --- |
 | REST controller/listener | Parse and validate transport input, delegate, and map domain output to a TO |
 | REST mapper | Map domain results to response TOs and, only for a justified focused input, map a request TO to a domain/service input |
 | Service | Accept explicit method parameters or a justified parameter object, orchestrate the operation, return domain objects, and own the transaction boundary |
@@ -66,7 +66,7 @@ Use the repository's existing sound structure instead of performing a broad pack
 Use the established terminology consistently:
 
 | Type | Boundary |
-|---|---|
+| --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
 | `UserDomain`, focused service parameter objects | Domain/service |
 | `UserEntity` | JPA persistence |
@@ -126,8 +126,9 @@ Read the domain and domain mapper examples in [service and domain examples](refe
 
 Services implement operations and own orchestration.
 
-- Create an interface only for a meaningful port, multiple implementations, strategy, or external boundary.
-- Use one concrete service class when an interface/implementation split has no real purpose.
+- Treat application services used by inbound adapters as intentional application contracts. Define a `<Capability>Service` interface and a `<Capability>ServiceImpl` Spring bean.
+- Put caller-facing Javadoc and method-validation constraints on the service interface. Put `@Service`, `@Validated`, transactions, dependencies, and implementation logic on the implementation class without duplicating the contract.
+- Do not create interface/implementation pairs for internal helpers, stateless utilities, or types with no application-service contract.
 - Use Lombok constructor generation only when Lombok is an established project dependency and the generated constructor remains obvious; otherwise write the constructor explicitly.
 - Do not accept REST request/response TOs and do not return JPA entities.
 - Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
@@ -242,7 +243,7 @@ Reject:
 - entities returned from services;
 - REST TOs passed into services;
 - field injection;
-- service interfaces created by habit;
+- empty or responsibility-free service interfaces;
 - parameter objects that merely hide unrelated values or mechanically satisfy a numeric threshold;
 - project-owned service methods with eight or more declared parameters and no cohesive grouping, redesign, or documented justification;
 - generic `Map` responses;
