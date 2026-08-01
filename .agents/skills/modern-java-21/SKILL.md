@@ -25,11 +25,11 @@ Use this group order:
 2. Java SE imports: `java.*`;
 3. Jakarta EE imports: `jakarta.*`;
 4. legacy Java EE/JDK extension imports: `javax.*`;
-5. imports from the current project's base package, inferred from its `package` declarations, for example `com.acme.*`;
-6. Spring imports: `org.springframework.*`;
-7. all remaining third-party imports, for example `com.fasterxml.*`, `io.*`, `org.hibernate.*`, `org.junit.*`, `reactor.*`, and `software.amazon.*`.
+5. all `com.*` imports, including project and third-party imports;
+6. all `org.*` imports, including Spring and other third-party imports;
+7. all remaining imports, for example `io.*`, `reactor.*`, and `software.amazon.*`.
 
-Do not classify every `com.*` import as project code. Only the repository's actual base package belongs to the project group; libraries such as `com.fasterxml.*` belong to the remaining third-party group.
+Group imports by their leading namespace. Do not separate the project's `com.*` imports from third-party `com.*` imports, and do not separate Spring imports from other `org.*` imports.
 
 Correct default ordering:
 
@@ -154,18 +154,16 @@ return switch (paymentResult) {
 
 Use a sealed hierarchy only when the variants are intentionally closed and controlled by the same domain.
 
-### Explicit local variable types
+### Local variable type inference
 
-Never use Java local-variable type inference. The `var` keyword is forbidden in production code, test code, examples, generated code, and refactoring output.
-
-Always write the explicit type:
+Use explicit local variable types throughout project-controlled Java source, including production code, tests, examples, and generated-source templates:
 
 ```java
 final Customer customer = customerRepository.getRequired(customerId);
 final CalculationResult result = calculate(input);
 ```
 
-Do not preserve an existing `var` declaration in a Java file that is already being modified when it can be safely converted within the task. Do not perform a repository-wide replacement in untouched files as part of an unrelated change.
+Do not use `var`. This is a deliberate project readability convention, not a claim that Java local-variable type inference is dynamically typed or universally incorrect. Java still resolves the type statically, but this codebase requires the declared type to remain visible. If a generator emits `var`, change its template or configuration instead of hand-editing generated output.
 
 ### Streams
 
@@ -181,7 +179,7 @@ Do not preserve an existing `var` declaration in a Java file that is already bei
 - Keep methods at one level of abstraction and name extracted operations by intent.
 - Prefer guard clauses over deep nesting.
 - A method over roughly 40 lines requires scrutiny. A method over 60 lines or a class over 1000 lines must be refactored unless a concrete reason is documented.
-- Treat more than seven parameters, boolean behavior flags, nested conditionals, and high cognitive complexity as design warnings.
+- Allow up to seven declared parameters in project-owned methods and constructors when their names, order, and purpose remain clear. Treat eight or more as a design warning: first group values that form a cohesive domain concept or invariant into a focused parameter/value object, or document why the signature cannot be changed. Do not create a catch-all wrapper merely to hide unrelated parameters. Existing framework callbacks, overrides, and generated signatures are exempt when the project does not control them.
 - Do not game size rules by extracting meaningless one-line methods or creating generic `Utils` dumping grounds.
 - Prefer composition over inheritance.
 - Create an interface for a real boundary, multiple behavior, a plugin strategy, or a useful port. Do not mechanically create `FooService` plus `FooServiceImpl` for every service.
@@ -318,7 +316,7 @@ Complete generic-type example:
 <T> Page<T> search(final SearchQuery query, final PageRequest pageRequest);
 ```
 
-For records, document every component with `@param`. For public classes/interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. For an override, use `{@inheritDoc}` only when the inherited contract is fully accurate; otherwise document the additional guarantees, restrictions, or exceptions.
+For records, document every component with `@param`. For public classes/interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. An overriding method automatically inherits missing Javadoc from its supertype. Omit its Javadoc when the inherited contract is complete; do not add a comment containing only `{@inheritDoc}`. Use `{@inheritDoc}` when extending the inherited text with meaningful caller-visible guarantees or behavior, and only when the inherited contract remains accurate.
 
 Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remove stale comments when the implementation changes.
 
@@ -343,7 +341,7 @@ Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remov
 ## Forbidden patterns
 
 - wildcard or unused imports;
-- the `var` keyword;
+- opaque or repository-inconsistent local type inference;
 - field injection;
 - `Optional` fields or parameters;
 - `null` collections;

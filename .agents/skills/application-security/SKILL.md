@@ -13,7 +13,8 @@ Apply this skill together with:
 
 - `modern-java-21` for Java language rules, imports, Javadoc, exceptions, source structure, and general tests;
 - `spring-boot-patterns` for REST controllers, TO–Domain–Entity boundaries, mappers, services, transactions, errors, and configuration;
-- `spring-data-jpa` for entities, repositories, queries, locking, migrations, and database performance.
+- `spring-data-jpa` for entities, repositories, queries, locking, migrations, and database performance;
+- `project-naming-conventions` when security-sensitive or escaped names are created, changed, logged, persisted, published, cached, or provisioned.
 
 Do not redefine those rules. Use their terminology consistently:
 
@@ -22,14 +23,14 @@ Do not redefine those rules. Use their terminology consistently:
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
 | `UserDomain` | Domain/service result |
 | `UserEntity` | JPA persistence |
-| `UserRestMapper` | REST TO ↔ domain |
-| `UserDomainMapper` | Entity/projection ↔ domain |
+| `UserRestMapper` | Domain → response TO; request TO → a justified focused domain/service input |
+| `UserDomainMapper` | Entity/projection → domain; explicit creation values → new entity |
 
 This skill owns threat analysis, confidentiality, authentication, authorization, API abuse prevention, secrets, cryptography, dangerous trust boundaries, cloud and messaging security, security verification, and release risk. Follow the stricter compatible rule and never weaken an existing control merely to simplify a feature.
 
 ## Always-on confidentiality rule
 
-Skill activation is conditional, but confidentiality is not. Ensure the mandatory block from [data protection and confidentiality](references/data-protection-and-confidentiality.md#mandatory-root-instruction) exists in both repository-root `AGENTS.md` and repository-root `CLAUDE.md`. Copy only that block, not the entire skill.
+Skill activation is conditional, but confidentiality is not. Ensure the mandatory block from [data protection and confidentiality](references/data-protection-and-confidentiality.md#mandatory-root-instruction) is loaded exactly once by every coding agent. For Claude-only projects, place it in repository-root `CLAUDE.md`. For multi-agent projects, keep it canonically in repository-root `AGENTS.md` and make `CLAUDE.md` import `@AGENTS.md` (or use an equivalent symlink). Do not maintain two copied blocks.
 
 Treat non-public source code, prompts, architecture, schemas, API contracts, internal names and URLs, tickets, configuration, logs, credentials, production data, customer data, and vulnerability details as confidential until explicitly classified otherwise.
 

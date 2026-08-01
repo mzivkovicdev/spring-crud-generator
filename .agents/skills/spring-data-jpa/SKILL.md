@@ -9,7 +9,9 @@ Design persistence for correctness, predictable SQL, and verified performance. J
 
 ## Coordination with other skills
 
-Apply `modern-java-21` to every touched Java file and `spring-boot-patterns` to controller, service, domain, mapper, and transaction boundaries. Those skills own general Java style, imports, Javadoc, tests, TOs, domain models, service parameters, non-bean mappers, and service update structure. Do not repeat their rules here.
+Apply `modern-java-21` to every touched Java file and `spring-boot-patterns` to controller, service, domain, mapper, and transaction boundaries. Those skills own general Java style, imports, Javadoc, tests, TOs, domain models, service parameters, mapper construction, and service update structure. Do not repeat their rules here.
+
+Apply `application-security` when persistence affects confidential data, tenant or object ownership, authorization scope, encryption, audit data, backups, exports, or dangerous query input. Apply `project-naming-conventions` to entity, repository, table, column, constraint, index, and migration names and to every escaped rename.
 
 Use their established terminology consistently:
 
@@ -19,7 +21,7 @@ Use their established terminology consistently:
 | `UserDomain` | Domain/service result |
 | `UserEntity` | JPA persistence |
 | `UserSummaryProjection` | Repository read projection |
-| `UserRestMapper` | Domain → response TO; request TO → focused domain input object only for a justified operation with seven or more service parameters |
+| `UserRestMapper` | Domain → response TO; request TO → a justified focused domain/service input |
 | `UserDomainMapper` | Entity/projection → domain; explicit creation values → entity |
 
 Repositories return entities or persistence projections. Services map them to domain objects before returning. This skill owns the JPA behavior beneath that boundary.
@@ -65,6 +67,9 @@ public class UserEntity {
 
     @Column(nullable = false, length = 254)
     private String email;
+
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -165,7 +170,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 - Bind values through parameters; never concatenate data into JPQL or SQL.
 - Use `Optional` for an optional single result and `existsBy...` when only presence is needed.
 - Bound every result that can grow with production data.
-- Do not expose destructive or unbounded methods through generic base repositories without a real use case.
+- Do not invoke inherited destructive or unbounded methods on production-sized data without a bounded use case. When preventing those calls at the repository API is a project requirement, define and verify a tailored base repository instead of assuming `JpaRepository` hides them.
 - Use a custom repository for queries clearer with Specifications, Criteria, Querydsl, `EntityManager`, or native SQL.
 - Consume repository `Stream<T>` results inside the required transaction and close them with try-with-resources; never return an open stream across the service boundary.
 - Add Javadoc only when locking, timeout, fetch, ordering, native-SQL, or consistency semantics are non-obvious.
@@ -356,8 +361,10 @@ CREATE UNIQUE INDEX uk_users_email ON users (email);
 - Keep transactions short; do not perform remote calls, unbounded iteration, or long CPU work inside them.
 - Do not rely on self-invocation. Move a separate transaction boundary to another bean when required.
 - Use `REQUIRES_NEW` only for a documented consistency reason and account for extra connection demand.
-- Follow the `spring-boot-patterns` update structure: load the entity, call explicit setters, invoke `saveAndFlush` once, and map the saved entity to domain.
-- Do not call `saveAndFlush` for every item in a loop.
+- Follow the `spring-boot-patterns` update structure: load the entity inside the write transaction, invoke explicit mutations, call repository `save` exactly once, and map the saved entity returned by the repository to domain.
+- JPA can synchronize changes to a managed entity at flush/commit, but this project deliberately requires the explicit `save` call for update intent and consistency with the Spring Data repository abstraction. Do not omit it as a dirty-checking shortcut.
+- Use `flush` or `saveAndFlush` only when subsequent logic must observe database synchronization immediately, such as a deliberately handled constraint failure or database-generated effect; document and test that reason.
+- Never call `saveAndFlush` for every item in a loop.
 - Remember that JPQL/HQL and some native queries can trigger an automatic flush before query execution.
 - Choose isolation levels from actual anomalies and database behavior.
 
@@ -472,7 +479,7 @@ Reject:
 - `CascadeType.ALL` without aggregate lifecycle ownership;
 - cascade remove from a child or shared reference to its parent;
 - lazy or mutable associations in `equals`, `hashCode`, or `toString`;
-- `saveAndFlush` inside per-row loops;
+- unnecessary early flushes and `saveAndFlush` inside per-row loops;
 - bulk DML followed by use of stale managed entities;
 - pessimistic locks without bounded scope and timeout consideration;
 - production schema mutation through Hibernate auto-DDL;

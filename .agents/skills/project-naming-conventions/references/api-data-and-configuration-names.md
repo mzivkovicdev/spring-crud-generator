@@ -119,19 +119,82 @@ Define enum wire values explicitly when stability matters. Treat case or spellin
 
 Use standard HTTP header names when the standard defines the semantics. Name organization-specific headers from a documented namespace and compatibility policy; do not create `X-*` headers by habit or leak internal topology in names.
 
-## Name OpenAPI operations and schemas
+## Name OpenAPI operations, schemas, and controller methods
 
-Make every `operationId` unique, stable, case-consistent, and suitable for generated client method names. Default to `lowerCamelCase`:
+Treat every OpenAPI `operationId` as a public tooling contract. It must be unique, stable, case-consistent, deterministic from the API path, and suitable for use as a generated client or controller method name.
+
+For every new operation, derive `operationId` from the OpenAPI path and HTTP method:
 
 ```text
-usersUserIdGet
-usersGet
-usersPost
-userUserIdPut
-userUserIdDelete
+{normalizedPath}{HttpMethod}
 ```
 
-Do not include transport noise such as `rest`, `http`, `controller`, or version text in `operationId` unless required to disambiguate an actual contract.
+For standard item-resource paths, this is equivalent to:
+
+```text
+{resourcePath}{IdParameter}{HttpMethod}
+```
+
+Apply these normalization rules in order:
+
+1. Use the path declared by the OpenAPI Path Item. Do not include the server URL or base URL.
+2. Remove `/`, `{`, and `}` delimiters while preserving path-segment order.
+3. Convert literal path segments and path-parameter names into camel-case words.
+4. Keep the first path segment lower-camel-cased.
+5. Capitalize every subsequent path segment and path parameter.
+6. Append the HTTP method in `UpperCamelCase`, such as `Get`, `Post`, `Put`, `Patch`, or `Delete`.
+7. Do not include query parameters, headers, request bodies, media types, controller names, or API version text unless they are actual path segments.
+8. Do not add generic verbs such as `find`, `list`, `create`, `update`, or `delete` independently of the HTTP-method suffix.
+
+Examples:
+
+| HTTP operation | `operationId` |
+|---|---|
+| `GET /users/{userId}` | `usersUserIdGet` |
+| `GET /users` | `usersGet` |
+| `POST /users` | `usersPost` |
+| `PUT /users/{userId}` | `usersUserIdPut` |
+| `PATCH /users/{userId}` | `usersUserIdPatch` |
+| `DELETE /users/{userId}` | `usersUserIdDelete` |
+| `GET /users/{userId}/permissions` | `usersUserIdPermissionsGet` |
+| `POST /orders/{orderId}/cancellation` | `ordersOrderIdCancellationPost` |
+
+The controller handler method name must exactly match the corresponding `operationId`:
+
+```java
+@Operation(operationId = "usersUserIdGet")
+@GetMapping("/{userId}")
+public UserTO usersUserIdGet(@PathVariable final Long userId) {
+    return UserRestMapper.INSTANCE.mapUserDomainToUserTO(
+            this.userService.getById(userId));
+}
+```
+
+Apply the same rule to every controller operation:
+
+```java
+usersGet(...)
+usersPost(...)
+usersUserIdGet(...)
+usersUserIdPut(...)
+usersUserIdPatch(...)
+usersUserIdDelete(...)
+usersUserIdPermissionsGet(...)
+```
+
+Do not use competing controller method names for these operations:
+
+```text
+getUserById
+listUsers
+createUser
+updateUserById
+deleteUserById
+```
+
+If the project uses contract-first generated interfaces, configure the generator so the generated Java method name matches `operationId`. Do not manually edit generated source.
+
+If two different paths normalize to the same `operationId`, resolve the collision with a stable domain-specific path qualifier. Do not use numeric suffixes such as `usersGet2`.
 
 Name schemas from the established TO or public-contract vocabulary. Keep reusable parameter, response, header, and security-scheme names semantic:
 
@@ -142,7 +205,9 @@ ValidationProblem
 bearerAuth
 ```
 
-Do not rename `operationId` or component names casually: generators, gateways, tests, policy engines, and documentation tooling may consume them even when the wire path remains unchanged.
+Do not rename an existing `operationId` or component name casually. Generated clients, controller interfaces, gateways, tests, policy engines, documentation tooling, monitoring, and external consumers may depend on these names even when the HTTP path remains unchanged.
+
+Apply this convention automatically to new operations. Treat changes to existing consumed names as contract migrations: inventory consumers, regenerate affected clients, verify compatibility, and coordinate rollout before removing the old name.
 
 ## Name errors and problem types
 
@@ -348,7 +413,7 @@ Test mixed-version deployment when old and new application versions can coexist.
 | `/user_data/{id}` | `/users/{userId}` | Use consistent resource, delimiter, and identifier |
 | `UserDto` | `UserTO` | Preserve project terminology |
 | `get_user` JSON field | `userId` or the actual field | Use the API's `lowerCamelCase` convention |
-| `findUser` operation ID | `usersUserIdGet` | State operation and lookup key |
+| `usersUserIdGet` generated for a new hand-authored API | `getUser` | Prefer a stable domain operation when no generator convention must be preserved |
 | `user_entity` | `users` | Keep persistence name independent of Java suffix |
 | `idx1` | `ix_orders_customer_id_created_at` | Make operational purpose searchable |
 | `fk_123` | `fk_orders_customer` | Name relationship |
