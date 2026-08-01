@@ -56,7 +56,7 @@ Maintain an authoritative inventory of:
 Evaluate authorization at four dimensions:
 
 | Dimension | Required decision |
-|---|---|
+| --- | --- |
 | Function | May this actor invoke this operation? |
 | Object | May this actor access this specific resource? |
 | Property | May this actor read or change each requested field? |

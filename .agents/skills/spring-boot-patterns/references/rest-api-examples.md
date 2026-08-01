@@ -72,13 +72,14 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> usersUserIdDelete(@PathVariable final Long userId) {
+        
         this.userService.deleteById(userId);
         return ResponseEntity.noContent().build();
     }
 }
 ```
 
-This project uses URI major versioning under `/api/v1`. Keep controller routes, OpenAPI, gateways, and tests aligned when introducing a new version. Handler names must exactly match their OpenAPI `operationId`; exclude the common `/api/v1` prefix when deriving the name.
+This project uses URI major versioning under `/api/v1`. Declare that common prefix in the OpenAPI `servers.url`, define Path Items as resource paths such as `/users/{userId}`, and derive both `operationId` and controller method name from the Path Item plus HTTP method. Therefore, `GET /users/{userId}` maps to `usersUserIdGet`. Keep controller routes, OpenAPI, gateways, and tests aligned when introducing a new version.
 
 The mapper is stateless and dependency-free, so the controller uses its static MapStruct instance rather than DI. This POST creates an addressable resource, so `201 Created` and its server-owned `Location` URI are intentional; other POST semantics may use a different documented status.
 
@@ -154,7 +155,9 @@ When a focused request input is justified by the service contract, the REST mapp
 
 ```java
 @RestControllerAdvice
-final class ApiExceptionHandler {
+final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     ProblemDetail handleResourceNotFound() {
@@ -174,18 +177,84 @@ final class ApiExceptionHandler {
                 "INVALID_STATE");
     }
 
-    @ExceptionHandler({
-            ValidationException.class,
-            ConstraintViolationException.class,
-            MethodArgumentNotValidException.class,
-            HandlerMethodValidationException.class
-    })
+    @ExceptionHandler(AuthenticationException.class)
+    ProblemDetail handleAuthenticationRequired() {
+        return createProblem(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication required",
+                "Authentication is required to access this resource.",
+                "AUTHENTICATION_REQUIRED");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ProblemDetail handleAccessDenied() {
+        return createProblem(
+                HttpStatus.FORBIDDEN,
+                "Access denied",
+                "The authenticated principal cannot perform this operation.",
+                "ACCESS_DENIED");
+    }
+
+    // Project-owned category for caller-correctable validation failures.
+    @ExceptionHandler(ValidationException.class)
     ProblemDetail handleValidation() {
         return createProblem(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed",
                 "The request contains invalid values.",
                 "VALIDATION_FAILED");
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            final MethodArgumentNotValidException exception,
+            final HttpHeaders headers,
+            final HttpStatusCode ignoredStatus,
+            final WebRequest request) {
+
+        final ProblemDetail problem = createProblem(
+                HttpStatus.BAD_REQUEST,
+                "Validation failed",
+                "The request contains invalid values.",
+                "VALIDATION_FAILED");
+
+        return this.handleExceptionInternal(
+                exception, problem, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            final HandlerMethodValidationException exception,
+            final HttpHeaders headers,
+            final HttpStatusCode ignoredStatus,
+            final WebRequest request) {
+
+        final boolean responseValidationFailed = exception.isForReturnValue();
+        final HttpStatus responseStatus = responseValidationFailed
+                ? HttpStatus.INTERNAL_SERVER_ERROR
+                : HttpStatus.BAD_REQUEST;
+        final ProblemDetail problem = createProblem(
+                responseStatus,
+                responseValidationFailed ? "Response validation failed" : "Validation failed",
+                responseValidationFailed
+                        ? "The server could not produce a valid response."
+                        : "The request contains invalid values.",
+                responseValidationFailed
+                        ? "RESPONSE_VALIDATION_FAILED"
+                        : "VALIDATION_FAILED");
+
+        return this.handleExceptionInternal(
+                exception, problem, headers, responseStatus, request);
+    }
+
+    @ExceptionHandler(Exception.class)
+    ProblemDetail handleUnexpected(final Exception exception) {
+        LOGGER.error("Unhandled REST request failure", exception);
+        return createProblem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Internal server error",
+                "The request could not be completed.",
+                "INTERNAL_SERVER_ERROR");
     }
 
     private static ProblemDetail createProblem(
@@ -203,4 +272,8 @@ final class ApiExceptionHandler {
 }
 ```
 
-Use shared exception categories when failures intentionally have the same public handling. Add a condition-specific handler only when it requires a distinct status, stable code, or response contract. Do not copy raw exception messages into responses.
+Use `@RestControllerAdvice` for exceptions raised during Spring MVC REST request processing. Extending `ResponseEntityExceptionHandler` preserves framework handling for malformed requests, unsupported methods and media types, binding failures, and other Spring MVC exceptions; override only the cases that need the project's stable problem contract.
+
+Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to the correct HTTP status and stable code. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a condition-specific handler only for a distinct status, code, or response contract. Map the project-owned `ValidationException` to `400` only when it represents caller-correctable input; do not catch `jakarta.validation.ValidationException` broadly. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
+
+The final `Exception` handler is a safe fallback, not a substitute for known mappings. Log unexpected failures under the security logging policy and never expose raw exception messages or stack traces. The security handlers above cover failures that reach MVC advice; failures raised in the Spring Security filter chain require an `AuthenticationEntryPoint` and `AccessDeniedHandler` that emit the same public problem format. Handle listener, job, messaging, and asynchronous failures at their owning boundary because they do not pass through this advice. Test each status, code, content type, and information-disclosure rule.

@@ -257,7 +257,7 @@ Keep an event code separate from the human-readable message and log severity. Us
 Treat names used outside one source file as contracts:
 
 | Name | Migration concerns |
-|---|---|
+| --- | --- |
 | Event type or schema ID | Consumer compatibility, producer order, replay, rollback, and registry policy |
 | Logical destination property | Configuration rollout, old/new application versions, platform mapping, and rollback |
 | Job or application lock | Duplicate execution, old schedules, lock coexistence, metrics, and alerts |
@@ -270,7 +270,7 @@ Coordinate physical resource changes with the platform owner. Use a bounded comp
 ## Review examples
 
 | Weak | Prefer | Reason |
-|---|---|---|
+| --- | --- | --- |
 | `OrderEvent` | `OrderCreatedEvent` | State the business fact |
 | `MessageProcessor` | `OrderCreatedEventConsumer` | State contract and role |
 | Hardcoded queue ARN in Java | `messaging.order-events.destination` property | Keep physical naming outside source |

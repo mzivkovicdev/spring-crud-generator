@@ -12,7 +12,7 @@ Choose names that preserve business meaning, architectural boundaries, compatibi
 Treat this skill as the owner of naming vocabulary, identifier form, cross-boundary consistency, and rename safety. Let the specialized skills own behavior:
 
 | Skill | Treat as owner of |
-|---|---|
+| --- | --- |
 | `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, exceptions, and general tests |
 | `spring-boot-patterns` | REST-only architecture, TO–Domain–Entity boundaries, service contracts, mapper responsibilities, configuration design, and package responsibilities |
 | `spring-data-jpa` | Persistence semantics, mappings, queries, transactions, migrations, indexes, constraints, and database behavior |
@@ -24,7 +24,7 @@ Apply every relevant owner skill before choosing a name. Do not use naming to in
 Preserve the established project terminology:
 
 | Name | Meaning |
-|---|---|
+| --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller contract |
 | `UserDomain` | Domain/service result |
 | `UserEntity` | JPA persistence model |
@@ -33,8 +33,6 @@ Preserve the established project terminology:
 | `UserDomainMapper` | Entity/projection → domain; explicit creation values → new entity |
 
 Do not replace these terms with DTO, View, Model, Command, Query, or similarly overlapping terminology unless the project explicitly adopts a different architecture and migration.
-
-Treat generic DTO, View, Command, or Query examples in another skill as structural illustrations, not permission to replace this project's terminology or boundaries. Follow `spring-boot-patterns` when a summary table or bidirectional arrow in another document is less precise about mapper direction.
 
 ## Keep application and platform naming separate
 
@@ -143,7 +141,7 @@ Do not create competing forms such as `UserTo`, `UserDto`, and `UserTO`. Do not 
 Use a role suffix only when the type performs that role. Prefer the specific responsibility over a generic suffix:
 
 | Prefer | Avoid without a specific responsibility |
-|---|---|
+| --- | --- |
 | `UserService` | `UserManager` |
 | `UserRepository` | `UserDataAccess` |
 | `UserRestMapper` | `UserConverterUtil` |
@@ -151,7 +149,7 @@ Use a role suffix only when the type performs that role. Prefer the specific res
 | `ExpiredReservationCleanupJob` | `ReservationProcessor` |
 | `OrderNotFoundException` | `OrderException` |
 
-Do not create an interface only to produce an `Impl` class. When multiple real implementations exist, name the distinguishing strategy or mechanism, such as `HttpCatalogClient` and `InMemoryCatalogClient`. Follow `spring-boot-patterns` for whether an interface is justified.
+Use the application-service interface and `*ServiceImpl` convention owned by `spring-boot-patterns`. Do not create an interface only to produce an `Impl` class for helpers or types outside that boundary. When multiple implementations differ by stable behavior or mechanism, name the distinction, such as `HttpCatalogClient` and `InMemoryCatalogClient`.
 
 ## Validate every proposed name
 

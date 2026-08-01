@@ -19,7 +19,7 @@ Use this reference to decide what belongs in a review report and to express each
 Put each observation in exactly one category:
 
 | Category | Meaning | Placement |
-|---|---|---|
+| --- | --- | --- |
 | Finding | A concrete defect or production risk introduced, exposed, or materially worsened by the change | Findings |
 | Question | Missing information prevents a reliable conclusion | Questions and assumptions |
 | Suggestion | An optional improvement that is not required for correctness, policy, or safe operation | Suggestions, only when useful |

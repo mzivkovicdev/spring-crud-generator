@@ -16,7 +16,7 @@ Apply `application-security` when persistence affects confidential data, tenant 
 Use their established terminology consistently:
 
 | Type | Boundary |
-|---|---|
+| --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
 | `UserDomain` | Domain/service result |
 | `UserEntity` | JPA persistence |
@@ -27,6 +27,13 @@ Use their established terminology consistently:
 Repositories return entities or persistence projections. Services map them to domain objects before returning. This skill owns the JPA behavior beneath that boundary.
 
 This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier strategies.
+
+## References
+
+Read only the examples required by the change:
+
+- Read [entity and query examples](references/entity-and-query-examples.md) for mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths.
+- Read [write and locking examples](references/write-and-locking-examples.md) for bulk DML, persistence-context synchronization, or pessimistic locking.
 
 ## Before changing persistence
 
@@ -43,56 +50,6 @@ Inspect:
 Do not copy a nearby persistence pattern before understanding its generated SQL and lifecycle behavior.
 
 ## Entity mapping
-
-Good:
-
-```java
-@Entity
-@Table(
-        name = "users",
-        uniqueConstraints = {
-            @UniqueConstraint(name = "uk_users_email", columnNames = "email")
-        })
-public class UserEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
-    @Version
-    private Long version;
-
-    @Column(nullable = false, length = 120)
-    private String username;
-
-    @Column(nullable = false, length = 254)
-    private String email;
-
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private UserStatus status;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    protected UserEntity() {
-    }
-
-    // Getters used by persistence-to-domain mapping are omitted for brevity.
-    public UserEntity setUsername(final String username) {
-        this.username = username;
-        return this;
-    }
-
-    public UserEntity setEmail(final String email) {
-        this.email = email;
-        return this;
-    }
-}
-```
 
 Entity rules:
 
@@ -114,17 +71,6 @@ Entity rules:
 
 ## Association ownership
 
-Good:
-
-```java
-@ManyToOne(fetch = FetchType.LAZY, optional = false)
-@JoinColumn(
-        name = "customer_id",
-        nullable = false,
-        foreignKey = @ForeignKey(name = "fk_orders_customer"))
-private CustomerEntity customer;
-```
-
 - Set to-one associations to `LAZY` explicitly unless a measured access path proves another choice.
 - Treat fetching as a query/use-case decision, not an entity-wide default.
 - Cascade only lifecycle operations owned by the aggregate; never default to `CascadeType.ALL`.
@@ -139,31 +85,6 @@ private CustomerEntity customer;
 
 ## Repository design
 
-Good:
-
-```java
-public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
-
-    boolean existsByEmail(final String email);
-
-    Optional<UserEntity> findByEmail(final String email);
-
-    @EntityGraph(attributePaths = {"roles"})
-    Optional<UserEntity> findWithRolesById(final Long id);
-
-    Slice<UserEntity> findByStatusOrderByCreatedAtDescIdDesc(final UserStatus status, final Pageable pageable);
-}
-```
-
-Bad:
-
-```java
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
-
-    List<UserEntity> findAllByStatus(final UserStatus status);
-}
-```
-
 - Use derived queries while their names remain short and their generated predicates are appropriate.
 - Use explicit JPQL when derivation becomes ambiguous or hides important joins.
 - JPQL uses entity and attribute names, not table and column names.
@@ -177,32 +98,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
 ## Read projections
 
-Good:
-
-```java
-public interface UserSummaryProjection {
-
-    Long getId();
-
-    String getUsername();
-
-    UserStatus getStatus();
-}
-```
-
-```java
-@Query("""
-        select
-            user.id as id,
-            user.username as username,
-            user.status as status
-        from UserEntity user
-        where user.status = :status
-        order by user.createdAt desc, user.id desc
-        """)
-Slice<UserSummaryProjection> findSummariesByStatus(@Param("status") final UserStatus status, final Pageable pageable);
-```
-
 - Use projections for bounded read paths that need only selected columns.
 - A persistence projection is neither a TO nor a domain result; map it before leaving the service.
 - Keep interface projections closed and top-level. Nested properties can materialize joins and more data than expected.
@@ -210,23 +105,6 @@ Slice<UserSummaryProjection> findSummariesByStatus(@Param("status") final UserSt
 - Cover native projections with integration tests against the supported database.
 
 ## N+1 and fetch plans
-
-Bad:
-
-```java
-final List<OrderEntity> orders = this.orderRepository.findAll();
-
-for (final OrderEntity order : orders) {
-    LOGGER.debug("Customer: {}", order.getCustomer().getName());
-}
-```
-
-Good for a bounded page with a to-one association:
-
-```java
-@EntityGraph(attributePaths = {"customer"})
-Slice<OrderEntity> findByStatusOrderByCreatedAtDescIdDesc(final OrderStatus status, final Pageable pageable);
-```
 
 Choose the smallest suitable fetch mechanism:
 
@@ -236,11 +114,7 @@ Choose the smallest suitable fetch mechanism:
 4. provider-supported batch fetching for intentional lazy traversal.
 
 - Do not solve N+1 with blanket `EAGER` fetching.
-- Disable Open EntityManager in View for REST services:
-
-```properties
-spring.jpa.open-in-view=false
-```
+- Disable Open EntityManager in View for REST services with `spring.jpa.open-in-view=false`.
 
 - Resolve `LazyInitializationException` by fetching required state inside the service transaction.
 - Check mapper, logging, debugger, `equals`, `hashCode`, and `toString` access for accidental lazy loading.
@@ -250,46 +124,6 @@ spring.jpa.open-in-view=false
 - Add query-count tests for N+1-sensitive flows.
 
 ## Sargable and dynamic queries
-
-Bad:
-
-```java
-@Query("""
-        select user
-        from UserEntity user
-        where (:email is null or lower(user.email) = lower(:email))
-          and (:status is null or user.status = :status)
-        """)
-List<UserEntity> search(@Param("email") final String email, @Param("status") final UserStatus status);
-```
-
-Good:
-
-```java
-public final class UserSpecifications {
-
-    private UserSpecifications() {
-    }
-
-    public static Specification<UserEntity> withFilters(
-            final String email,
-            final UserStatus status) {
-
-        return (root, query, criteriaBuilder) -> {
-            final List<Predicate> predicates = new ArrayList<>();
-
-            if (email != null) {
-                predicates.add(criteriaBuilder.equal(root.get("email"), email));
-            }
-            if (status != null) {
-                predicates.add(criteriaBuilder.equal(root.get("status"), status));
-            }
-
-            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
-        };
-    }
-}
-```
 
 - Build only required predicates for optional filters.
 - Prefer the JPA static metamodel or Querydsl for non-trivial dynamic queries; raw attribute-name strings fail only at runtime after incompatible refactoring.
@@ -302,18 +136,6 @@ public final class UserSpecifications {
 
 ## Pagination and scrolling
 
-Bad:
-
-```java
-@Query("""
-        select order
-        from OrderEntity order
-        join fetch order.items
-        order by order.createdAt desc
-        """)
-Page<OrderEntity> findPageWithItems(final Pageable pageable);
-```
-
 - Enforce maximum page size at the REST boundary.
 - Always sort deterministically with a unique tie-breaker.
 - Use `Page` only when the caller needs a total and the count query is acceptably cheap.
@@ -324,22 +146,6 @@ Page<OrderEntity> findPageWithItems(final Pageable pageable);
 - Supply an explicit `countQuery` when a complex or native paged query cannot be derived correctly or efficiently.
 
 ## SQL and index performance
-
-Bad:
-
-```sql
-SELECT * FROM users WHERE LOWER(email) = LOWER(?);
-```
-
-Good when the application stores a normalized email:
-
-```sql
-SELECT id, username, status FROM users WHERE email = ?;
-```
-
-```sql
-CREATE UNIQUE INDEX uk_users_email ON users (email);
-```
 
 - Inspect generated SQL for every complex or high-volume query.
 - Use the supported database's execution-plan tool with representative statistics and data volume.
@@ -370,30 +176,6 @@ CREATE UNIQUE INDEX uk_users_email ON users (email);
 
 ## Bulk DML and large batches
 
-Good:
-
-```java
-@Modifying(flushAutomatically = true, clearAutomatically = true)
-@Query("""
-        update UserEntity user
-        set user.status = :newStatus
-        where user.status = :oldStatus
-        """)
-int updateStatus(@Param("oldStatus") final UserStatus oldStatus, @Param("newStatus") final UserStatus newStatus);
-```
-
-Bad:
-
-```java
-final UserEntity user = this.userRepository.findById(id).orElseThrow();
-
-this.userRepository.updateStatus(UserStatus.ACTIVE, UserStatus.SUSPENDED);
-
-return this.userMapper.mapUserEntityToUserDomain(user);
-```
-
-The loaded entity can be stale after bulk DML.
-
 - Bulk JPQL/Criteria updates and deletes bypass entity synchronization, callbacks, cascades, and optimistic-lock checks.
 - Invoke bulk DML through an active write transaction owned by a public service method.
 - Flush pending changes first when required and clear or refresh affected managed state deliberately.
@@ -405,22 +187,6 @@ The loaded entity can be stale after bulk DML.
 - Never retain an unbounded number of managed entities in one persistence context.
 
 ## Concurrency and locking
-
-Good for a justified blocking invariant:
-
-```java
-/**
- * Loads inventory for an update while holding a pessimistic database lock.
- *
- * @param sku inventory identifier; must not be {@code null}
- * @return the locked inventory, or empty when it does not exist; never {@code null}
- * @throws PessimisticLockingFailureException when the lock cannot be acquired before the
- *                                             configured timeout expires
- */
-@Lock(LockModeType.PESSIMISTIC_WRITE)
-@Query("select inventory from InventoryEntity inventory where inventory.sku = :sku")
-Optional<InventoryEntity> findForUpdate(@Param("sku") final String sku);
-```
 
 - Prefer optimistic locking with `@Version` for normal concurrent editing.
 - Translate lock failures into a stable conflict or retry contract at the service boundary.

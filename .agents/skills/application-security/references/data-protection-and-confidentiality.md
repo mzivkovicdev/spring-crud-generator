@@ -39,7 +39,7 @@ This root rule is mandatory because an agent may act before this skill is select
 Use the project's classification policy when one exists. Otherwise start with:
 
 | Class | Examples | Default handling |
-|---|---|---|
+| --- | --- | --- |
 | Public | Published documentation, public API descriptions, approved marketing material | May leave the project only through approved publication channels |
 | Internal | Non-public conventions, ordinary internal tickets, non-sensitive architecture summaries | Keep in approved organizational systems |
 | Confidential | Source code, detailed architecture, schemas, internal endpoints, business rules, logs, employee or customer identifiers | Need-to-know access, approved storage and transfer, minimization |

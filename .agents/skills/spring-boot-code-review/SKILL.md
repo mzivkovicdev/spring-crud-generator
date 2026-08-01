@@ -14,7 +14,7 @@ Treat this skill as the owner of review scope, investigation, evidence, prioriti
 Apply the normative skills as follows:
 
 | Skill | Apply when | Treat as owner of |
-|---|---|---|
+| --- | --- | --- |
 | `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exceptions, source structure, and general test rules |
 | `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, service transaction boundaries, and feature structure |
 | `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and persistence tests |

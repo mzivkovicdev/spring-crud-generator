@@ -272,7 +272,7 @@ public class UserServiceImpl implements UserService {
 }
 ```
 
-The interface is the single source for service Javadoc and validation constraints; do not duplicate them on implementation methods. `updateById` deliberately calls `save` after explicit mutations and maps the returned entity. Do not replace it with dirty-checking-only persistence or `saveAndFlush` without a documented immediate-flush requirement. Translate expected persistence failures into the stable application error contract and test the real database constraint.
+The interface is the single source for service Javadoc and validation constraints. Overriding methods inherit that documentation automatically; omit implementation Javadoc unless it adds meaningful caller-visible detail. `updateById` deliberately calls `save` after explicit mutations and maps the returned entity. Do not replace it with dirty-checking-only persistence or `saveAndFlush` without a documented immediate-flush requirement. Translate expected persistence failures into the stable application error contract and test the real database constraint.
 
 ## Repository boundary
 

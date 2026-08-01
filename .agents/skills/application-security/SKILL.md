@@ -19,7 +19,7 @@ Apply this skill together with:
 Do not redefine those rules. Use their terminology consistently:
 
 | Type | Boundary |
-|---|---|
+| --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
 | `UserDomain` | Domain/service result |
 | `UserEntity` | JPA persistence |

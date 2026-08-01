@@ -90,7 +90,7 @@ Do not reorganize imports across untouched files as part of an unrelated feature
 
 - Make dependencies and fields `final` unless mutation is part of the object's responsibility.
 - Return immutable snapshots or unmodifiable views at boundaries; never leak a mutable internal collection.
-- Use records for immutable request/response DTOs, commands, query results, events, and value objects when their semantics fit.
+- Use records for immutable data carriers such as project TOs, domain values, query results, events, and value objects when their semantics fit.
 - Do not use records as JPA entities.
 - Validate record invariants in a compact constructor when they are intrinsic to the value.
 
@@ -126,15 +126,15 @@ Prefer a meaningful type such as `CustomerId`, `EmailAddress`, `Money`, or `Orde
 Use a record for transparent immutable data:
 
 ```java
-public record CreateCustomerCommand(String name, String email) {}
+public record CustomerRegistrationDetails(String name, String email) {}
 ```
 
 Do not put mutable collections into records without making defensive copies:
 
 ```java
-public record CustomerView(UUID id, List<AddressView> addresses) {
+public record CustomerSnapshot(UUID id, List<Address> addresses) {
 
-    public CustomerView {
+    public CustomerSnapshot {
         addresses = List.copyOf(addresses);
     }
 }
@@ -182,7 +182,7 @@ Do not use `var`. This is a deliberate project readability convention, not a cla
 - Allow up to seven declared parameters in project-owned methods and constructors when their names, order, and purpose remain clear. Treat eight or more as a design warning: first group values that form a cohesive domain concept or invariant into a focused parameter/value object, or document why the signature cannot be changed. Do not create a catch-all wrapper merely to hide unrelated parameters. Existing framework callbacks, overrides, and generated signatures are exempt when the project does not control them.
 - Do not game size rules by extracting meaningless one-line methods or creating generic `Utils` dumping grounds.
 - Prefer composition over inheritance.
-- Create an interface for a real boundary, multiple behavior, a plugin strategy, or a useful port. Do not mechanically create `FooService` plus `FooServiceImpl` for every service.
+- Create an interface for a real boundary, multiple behavior, a plugin strategy, or a useful port. Treat the application-service contract defined by `spring-boot-patterns` as such a boundary; do not extend that convention mechanically to helpers or unrelated classes.
 
 Example of cohesive orchestration:
 
@@ -203,10 +203,13 @@ public class CustomerRegistrationService {
         this.clock = clock;
     }
 
-    public CustomerId register(final RegisterCustomer command) {
-        ensureEmailIsAvailable(command.email());
+    public CustomerId register(final CustomerRegistrationDetails registrationDetails) {
+        ensureEmailIsAvailable(registrationDetails.email());
 
-        final Customer customer = Customer.register(command.name(), command.email(), Instant.now(clock));
+        final Customer customer = Customer.register(
+                registrationDetails.name(),
+                registrationDetails.email(),
+                Instant.now(clock));
         customerRepository.add(customer);
         eventPublisher.publish(new CustomerRegistered(customer.id()));
 

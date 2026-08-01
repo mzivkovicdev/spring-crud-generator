@@ -27,7 +27,7 @@ src/main/java/com/example/myapp/
 │       └── UserDomainMapper.java
 ├── service/                       # Business logic and application contracts
 │   ├── UserService.java
-│   └── impl/                      # Only for a justified interface/implementation split
+│   └── impl/                      # Application service implementations
 │       └── UserServiceImpl.java
 ├── domain/                        # Framework-independent business models
 │   └── UserDomain.java
@@ -49,11 +49,11 @@ src/main/java/com/example/myapp/
     └── DateUtils.java
 ```
 
-Use this layout only when it matches the repository's established, sound layered structure. Preserve the responsibilities from `../SKILL.md` even when package names differ. Do not create an interface/implementation pair solely to mirror this package layout.
+Use this layered layout consistently unless the repository already enforces a compatible layered variation. Application service interfaces define the inbound application contract; their Spring implementations belong in `service.impl`. Do not create interfaces for helpers or types without that responsibility.
 
 ## Method validation
 
-Use a service interface when it represents a meaningful application contract, module boundary, replaceable strategy, or operation with multiple implementations. Declare method constraints once on that contract:
+Declare application-service method constraints once on the service contract:
 
 ```java
 public interface TransferService {
@@ -80,11 +80,11 @@ Annotate the concrete Spring bean with `@Validated` so Spring method validation 
 ```java
 @Service
 @Validated
-public class AccountTransferService implements TransferService {
+public class TransferServiceImpl implements TransferService {
 
     private final AccountRepository accountRepository;
 
-    public AccountTransferService(final AccountRepository accountRepository) {
+    public TransferServiceImpl(final AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
     }
 
@@ -114,7 +114,7 @@ public class AccountTransferService implements TransferService {
 }
 ```
 
-This example treats `TransferService` as a justified application boundary. If the project has one local implementation and no meaningful contract boundary, use one concrete `@Service` class instead of creating an interface mechanically. In both cases, invoke validated methods through the Spring proxy; self-invocation bypasses proxy-based method validation and other advice. Apply the persistence, locking, and concurrency rules from the owning data skill to the real transfer implementation.
+`TransferService` is the application contract used by inbound adapters; one current implementation does not make that boundary redundant. Invoke validated methods through the Spring proxy because self-invocation bypasses proxy-based method validation and other advice. Apply the persistence, locking, and concurrency rules from the owning data skill to the real transfer implementation.
 
 ## Custom exceptions
 
@@ -125,20 +125,6 @@ public class ResourceNotFoundException extends RuntimeException {
         super("%s not found with id: %d".formatted(
                 Objects.requireNonNull(resource, "resource must not be null"),
                 Objects.requireNonNull(id, "id must not be null")));
-    }
-}
-
-public class BusinessException extends RuntimeException {
-
-    private final String code;
-
-    public BusinessException(final String code, final String message) {
-        super(Objects.requireNonNull(message, "message must not be null"));
-        this.code = Objects.requireNonNull(code, "code must not be null");
-    }
-
-    public String code() {
-        return this.code;
     }
 }
 ```
@@ -172,7 +158,7 @@ class CatalogClientConfiguration {
 ```java
 // Wrong: entity exposure, repository access, business logic, and time in controller.
 @PostMapping
-CustomerEntity create(@RequestBody CustomerEntity customer) {
+CustomerEntity customersPost(@RequestBody CustomerEntity customer) {
     customer.setCreatedAt(Instant.now());
     return customerRepository.save(customer);
 }
@@ -185,7 +171,7 @@ private CustomerRepository customerRepository;
 ```
 
 ```java
-// Wrong: meaningless interface/implementation pair with no boundary.
+// Wrong: empty application contract with no operation or responsibility.
 interface CustomerService {
 }
 

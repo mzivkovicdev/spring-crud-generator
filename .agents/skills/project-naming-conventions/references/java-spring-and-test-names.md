@@ -42,34 +42,32 @@ Prefer `id` and `userId` consistently. Do not alternate between `id`, `identifie
 Use lowercase package and Java module names. Use the organization's approved reverse-domain root and stable capability vocabulary:
 
 ```text
-com.acme.controller
-com.acme.mapper.rest
-com.acme.mapper.domain
-com.acme.service
-com.acme.service.impl
-com.acme.domain
-com.acme.repository
-com.acme.model
-com.acme.transferobject.request
-com.acme.transferobject.response
-com.acme.exception
-com.acme.config
+com.acme.myapp.controller
+com.acme.myapp.mapper.rest
+com.acme.myapp.mapper.domain
+com.acme.myapp.service
+com.acme.myapp.service.impl
+com.acme.myapp.domain
+com.acme.myapp.repository
+com.acme.myapp.model
+com.acme.myapp.transferobject.request
+com.acme.myapp.transferobject.response
+com.acme.myapp.exception
+com.acme.myapp.config
 ```
 
-Follow the package architecture selected by `spring-boot-patterns`; this skill controls the words and casing, not the choice between sound layered and feature-oriented structures.
-
-The example mirrors the capability-first default in `spring-boot-patterns`. Add a deeper role package only when the capability contains enough types to justify it. If an intentional interface/implementation split needs a subpackage, name it within the owning application boundary and preserve the repository convention. Do not create missing packages before a type with that responsibility exists.
+This project uses a layered package layout. Keep controllers, services, domain models, repositories, persistence models, mappers, transfer objects, exceptions, and configuration in their established layer packages. Add a deeper package only when it represents a coherent responsibility with enough types to justify it. Do not create missing packages before a type with that responsibility exists.
 
 Rules:
 
-- Use business capabilities for top-level application packages and modules.
-- Use technical subpackages only when they contain one coherent role.
+- Use the deployable microservice's base package as the root and organize application code by the established technical layers beneath it.
+- Keep each layer focused on one architectural responsibility.
 - Keep package segments lowercase ASCII without underscores or camel case.
 - Use a singular or plural capability form consistently; prefer the established ubiquitous-language form.
 - Avoid package names tied to temporary initiatives, team names, ticket numbers, people, or deployment environments.
 - Avoid dumping grounds such as `common`, `misc`, `general`, `stuff`, `helpers`, or a broad `util` package.
 - When an established layout contains `util`, keep it limited to focused stateless helpers with meaningful type names. Prefer a specific responsibility package for new code when that is clearer; do not migrate packages solely to remove the word `util`.
-- Use an `impl` package and an `*Impl` class only when `spring-boot-patterns` justifies the interface/implementation split. Preserve a justified established split.
+- Put application service implementations in `service.impl` and name them `*ServiceImpl`; do not use `impl` as a dumping ground for unrelated types.
 - Keep Java source filenames identical to their top-level public type names.
 
 Name Maven or Gradle modules by durable capability or deployable responsibility:
@@ -88,7 +86,7 @@ Do not split modules or rename folders merely to satisfy these examples. Apply a
 Use `UpperCamelCase`.
 
 | Kind | Default form | Examples |
-|---|---|---|
+| --- | --- | --- |
 | Class or record | Noun or noun phrase | `UserDomain`, `OrderSummary`, `RetryPolicy` |
 | Interface | Role, capability, or contract | `CatalogClient`, `Clock`, `AuthorizationPolicy` |
 | Enum type | Singular concept | `OrderStatus`, `PaymentMethod` |
@@ -119,10 +117,10 @@ Name generic type parameters:
 Use a suffix only when the type owns that responsibility:
 
 | Role | Form | Example |
-|---|---|---|
+| --- | --- | --- |
 | REST controller | `<Resource>Controller` | `UserController` |
-| Service contract or single concrete service | `<Capability>Service` | `UserService` |
-| Intentional service implementation | Established `*Impl` form or a distinguishing implementation name | `UserServiceImpl`, `CachedCatalogService` |
+| Application service contract | `<Capability>Service` | `UserService` |
+| Application service implementation | `<Capability>ServiceImpl` | `UserServiceImpl` |
 | JPA repository | `<Aggregate>Repository` | `UserRepository` |
 | JPA entity | `<Concept>Entity` | `UserEntity` |
 | REST transfer object | Established `<Concept>TO` form | `UserCreateTO`, `UserTO` |
@@ -143,7 +141,7 @@ Do not rename `UserController` to `UserRestController` merely because the applic
 
 Do not use `Manager`, `Coordinator`, `Processor`, `Handler`, `Helper`, `Utils`, or `Facade` as default escape hatches. Use them only when the pattern and exact responsibility are real and documented by the owning architecture.
 
-Do not interpret `UserServiceImpl` as automatically wrong. It is valid when the interface is an intentional boundary, as shown by `spring-boot-patterns`. When implementations differ by real behavior or mechanism, a distinguishing name is usually clearer than several unrelated `*Impl` classes.
+Use `UserServiceImpl` for the standard application-service implementation. When multiple implementations differ by stable behavior or mechanism, use distinguishing names such as `CachedCatalogService` instead of several ambiguous `*Impl` classes.
 
 ## Name methods
 
@@ -162,7 +160,7 @@ deleteById
 Choose verbs by semantics, not habit:
 
 | Intent | Prefer |
-|---|---|
+| --- | --- |
 | Find a possibly absent value | `findByEmail` returning `Optional` |
 | Require an existing value or fail | `getById` when that is the established service contract |
 | Test existence without loading | `existsByEmail` |
@@ -199,7 +197,7 @@ findByStatusOrderByCreatedAtDescIdDesc
 
 Move a complex query to an explicitly named repository method or custom repository implementation according to `spring-data-jpa`; do not encode an unreadable query solely to avoid `@Query`.
 
-For this project, make every controller handler method name exactly match its OpenAPI `operationId`, using the deterministic path-and-HTTP-method convention from [API, data, and configuration names](api-data-and-configuration-names.md#name-openapi-operations-and-schemas). For example, use `usersUserIdGet` for `GET /users/{userId}`. Treat both names as public tooling contracts and migrate existing consumers before renaming either one.
+For this project, make every controller handler method name exactly match its OpenAPI `operationId`, using the deterministic path-and-HTTP-method convention from [API, data, and configuration names](api-data-and-configuration-names.md#name-openapi-operations-and-schemas). For example, `GET /users/{userId}` maps to `usersUserIdGet`. Treat both names as public tooling contracts and migrate existing consumers before renaming either one.
 
 ## Name fields, parameters, and local variables
 
@@ -269,7 +267,7 @@ void updateById_whenUserExists_updatesAndReturnsUserDomain() {
 }
 
 @Test
-void updateById_whenUserDoesNotExist_throwsUserNotFoundException() {
+void updateById_whenUserDoesNotExist_throwsResourceNotFoundException() {
 }
 ```
 
@@ -307,7 +305,7 @@ Reject or question:
 - noise words and numeric suffixes;
 - framework or provider names leaking into domain types;
 - package names that mirror an organization chart or temporary project;
-- `*Impl` created by a mechanical interface/implementation pair;
+- `*Impl` outside an application-service contract or without a real responsibility;
 - accessors or predicates with misleading verbs;
 - names that expose credentials, customer data, tenant names, or vulnerabilities;
 - broad renames with no consumer inventory or compatibility plan.
@@ -315,9 +313,9 @@ Reject or question:
 ## Review examples
 
 | Weak | Prefer | Reason |
-|---|---|---|
+| --- | --- | --- |
 | `UserData` | `UserDomain` or `UserTO` | State the actual boundary role |
-| `UserServiceImpl` created only to implement an otherwise unnecessary empty interface | One concrete `UserService` | Avoid an unjustified interface/implementation pair; preserve justified `UserServiceImpl` usage |
+| Empty `UserService` paired with `UserServiceImpl` | An operation-bearing `UserService` contract and `UserServiceImpl` | Keep the application boundary meaningful |
 | `processUser` | `activateUser` | State the domain action |
 | `checkEmail` | `existsByEmail` or `validateEmail` | State whether the method queries or validates |
 | `flag` | `emailVerified` | State the predicate |
