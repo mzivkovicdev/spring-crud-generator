@@ -9,16 +9,13 @@ Implement vertical, tested features using the project's supported Spring Boot ve
 
 ## Coordination with other skills
 
-Apply `modern-java-21` to every touched Java file. It owns Java language and source-style rules, including explicit types, Javadoc, imports, null safety, exceptions, class and method size, and tests.
+Apply `modern-java-21` to every touched Java file. It owns Java language use, imports, local type inference, Javadoc, nullability, exceptions, source structure, and general Java tests.
 
-Apply `spring-data-jpa` whenever code touches entities, repositories, persistence queries, transactions, locking, migrations, or database performance. It owns detailed persistence behavior; this skill owns the Spring Boot boundaries around it.
+Apply `spring-data-jpa` whenever code touches entities, repositories, persistence queries, transactions, locking, migrations, or database performance. It owns persistence behavior; this skill owns the Spring Boot boundaries around it.
 
-The stricter compatible rule wins. In particular:
+Apply `application-security` whenever a change crosses a trust boundary or affects identity, authorization, confidential data, dangerous input, external systems, dependencies, deployment, messaging, jobs, or operational security. Apply `project-naming-conventions` whenever a name or escaped contract is created or changed.
 
-- never use `var`;
-- follow the complete Javadoc and comment rules from `modern-java-21` without
-  redefining or narrowing them in this skill;
-- preserve established choices such as explicit `final` parameters and local variables, `this.` for field access, TO terminology, and a layered package layout only when they remain compatible with these skills.
+Each owner skill is authoritative in its area. Follow a repository-enforced formatter or policy when the owner skill permits it, preserve compatible established contracts, and report an unresolved conflict instead of inventing a second standard here.
 
 ## Reference routing
 
@@ -48,16 +45,9 @@ Build backend HTTP APIs only. The application may use Spring Web's servlet infra
 4. Design the smallest cohesive change. Do not perform unrelated modernization.
 5. Implement production code and tests together.
 
-## Mandatory Java file hygiene
+## Java source rules
 
-For every `.java` file created or modified:
-
-- remove unused and duplicate imports;
-- never use wildcard imports;
-- organize imports into sorted groups in this order: static, `java.*`, `jakarta.*`, `javax.*`, the current project's base package, `org.springframework.*`, then all remaining third-party imports;
-- place exactly one blank line between non-empty groups and sort each group by the complete import statement;
-- never use the `var` keyword; write the explicit local variable type;
-- run the formatter or compile/static check before finishing.
+Apply the complete `modern-java-21` workflow to every created or modified `.java` file. Do not restate or fork its import, type-inference, Javadoc, exception, size, or source-hygiene rules in this skill. Run the repository formatter and the narrowest relevant compile or static-analysis check before finishing.
 
 ## Architecture and boundaries
 
@@ -66,7 +56,7 @@ Use the repository's existing sound structure instead of performing a broad pack
 | Boundary | Responsibility |
 |---|---|
 | REST controller/listener | Parse and validate transport input, delegate, and map domain output to a TO |
-| REST mapper | Translate between REST TOs and domain objects when object mapping is required |
+| REST mapper | Map domain results to response TOs and, only for a justified focused input, map a request TO to a domain/service input |
 | Service | Accept explicit method parameters or a justified parameter object, orchestrate the operation, return domain objects, and own the transaction boundary |
 | Domain | Represent business state, invariants, and decisions without REST or persistence dependencies |
 | Domain mapper | Translate between persistence entities/projections and domain objects; map explicit creation values to a new entity when required |
@@ -97,7 +87,7 @@ Keep REST controllers thin. They must not query repositories, mutate entities, i
 - Define collection bounds, string lengths, numeric bounds, and pagination limits for untrusted input.
 - On Spring Framework 6.1+, prefer built-in REST handler method validation and do not place `@Validated` on the controller. On earlier supported versions, use type-level `@Validated` only when proxy-based controller method validation is required. Never place it on an individual handler method.
 - When controller parameters can trigger both object and method validation, preserve Spring's standard handling or map both validation exception types into the same public error contract.
-- Use a `Location` header for resource creation when applicable.
+- For a synchronous operation that creates an addressable resource, return `201 Created` and a server-owned `Location` URI for that resource. Do not require this combination for a POST action that does not have resource-creation semantics; preserve the documented API contract.
 - Return typed response models, not entities, `Map<String, Object>`, or `ResponseEntity<?>`.
 - If the project has an OpenAPI contract, update and validate it with the implementation; do not allow endpoint, schema, status, or media-type drift.
 - Preserve backward compatibility in field names, enum values, requiredness, null behavior, status codes, and error shapes.
@@ -116,7 +106,7 @@ TO means transport object in this skill. Use records for immutable request and r
 - Do not put repositories or services in TOs or mappers.
 - Normalize only when the contract permits it; do not silently change user data.
 - Model PATCH semantics explicitly so absent, clear, and set are not confused.
-- Use MapStruct as the default for structural mapping when it is available in the project. Use handwritten mapping for behavior, non-trivial normalization, or mapping that is clearer without generated code.
+- When MapStruct is already approved, use it for structural mapping and fail the build for unintended unmapped targets. Obtain a stateless, dependency-free mapper through its static `INSTANCE = Mappers.getMapper(...)` member; do not register or inject it as a Spring bean. Use the Spring component model only when the mapper genuinely requires container-managed collaborators, decorators, object factories, or another documented DI capability. Use handwritten mapping for behavior, non-trivial normalization, or mapping that is clearer without generated code.
 
 Read the TO and REST mapper examples in [REST API examples](references/rest-api-examples.md).
 
@@ -141,9 +131,10 @@ Services implement operations and own orchestration.
 - Use Lombok constructor generation only when Lombok is an established project dependency and the generated constructor remains obvious; otherwise write the constructor explicitly.
 - Do not accept REST request/response TOs and do not return JPA entities.
 - Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
-- For update operations, load the existing entity, apply changes through explicit entity setters in the service, call `saveAndFlush`, and map the saved entity to a domain object. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity.
-- Prefer explicit separate parameters for service operations. Do not create a parameter object merely to wrap fewer than seven method parameters.
-- Count every declared method parameter, including identifiers, collections, and existing value objects. When an operation would require seven or more parameters, a cohesive parameter object is allowed and normally preferred.
+- For update operations, load the entity inside the write transaction, apply explicit business or persistence mutations, call repository `save` exactly once, and map the returned saved entity to a domain object. This project requires the explicit repository write even when JPA dirty checking would persist a managed entity. Use `saveAndFlush` only when subsequent logic must observe immediate database synchronization for a documented reason. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity.
+- Prefer explicit separate parameters when a project-owned service method has up to seven declared parameters and the signature remains clear.
+- Treat eight or more declared parameters as a design warning. Group only values that form a cohesive domain concept or invariant into a focused parameter/value object; otherwise redesign the operation or document why the signature must remain. Do not create one catch-all input class merely to conceal unrelated values or satisfy the threshold.
+- A real parameter or value object may still be used below the threshold when it already represents a stable domain concept or enforces an invariant; do not create a custom input type for every service method.
 - Keep an identifier as a separate parameter when it identifies the target resource; group the remaining values in the parameter object.
 - Place a service parameter object in the domain/service model boundary, name it for the represented operation or values, and keep it independent of REST and JPA. Do not introduce `Command` or `View` terminology by default.
 - Do not split naturally cohesive value objects such as `Details` into scalar parameters merely to satisfy the parameter rule.
@@ -252,8 +243,8 @@ Reject:
 - REST TOs passed into services;
 - field injection;
 - service interfaces created by habit;
-- wrapper parameter objects introduced solely to reduce a service method with fewer than seven parameters;
-- service methods with seven or more unrelated parameters when a cohesive parameter object would make the contract clearer;
+- parameter objects that merely hide unrelated values or mechanically satisfy a numeric threshold;
+- project-owned service methods with eight or more declared parameters and no cohesive grouping, redesign, or documented justification;
 - generic `Map` responses;
 - hardcoded configuration or secrets;
 - self-invocation assumptions for proxy annotations;
@@ -270,7 +261,7 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] Controller/listener is a thin transport boundary.
 - [ ] Business rules are in service/domain code.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
-- [ ] Services accept explicit parameters, use a parameter object only for justified operations with seven or more parameters, and return domain models.
+- [ ] Service signatures use clear explicit parameters up to seven; signatures with eight or more were redesigned, cohesively grouped, or explicitly justified.
 - [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.
 - [ ] Transactions and security ownership are explicit.
 - [ ] Error responses are stable and safe.

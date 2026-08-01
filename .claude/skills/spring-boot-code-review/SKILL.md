@@ -1,6 +1,6 @@
 ---
 name: spring-boot-code-review
-description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, and application-security without redefining their rules. Produce revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
+description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, and project-naming-conventions without redefining their rules. Produce revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
 ---
 
 # Spring Boot Code Review
@@ -15,22 +15,23 @@ Apply the normative skills as follows:
 
 | Skill | Apply when | Treat as owner of |
 |---|---|---|
-| `modern-java-21` | Every review containing Java source | Java 21 usage, explicit types, imports, Javadoc, nullability, exceptions, source structure, and general test rules |
+| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exceptions, source structure, and general test rules |
 | `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, service transaction boundaries, and feature structure |
 | `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and persistence tests |
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
+| `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
 
 Resolve every applicable owner skill before evaluating compliance:
 
 1. Use the active skill catalog when the exact skill name is available.
-2. Otherwise, find an exact matching `name` in repository-controlled skill locations such as `.agents/skills/<name>/SKILL.md` or `.claude/skills/<name>/SKILL.md`. If the repository uses another layout, search its tracked `SKILL.md` files by exact frontmatter name.
+2. Otherwise, find an exact matching `name` in repository-controlled skill locations such as `.claude/skills/<name>/SKILL.md` or `.agents/skills/<name>/SKILL.md`. If the repository uses another layout, search its tracked `SKILL.md` files by exact frontmatter name.
 3. Read the owner skill completely and load only the references it routes for the reviewed change.
 
 Never substitute remembered guidance, a similarly named public skill, or an internet result for a missing owner skill. Continue a general defect review when useful, but list the missing owner skill as a coverage gap and do not claim compliance with its rules. If the requested decision materially depends on that unavailable standard, stop that part of the review and ask for the approved source.
 
 Honor the always-on confidentiality instruction from `application-security` before inspecting, copying, searching, or sharing commercial-project material. Use only generic, anonymized internet searches and approved project tools.
 
-Do not restate an owner skill's exact rule in this skill. In particular, do not invent an alternative import order, Javadoc policy, mapper architecture, service signature policy, entity update pattern, association default, or security baseline. If a build-enforced project rule and a skill rule conflict, follow the conflict handling defined by the owning skill and report the discrepancy accurately.
+Do not restate an owner skill's exact rule in this skill. In particular, do not invent an alternative import order, local type-inference rule, Javadoc policy, mapper architecture, service signature policy, entity update pattern, naming convention, association default, or security baseline. If a build-enforced project rule and a skill rule conflict, follow the conflict handling defined by the owning skill and report the discrepancy accurately.
 
 In review-only mode, interpret an owner skill's instruction to add, copy, update, or ensure a repository artifact as an instruction to verify it. Report a missing mandatory artifact as a finding; do not create it until the user requests fixes.
 
