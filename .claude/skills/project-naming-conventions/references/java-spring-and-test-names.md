@@ -244,26 +244,14 @@ Treat enum renames as compatibility and data migrations when values are serializ
 
 ## Name exceptions
 
-Name the condition callers can understand and act on:
+Choose exception granularity from the handling contract, not from the number of validation rules or state transitions.
 
-```text
-UserNotFoundException
-DuplicateEmailException
-InvalidOrderTransitionException
-InventoryUnavailableException
-```
-
-Avoid broad names:
-
-```text
-ApplicationException
-ServiceException
-BusinessException
-ValidationException
-SomethingWentWrongException
-```
-
-Use broad base exceptions only when the project has a deliberate, useful hierarchy. Do not leak provider implementation names through a service contract unless the caller is expected to handle that provider-specific condition.
+- Reuse an existing JDK, framework, or established project exception when it already represents the condition.
+- Use a shared category such as `ValidationException`, `InvalidStateException`, or `ResourceNotFoundException` when multiple failures intentionally have the same handling and error contract.
+- Create a more specific exception only when the condition needs different recovery, translation, error code, or context.
+- Do not create one custom exception per validation rule or state transition.
+- Use broad base exceptions such as `BusinessException` only for a deliberate hierarchy; avoid vague concrete names such as `ApplicationException`, `ServiceException`, or `SomethingWentWrongException`.
+- Do not leak provider-specific names through a service contract unless callers are expected to handle that provider condition.
 
 ## Name tests and test data
 
