@@ -42,25 +42,23 @@ Prefer `id` and `userId` consistently. Do not alternate between `id`, `identifie
 Use lowercase package and Java module names. Use the organization's approved reverse-domain root and stable capability vocabulary:
 
 ```text
-com.acme.customer
-com.acme.order
-com.acme.order.controller
-com.acme.order.mapper.rest
-com.acme.order.mapper.domain
-com.acme.order.service
-com.acme.order.service.impl
-com.acme.order.domain
-com.acme.order.repository
-com.acme.order.model
-com.acme.order.transferobject.request
-com.acme.order.transferobject.response
-com.acme.order.exception
-com.acme.order.config
+com.acme.controller
+com.acme.mapper.rest
+com.acme.mapper.domain
+com.acme.service
+com.acme.service.impl
+com.acme.domain
+com.acme.repository
+com.acme.model
+com.acme.transferobject.request
+com.acme.transferobject.response
+com.acme.exception
+com.acme.config
 ```
 
 Follow the package architecture selected by `spring-boot-patterns`; this skill controls the words and casing, not the choice between sound layered and feature-oriented structures.
 
-The example mirrors the layered package vocabulary in `spring-boot-patterns`. Include `service.impl` only for an intentional interface/implementation split. Do not create missing packages before a type with that responsibility exists.
+The example mirrors the capability-first default in `spring-boot-patterns`. Add a deeper role package only when the capability contains enough types to justify it. If an intentional interface/implementation split needs a subpackage, name it within the owning application boundary and preserve the repository convention. Do not create missing packages before a type with that responsibility exists.
 
 Rules:
 
@@ -70,8 +68,8 @@ Rules:
 - Use a singular or plural capability form consistently; prefer the established ubiquitous-language form.
 - Avoid package names tied to temporary initiatives, team names, ticket numbers, people, or deployment environments.
 - Avoid dumping grounds such as `common`, `misc`, `general`, `stuff`, `helpers`, or a broad `util` package.
-- When the established layered layout contains `util`, keep it limited to focused stateless helpers with meaningful type names. Prefer a specific responsibility package for new code when that is clearer; do not migrate packages solely to remove the word `util`.
-- Use `service.impl` and an `*Impl` class only when `spring-boot-patterns` justifies the interface/implementation split. Preserve a justified established split.
+- When an established layout contains `util`, keep it limited to focused stateless helpers with meaningful type names. Prefer a specific responsibility package for new code when that is clearer; do not migrate packages solely to remove the word `util`.
+- Use an `impl` package and an `*Impl` class only when `spring-boot-patterns` justifies the interface/implementation split. Preserve a justified established split.
 - Keep Java source filenames identical to their top-level public type names.
 
 Name Maven or Gradle modules by durable capability or deployable responsibility:
@@ -130,7 +128,7 @@ Use a suffix only when the type owns that responsibility:
 | REST transfer object | Established `<Concept>TO` form | `UserCreateTO`, `UserTO` |
 | Domain/service result | `<Concept>Domain` | `UserDomain` |
 | Repository projection | `<Purpose>Projection` | `UserSummaryProjection` |
-| REST mapper | `<Concept>RestMapper` | `UserRestMapper` maps domain → response TO and, only when justified, request TO → focused service/domain input |
+| REST mapper | `<Concept>RestMapper` | `UserRestMapper` maps domain → response TO and, only for a justified focused input, request TO → service/domain input |
 | Entity/domain mapper | `<Concept>DomainMapper` | `UserDomainMapper` maps entity/projection → domain and explicit creation values → new entity |
 | Configuration properties | `<Subsystem>Properties` | `CatalogClientProperties` |
 | Bean configuration | `<Subsystem>Configuration` | `CatalogClientConfiguration` |
@@ -173,7 +171,7 @@ Choose verbs by semantics, not habit:
 | Remove by identity | `deleteById` |
 | Map a service result to a response TO | `mapUserDomainToUserTO` |
 | Map persistence output to domain | `mapUserEntityToUserDomain` |
-| Map explicit creation values to a new entity | `mapToUserEntity` |
+| Map explicit creation values to a new entity | `mapToNewUserEntity` |
 | Validate and throw on failure | `validateOrderTransition` or a domain-specific verb |
 | Boolean query | `isActive`, `hasPermission`, `canRetry` |
 
@@ -201,7 +199,7 @@ findByStatusOrderByCreatedAtDescIdDesc
 
 Move a complex query to an explicitly named repository method or custom repository implementation according to `spring-data-jpa`; do not encode an unreadable query solely to avoid `@Query`.
 
-Follow the repository's established controller-handler naming style. An OpenAPI `operationId` is a public tooling contract and does not have to equal the Java controller method name. Do not rename handler methods solely to make those two names identical.
+For this project, make every controller handler method name exactly match its OpenAPI `operationId`, using the deterministic path-and-HTTP-method convention from [API, data, and configuration names](api-data-and-configuration-names.md#name-openapi-operations-and-schemas). For example, use `usersUserIdGet` for `GET /users/{userId}`. Treat both names as public tooling contracts and migrate existing consumers before renaming either one.
 
 ## Name fields, parameters, and local variables
 
