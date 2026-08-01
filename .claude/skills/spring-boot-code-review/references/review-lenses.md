@@ -58,11 +58,11 @@ Apply `spring-boot-patterns` for the normative TO–Domain–Entity architecture
 - Verify that the domain object remains independent of REST, serialization, JPA, repositories, and Spring infrastructure.
 - Check whether `UserDomainMapper`-style mapping runs while all required persistence state is valid and available.
 - Check every mapper for omitted fields, wrong direction, privilege-bearing fields, mutable collection leakage, accidental lazy loading, and silent normalization.
-- Verify that updates load existing state, apply the intended explicit changes, persist according to the established service pattern, and map the saved state.
+- Verify that updates load managed state inside the intended transaction, apply explicit changes, synchronize according to the established persistence pattern, and map the resulting state.
 - Check partial-update semantics carefully. Distinguish absent, clear, and set operations and ensure unchanged server-owned fields survive.
 - Check exception translation at the owning boundary and verify that causes, stable error semantics, and rollback behavior remain correct.
 
-Do not suggest making mappers Spring beans when the established project skill uses non-bean mappers. Do not rename Domain objects to View, DTO, command, or query terminology.
+Do not impose a different mapper construction strategy from `spring-boot-patterns`. Do not rename Domain objects to View, DTO, command, or query terminology.
 
 ## Spring proxies and advice
 
