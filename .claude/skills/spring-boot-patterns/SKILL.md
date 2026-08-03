@@ -9,7 +9,11 @@ Implement vertical, tested features using the project's supported Spring Boot ve
 
 ## Coordination with other skills
 
-Apply `modern-java-21` to every touched Java file. It owns Java language use, imports, local type inference, Javadoc, nullability, exceptions, source structure, and general Java tests.
+Apply `modern-java-21` to every touched Java file. It owns Java language use, imports, local type inference, Javadoc, nullability, exceptions, and source structure.
+
+Apply `spring-boot-testing` whenever production behavior or tests change. It owns test scope,
+realistic scenario selection, unit and integration structure, fixtures, isolation, and execution;
+this skill owns the Spring contracts those tests must prove.
 
 Apply `spring-data-jpa` whenever code touches entities, repositories, persistence queries, transactions, locking, migrations, or database performance. It owns persistence behavior; this skill owns the Spring Boot boundaries around it.
 
@@ -225,14 +229,10 @@ Read the configuration records and bean example in [infrastructure examples](ref
 
 ## Tests required with every feature
 
-Decide and implement every relevant level:
-
-- pure unit test for domain/service decisions;
-- REST controller slice test for routing, serialization, content type, validation, status, security, and errors; use `@WebMvcTest` with `MockMvc` or `MockMvcTester` for the servlet stack already used by the project;
-- persistence integration test for queries, constraints, transaction behavior, and the configured production database semantics;
-- client integration test for external failure, timeout, retry, and response handling.
-
-Every bug fix needs a regression test that demonstrates the previous failure.
+Apply `spring-boot-testing` and implement every meaningful unit and integration case required by the
+changed Spring contract. Ensure the tests prove the affected routing, serialization, validation,
+error, service, transaction, configuration, and external-adapter behavior without duplicating the
+testing standard here.
 
 ## Anti-patterns
 

@@ -7,6 +7,10 @@ description: Modern Java 21+ coding standard for every creation, edit, refactor,
 
 Write production-grade Java that is easy to understand, test, change, and operate. Existing code is context for behavior, not automatic permission to repeat its design mistakes.
 
+Apply `spring-boot-testing` whenever production behavior or tests change. It owns test scope,
+scenario selection, fixtures, isolation, and execution; this skill remains authoritative for Java
+source rules in production and test files.
+
 ## Non-negotiable rule for every touched Java file
 
 Whenever a `.java` file is created or modified, even for a one-line change:
@@ -333,13 +337,9 @@ Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remov
 
 ## Tests are part of the code change
 
-- Every new behavior requires automated tests.
-- Every bug fix requires a regression test.
-- Refactoring risky legacy code requires characterization tests before behavior changes.
-- Test externally observable behavior rather than private methods.
-- Use fixed time and deterministic data.
-- Do not delete, disable, weaken, or ignore a failing test to make the build pass.
-- A change is incomplete when required tests fail or could not be run; report the exact blocker.
+Apply the complete `spring-boot-testing` workflow. Every touched test file must also follow this
+skill, including explicit local types, import order, source hygiene, Javadoc, and nondeterminism
+rules. Do not introduce a Java test pattern that conflicts with the testing owner skill.
 
 ## Forbidden patterns
 
@@ -355,7 +355,7 @@ Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remov
 - mutable global state;
 - hardcoded secrets or environment values;
 - copying a legacy pattern without evaluating it;
-- generated code without tests.
+- unverified generated contracts or custom generated behavior.
 
 ## Completion checklist
 

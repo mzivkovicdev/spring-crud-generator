@@ -1,6 +1,9 @@
 # Java, Spring, and test names
 
-Use this reference for Java identifiers, packages, modules, Spring components, architectural roles, exceptions, and tests. Apply `modern-java-21` for source formatting, imports, language use, Javadoc, and general test rules. Apply `spring-boot-patterns` for layer responsibilities.
+Use this reference for Java identifiers, packages, modules, Spring components, architectural roles,
+exceptions, and tests. Apply `modern-java-21` for source formatting, imports, language use, and
+Javadoc. Apply `spring-boot-testing` for test scope, scenarios, fixtures, isolation, and execution.
+Apply `spring-boot-patterns` for layer responsibilities.
 
 ## Contents
 

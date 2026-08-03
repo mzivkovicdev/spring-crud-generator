@@ -9,7 +9,13 @@ Design persistence for correctness, predictable SQL, and verified performance. J
 
 ## Coordination with other skills
 
-Apply `modern-java-21` to every touched Java file and `spring-boot-patterns` to controller, service, domain, mapper, and transaction boundaries. Those skills own general Java style, imports, Javadoc, tests, TOs, domain models, service parameters, mapper construction, and service update structure. Do not repeat their rules here.
+Apply `modern-java-21` to every touched Java file and `spring-boot-patterns` to controller, service,
+domain, mapper, and transaction boundaries. Those skills own general Java style, imports, Javadoc,
+TOs, domain models, service parameters, mapper construction, and service update structure.
+
+Apply `spring-boot-testing` whenever persistence behavior or tests change. It owns test scope,
+fixtures, isolation, integration structure, and execution; this skill owns the database semantics and
+JPA scenarios those tests must prove. Do not repeat their rules here.
 
 Apply `application-security` when persistence affects confidential data, tenant or object ownership, authorization scope, encryption, audit data, backups, exports, or dangerous query input. Apply `project-naming-conventions` to entity, repository, table, column, constraint, index, and migration names and to every escaped rename.
 
@@ -212,6 +218,7 @@ Choose the smallest suitable fetch mechanism:
 
 ## Persistence tests and observability
 
+- Apply `spring-boot-testing` for test structure, data, isolation, and execution.
 - Use Testcontainers or an equivalent environment with the actual supported database engine; H2-only tests are not evidence of production behavior.
 - Test entity mappings, converters, constraints, generated identifiers, repository queries, projections, entity graphs, pagination, locking, bulk DML, and migrations where relevant.
 - Assert query counts for N+1-sensitive flows.

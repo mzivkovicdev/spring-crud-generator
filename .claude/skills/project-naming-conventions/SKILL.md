@@ -1,6 +1,6 @@
 ---
 name: project-naming-conventions
-description: Define, apply, review, and safely migrate developer-owned names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, Spring configuration, feature flags, cache keys, application messages, jobs, metrics, traces, or structured-log fields; when resolving inconsistent terminology; and when reviewing naming-related changes. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, and spring-boot-code-review without redefining their rules. Defer physical cloud, IAM, Kubernetes, CI/CD, container, DNS, and infrastructure-resource naming to the approved platform standard.
+description: Define, apply, review, and safely migrate developer-owned names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, Spring configuration, feature flags, cache keys, application messages, jobs, metrics, traces, or structured-log fields; when resolving inconsistent terminology; and when reviewing naming-related changes. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, spring-boot-testing, and spring-boot-code-review without redefining their rules. Defer physical cloud, IAM, Kubernetes, CI/CD, container, DNS, and infrastructure-resource naming to the approved platform standard.
 ---
 
 # Project Naming Conventions
@@ -13,10 +13,11 @@ Treat this skill as the owner of naming vocabulary, identifier form, cross-bound
 
 | Skill | Treat as owner of |
 | --- | --- |
-| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, exceptions, and general tests |
+| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, and exceptions |
 | `spring-boot-patterns` | REST-only architecture, TO–Domain–Entity boundaries, service contracts, mapper responsibilities, configuration design, and package responsibilities |
 | `spring-data-jpa` | Persistence semantics, mappings, queries, transactions, migrations, indexes, constraints, and database behavior |
 | `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
+| `spring-boot-testing` | Test scope, scenarios, fixtures, doubles, isolation, and execution; this skill still owns test names |
 | `spring-boot-code-review` | Review scope, evidence, severity, reporting, and merge-readiness decisions |
 
 Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric, feature flag, or infrastructure resource that the design does not require.

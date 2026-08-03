@@ -79,6 +79,9 @@ Protect runtime deployment:
 
 ## Security test strategy
 
+Apply `spring-boot-testing` for test structure, fixtures, isolation, and execution. This reference
+defines the security controls and scenarios that those tests must prove.
+
 Match the test to the control:
 
 | Control | Minimum useful evidence |

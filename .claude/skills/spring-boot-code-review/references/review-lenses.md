@@ -184,7 +184,8 @@ Do not turn every outdated transitive dependency into a finding. Report the conc
 
 Apply the test rules from all active owner skills.
 
-- Map each changed behavior and confirmed bug to the narrowest test capable of proving it.
+- Map each changed behavior and confirmed bug to the required unit and integration evidence under
+  `spring-boot-testing`; use the narrowest effective test within each applicable layer.
 - Check success, invalid and boundary input, missing data, conflicts, authorization, failure translation, rollback, concurrency, retries, idempotency, and compatibility as applicable.
 - Prefer behavior assertions over implementation-detail assertions and mock-interaction counts.
 - Verify that unit tests do not claim framework guarantees and that integration tests exercise the real boundary under review.

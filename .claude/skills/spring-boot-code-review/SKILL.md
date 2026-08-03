@@ -1,6 +1,6 @@
 ---
 name: spring-boot-code-review
-description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, and project-naming-conventions without redefining their rules. Produce revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
+description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, spring-boot-testing, and project-naming-conventions without redefining their rules. Produce revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
 ---
 
 # Spring Boot Code Review
@@ -15,10 +15,11 @@ Apply the normative skills as follows:
 
 | Skill | Apply when | Treat as owner of |
 | --- | --- | --- |
-| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exceptions, source structure, and general test rules |
+| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exceptions, and source structure |
 | `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, service transaction boundaries, and feature structure |
-| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and persistence tests |
+| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and database-specific test scenarios |
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
+| `spring-boot-testing` | Production behavior or tests are changed or reviewed | Realistic scenario selection, unit and integration scope, fixtures, doubles, isolation, negative persistence verification, and test execution |
 | `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
 
 Resolve every applicable owner skill before evaluating compliance:

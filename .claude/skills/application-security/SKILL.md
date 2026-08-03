@@ -11,7 +11,9 @@ Build security into every affected boundary. Protect confidentiality, integrity,
 
 Apply this skill together with:
 
-- `modern-java-21` for Java language rules, imports, Javadoc, exceptions, source structure, and general tests;
+- `modern-java-21` for Java language rules, imports, Javadoc, exceptions, and source structure;
+- `spring-boot-testing` for realistic test scope, fixtures, isolation, unit and integration structure,
+  and execution;
 - `spring-boot-patterns` for REST controllers, TO–Domain–Entity boundaries, mappers, services, transactions, errors, and configuration;
 - `spring-data-jpa` for entities, repositories, queries, locking, migrations, and database performance;
 - `project-naming-conventions` when security-sensitive or escaped names are created, changed, logged, persisted, published, cached, or provisioned.
@@ -103,7 +105,10 @@ Every security-relevant feature requires tests at the boundary capable of provin
 - rate, quota, cost, concurrency, timeout, retry, idempotency, and dependency-failure behavior;
 - regression coverage for every confirmed vulnerability.
 
-Use unit, Spring Security, integration, database-backed, contract, and end-to-end tests as appropriate. Scanners supplement design review and executable verification; they do not replace them.
+Use unit, Spring Security, integration, database-backed, and contract verification within the
+single-service scope defined by `spring-boot-testing`. Security scenarios come from this skill; test
+structure and execution come from the testing skill. Scanners supplement design review and
+executable verification; they do not replace them.
 
 ## Rejected patterns
 
