@@ -192,6 +192,8 @@ Apply the test rules from all active owner skills.
 - Use the supported database for database-specific behavior and representative external stubs or contract tests for provider behavior.
 - For ORM integration tests, verify that constraints, SQL, lifecycle callbacks, and write failures are forced through the required flush; clear the persistence context when the assertion must prove a database reload.
 - Verify commit and rollback behavior outside a test-managed rollback transaction when the production contract depends on commit-time effects.
+- For changed scheduled work, require a direct unit test of orchestration and a scheduler-specific
+  integration test that uses the real trigger, bounded polling, and an observable effect.
 - Reject preemptive test timeouts that move transactional work to another thread unless the test deliberately accounts for the resulting transaction boundary.
 - Exercise `@Transactional`, `@Async`, cache, retry, method-validation, and method-security behavior through the configured Spring proxy rather than a directly constructed target.
 - Reject current time, uncontrolled randomness, sleeps, real external networks, order dependence, disabled assertions, swallowed failures, and tests weakened solely to pass the build.

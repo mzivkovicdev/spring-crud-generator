@@ -283,6 +283,8 @@ UserServiceTest
 UserControllerTest
 UserRepositoryIntegrationTest
 UserApiIntegrationTest
+ExpiredReservationCleanupJobTest
+ExpiredReservationCleanupJobIntegrationTest
 ```
 
 Do not call an integration test `*Test` when the project distinguishes test phases by suffix. Match Maven or Gradle test selection.

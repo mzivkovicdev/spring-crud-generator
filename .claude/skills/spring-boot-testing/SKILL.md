@@ -1,6 +1,6 @@
 ---
 name: spring-boot-testing
-description: Production testing standard for Java 21+ Spring Boot REST applications. Use whenever production behavior, APIs, services, persistence, security, configuration, jobs, listeners, caches, or external adapters are created or changed; when creating or updating JUnit unit tests, Spring test slices, database-backed integration tests, fixtures, mocks, test containers, or test infrastructure; and when verifying a bug fix or refactor. Covers realistic scenario selection, unit and integration scope, generated test data, negative persistence verification, isolation, and mandatory test execution. Excludes end-to-end and UI testing.
+description: Production testing standard for Java 21+ Spring Boot REST applications. Use whenever production behavior, APIs, services, persistence, security, configuration, scheduled jobs, schedulers, listeners, caches, or external adapters are created or changed; when creating or updating JUnit unit tests, Spring test slices, database-backed integration tests, fixtures, mocks, test containers, or test infrastructure; and when verifying a bug fix or refactor. Covers realistic scenario selection, unit and integration scope, generated test data, negative persistence verification, scheduler testing, isolation, and mandatory test execution. Excludes end-to-end and UI testing.
 ---
 
 # Spring Boot Testing
@@ -32,6 +32,8 @@ repository-enforced build configuration.
 - Read [integration test examples](references/integration-test-examples.md) when testing an HTTP
   boundary, persistence, Spring configuration, security filter chain, transaction, migration, or
   external adapter with real infrastructure or a controlled substitute.
+- Read [scheduler test examples](references/scheduler-test-examples.md) whenever creating or changing
+  a scheduled job, its trigger configuration, overlap protection, or scheduled side effects.
 
 Load only the reference required by the changed behavior.
 
@@ -75,6 +77,8 @@ After the happy path, cover only applicable cases such as:
 - missing resources, duplicate data, invalid state, or authorization failure;
 - database constraints, locking, rollback, or transaction behavior;
 - dependency timeout or failure when the application defines handling for it;
+- scheduled execution, disabled scheduling, overlap, or restart behavior when the job contract makes
+  that scenario reachable;
 - a confirmed production defect through a failing-before, passing-after regression test.
 
 Do not test impossible combinations, arbitrary random failures, private implementation branches,
@@ -114,6 +118,12 @@ Do not add a slice test mechanically when a full HTTP integration test already p
 more accurately. Do not use a slice as evidence for transaction, database, or full filter-chain
 behavior excluded from that slice.
 
+Do not create a repository integration test for inherited CRUD behavior merely because a repository
+exists. Add focused persistence coverage when custom queries, mappings, converters, projections,
+constraints, ordering, pagination, locking, flush behavior, or database-specific semantics require
+direct proof. A full application integration test may already provide sufficient persistence
+evidence for a simple path.
+
 ## Write application integration tests
 
 Use `@SpringBootTest` only when the scenario needs the application context and real Spring wiring.
@@ -130,11 +140,12 @@ Choose the web mode deliberately:
 
 Integration tests must:
 
-- run schema migrations and use the same relational database engine and relevant major version as
-  production through Testcontainers or the project's equivalent isolated environment;
-- avoid H2-only evidence when production uses another database;
-- keep the real controller, service, repository, transaction configuration, serialization, and
-  security controls involved in the tested path;
+- when the scenario touches SQL persistence, run schema migrations and use the same relational
+  database engine and relevant major version as production through Testcontainers or the project's
+  equivalent isolated environment;
+- avoid H2-only evidence for persistence behavior when production uses another database;
+- keep the real entry point, service, relevant adapters, transaction configuration, serialization,
+  and security controls involved in the tested path;
 - replace only true external systems with controlled stubs, fakes, emulators, or containers;
 - verify the response or other public result and the committed database state after success;
 - verify the public error contract and prove that invalid or rejected data was not persisted after
@@ -145,6 +156,22 @@ Integration tests must:
 
 Do not access live production or shared staging services. Do not mock the business path in a test
 whose purpose is to prove that the complete application path works.
+
+## Test scheduled jobs at both levels
+
+Every scheduled job must have:
+
+- a unit test that invokes the job directly, without Spring, and proves its delegation,
+  orchestration, and applicable failure behavior;
+- a scheduler-specific integration test that loads the required Spring context, enables the real
+  trigger with test-only timing, and proves an observable application effect.
+
+Keep scheduling disabled in unrelated tests through the project's explicit test configuration when
+background execution could interfere with their state. In scheduler integration tests, use the real
+scheduler and a generous bounded wait; do not call the scheduled method manually, sleep for an exact
+interval, or assert an exact invocation count for a repeating trigger. Test disabled scheduling,
+overlap protection, distributed locking, time zones, and retry behavior only when they are part of
+the actual job contract.
 
 ## Generate and control test data
 
@@ -219,6 +246,7 @@ controlled dependencies is an integration test, not an end-to-end test.
 - [ ] Affected unit and integration coverage was updated; missing meaningful coverage was created.
 - [ ] Unit tests load no Spring context.
 - [ ] Integration tests prove the real application path and supported database behavior.
+- [ ] Every changed scheduler has direct unit coverage and a real-trigger integration test.
 - [ ] Negative write scenarios prove that prohibited data was not persisted.
 - [ ] Test data uses the established generator or focused factory and is deterministic.
 - [ ] Tests are independent, secure, and free from arbitrary sleeps and live dependencies.
@@ -230,5 +258,6 @@ controlled dependencies is an integration test, not an end-to-end test.
 - [Spring Boot: Testing Spring Boot Applications](https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html)
 - [Spring Boot: Testcontainers](https://docs.spring.io/spring-boot/reference/testing/testcontainers.html)
 - [Spring Framework: Testing](https://docs.spring.io/spring-framework/reference/testing.html)
+- [Spring Framework: Task Execution and Scheduling](https://docs.spring.io/spring-framework/reference/integration/scheduling.html)
 - [JUnit User Guide](https://docs.junit.org/current/user-guide/)
 - [Testcontainers for Java](https://java.testcontainers.org/)

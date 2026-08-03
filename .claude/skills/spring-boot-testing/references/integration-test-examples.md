@@ -8,7 +8,7 @@ Use these examples for application and database-backed integration tests. Apply 
 
 - [HTTP application integration test](#http-application-integration-test)
 - [Container and database rules](#container-and-database-rules)
-- [Focused persistence integration test](#focused-persistence-integration-test)
+- [Focused persistence integration test when justified](#focused-persistence-integration-test-when-justified)
 - [Rejected integration tests](#rejected-integration-tests)
 
 ## HTTP application integration test
@@ -98,10 +98,16 @@ must respect foreign keys and sequences required by assertions. Do not rely on m
 another test's inserts. If tests run in parallel, allocate independent data or disable parallelism for
 that infrastructure explicitly.
 
-## Focused persistence integration test
+## Focused persistence integration test when justified
 
 Use a repository-focused test when a query, constraint, mapping, lock, or projection needs direct
-proof. The actual supported database remains mandatory.
+proof. Also use it for custom JPQL or native SQL, converters, deterministic ordering, pagination,
+flush-time failures, and database-specific behavior. The actual supported database remains
+mandatory.
+
+Do not create this test for inherited `JpaRepository` CRUD behavior or as a mandatory companion to
+every HTTP integration test. When the application-level test already proves a simple persistence
+path and no JPA-specific risk remains, it is sufficient.
 
 ```java
 @DataJpaTest

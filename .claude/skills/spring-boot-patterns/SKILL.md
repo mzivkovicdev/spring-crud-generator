@@ -220,19 +220,23 @@ Read the configuration records and bean example in [infrastructure examples](ref
 
 ## Scheduled and asynchronous work
 
+- Keep each scheduled entry point thin and delegate business work to a service with an explicit
+  transaction and failure policy.
 - Make scheduled jobs idempotent and safe when multiple application instances run.
 - Use a distributed lock or database claim pattern when a job must run once across the cluster.
 - Bound batches and memory usage; persist progress/checkpoints for large work.
 - Configure executors explicitly where concurrency matters.
 - Propagate context intentionally and handle failures; never fire-and-forget critical work silently.
 - Evaluate virtual threads only after confirming blocking model, pinning, connection pools, and operational behavior.
+- Apply the scheduler unit and integration rules from `spring-boot-testing` whenever scheduled work
+  or its configuration changes.
 
 ## Tests required with every feature
 
 Apply `spring-boot-testing` and implement every meaningful unit and integration case required by the
 changed Spring contract. Ensure the tests prove the affected routing, serialization, validation,
-error, service, transaction, configuration, and external-adapter behavior without duplicating the
-testing standard here.
+error, service, transaction, scheduled trigger, configuration, and external-adapter behavior without
+duplicating the testing standard here.
 
 ## Anti-patterns
 
