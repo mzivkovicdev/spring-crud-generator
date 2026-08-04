@@ -58,6 +58,7 @@ Apply `spring-boot-patterns` for the normative TO–Domain–Entity architecture
 - Verify that the domain object remains independent of REST, serialization, JPA, repositories, and Spring infrastructure.
 - Check whether `UserDomainMapper`-style mapping runs while all required persistence state is valid and available.
 - Check every mapper for omitted fields, wrong direction, privilege-bearing fields, mutable collection leakage, accidental lazy loading, and silent normalization.
+- When MapStruct is approved, verify that structural REST and domain mapping remains in MapStruct with `ReportingPolicy.ERROR`; require a documented reason for a fully handwritten mapper.
 - Verify that updates load managed state inside the intended transaction, apply explicit changes, synchronize according to the established persistence pattern, and map the resulting state.
 - Check partial-update semantics carefully. Distinguish absent, clear, and set operations and ensure unchanged server-owned fields survive.
 - Check exception translation at the owning boundary and verify that causes, stable error semantics, and rollback behavior remain correct.
@@ -184,8 +185,10 @@ Do not turn every outdated transitive dependency into a finding. Report the conc
 
 Apply the test rules from all active owner skills.
 
-- Map each changed behavior and confirmed bug to the required unit and integration evidence under
-  `spring-boot-testing`; use the narrowest effective test within each applicable layer.
+- Require direct unit tests for every behavioral application service, `@WebMvcTest` coverage for
+  every REST controller, and full application integration coverage under `spring-boot-testing`.
+  Do not accept one level as a replacement for another; overlap is valid when each proves a
+  different boundary.
 - Check success, invalid and boundary input, missing data, conflicts, authorization, failure translation, rollback, concurrency, retries, idempotency, and compatibility as applicable.
 - Prefer behavior assertions over implementation-detail assertions and mock-interaction counts.
 - Verify that unit tests do not claim framework guarantees and that integration tests exercise the real boundary under review.

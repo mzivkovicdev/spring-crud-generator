@@ -74,6 +74,7 @@ Use the established terminology consistently:
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
 | `UserDomain`, focused service parameter objects | Domain/service |
 | `UserEntity` | JPA persistence |
+| `UserSummaryProjection` | Repository persistence projection |
 | `UserRestMapper` | Domain to response TO; request TO to a focused domain input only when justified |
 | `UserDomainMapper` | Entity/projection to domain; explicit creation values to entity |
 
@@ -110,7 +111,10 @@ TO means transport object in this skill. Use records for immutable request and r
 - Do not put repositories or services in TOs or mappers.
 - Normalize only when the contract permits it; do not silently change user data.
 - Model PATCH semantics explicitly so absent, clear, and set are not confused.
-- When MapStruct is already approved, use it for structural mapping and fail the build for unintended unmapped targets. Obtain a stateless, dependency-free mapper through its static `INSTANCE = Mappers.getMapper(...)` member; do not register or inject it as a Spring bean. Use the Spring component model only when the mapper genuinely requires container-managed collaborators, decorators, object factories, or another documented DI capability. Use handwritten mapping for behavior, non-trivial normalization, or mapping that is clearer without generated code.
+- When MapStruct is an approved project dependency, use it for all structural REST and domain mapping and set `unmappedTargetPolicy = ReportingPolicy.ERROR`.
+- Keep MapStruct for the structural portion when some mapping is non-trivial. Implement non-structural behavior through focused default/helper methods or focused collaborators; do not replace the whole mapper with a handwritten class merely for that reason.
+- Use a fully handwritten mapper only when MapStruct is genuinely unsuitable, and document the concrete reason.
+- Obtain a stateless, dependency-free mapper through its static `INSTANCE = Mappers.getMapper(...)` member; do not register or inject it as a Spring bean. Use the Spring component model only when the mapper genuinely requires a documented container-managed capability.
 
 Read the TO and REST mapper examples in [REST API examples](references/rest-api-examples.md).
 
@@ -123,6 +127,7 @@ Domain models are independent of REST TOs and JPA entities. Services return doma
 - Put business invariants and behavior in the domain when they naturally belong to the represented business concept.
 - Do not expose `UserEntity` outside the service/persistence boundary.
 - Do not create a domain type that merely aliases a TO; the two models may look similar but belong to different boundaries and may evolve independently.
+- Keep a domain-owned enum beside the related domain types. Keep transport-only or persistence-only enums inside their owning boundary package; never collect unrelated enums in a generic package.
 
 Read the domain and domain mapper examples in [service and domain examples](references/service-domain-examples.md).
 
@@ -162,6 +167,7 @@ Apply `spring-data-jpa` for detailed repository and query rules.
 - Use `existsBy` instead of loading an entity for existence checks.
 - Avoid native queries unless JPQL, Criteria, or a repository abstraction cannot express the required behavior clearly.
 - Use `@EntityGraph`, projections, or explicit fetch joins to solve measured fetch-plan problems; do not default every association to eager loading.
+- Place persistence projection types in `repository.projection` and reusable Specification types in `repository.specification`. Add either subpackage only when a corresponding type exists.
 
 Read the repository-boundary example in [service and domain examples](references/service-domain-examples.md) only when a Spring Boot feature requires a repository change.
 
@@ -186,6 +192,7 @@ Use the project's existing error contract. For a new API on a supported Spring v
 - Do not copy `exception.getMessage()` into a response unless that exception type guarantees a stable, user-safe message.
 - Do not log expected 4xx validation/not-found failures as server errors.
 - Never include stack traces, SQL, internal endpoints, credentials, or personal data in responses.
+- Place custom exceptions in `exception` and `@RestControllerAdvice` or other REST exception-handler classes in `exception.handler`.
 
 Read the complete `ProblemDetail` handler in [REST API examples](references/rest-api-examples.md) and the custom exception examples in [infrastructure examples](references/infrastructure-examples.md).
 
@@ -233,10 +240,10 @@ Read the configuration records and bean example in [infrastructure examples](ref
 
 ## Tests required with every feature
 
-Apply `spring-boot-testing` and implement every meaningful unit and integration case required by the
-changed Spring contract. Ensure the tests prove the affected routing, serialization, validation,
-error, service, transaction, scheduled trigger, configuration, and external-adapter behavior without
-duplicating the testing standard here.
+Apply `spring-boot-testing`. Every application service containing behavior requires a focused unit
+test without Spring, every REST controller requires a focused `@WebMvcTest`, and affected features
+require full application integration coverage. These levels may overlap because they prove different
+boundaries; full integration coverage does not replace required service unit or MVC slice coverage.
 
 ## Anti-patterns
 
@@ -251,6 +258,9 @@ Reject:
 - parameter objects that merely hide unrelated values or mechanically satisfy a numeric threshold;
 - project-owned service methods with eight or more declared parameters and no cohesive grouping, redesign, or documented justification;
 - generic `Map` responses;
+- generic `enums` packages;
+- handwritten structural REST or domain mappers when approved MapStruct can express the mapping;
+- REST exception handlers placed directly in the custom-exception package;
 - hardcoded configuration or secrets;
 - self-invocation assumptions for proxy annotations;
 - generic exception swallowing;
@@ -268,9 +278,11 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
 - [ ] Service signatures use clear explicit parameters up to seven; signatures with eight or more were redesigned, cohesively grouped, or explicitly justified.
 - [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.
+- [ ] Approved MapStruct handles structural mapping with `ReportingPolicy.ERROR`; any handwritten mapper exception is documented.
+- [ ] Projections, reusable Specifications, enums, exceptions, and exception handlers use their owning packages without empty scaffolding.
 - [ ] Transactions and security ownership are explicit.
 - [ ] Error responses are stable and safe.
 - [ ] Configuration is type-safe, externalized, and validated.
-- [ ] Tests cover successful and unsuccessful behavior.
+- [ ] Behavioral services have focused unit tests, every REST controller has MVC slice coverage, and affected full application paths have integration coverage.
 - [ ] Every touched Java file has clean, correctly ordered imports.
 - [ ] Relevant formatter, tests, and build checks pass.

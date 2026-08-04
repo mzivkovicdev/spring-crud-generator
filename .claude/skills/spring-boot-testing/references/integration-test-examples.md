@@ -4,6 +4,9 @@ Use these examples for application and database-backed integration tests. Apply 
 `../SKILL.md`, `spring-boot-patterns`, `spring-data-jpa`, `application-security`,
 `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
+These tests complement, and never replace, direct unit tests for behavioral application services or
+the required `@WebMvcTest` for each REST controller.
+
 ## Contents
 
 - [HTTP application integration test](#http-application-integration-test)
@@ -81,6 +84,9 @@ class UserApiIntegrationTest {
 Match status, `Location`, error code, and schema to the actual API contract. Apply authentication and
 authorization helpers required by `application-security`; do not disable the filter chain. For every
 negative write case, verify both the public error and the absence of prohibited database state.
+Extend full application coverage to the affected real wiring, transactions, migrations, concurrency
+contract, and committed state. Overlap an important scenario with a unit or MVC slice test when this
+test proves those different boundaries.
 
 ## Container and database rules
 

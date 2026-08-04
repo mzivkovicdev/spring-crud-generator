@@ -30,9 +30,14 @@ src/main/java/com/example/myapp/
 │   └── impl/                      # Application service implementations
 │       └── UserServiceImpl.java
 ├── domain/                        # Framework-independent business models
-│   └── UserDomain.java
+│   ├── UserDomain.java
+│   └── UserStatus.java            # Domain-owned enum
 ├── repository/                    # Data access
-│   └── UserRepository.java
+│   ├── UserRepository.java
+│   ├── projection/                # Persistence projections, when introduced
+│   │   └── UserSummaryProjection.java
+│   └── specification/             # Reusable JPA Specifications, when introduced
+│       └── UserSpecifications.java
 ├── model/                         # Persistence entities
 │   └── UserEntity.java
 ├── transferobject/               # Transfer objects
@@ -44,12 +49,18 @@ src/main/java/com/example/myapp/
 │       └── UserTO.java
 ├── exception/                     # Custom exceptions
 │   ├── ResourceNotFoundException.java
-│   └── GlobalExceptionHandler.java
+│   └── handler/                   # REST exception handlers and advice
+│       └── ApiExceptionHandler.java
 └── util/                          # Focused, stateless helpers only
     └── DateUtils.java
 ```
 
-Use this layered layout consistently unless the repository already enforces a compatible layered variation. Application service interfaces define the inbound application contract; their Spring implementations belong in `service.impl`. Do not create interfaces for helpers or types without that responsibility.
+Use this layered layout consistently unless the repository already enforces a compatible layered
+variation; do not migrate a coherent layout unless migration is explicitly in scope. The projection
+and specification subpackages appear because the example contains corresponding types. Create either
+subpackage only with its first type, never as empty scaffolding. Application service interfaces
+define the inbound application contract; their Spring implementations belong in `service.impl`. Do
+not create interfaces for helpers or types without that responsibility.
 
 ## Method validation
 

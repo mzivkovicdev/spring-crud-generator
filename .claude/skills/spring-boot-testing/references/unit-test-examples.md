@@ -81,12 +81,28 @@ class UserServiceTest {
                 ResourceNotFoundException.class,
                 () -> this.userService.getById(userId));
     }
+
+    @Test
+    void updateById_whenUserDoesNotExist_throwsResourceNotFoundExceptionWithoutWriting() {
+        final Long userId = UserTestData.userId();
+        final UserCreateTestData input = UserTestData.validUserCreateData();
+        when(this.userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> this.userService.updateById(userId, input.username(), input.email()));
+
+        verify(this.userRepository, never()).save(any(UserEntity.class));
+        verifyNoInteractions(this.passwordEncoder);
+    }
 }
 ```
 
 Use the project assertion style consistently. Verify exact persistence fields only when those fields
 are the service's responsibility. Do not assert MapStruct internals or repeat the complete mapping in
-the test.
+the test. Every behavioral application service needs direct unit coverage for its decisions, returned
+state, exceptions, repository writes, and prohibited interactions where applicable; full integration
+coverage does not replace these tests.
 
 ## Test-data factory
 

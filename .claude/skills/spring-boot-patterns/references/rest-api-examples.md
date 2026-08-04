@@ -149,7 +149,15 @@ public interface UserRestMapper {
 }
 ```
 
-When a focused request input is justified by the service contract, the REST mapper may map the request TO to that domain/service input. It must not pass the TO itself to the service or hide business behavior in generated mapping.
+When MapStruct is approved, use it for every structural REST mapping and keep
+`unmappedTargetPolicy = ReportingPolicy.ERROR`. The default page method demonstrates how custom
+composition can remain inside a MapStruct mapper. Add focused helper/default methods or collaborators
+for non-structural behavior instead of replacing the complete mapper with a handwritten class. Use a
+fully handwritten mapper only when MapStruct is genuinely unsuitable and document why.
+
+When a focused request input is justified by the service contract, the REST mapper may map the
+request TO to that domain/service input. It must not pass the TO itself to the service or hide
+business behavior in generated mapping.
 
 ## ProblemDetail exception handling
 
@@ -273,6 +281,9 @@ final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 ```
 
 Use `@RestControllerAdvice` for exceptions raised during Spring MVC REST request processing. Extending `ResponseEntityExceptionHandler` preserves framework handling for malformed requests, unsupported methods and media types, binding failures, and other Spring MVC exceptions; override only the cases that need the project's stable problem contract.
+
+Place this advice in `<base-package>.exception.handler`. Keep the exceptions it handles in
+`<base-package>.exception`; do not place the advice directly beside them.
 
 Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to the correct HTTP status and stable code. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a condition-specific handler only for a distinct status, code, or response contract. Map the project-owned `ValidationException` to `400` only when it represents caller-correctable input; do not catch `jakarta.validation.ValidationException` broadly. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
 

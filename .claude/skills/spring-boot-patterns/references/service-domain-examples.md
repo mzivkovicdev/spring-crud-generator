@@ -59,7 +59,14 @@ public interface UserDomainMapper {
 }
 ```
 
-Use the mapper to create a new entity from explicit, already-decided creation values and to map persistence results to domain objects. Hashing, authorization, defaults with business meaning, normalization, and other behavior belong before mapping. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity during an update.
+When MapStruct is approved, use it for every structural domain mapping and keep
+`unmappedTargetPolicy = ReportingPolicy.ERROR`. Use the mapper to create a new entity from explicit,
+already-decided creation values and to map persistence results to domain objects. Keep MapStruct for
+the structural portion when custom behavior is needed; add a focused helper/default method or
+collaborator instead of replacing the mapper with a handwritten class. Document any exceptional case
+where MapStruct is genuinely unsuitable. Hashing, authorization, defaults with business meaning,
+normalization, and other behavior belong before mapping. Do not use a MapStruct `@MappingTarget`
+method to mutate an existing entity during an update.
 
 ## Focused service parameter object
 

@@ -29,6 +29,8 @@ repository-enforced build configuration.
 
 - Read [unit test examples](references/unit-test-examples.md) when testing a service, domain rule,
   mapper behavior, validator, or focused Java component without a Spring context.
+- Read [controller slice test examples](references/controller-slice-test-examples.md) whenever a REST
+  controller is created or changed.
 - Read [integration test examples](references/integration-test-examples.md) when testing an HTTP
   boundary, persistence, Spring configuration, security filter chain, transaction, migration, or
   external adapter with real infrastructure or a controlled substitute.
@@ -55,11 +57,11 @@ Load only the reference required by the changed behavior.
 
 For every production-code change:
 
-1. Inspect both unit and integration coverage for the affected behavior.
+1. Inspect service unit, controller MVC slice, and full application integration coverage for the affected behavior.
 2. Update every assertion and fixture affected by the contract change.
 3. Add a test for every new reachable success, failure, boundary, or regression case.
-4. Create missing meaningful unit and integration coverage for the affected feature or boundary.
-5. Run the focused tests, then every relevant unit and integration suite.
+4. Create any missing required service unit, controller MVC slice, and full application integration coverage.
+5. Run the focused tests, then every relevant unit, MVC slice, and integration suite.
 
 For a formatting, import-only, comment-only, or equivalent non-behavioral change, do not invent a
 meaningless assertion or mechanically rewrite tests. Confirm that behavior is unchanged and run the
@@ -98,25 +100,31 @@ Use the project's supported JUnit Jupiter version, JUnit 5 or newer. A unit test
 - avoid testing getters, setters, records, framework behavior, generated mapper code without custom
   logic, or private methods directly.
 
+Every application service containing behavior requires direct unit tests. Cover its business
+decisions, returned state, declared exceptions, repository writes, and prohibited interactions when
+applicable; a test that proves only that a collaborator was invoked is insufficient. Full application
+integration coverage does not replace this unit coverage.
+
 Use Mockito's JUnit Jupiter extension when Mockito is the established project library. Construct the
 subject explicitly when that makes dependencies and test setup clearer. Do not use lenient stubbing
 or broad `any()` matching to hide an inaccurate fixture.
 
-## Use Spring test slices deliberately
+## Test every REST controller with an MVC slice
 
 A Spring slice test is neither a pure unit test nor a substitute for full integration coverage.
-Use the narrowest supported slice only when Spring wiring or framework behavior is the subject:
+Every REST controller requires focused `@WebMvcTest` coverage with its services and other downstream
+collaborators mocked through the mechanism supported by the project version. Prove every handler's
+routing and delegation plus applicable validation, request and response serialization, status,
+headers, security behavior, and public error contract.
 
-- use `@WebMvcTest` for controller routing, serialization, validation, security integration, status,
-  headers, and the public problem contract while replacing downstream collaborators;
-- use `@DataJpaTest` for focused mapping and repository behavior when its database replacement and
-  migration configuration still match the scenario;
-- use other slices only when the inspected project version supports them and the slice proves the
-  required boundary.
+Use `@DataJpaTest` for focused mapping and repository behavior when its database replacement and
+migration configuration still match the scenario. Use another slice only when the inspected project
+version supports it and the slice proves the required boundary.
 
-Do not add a slice test mechanically when a full HTTP integration test already proves the same risk
-more accurately. Do not use a slice as evidence for transaction, database, or full filter-chain
-behavior excluded from that slice.
+Do not use an MVC slice as evidence for transaction, database, or other full-application behavior
+excluded from that slice. Conversely, do not omit required MVC slice coverage because a full HTTP
+integration test exercises the same route. The overlap is intentional: each level proves a different
+boundary.
 
 Do not create a repository integration test for inherited CRUD behavior merely because a repository
 exists. Add focused persistence coverage when custom queries, mappings, converters, projections,
@@ -153,6 +161,12 @@ Integration tests must:
 - verify absence of messages, cache entries, files, or external calls when failure must prevent them;
 - avoid test-managed `@Transactional` on HTTP write tests when rollback would hide commit behavior;
 - use the project's explicit database reset or cleanup strategy so tests remain isolated.
+
+Full application integration coverage must prove affected real wiring, transactions, persistence,
+migrations, concurrency behavior, and committed database state. Cover each item when the feature can
+exercise it; do not invent concurrency cases for a path with no concurrency contract. Important
+scenarios may overlap with service unit or MVC slice tests when the integration test proves a
+different boundary. Integration coverage never replaces either required lower level.
 
 Do not access live production or shared staging services. Do not mock the business path in a test
 whose purpose is to prove that the complete application path works.
@@ -243,9 +257,10 @@ controlled dependencies is an integration test, not an end-to-end test.
 ## Completion checklist
 
 - [ ] Tests cover the happy path first, then every applicable reachable negative case.
-- [ ] Affected unit and integration coverage was updated; missing meaningful coverage was created.
-- [ ] Unit tests load no Spring context.
-- [ ] Integration tests prove the real application path and supported database behavior.
+- [ ] Every affected behavioral application service has direct focused unit coverage without Spring.
+- [ ] Every affected REST controller has `@WebMvcTest` coverage for its complete public MVC contract.
+- [ ] Full application integration tests prove affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
+- [ ] Overlap across levels proves different boundaries; no level was omitted because another exists.
 - [ ] Every changed scheduler has direct unit coverage and a real-trigger integration test.
 - [ ] Negative write scenarios prove that prohibited data was not persisted.
 - [ ] Test data uses the established generator or focused factory and is deterministic.

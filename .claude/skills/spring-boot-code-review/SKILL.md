@@ -117,8 +117,9 @@ Do not:
 Inspect the build before selecting commands. Run the narrowest safe checks that can validate the suspected behavior:
 
 - compile or static analysis for source and import claims;
-- focused unit or slice tests for local behavior and REST boundaries;
-- integration and supported-database tests for persistence, transaction, serialization, and configuration behavior;
+- direct unit tests for every behavioral application service;
+- `@WebMvcTest` coverage for every REST controller and its public MVC contract;
+- full application and supported-database integration tests for wiring, persistence, transactions, migrations, concurrency, serialization, configuration, and committed state;
 - contract tests for HTTP, events, jobs, and external adapters;
 - generated SQL, query counts, and representative execution plans for performance-sensitive persistence claims;
 - security tests and project-approved scanners for changed trust boundaries and dependencies.
@@ -165,6 +166,7 @@ Then state the exact scope and any checks not run. Do not translate “no findin
 - [ ] Applicable owner skills were used without redefining their rules.
 - [ ] Every changed file and affected execution path was examined, or exclusions are explicit in the coverage record.
 - [ ] Security, correctness, failure, data, performance, rollout, and test risks were considered proportionately.
+- [ ] Required service unit, controller MVC slice, and full application integration coverage was verified independently.
 - [ ] Every finding has evidence, a trigger, impact, verification, and either a remediation direction or explicit containment/escalation.
 - [ ] Questions, suggestions, pre-existing issues, and verification gaps are not presented as defects.
 - [ ] Findings are deduplicated, severity-ranked, concise, and limited to the requested scope.

@@ -64,6 +64,10 @@ public class UserEntity {
 
 `GenerationType.AUTO` is illustrative, not the project default. Select the identifier strategy for the configured database and verify its batching and round-trip behavior before implementation.
 
+`UserStatus` represents business state, so place it beside the related domain types rather than in a
+generic `enums` package. If a different enum exists only to represent persistence state, keep that
+enum in the persistence boundary.
+
 ## Association mapping
 
 ```java
@@ -114,6 +118,8 @@ public interface UserSummaryProjection {
     UserStatus getStatus();
 }
 ```
+
+Create `repository.projection` with this first projection; do not create the subpackage in advance.
 
 ```java
 @Query("""
@@ -200,6 +206,9 @@ public final class UserSpecifications {
     }
 }
 ```
+
+Place reusable Specification types in `repository.specification`. Keep a one-off predicate with the
+repository implementation or query that owns it instead of creating a reusable-looking type.
 
 ## Pagination
 

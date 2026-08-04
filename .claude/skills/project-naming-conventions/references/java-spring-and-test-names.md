@@ -52,10 +52,13 @@ com.acme.myapp.service
 com.acme.myapp.service.impl
 com.acme.myapp.domain
 com.acme.myapp.repository
+com.acme.myapp.repository.projection
+com.acme.myapp.repository.specification
 com.acme.myapp.model
 com.acme.myapp.transferobject.request
 com.acme.myapp.transferobject.response
 com.acme.myapp.exception
+com.acme.myapp.exception.handler
 com.acme.myapp.config
 ```
 
@@ -71,6 +74,7 @@ Rules:
 - Avoid dumping grounds such as `common`, `misc`, `general`, `stuff`, `helpers`, or a broad `util` package.
 - When an established layout contains `util`, keep it limited to focused stateless helpers with meaningful type names. Prefer a specific responsibility package for new code when that is clearer; do not migrate packages solely to remove the word `util`.
 - Put application service implementations in `service.impl` and name them `*ServiceImpl`; do not use `impl` as a dumping ground for unrelated types.
+- Do not create a generic `enums` package. Put each enum beside the business or architectural concept that owns it: domain enums with domain types, transport-only enums in the transport boundary, and persistence-only enums in the persistence boundary.
 - Keep Java source filenames identical to their top-level public type names.
 
 Name Maven or Gradle modules by durable capability or deployable responsibility:
@@ -136,6 +140,7 @@ Use a suffix only when the type owns that responsibility:
 | Outbound client | `<ProviderOrCapability>Client` | `CatalogClient` |
 | Converter | `<Source><Target>Converter` when one conversion is its responsibility | `StringCurrencyConverter` |
 | Validator | `<RuleOrSubject>Validator` | `OrderTransitionValidator` |
+| REST exception handler | `<Scope>ExceptionHandler` | `ApiExceptionHandler` in `exception.handler` |
 | Listener or consumer | Name the input and mechanism | `OrderCreatedEventConsumer` |
 | Publisher | Name the published contract | `OrderEventPublisher` |
 | Scheduled work | Name the completed work plus `Job` | `ExpiredReservationCleanupJob` |
@@ -310,6 +315,7 @@ Reject or question:
 - noise words and numeric suffixes;
 - framework or provider names leaking into domain types;
 - package names that mirror an organization chart or temporary project;
+- generic `enums` packages that separate enums from their owning concepts;
 - `*Impl` outside an application-service contract or without a real responsibility;
 - accessors or predicates with misleading verbs;
 - names that expose credentials, customer data, tenant names, or vulnerabilities;
