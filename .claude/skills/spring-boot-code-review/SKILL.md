@@ -15,7 +15,7 @@ Apply the normative skills as follows:
 
 | Skill | Apply when | Treat as owner of |
 | --- | --- | --- |
-| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exceptions, and source structure |
+| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exception mechanics, and source structure |
 | `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, service transaction boundaries, and feature structure |
 | `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and database-specific test scenarios |
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
@@ -117,9 +117,7 @@ Do not:
 Inspect the build before selecting commands. Run the narrowest safe checks that can validate the suspected behavior:
 
 - compile or static analysis for source and import claims;
-- direct unit tests for every behavioral application service;
-- `@WebMvcTest` coverage for every REST controller and its public MVC contract;
-- full application and supported-database integration tests for wiring, persistence, transactions, migrations, concurrency, serialization, configuration, and committed state;
+- the test levels and suites required by `spring-boot-testing` for the affected behavior;
 - contract tests for HTTP, events, jobs, and external adapters;
 - generated SQL, query counts, and representative execution plans for performance-sensitive persistence claims;
 - security tests and project-approved scanners for changed trust boundaries and dependencies.
@@ -166,7 +164,7 @@ Then state the exact scope and any checks not run. Do not translate “no findin
 - [ ] Applicable owner skills were used without redefining their rules.
 - [ ] Every changed file and affected execution path was examined, or exclusions are explicit in the coverage record.
 - [ ] Security, correctness, failure, data, performance, rollout, and test risks were considered proportionately.
-- [ ] Required service unit, controller MVC slice, and full application integration coverage was verified independently.
+- [ ] Required coverage from `spring-boot-testing` was verified at each applicable test boundary.
 - [ ] Every finding has evidence, a trigger, impact, verification, and either a remediation direction or explicit containment/escalation.
 - [ ] Questions, suggestions, pre-existing issues, and verification gaps are not presented as defects.
 - [ ] Findings are deduplicated, severity-ranked, concise, and limited to the requested scope.
