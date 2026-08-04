@@ -166,9 +166,11 @@ The controller handler method name must exactly match the corresponding `operati
 ```java
 @Operation(operationId = "usersUserIdGet")
 @GetMapping("/{userId}")
-public UserTO usersUserIdGet(@PathVariable final Long userId) {
-    return UserRestMapper.INSTANCE.mapUserDomainToUserTO(
-            this.userService.getById(userId)
+public ResponseEntity<UserTO> usersUserIdGet(@PathVariable final Long userId) {
+    return ResponseEntity.ok(
+            UserRestMapper.INSTANCE.mapUserDomainToUserTO(
+                    this.userService.getById(userId)
+            )
     );
 }
 ```
