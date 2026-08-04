@@ -21,13 +21,13 @@ src/main/java/com/example/myapp/
 ├── controller/                    # REST controllers
 │   └── UserController.java
 ├── mapper/
-│   ├── rest/                      # REST TO <-> domain mapping
+│   ├── rest/                      # Domain -> response TO; justified request TO -> service input
 │   │   └── UserRestMapper.java
-│   └── domain/                    # Entity <-> domain mapping
+│   └── domain/                    # Entity/projection -> domain; creation values -> new entity
 │       └── UserDomainMapper.java
 ├── service/                       # Business logic and application contracts
 │   ├── UserService.java
-│   └── impl/                      # Application service implementations
+│   └── impl/                      # Implementations when the project uses this convention
 │       └── UserServiceImpl.java
 ├── domain/                        # Framework-independent business models
 │   ├── UserDomain.java
@@ -52,15 +52,17 @@ src/main/java/com/example/myapp/
 │   └── handler/                   # REST exception handlers and advice
 │       └── ApiExceptionHandler.java
 └── util/                          # Focused, stateless helpers only
-    └── DateUtils.java
+    └── DateRangeUtils.java
 ```
 
 Use this layered layout consistently unless the repository already enforces a compatible layered
 variation; do not migrate a coherent layout unless migration is explicitly in scope. The projection
 and specification subpackages appear because the example contains corresponding types. Create either
 subpackage only with its first type, never as empty scaffolding. Application service interfaces
-define the inbound application contract; their Spring implementations belong in `service.impl`. Do
-not create interfaces for helpers or types without that responsibility.
+and `service.impl` are shown because this example assumes that project convention. Follow the service
+interface decision from `../SKILL.md`; do not create interfaces for helpers or types without a real
+contract. A `util` package is valid for cohesive stateless utilities, but it must not become a
+dumping ground for unrelated behavior.
 
 ## Method validation
 
@@ -86,7 +88,7 @@ public interface TransferService {
 }
 ```
 
-Annotate the concrete Spring bean with `@Validated` so Spring method validation is activated at the target type. Do not repeat or strengthen the interface constraints on the overriding method:
+This example assumes that the project uses the service-interface and *ServiceImpl convention. Keep validation constraints on the interface and place @Validated on the concrete Spring bean. Do not repeat constraints on the overriding method.
 
 ```java
 @Service
@@ -125,7 +127,7 @@ public class TransferServiceImpl implements TransferService {
 }
 ```
 
-`TransferService` is the application contract used by inbound adapters; one current implementation does not make that boundary redundant. Invoke validated methods through the Spring proxy because self-invocation bypasses proxy-based method validation and other advice. Apply the persistence, locking, and concurrency rules from the owning data skill to the real transfer implementation.
+The explicit `save` calls are intentional; do not replace them with dirty-checking-only persistence. Apply `spring-data-jpa` and the project’s consistency rules for locking and concurrency. Invoke the service through the Spring proxy so validation and transaction advice are applied.
 
 ## Custom exceptions
 
