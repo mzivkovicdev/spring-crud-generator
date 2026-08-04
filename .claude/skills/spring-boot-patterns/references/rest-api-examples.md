@@ -149,11 +149,8 @@ public interface UserRestMapper {
 }
 ```
 
-When MapStruct is approved, use it for every structural REST mapping and keep
-`unmappedTargetPolicy = ReportingPolicy.ERROR`. The default page method demonstrates how custom
-composition can remain inside a MapStruct mapper. Add focused helper/default methods or collaborators
-for non-structural behavior instead of replacing the complete mapper with a handwritten class. Use a
-fully handwritten mapper only when MapStruct is genuinely unsuitable and document why.
+The default page method demonstrates example-specific composition inside the approved MapStruct
+mapper. Apply the complete mapping policy from `../SKILL.md` before extending this mapper.
 
 When a focused request input is justified by the service contract, the REST mapper may map the
 request TO to that domain/service input. It must not pass the TO itself to the service or hide
