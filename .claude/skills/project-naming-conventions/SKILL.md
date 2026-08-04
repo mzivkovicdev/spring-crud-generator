@@ -13,7 +13,7 @@ Treat this skill as the owner of naming vocabulary, identifier form, cross-bound
 
 | Skill | Treat as owner of |
 | --- | --- |
-| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, and exceptions |
+| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, and exception handling; this skill owns exception names |
 | `spring-boot-patterns` | REST-only architecture, TO–Domain–Entity boundaries, service contracts, mapper responsibilities, configuration design, and package responsibilities |
 | `spring-data-jpa` | Persistence semantics, mappings, queries, transactions, migrations, indexes, constraints, and database behavior |
 | `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
@@ -103,7 +103,8 @@ Apply these readability principles:
 - Do not reuse one word for different concepts in the same bounded context.
 - Make meaningful distinctions. Reject numeric suffixes and noise words such as `data`, `info`, `object`, `item`, `value`, `manager`, `processor`, or `helper` when they do not narrow meaning.
 - Prefer pronounceable and searchable names. Use only approved domain, protocol, vendor, and technical abbreviations.
-- Avoid encodings such as Hungarian notation, member prefixes, interface prefixes, implementation suffixes, or embedded type names that add no semantic information.
+- Avoid encodings such as Hungarian notation, member prefixes, interface prefixes, unexplained
+  implementation suffixes, or embedded type names that add no semantic information.
 - Match length to scope. Use concise loop indices only in tiny conventional scopes; use explicit names when values live longer or cross boundaries.
 - Name collections with plural nouns and individual values with singular nouns.
 - Name booleans as positive predicates such as `active`, `hasPermission`, `canRetry`, or `isExpired`. Avoid double negatives.
@@ -150,7 +151,11 @@ Use a role suffix only when the type performs that role. Prefer the specific res
 | `ExpiredReservationCleanupJob` | `ReservationProcessor` |
 | `OrderNotFoundException` | `OrderException` |
 
-Use the application-service interface and `*ServiceImpl` convention owned by `spring-boot-patterns`. Do not create an interface only to produce an `Impl` class for helpers or types outside that boundary. When multiple implementations differ by stable behavior or mechanism, name the distinction, such as `HttpCatalogClient` and `InMemoryCatalogClient`.
+Follow the application-service naming decision owned by `spring-boot-patterns`. Use
+`<Capability>ServiceImpl` when the user selected that convention or the repository already applies it
+coherently; otherwise, `Impl` is not required. Do not create an interface only to produce an `Impl`
+class. When multiple implementations differ by stable behavior or mechanism, prefer names such as
+`HttpCatalogClient` and `InMemoryCatalogClient`.
 
 ## Validate every proposed name
 
