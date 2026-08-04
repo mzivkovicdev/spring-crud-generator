@@ -1,23 +1,25 @@
 # Controller Slice Test Examples
 
 Use these examples for focused Spring MVC controller tests. Apply every rule from `../SKILL.md`,
-`spring-boot-patterns`, `application-security`, `modern-java-21`, and
-`project-naming-conventions`. Imports are omitted.
+`spring-boot-patterns`, `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
 ## Contents
 
-- [Controller MVC slice](#controller-mvc-slice)
+- [Controller MVC slice excerpt](#controller-mvc-slice-excerpt)
 - [Coverage expectations](#coverage-expectations)
 - [Rejected controller tests](#rejected-controller-tests)
 
-## Controller MVC slice
+## Controller MVC slice excerpt
 
 Use the mock-bean mechanism supported by the inspected Spring version. This example uses
 `@MockitoBean`; preserve the established equivalent on an older supported project instead of
-changing framework versions solely for the test.
+changing framework versions solely for the test. It is an excerpt, not the complete required test
+set for `UserController`.
 
 ```java
-@WebMvcTest(UserController.class)
+@WebMvcTest(controllers = UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(ApiExceptionHandler.class)
 class UserControllerTest {
 
     private static final String USERS_PATH = "/api/v1/users";
@@ -37,7 +39,6 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = "users:write")
     void usersPost_whenRequestIsValid_returnsCreatedUser() throws Exception {
         final UserCreateTO request = UserTestData.validUserCreateTO();
         final UserDomain createdUser = UserTestData.createdUserDomain(request);
@@ -62,7 +63,6 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = "users:write")
     void usersPost_whenRequestIsInvalid_returnsValidationProblemWithoutDelegating()
             throws Exception {
 
@@ -79,7 +79,6 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = "users:read")
     void usersUserIdGet_whenUserDoesNotExist_returnsNotFoundProblem() throws Exception {
         final Long userId = UserTestData.userId();
         when(this.userService.getById(userId))
@@ -95,15 +94,17 @@ class UserControllerTest {
 }
 ```
 
-Use the project's real security configuration and test identities when the controller is protected;
-never disable filters to make the slice pass. Ensure the project's `@RestControllerAdvice`, JSON
-customization, converters, and argument resolvers required by the public contract are included in the
-slice. Import only focused MVC configuration that the slice does not discover automatically.
+Disabling filters here is the project's deliberate test-level boundary, not a workaround for a
+failing security test. Do not use `@WithMockUser`, mock JWTs, authority values, or CSRF in this slice.
+Full application integration tests own security verification. Ensure the project's
+`@RestControllerAdvice`, JSON customization, converters, and argument resolvers required by the
+public contract are included in the slice. Import only focused MVC configuration that the slice does
+not discover automatically.
 
 ## Coverage expectations
 
 For every controller, add at least one successful test for each handler and every applicable
-validation, authorization, serialization, status, header, and error-contract case. Mock downstream
+validation, serialization, status, header, and error-contract case. Mock downstream
 services so the test proves the MVC boundary and delegation only. Assert both the response and the
 exact service input when delegation is part of the contract; assert no service interaction when MVC
 validation rejects the request.
