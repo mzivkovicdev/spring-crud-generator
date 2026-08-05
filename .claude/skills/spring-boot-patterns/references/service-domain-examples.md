@@ -59,14 +59,9 @@ public interface UserDomainMapper {
 }
 ```
 
-When MapStruct is approved, use it for every structural domain mapping and keep
-`unmappedTargetPolicy = ReportingPolicy.ERROR`. Use the mapper to create a new entity from explicit,
-already-decided creation values and to map persistence results to domain objects. Keep MapStruct for
-the structural portion when custom behavior is needed; add a focused helper/default method or
-collaborator instead of replacing the mapper with a handwritten class. Document any exceptional case
-where MapStruct is genuinely unsuitable. Hashing, authorization, defaults with business meaning,
-normalization, and other behavior belong before mapping. Do not use a MapStruct `@MappingTarget`
-method to mutate an existing entity during an update.
+This mapper demonstrates the directions owned by `../SKILL.md`: persistence output to domain and
+explicit, already-decided creation values to a new entity. Hashing, authorization, normalization,
+and business defaults happen before structural mapping.
 
 ## Focused service parameter object
 
@@ -112,6 +107,10 @@ public interface UserProfileService {
 Do not introduce a catch-all input class to hide unrelated values, and do not create a custom input class for every service method. A focused parameter/value object may still be appropriate below the threshold when it is already a stable domain concept. A REST mapper may map a request TO to the focused domain input, but the service must not depend on that TO.
 
 ## Service contract and implementation
+
+This example assumes the user or repository selected the service-interface and `*ServiceImpl`
+convention. Use a concrete service directly when `../SKILL.md` does not justify or require an
+interface.
 
 ```java
 /**
