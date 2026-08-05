@@ -181,12 +181,16 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    ProblemDetail handleAuthenticationRequired() {
-        return createProblem(
+    ResponseEntity<ProblemDetail> handleAuthenticationRequired() {
+        final ProblemDetail problem = createProblem(
                 HttpStatus.UNAUTHORIZED,
                 "Authentication required",
                 "Authentication is required to access this resource.",
                 "AUTHENTICATION_REQUIRED");
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
+                .body(problem);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -289,8 +293,12 @@ Before adding handlers, inventory the exceptions that can cross each controller 
 Normal REST TO responses use `application/json`; RFC 9457 error responses use
 `application/problem+json`. The final `Exception` handler is a safe fallback, not a substitute for
 known mappings. Log unexpected failures under the security logging policy and never expose raw
-exception messages or stack traces. The security handlers above cover failures that reach MVC
+exception messages or stack traces. The MVC handlers above cover security exceptions that reach MVC
 advice; failures raised in the Spring Security filter chain require security-owned response handlers
 with the same public problem format. Handle listener, job, messaging, and asynchronous failures at
 their owning boundary because they do not pass through this advice. Test each status, code, content
-type, and information-disclosure rule.
+type, required header, and information-disclosure rule.
+
+Every `401` response must include a `WWW-Authenticate` challenge for the selected authentication
+scheme. The `Bearer` value above applies to the bearer-authenticated REST example; adapt it when the
+service uses another approved scheme.

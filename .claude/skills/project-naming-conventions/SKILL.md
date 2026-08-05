@@ -27,13 +27,16 @@ Preserve the established project terminology:
 | Name | Meaning |
 | --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller contract |
-| `UserDomain` | Domain/service result |
+| `UserDomain` | Project-owned domain data type |
 | `UserEntity` | JPA persistence model |
 | `UserSummaryProjection` | Repository read projection |
 | `UserRestMapper` | Domain → response TO; request TO → focused domain/service input only when `spring-boot-patterns` permits that input |
 | `UserDomainMapper` | Entity/projection → domain; explicit creation values → new entity |
 
 Do not replace these terms with DTO, View, Model, Command, Query, or similarly overlapping terminology unless the project explicitly adopts a different architecture and migration.
+
+Use `<Concept>Domain` for project-owned domain data types. Apply its exact scope and exceptions from
+the Java naming reference; do not redefine this convention in another skill.
 
 ## Keep application and platform naming separate
 

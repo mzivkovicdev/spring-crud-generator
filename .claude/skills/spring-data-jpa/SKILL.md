@@ -206,7 +206,8 @@ Choose the smallest suitable fetch mechanism:
 - Do not run massive blocking backfills in application-startup migrations without lock, duration, recovery, and rollout analysis.
 - Separate large data backfills from schema changes when operational control is required.
 - Evaluate vendor-specific online/concurrent index features for large production tables.
-- Test migrations from the previous supported schema on the production database engine and major version.
+- Verify clean installation from an empty isolated production-engine database and the affected
+  application mappings. Migration checksum or syntax validation supplements runtime verification.
 
 ## Persistence tests and observability
 

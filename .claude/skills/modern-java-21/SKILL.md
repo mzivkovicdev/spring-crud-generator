@@ -11,6 +11,9 @@ Apply `spring-boot-testing` whenever production behavior or tests change. It own
 scenario selection, fixtures, isolation, and execution; this skill remains authoritative for Java
 source rules in production and test files.
 
+Apply `project-naming-conventions` whenever names are created or changed. It owns identifier forms
+and suffixes; this skill owns the Java type-design rules.
+
 ## Non-negotiable rule for every touched Java file
 
 Whenever a `.java` file is created or modified, even for a one-line change:
@@ -116,9 +119,10 @@ public record MoneyDomain(BigDecimal amount, Currency currency) {
 
 ### Use domain types
 
-Prefer a meaningful project domain type such as `CustomerIdDomain`, `EmailAddressDomain`,
-`MoneyDomain`, or `OrderNumberDomain` when it prevents mixing values or centralizes a real invariant.
-Do not wrap every primitive without a domain reason.
+Prefer a meaningful project domain type, named according to `project-naming-conventions`, when it
+prevents mixing values or centralizes a real invariant. Examples include `CustomerIdDomain`,
+`EmailAddressDomain`, `MoneyDomain`, and `OrderNumberDomain`. Do not wrap every primitive without a
+domain reason.
 
 ### Null and Optional
 

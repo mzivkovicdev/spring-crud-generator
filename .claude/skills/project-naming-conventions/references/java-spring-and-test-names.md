@@ -137,7 +137,7 @@ Use a suffix only when the type owns that responsibility:
 | JPA repository | `<Aggregate>Repository` | `UserRepository` |
 | JPA entity | `<Concept>Entity` | `UserEntity` |
 | REST transfer object | Established `<Concept>TO` form | `UserCreateTO`, `UserTO` |
-| Domain/service result | `<Concept>Domain` | `UserDomain` |
+| Domain data type | `<Concept>Domain` | `UserDomain`, `MoneyDomain`, `OrderIdDomain` |
 | Repository projection | `<Purpose>Projection` | `UserSummaryProjection` |
 | REST mapper | `<Concept>RestMapper` | `UserRestMapper` maps domain → response TO and, only for a justified focused input, request TO → service/domain input |
 | Entity/domain mapper | `<Concept>DomainMapper` | `UserDomainMapper` maps entity/projection → domain and explicit creation values → new entity |
@@ -150,6 +150,10 @@ Use a suffix only when the type owns that responsibility:
 | Listener or consumer | Name the input and mechanism | `OrderCreatedEventConsumer` |
 | Publisher | Name the published contract | `OrderEventPublisher` |
 | Scheduled work | Name the completed work plus `Job` | `ExpiredReservationCleanupJob` |
+
+Apply `<Concept>Domain` to project-owned aggregates, value objects, identifiers, focused service
+inputs, and service results. Do not append `Domain` to behavior contracts such as `DiscountPolicy`
+or to enums such as `OrderStatus`.
 
 Do not rename `UserController` to `UserRestController` merely because the application is REST-only when the package and project convention already make that clear.
 

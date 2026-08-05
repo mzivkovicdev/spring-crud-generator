@@ -121,11 +121,12 @@ collaborators mocked through the mechanism supported by the project version. Pro
 routing and delegation plus applicable validation, request and response serialization, status,
 headers, and public error contract.
 
-Focused MVC slice tests do not exercise or verify the Spring Security filter chain. Disable security
-filters explicitly and do not use mock users, mock tokens, authorities, or CSRF request
-post-processors in those tests. Security behavior is verified by full application integration tests
-through the real filter chain. This separation must not remove validation, error-handler,
-serialization, or delegation coverage from the MVC slice.
+Focused MVC slice tests do not exercise or verify the Spring Security filter chain. Use
+`@AutoConfigureMockMvc(addFilters = false)` for this project and do not use mock users, mock tokens,
+authorities, or CSRF request post-processors in the slice. This setting excludes all servlet filters
+from `MockMvc`, so the slice proves the controller and MVC contract only. Verify security and any
+other filter-owned contract in focused filter tests when useful and in full application integration
+tests. Keep validation, error-handler, serialization, and delegation coverage in the MVC slice.
 
 Do not use an MVC slice as evidence for transaction, database, or other full-application behavior
 excluded from that slice. Conversely, do not omit required MVC slice coverage because a full HTTP
@@ -164,17 +165,17 @@ Integration tests must:
 - when the scenario touches SQL persistence, run schema migrations and use the same relational
   database engine and relevant major version as production through Testcontainers or the project's
   equivalent isolated environment;
-- when a migration or mapped schema contract changes, add the upgrade integration scenario required
-  by `spring-data-jpa`; do not treat a successful empty-database startup as proof that an existing
-  supported schema upgrades safely;
 - avoid H2-only evidence for persistence behavior when production uses another database;
 - keep the real entry point, service, relevant adapters, transaction configuration, serialization,
   and security controls involved in the tested path;
-- obtain a valid credential through the service's selected application-owned authentication flow or
-  the real protocol endpoint of an approved isolated test identity provider before calling a
-  protected API;
-- for bearer-protected APIs, send the issued access token in the `Authorization: Bearer` header and
-  do not forge authentication with a mock token or security test post-processor;
+- for successful and authorization-policy scenarios, obtain a valid credential through the selected
+  application-owned authentication flow or the real protocol endpoint of an approved isolated test
+  identity provider;
+- for bearer-protected APIs, send the valid access token in the `Authorization: Bearer` header;
+- for token-validation failures that approved issuance cannot produce, use a controlled invalid
+  token or isolated provider configuration that traverses the real filter chain and configured
+  decoder; do not replace that path with a mock token, security request post-processor, mocked
+  decoder, or forged authentication;
 - replace only true external systems with controlled stubs, fakes, emulators, or containers;
 - verify the response or other public result and the committed database state after success;
 - verify the public error contract and prove that invalid or rejected data was not persisted after
@@ -263,9 +264,10 @@ Use the authentication and credential model selected for the deployable service 
 consistently and do not add CSRF tokens to integration requests. For cookie, session, or mixed
 credential models, test the applicable CSRF behavior instead.
 
-Use synthetic identities and isolated test credentials only. Obtain tokens through the configured
-test authentication flow; never use production tokens, customer data, live identity providers, or
-production endpoints.
+Use synthetic identities and isolated test credentials only. Obtain valid tokens through the
+configured test authentication flow. Controlled invalid-token fixtures are allowed only for
+token-validation failures and must exercise the real configured decoder. Never use production
+tokens, customer data, live identity providers, or production endpoints.
 
 ## Execute and report verification
 
@@ -291,7 +293,7 @@ controlled dependencies is an integration test, not an end-to-end test.
 - [ ] Every affected behavioral application service has direct focused unit coverage without Spring.
 - [ ] Every affected REST controller has security-disabled `@WebMvcTest` coverage for its complete public MVC contract.
 - [ ] Full application integration tests prove applicable affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
-- [ ] Protected integration requests obtain and send a valid credential through the service's approved isolated authentication flow.
+- [ ] Successful protected integration requests obtain and send a valid credential through the service's approved isolated authentication flow.
 - [ ] Overlap across levels proves different boundaries; no level was omitted because another exists.
 - [ ] Every changed scheduler has direct unit coverage and a real-trigger integration test.
 - [ ] Negative write scenarios prove that prohibited data was not persisted.

@@ -94,13 +94,13 @@ class UserControllerTest {
 }
 ```
 
-Focused MVC slice tests do not exercise or verify the Spring Security filter chain. Disabling filters
-here is the project's deliberate test-level boundary, not a workaround for a failing security test.
-Do not use `@WithMockUser`, mock tokens, authority values, or CSRF in this slice.
-Full application integration tests own security verification. Ensure the project's
-`@RestControllerAdvice`, JSON customization, converters, and argument resolvers required by the
-public contract are included in the slice. Import only focused MVC configuration that the slice does
-not discover automatically.
+Focused MVC slice tests do not exercise or verify the Spring Security filter chain. The project's
+`addFilters = false` convention excludes every servlet filter from this `MockMvc` slice, so use it to
+prove the controller and MVC contract only. Do not use `@WithMockUser`, mock tokens, authority values,
+or CSRF here. Full application integration tests own security verification; test another filter
+separately when it owns a public contract. Ensure the project's `@RestControllerAdvice`, JSON
+customization, converters, and argument resolvers required by the public contract are included.
+Import only focused MVC configuration that the slice does not discover automatically.
 
 ## Coverage expectations
 

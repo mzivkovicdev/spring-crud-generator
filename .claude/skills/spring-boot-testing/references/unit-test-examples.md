@@ -5,14 +5,14 @@ Use these examples for focused Java tests that do not load Spring. Apply every r
 
 ## Contents
 
-- [Service unit test](#service-unit-test)
+- [Service unit test excerpt](#service-unit-test-excerpt)
 - [Test-data factory](#test-data-factory)
 - [Rejected unit tests](#rejected-unit-tests)
 
-## Service unit test
+## Service unit test excerpt
 
-Keep the happy path first in source order, followed by exception cases. The tests remain independent;
-the order is for readability only.
+This excerpt is not the complete required `UserService` suite. Keep the happy path first in source
+order, followed by exception cases. The tests remain independent; the order is for readability only.
 
 ```java
 @ExtendWith(MockitoExtension.class)

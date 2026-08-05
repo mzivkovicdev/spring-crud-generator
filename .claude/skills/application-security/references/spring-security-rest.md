@@ -60,8 +60,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
 
-    private static final String USERS_READ_AUTHORITY = "SCOPE_users:read";
-    private static final String USERS_WRITE_AUTHORITY = "SCOPE_users:write";
+    private static final String OAUTH_SCOPE_USERS_READ = "users:read";
+    private static final String OAUTH_SCOPE_USERS_WRITE = "users:write";
+    private static final String SPRING_AUTHORITY_USERS_READ =
+            "SCOPE_" + OAUTH_SCOPE_USERS_READ;
+    private static final String SPRING_AUTHORITY_USERS_WRITE =
+            "SCOPE_" + OAUTH_SCOPE_USERS_WRITE;
 
     @Bean
     SecurityFilterChain apiSecurity(final HttpSecurity http) throws Exception {
@@ -75,13 +79,13 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/v1/users",
                                 "/api/v1/users/*")
-                        .hasAuthority(USERS_READ_AUTHORITY)
+                        .hasAuthority(SPRING_AUTHORITY_USERS_READ)
                         .requestMatchers(HttpMethod.POST, "/api/v1/users")
-                        .hasAuthority(USERS_WRITE_AUTHORITY)
+                        .hasAuthority(SPRING_AUTHORITY_USERS_WRITE)
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/*")
-                        .hasAuthority(USERS_WRITE_AUTHORITY)
+                        .hasAuthority(SPRING_AUTHORITY_USERS_WRITE)
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*")
-                        .hasAuthority(USERS_WRITE_AUTHORITY)
+                        .hasAuthority(SPRING_AUTHORITY_USERS_WRITE)
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults()));
@@ -104,10 +108,11 @@ CSRF is disabled because this filter chain authenticates exclusively through an 
 `Authorization: Bearer` header and no browser-managed credential. Reassess this decision if the
 credential model changes.
 
-The excerpt assumes Spring's default scope-to-`SCOPE_` authority mapping. Define the real authority
-vocabulary once in the security boundary and reuse it in claim mapping, authorization rules, and
-integration fixtures. Use the default conversion only when it produces the approved authority model;
-otherwise configure a tested converter.
+Keep public OAuth scopes and Spring authorities distinct. With Spring's default JWT conversion, the
+token scope `users:write` becomes the `GrantedAuthority` value `SCOPE_users:write`. Define the public
+scope vocabulary once, derive framework authority names in the security boundary, and use public
+scope values when issuing tokens or preparing token fixtures. If the project uses another mapping,
+configure and test it explicitly.
 
 When the REST contract requires JSON `401` and `403` problem responses, provide Spring Security
 `AuthenticationEntryPoint` and `AccessDeniedHandler` implementations and register them with the
@@ -257,6 +262,7 @@ Do not add the obsolete `X-XSS-Protection: 1; mode=block` header. Do not assume 
 
 - Use stable `ProblemDetail` responses consistent with `spring-boot-patterns`.
 - Return `401` for missing or invalid authentication and `403` for authenticated callers lacking permission, unless the API intentionally conceals resource existence.
+- Include a `WWW-Authenticate` challenge for the selected authentication scheme in every `401` response.
 - Do not expose provider messages, claim-validation details, stack traces, internal authorities, or account existence.
 - Log the security event once with a correlation ID and minimized subject/resource identifiers.
 - Fail closed when authorization data, key material, identity providers, or policy dependencies are unavailable unless an explicitly reviewed availability design says otherwise.
@@ -280,11 +286,13 @@ Add tests for:
 - safe `401`, `403`, and hidden-resource behavior;
 - rate limits and lockout/recovery behavior at the appropriate integration boundary.
 
-Use full application integration tests with the real filter chain and the selected authentication
-flow. For bearer-protected APIs, obtain a valid access token from the application-owned flow or an
-approved isolated identity provider. Do not prove these controls with `@WithMockUser`, forged
-tokens, a disabled filter chain, or a controller slice. Follow `spring-boot-testing` for the exact
-test structure.
+Use full application integration tests with the real filter chain and selected authentication flow.
+Obtain valid tokens from the application-owned flow or an approved isolated identity provider. For
+validation failures that normal issuance cannot produce, such as an invalid signature, wrong issuer,
+wrong audience, or expired token, use a controlled invalid-token fixture or isolated provider
+configuration that still exercises the configured decoder. Do not substitute `@WithMockUser`, a
+security request post-processor, a mocked decoder, a disabled filter chain, or a controller slice.
+Follow `spring-boot-testing` for the exact test structure.
 
 ## References
 

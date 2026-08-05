@@ -115,9 +115,10 @@ class UserApiIntegrationTest {
 }
 ```
 
-`AuthenticationTestData.userWithUsersWriteAccess()` represents an isolated synthetic identity
-prepared by the project fixture and mapped to the same access policy as production. Do not duplicate
-authority strings or hardcode credentials in the test method.
+`AuthenticationTestData.userWithUsersWriteAccess()` represents an isolated synthetic identity with
+the public OAuth scope `users:write`. Under Spring's default mapping, the resource server derives the
+authority `SCOPE_users:write`. Keep token fixtures expressed in public scopes rather than derived
+Spring authority names, and do not hardcode credentials in the test method.
 
 Match status, `Location`, error code, and schema to the actual API contract. Keep the real security
 filter chain enabled. For every negative write case, verify both the public error and the absence of
@@ -164,10 +165,12 @@ final class AccessTokenTestClient {
 ```
 
 When authentication is externally owned, use its supported protocol against an approved isolated
-test provider or container. Do not add a test-only token endpoint to production code, mint tokens
-directly in the API test, use a mock-token post-processor, or call a live identity provider. Validate
-the issued token according to `application-security`. Omit CSRF tokens only when the tested filter
-chain is stateless bearer and uses no ambient browser credential.
+test provider or container. For valid-token scenarios, do not add a test-only endpoint to production
+code, mint tokens directly in the API test, use a mock-token post-processor, or call a live identity
+provider. For validation failures that normal issuance cannot produce, a controlled invalid token or
+isolated provider configuration may create the invalid input, but it must traverse the real filter
+chain and configured decoder. Omit CSRF tokens only when the tested filter chain is stateless bearer
+and uses no ambient browser credential.
 
 ## Container and database rules
 

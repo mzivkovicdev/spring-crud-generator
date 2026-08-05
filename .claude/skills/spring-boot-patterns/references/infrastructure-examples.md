@@ -88,7 +88,7 @@ public interface TransferService {
 }
 ```
 
-This example assumes that the project uses the service-interface and *ServiceImpl convention. Keep validation constraints on the interface and place @Validated on the concrete Spring bean. Do not repeat constraints on the overriding method.
+This example assumes that the project uses the service-interface and `*ServiceImpl` convention. Keep validation constraints on the interface and place `@Validated` on the concrete Spring bean. Do not repeat constraints on the overriding method.
 
 ```java
 @Service
