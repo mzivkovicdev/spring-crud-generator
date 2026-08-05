@@ -93,6 +93,9 @@ Do not reorganize imports across untouched files as part of an unrelated feature
 ### Prefer immutable data
 
 - Make dependencies and fields `final` unless mutation is part of the object's responsibility.
+- Declare method and constructor parameters `final`.
+- Declare local variables `final` when they are assigned once. Omit `final` only when reassignment is
+  intentional and clearer than introducing another value.
 - Return immutable snapshots or unmodifiable views at boundaries; never leak a mutable internal collection.
 - Use records for immutable data carriers such as project TOs, domain values, query results, events, and value objects when their semantics fit.
 - Do not use records as JPA entities.
@@ -163,11 +166,26 @@ Use a sealed hierarchy only when the variants are intentionally closed and contr
 Use explicit local variable types throughout project-controlled Java source, including production code, tests, examples, and generated-source templates:
 
 ```java
-final Customer customer = customerRepository.getRequired(customerId);
-final CalculationResult result = calculate(input);
+final Customer customer = this.customerRepository.getRequired(customerId);
+final CalculationResult result = this.calculate(input);
 ```
 
 Do not use `var`. This is a deliberate project readability convention, not a claim that Java local-variable type inference is dynamically typed or universally incorrect. Java still resolves the type statically, but this codebase requires the declared type to remain visible. If a generator emits `var`, change its template or configuration instead of hand-editing generated output.
+
+### Instance qualification
+
+Qualify instance-field and instance-method access with `this.` throughout project-controlled Java
+source. This makes instance state and behavior explicit and keeps production code, tests, and
+examples consistent.
+
+```java
+this.customerRepository.save(customer);
+return this.calculateTotal(order);
+```
+
+Do not use `this.` for parameters or local variables. Access static members through their declaring
+type, except unqualified static constants or methods imported according to the project's import
+policy.
 
 ### Streams
 
@@ -182,48 +200,39 @@ Do not use `var`. This is a deliberate project readability convention, not a cla
 - Give each class one cohesive reason to change.
 - Keep methods at one level of abstraction and name extracted operations by intent.
 - Prefer guard clauses over deep nesting.
-- A method over roughly 40 lines requires scrutiny. A method over 60 lines or a class over 1000 lines must be refactored unless a concrete reason is documented.
+- A method over roughly 40 lines requires scrutiny. A method from 61 through 100 lines must be
+  refactored unless a concrete reason for keeping it intact is documented. A method over 100 lines
+  must be refactored without exception. A class over 1000 lines must be refactored unless a concrete
+  reason is documented.
 - Allow up to seven declared parameters in project-owned methods and constructors when their names, order, and purpose remain clear. Treat eight or more as a design warning: first group values that form a cohesive domain concept or invariant into a focused parameter/value object, or document why the signature cannot be changed. Do not create a catch-all wrapper merely to hide unrelated parameters. Existing framework callbacks, overrides, and generated signatures are exempt when the project does not control them.
-- Do not game size rules by extracting meaningless one-line methods or creating generic `Utils` dumping grounds.
+- Do not game size rules by extracting meaningless one-line methods. Utility classes are allowed
+  when they are stateless, cohesive, and named for one focused responsibility; do not create generic
+  `Utils` dumping grounds for unrelated behavior.
 - Prefer composition over inheritance.
-- Create an interface for a real boundary, multiple behavior, a plugin strategy, or a useful port. Treat the application-service contract defined by `spring-boot-patterns` as such a boundary; do not extend that convention mechanically to helpers or unrelated classes.
+- Create an interface for a real boundary, multiple behavior, a plugin strategy, or a useful port.
+  When `spring-boot-patterns` selects an application-service interface, treat it as that boundary; do
+  not extend the convention mechanically to helpers or unrelated classes.
 
-Example of cohesive orchestration:
+Framework-neutral example of cohesive behavior:
 
 ```java
-public class CustomerRegistrationService {
+public final class OrderTotalCalculator {
 
-    private final CustomerRepository customerRepository;
-    private final CustomerEventPublisher eventPublisher;
-    private final Clock clock;
+    private final DiscountPolicy discountPolicy;
+    private final TaxPolicy taxPolicy;
 
-    public CustomerRegistrationService(
-            final CustomerRepository customerRepository,
-            final CustomerEventPublisher eventPublisher,
-            final Clock clock) {
+    public OrderTotalCalculator(
+            final DiscountPolicy discountPolicy,
+            final TaxPolicy taxPolicy) {
 
-        this.customerRepository = customerRepository;
-        this.eventPublisher = eventPublisher;
-        this.clock = clock;
+        this.discountPolicy = discountPolicy;
+        this.taxPolicy = taxPolicy;
     }
 
-    public CustomerId register(final CustomerRegistrationDetails registrationDetails) {
-        ensureEmailIsAvailable(registrationDetails.email());
-
-        final Customer customer = Customer.register(
-                registrationDetails.name(),
-                registrationDetails.email(),
-                Instant.now(clock));
-        customerRepository.add(customer);
-        eventPublisher.publish(new CustomerRegistered(customer.id()));
-
-        return customer.id();
-    }
-
-    private void ensureEmailIsAvailable(final EmailAddress email) {
-        if (customerRepository.existsByEmail(email)) {
-            throw new EmailAlreadyUsedException(email);
-        }
+    public MoneyDomain calculate(final OrderDomain order) {
+        final MoneyDomain subtotal = order.subtotal();
+        final MoneyDomain discountedSubtotal = this.discountPolicy.apply(subtotal, order.customerType());
+        return this.taxPolicy.addTax(discountedSubtotal, order.shippingAddress());
     }
 }
 ```
@@ -247,8 +256,8 @@ public class CustomerRegistrationService {
 
 ```java
 try {
-    return paymentClient.charge(request);
-} catch (PaymentProviderException exception) {
+    return this.paymentClient.charge(request);
+} catch (final PaymentProviderException exception) {
     throw new PaymentUnavailableException(orderId, exception);
 }
 ```
@@ -323,7 +332,7 @@ Complete generic-type example:
 <T> Page<T> search(final SearchQuery query, final PageRequest pageRequest);
 ```
 
-For records, document every component with `@param`. For public classes/interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. An overriding method automatically inherits missing Javadoc from its supertype. Omit its Javadoc when the inherited contract is complete; do not add a comment containing only `{@inheritDoc}`. Use `{@inheritDoc}` when extending the inherited text with meaningful caller-visible guarantees or behavior, and only when the inherited contract remains accurate.
+When a record requires Javadoc under this policy, document every component with `@param`. For public classes/interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. An overriding method automatically inherits missing Javadoc from its supertype. Omit its Javadoc when the inherited contract is complete; do not add a comment containing only `{@inheritDoc}`. Use `{@inheritDoc}` when extending the inherited text with meaningful caller-visible guarantees or behavior, and only when the inherited contract remains accurate.
 
 Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remove stale comments when the implementation changes.
 
@@ -348,7 +357,7 @@ rules. Do not introduce a Java test pattern that conflicts with the testing owne
 - field injection;
 - `Optional` fields or parameters;
 - `null` collections;
-- 100+ line methods;
+- methods over 100 lines;
 - God classes and generic utility dumping grounds;
 - business logic in controllers or persistence callbacks;
 - broad exception swallowing;
