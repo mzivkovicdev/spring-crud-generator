@@ -70,6 +70,7 @@ thread and must observe committed fixture data.
         "jobs.expired-reservation-cleanup.enabled=true",
         "jobs.expired-reservation-cleanup.fixed-delay=100ms"
 })
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ExpiredReservationCleanupJobIntegrationTest {
 
     private static final Duration MAXIMUM_WAIT = Duration.ofSeconds(5);
@@ -99,6 +100,9 @@ class ExpiredReservationCleanupJobIntegrationTest {
 Match property names and timing to the actual job. Use the project Awaitility configuration when it
 exists. Assert state, an event, or another real effect rather than spying on the scheduled bean; the
 test must prove that scheduling, wiring, transaction boundaries, and the job behavior work together.
+`@DirtiesContext(AFTER_CLASS)` is a justified exception here because this test intentionally starts a
+repeating scheduler; closing the context after the class prevents that scheduler from leaking into a
+cached test context. Prefer a project-owned explicit scheduler shutdown when one already exists.
 
 ## Additional scheduler cases
 
