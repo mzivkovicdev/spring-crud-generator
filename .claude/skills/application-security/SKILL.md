@@ -99,9 +99,9 @@ Every security-relevant feature requires tests at the boundary capable of provin
 
 Security scenarios come from this skill; test levels, fixtures, isolation, and execution come from
 `spring-boot-testing`. Under this project's test policy, runtime authentication and authorization are
-proved through full application integration tests with the real filter chain and token flow, not in
-focused unit or MVC slice tests. Scanners supplement design review and executable verification; they
-do not replace them.
+proved through full application integration tests with the real filter chain and selected
+authentication flow, not in focused unit or MVC slice tests. Scanners supplement design review and
+executable verification; they do not replace them.
 
 ## Rejected patterns
 

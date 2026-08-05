@@ -49,7 +49,7 @@ src/main/java/com/example/myapp/
 │       └── UserTO.java
 ├── exception/                     # Custom exceptions
 │   ├── ResourceNotFoundException.java
-│   └── handler/                   # REST exception handlers and advice
+│   └── handler/                   # MVC REST exception handlers and advice
 │       └── ApiExceptionHandler.java
 └── util/                          # Focused, stateless helpers only
     └── DateRangeUtils.java
@@ -77,11 +77,11 @@ public interface TransferService {
      * @param sourceAccountId source account identifier; must not be {@code null}
      * @param targetAccountId target account identifier; must not be {@code null}
      * @param amount          amount to transfer; must be positive
-     * @return the immutable {@link Receipt} for the completed transfer; never {@code null}
+     * @return the immutable {@link ReceiptDomain} for the completed transfer; never {@code null}
      * @throws ConstraintViolationException when an argument violates a structural constraint
      * @throws InsufficientFundsException when the source account cannot cover the transfer
      */
-    Receipt transfer(
+    ReceiptDomain transfer(
             @NotNull final Long sourceAccountId,
             @NotNull final Long targetAccountId,
             @NotNull @Positive final BigDecimal amount);
@@ -103,7 +103,7 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional
-    public Receipt transfer(
+    public ReceiptDomain transfer(
             final Long sourceAccountId,
             final Long targetAccountId,
             final BigDecimal amount) {
@@ -119,7 +119,7 @@ public class TransferServiceImpl implements TransferService {
         final AccountEntity savedSourceAccount = this.accountRepository.save(sourceAccount);
         final AccountEntity savedTargetAccount = this.accountRepository.save(targetAccount);
 
-        return new Receipt(
+        return new ReceiptDomain(
                 savedSourceAccount.getId(),
                 savedTargetAccount.getId(),
                 amount);
@@ -171,7 +171,7 @@ class CatalogClientConfiguration {
 ```java
 // Wrong: entity exposure, repository access, business logic, and time in controller.
 @PostMapping
-CustomerEntity customersPost(@RequestBody CustomerEntity customer) {
+CustomerEntity customersPost(@RequestBody final CustomerEntity customer) {
     customer.setCreatedAt(Instant.now());
     return customerRepository.save(customer);
 }

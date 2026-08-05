@@ -17,16 +17,17 @@ the required `@WebMvcTest` for each REST controller.
 
 ## HTTP application integration test
 
-The example assumes the project supplies an isolated supported-database container and resets test
-data between methods. It intentionally omits `@Transactional`: the request must commit through the
-real service transaction before repository verification.
+The example assumes the project selected stateless bearer authentication, JSON problem responses,
+an isolated supported-database container, and test-data reset between methods. Adapt those contract
+details to the service's selected model. It intentionally omits `@Transactional`: the request must
+commit through the real service transaction before repository verification.
 
 ```java
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserApiIntegrationTest {
 
-    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String BEARER_SCHEME = "Bearer";
     private static final String USERS_PATH = "/api/v1/users";
 
     private final AccessTokenTestClient accessTokenTestClient;
@@ -51,11 +52,13 @@ class UserApiIntegrationTest {
     @Test
     void usersPost_whenRequestIsValid_createsUser() throws Exception {
         final String accessToken = this.accessTokenTestClient.obtainAccessToken(
-                AuthenticationTestData.userWithAuthority(UserAuthorities.USERS_WRITE));
+                AuthenticationTestData.userWithUsersWriteAccess());
         final UserCreateTO request = UserTestData.validUserCreateTO();
 
         this.mockMvc.perform(post(USERS_PATH)
-                        .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
+                        .header(
+                                HttpHeaders.AUTHORIZATION,
+                                "%s %s".formatted(BEARER_SCHEME, accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isCreated())
@@ -73,12 +76,14 @@ class UserApiIntegrationTest {
     @Test
     void usersPost_whenEmailIsInvalid_returnsValidationProblemAndDoesNotPersist() throws Exception {
         final String accessToken = this.accessTokenTestClient.obtainAccessToken(
-                AuthenticationTestData.userWithAuthority(UserAuthorities.USERS_WRITE));
+                AuthenticationTestData.userWithUsersWriteAccess());
         final UserCreateTO request = UserTestData.userCreateTOWithInvalidEmail();
         final long initialUserCount = this.userRepository.count();
 
         this.mockMvc.perform(post(USERS_PATH)
-                        .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
+                        .header(
+                                HttpHeaders.AUTHORIZATION,
+                                "%s %s".formatted(BEARER_SCHEME, accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isBadRequest())
@@ -98,6 +103,9 @@ class UserApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isUnauthorized())
+                .andExpect(header().string(
+                        HttpHeaders.WWW_AUTHENTICATE,
+                        startsWith(BEARER_SCHEME)))
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
 
@@ -107,10 +115,9 @@ class UserApiIntegrationTest {
 }
 ```
 
-`AuthenticationTestData.userWithAuthority(UserAuthorities.USERS_WRITE)` represents an isolated
-synthetic principal prepared by the project fixture and authorized by the same claim-to-authority
-mapping as production. Do not duplicate authority strings or hardcode credentials in the test
-method.
+`AuthenticationTestData.userWithUsersWriteAccess()` represents an isolated synthetic identity
+prepared by the project fixture and mapped to the same access policy as production. Do not duplicate
+authority strings or hardcode credentials in the test method.
 
 Match status, `Location`, error code, and schema to the actual API contract. Keep the real security
 filter chain enabled. For every negative write case, verify both the public error and the absence of
@@ -120,9 +127,9 @@ with a unit or MVC slice test when this test proves a different boundary.
 
 ## Authenticated request helper
 
-Obtain a valid JWT by sending a real request through the project's supported test authentication
-flow. This excerpt assumes the application owns `/api/v1/auth/token`; adapt the request and response
-TOs to the actual contract without bypassing token issuance or validation.
+Obtain a valid bearer access token through the project's supported isolated authentication flow.
+This excerpt applies only when the application owns `/api/v1/auth/token`; adapt the request and
+response TOs to the actual contract without bypassing token issuance or validation.
 
 ```java
 final class AccessTokenTestClient {
@@ -156,12 +163,11 @@ final class AccessTokenTestClient {
 }
 ```
 
-When authentication is owned by an external provider, use its supported token protocol against an
-approved isolated test provider or container. Do not add a test-only token endpoint to production
-code, mint tokens directly in the API test, use a mock JWT post-processor, or call a live identity
-provider. The token's issuer, audience, signature, lifetime, claim mapping, and authority values must
-match `application-security`. The stateless bearer model has CSRF disabled, so these requests do not
-send CSRF tokens.
+When authentication is externally owned, use its supported protocol against an approved isolated
+test provider or container. Do not add a test-only token endpoint to production code, mint tokens
+directly in the API test, use a mock-token post-processor, or call a live identity provider. Validate
+the issued token according to `application-security`. Omit CSRF tokens only when the tested filter
+chain is stateless bearer and uses no ambient browser credential.
 
 ## Container and database rules
 

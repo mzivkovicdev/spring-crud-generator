@@ -33,14 +33,14 @@ class ExpiredReservationCleanupJobTest {
     }
 
     @Test
-    void run_whenTriggered_delegatesCleanup() {
-        this.cleanupJob.run();
+    void cleanUpExpiredReservations_whenTriggered_delegatesCleanup() {
+        this.cleanupJob.cleanUpExpiredReservations();
 
         verify(this.reservationCleanupService).removeExpiredReservations();
     }
 
     @Test
-    void run_whenCleanupFails_propagatesFailure() {
+    void cleanUpExpiredReservations_whenCleanupFails_propagatesFailure() {
         final ReservationCleanupException failure = ReservationTestData.cleanupFailure();
         doThrow(failure)
                 .when(this.reservationCleanupService)
@@ -48,7 +48,7 @@ class ExpiredReservationCleanupJobTest {
 
         final ReservationCleanupException result = assertThrows(
                 ReservationCleanupException.class,
-                this.cleanupJob::run);
+                this.cleanupJob::cleanUpExpiredReservations);
 
         assertThat(result).isSameAs(failure);
     }
@@ -84,7 +84,7 @@ class ExpiredReservationCleanupJobIntegrationTest {
     }
 
     @Test
-    void run_whenSchedulerIsEnabled_removesExpiredReservation() {
+    void cleanUpExpiredReservations_whenSchedulerIsEnabled_removesExpiredReservation() {
         final ReservationEntity expiredReservation = this.reservationRepository.saveAndFlush(
                 ReservationTestData.expiredReservationEntity());
         final Long reservationId = expiredReservation.getId();
@@ -129,8 +129,8 @@ class ExpiredReservationCleanupJobIntegrationTest {
     private ExpiredReservationCleanupJob cleanupJob;
 
     @Test
-    void runJob() {
-        this.cleanupJob.run();
+    void cleanUpExpiredReservations() {
+        this.cleanupJob.cleanUpExpiredReservations();
     }
 }
 ```
@@ -138,5 +138,5 @@ class ExpiredReservationCleanupJobIntegrationTest {
 ```java
 // Wrong: exact sleeps and invocation counts make repeating scheduler tests slow and flaky.
 Thread.sleep(1_000L);
-verify(cleanupJob, times(10)).run();
+verify(cleanupJob, times(10)).cleanUpExpiredReservations();
 ```

@@ -94,8 +94,9 @@ class UserControllerTest {
 }
 ```
 
-Disabling filters here is the project's deliberate test-level boundary, not a workaround for a
-failing security test. Do not use `@WithMockUser`, mock JWTs, authority values, or CSRF in this slice.
+Focused MVC slice tests do not exercise or verify the Spring Security filter chain. Disabling filters
+here is the project's deliberate test-level boundary, not a workaround for a failing security test.
+Do not use `@WithMockUser`, mock tokens, authority values, or CSRF in this slice.
 Full application integration tests own security verification. Ensure the project's
 `@RestControllerAdvice`, JSON customization, converters, and argument resolvers required by the
 public contract are included in the slice. Import only focused MVC configuration that the slice does

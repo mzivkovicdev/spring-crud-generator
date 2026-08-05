@@ -15,13 +15,22 @@
 
 ## Security model
 
-Inspect the actual Spring Boot and Spring Security versions and the complete authentication flow before editing configuration. Do not paste a universal `SecurityFilterChain` from an example.
+Inspect the actual Spring Boot and Spring Security versions and the complete authentication flow
+before editing configuration. Select and document the authentication model for each deployable
+service or filter chain; different services may use different approved models. Do not paste a
+universal `SecurityFilterChain` from an example.
+
+A service may validate credentials issued by an external identity provider, while an
+identity-owning service may implement an approved registration, login, recovery, and token flow.
+Make credential ownership and token issuance explicit. Do not add a local identity store or token
+endpoint merely to make an example work, and do not create an ad hoc authentication protocol.
 
 Document:
 
 - which endpoints are public;
 - credential type and where the client stores and transmits it;
-- identity provider, issuers, audiences, and trust anchors;
+- credential and token owner, identity provider when applicable, issuers, audiences, and trust
+  anchors;
 - roles, permissions, tenant rules, resource ownership, and administrative operations;
 - session or token expiry, revocation, logout, rotation, and replay handling;
 - browser, mobile, service-to-service, webhook, and scheduled-job clients;
@@ -31,37 +40,85 @@ Keep framework defaults unless a verified requirement justifies a change. A comm
 
 ## Authorization
 
-The following authorization/filter-chain excerpt follows the import order from `modern-java-21`. It is not a complete resource-server configuration: JWT trust and validation properties remain mandatory. It intentionally makes no CSRF or session decision; add those controls only after evaluating the actual credential model.
+The following excerpt shows one stateless JWT resource-server option. It protects an API but does
+not issue tokens and is not the default for every service. Following the layered layout owned by
+`spring-boot-patterns`, keep `SecurityConfig` in the configuration package. Adapt the authentication
+mechanism and authorities to the selected model.
 
 ```java
-package com.acme.security;
+package com.acme.myapp.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration(proxyBeanMethods = false)
-public class ApiSecurityConfiguration {
+public class SecurityConfig {
+
+    private static final String USERS_READ_AUTHORITY = "SCOPE_users:read";
+    private static final String USERS_WRITE_AUTHORITY = "SCOPE_users:write";
 
     @Bean
     SecurityFilterChain apiSecurity(final HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                .requestMatchers("/api/admin/**").hasAuthority("user:admin")
-                .anyRequest().authenticated())
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(Customizer.withDefaults()));
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/users",
+                                "/api/v1/users/*")
+                        .hasAuthority(USERS_READ_AUTHORITY)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users")
+                        .hasAuthority(USERS_WRITE_AUTHORITY)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/*")
+                        .hasAuthority(USERS_WRITE_AUTHORITY)
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*")
+                        .hasAuthority(USERS_WRITE_AUTHORITY)
+                        .anyRequest().denyAll())
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults()));
 
         return http.build();
     }
 }
 ```
 
-For a single approved issuer, configure issuer and audience explicitly when the supported Spring Boot version provides these properties:
+This focused excerpt omits project-specific claim conversion and security error serialization. Use
+the defaults only when they satisfy the selected authority model and public error contract.
+
+The collection and one-segment item patterns are intentional; they do not silently authorize nested
+resources. For a large API, group routes only when every route in the group has the same policy.
+Extract cohesive policy registration or a focused `AuthorizationManager` when the matcher list
+becomes difficult to review. Never replace explicit policy with a broad wildcard merely to shorten
+the configuration. Keep `anyRequest().denyAll()` as the fallback.
+
+CSRF is disabled because this filter chain authenticates exclusively through an explicitly supplied
+`Authorization: Bearer` header and no browser-managed credential. Reassess this decision if the
+credential model changes.
+
+The excerpt assumes Spring's default scope-to-`SCOPE_` authority mapping. Define the real authority
+vocabulary once in the security boundary and reuse it in claim mapping, authorization rules, and
+integration fixtures. Use the default conversion only when it produces the approved authority model;
+otherwise configure a tested converter.
+
+When the REST contract requires JSON `401` and `403` problem responses, provide Spring Security
+`AuthenticationEntryPoint` and `AccessDeniedHandler` implementations and register them with the
+filter chain. These components are security response handlers, not servlet filters or MVC advice.
+They must emit the same safe public error codes as the REST layer and preserve protocol-required
+headers such as bearer `WWW-Authenticate`. Keep them with the established security configuration
+support selected by `spring-boot-patterns`; do not place them in `exception.handler`, which owns MVC
+advice.
+
+For the JWT option above, configure issuer and audience explicitly when the supported Spring Boot
+version provides these properties:
 
 ```yaml
 spring:
@@ -72,11 +129,16 @@ spring:
           issuer-uri: ${OIDC_ISSUER_URI}
           audiences:
             - ${API_AUDIENCE}
+          jws-algorithms:
+            - ${JWT_JWS_ALGORITHM}
 ```
 
-If the supported version or identity-provider model requires custom handling, configure an explicit `JwtDecoder` with equivalent issuer, audience, timestamp, and approved-algorithm validators. Do not consider the resource server complete until the full token-validation policy is configured and tested.
+If the supported version or identity-provider model requires custom JWT handling, configure an explicit
+`JwtDecoder` with equivalent issuer, audience, timestamp validation, and approved signature
+algorithms. Do not consider the resource server complete until the full token-validation policy is
+configured and tested.
 
-- Use exact matchers and verify matcher ordering.
+- Use the narrowest maintainable matchers and verify matcher ordering.
 - Do not rely only on URL rules. Enforce operation, object, field, and tenant authorization in the service and persistence path.
 - Derive subject and tenant from the authenticated principal, not from request TO values.
 - Prefer scoped lookup. The following declaration is intentionally a repository-method excerpt; the containing repository and imports are omitted:
@@ -93,7 +155,10 @@ Optional<DocumentEntity> findByIdAndTenantId(
 
 ## Authentication and password storage
 
-Prefer OIDC/OAuth2 or another approved identity provider. Do not invent authentication, password recovery, MFA, or token protocols.
+Use the project-approved identity model. An external identity provider may own the credential
+lifecycle, or an explicitly designated service may own registration, login, recovery, MFA, and token
+issuance. In either case, use reviewed Spring Security and protocol capabilities rather than custom
+cryptography or an ad hoc authentication protocol.
 
 - Use an adaptive one-way function supported by Spring Security.
 - Benchmark the work factor on representative production hardware and review it periodically.
@@ -200,8 +265,9 @@ Do not add the obsolete `X-XSS-Protection: 1; mode=block` header. Do not assume 
 
 Add tests for:
 
-- public endpoint access and protected fallback;
-- missing, malformed, expired, wrong-issuer, wrong-audience, and insufficient-scope tokens;
+- public endpoint access and deny-by-default fallback;
+- missing, malformed, expired, wrong-issuer, wrong-audience, and insufficient-authority or
+  insufficient-scope tokens, as applicable;
 - wrong-tenant, unapproved-issuer, unavailable-introspection, and key-rotation behavior where applicable;
 - revoked, expired, wrongly scoped, and cross-environment API keys;
 - OAuth2/OIDC state, nonce, PKCE, and redirect-URI failures where delegated login exists;
@@ -214,7 +280,11 @@ Add tests for:
 - safe `401`, `403`, and hidden-resource behavior;
 - rate limits and lockout/recovery behavior at the appropriate integration boundary.
 
-Use Spring Security test support for filter behavior and integration tests for the deployed authentication path. Do not mock away the control being tested.
+Use full application integration tests with the real filter chain and the selected authentication
+flow. For bearer-protected APIs, obtain a valid access token from the application-owned flow or an
+approved isolated identity provider. Do not prove these controls with `@WithMockUser`, forged
+tokens, a disabled filter chain, or a controller slice. Follow `spring-boot-testing` for the exact
+test structure.
 
 ## References
 

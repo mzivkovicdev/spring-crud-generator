@@ -18,8 +18,6 @@ public class UserController {
 
     private static final String USERS_PATH = "/api/v1/users";
     private static final int MAXIMUM_PAGE_SIZE = 100;
-    private static final UserRestMapper USER_REST_MAPPER = UserRestMapper.INSTANCE;
-
     private final UserService userService;
 
     public UserController(final UserService userService) {
@@ -28,11 +26,11 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserTO> usersPost(@RequestBody @Valid final UserCreateTO body) {
-        
+
         final UserDomain createdUser = this.userService.create(
                 body.username(), body.email(), body.password()
         );
-        final UserTO response = USER_REST_MAPPER.mapUserDomainToUserTO(createdUser);
+        final UserTO response = UserRestMapper.INSTANCE.mapUserDomainToUserTO(createdUser);
         final URI location = URI.create("%s/%d".formatted(USERS_PATH, response.id()));
 
         return ResponseEntity.created(location).body(response);
@@ -40,9 +38,9 @@ public class UserController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<UserTO> usersUserIdGet(@PathVariable final Long userId) {
-        
+
         return ResponseEntity.ok(
-                USER_REST_MAPPER.mapUserDomainToUserTO(
+                UserRestMapper.INSTANCE.mapUserDomainToUserTO(
                     this.userService.getById(userId)
                 )
         );
@@ -55,7 +53,7 @@ public class UserController {
 
         final PageDomain<UserDomain> users = this.userService.getAll(pageNumber, pageSize);
         return ResponseEntity.ok(
-                USER_REST_MAPPER.mapUserPageToUserPageTO(users)
+                UserRestMapper.INSTANCE.mapUserPageToUserPageTO(users)
         );
     }
 
@@ -64,7 +62,7 @@ public class UserController {
             @RequestBody @Valid final UserUpdateTO body) {
 
         return ResponseEntity.ok(
-                USER_REST_MAPPER.mapUserDomainToUserTO(
+                UserRestMapper.INSTANCE.mapUserDomainToUserTO(
                     this.userService.updateById(userId, body.username(), body.email())
                 )
         );
@@ -72,7 +70,7 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> usersUserIdDelete(@PathVariable final Long userId) {
-        
+
         this.userService.deleteById(userId);
         return ResponseEntity.noContent().build();
     }
@@ -160,7 +158,7 @@ business behavior in generated mapping.
 
 ```java
 @RestControllerAdvice
-final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
@@ -277,11 +275,22 @@ final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 }
 ```
 
-Use `@RestControllerAdvice` for exceptions raised during Spring MVC REST request processing. Extending `ResponseEntityExceptionHandler` preserves framework handling for malformed requests, unsupported methods and media types, binding failures, and other Spring MVC exceptions; override only the cases that need the project's stable problem contract.
+Use one project-owned `@RestControllerAdvice` extending `ResponseEntityExceptionHandler` as the MVC
+error-contract owner. It preserves Spring MVC handling for malformed requests, unsupported methods
+and media types, binding failures, and other framework exceptions; override only cases that require
+the project's stable problem contract. Preserve a coherent existing alternative instead of adding a
+second overlapping global handler.
 
 Place this advice in `<base-package>.exception.handler`. Keep the exceptions it handles in
 `<base-package>.exception`; do not place the advice directly beside them.
 
 Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to the correct HTTP status and stable code. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a condition-specific handler only for a distinct status, code, or response contract. Map the project-owned `ValidationException` to `400` only when it represents caller-correctable input; do not catch `jakarta.validation.ValidationException` broadly. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
 
-The final `Exception` handler is a safe fallback, not a substitute for known mappings. Log unexpected failures under the security logging policy and never expose raw exception messages or stack traces. The security handlers above cover failures that reach MVC advice; failures raised in the Spring Security filter chain require an `AuthenticationEntryPoint` and `AccessDeniedHandler` that emit the same public problem format. Handle listener, job, messaging, and asynchronous failures at their owning boundary because they do not pass through this advice. Test each status, code, content type, and information-disclosure rule.
+Normal REST TO responses use `application/json`; RFC 9457 error responses use
+`application/problem+json`. The final `Exception` handler is a safe fallback, not a substitute for
+known mappings. Log unexpected failures under the security logging policy and never expose raw
+exception messages or stack traces. The security handlers above cover failures that reach MVC
+advice; failures raised in the Spring Security filter chain require security-owned response handlers
+with the same public problem format. Handle listener, job, messaging, and asynchronous failures at
+their owning boundary because they do not pass through this advice. Test each status, code, content
+type, and information-disclosure rule.

@@ -105,6 +105,10 @@ decisions, returned state, declared exceptions, repository writes, and prohibite
 applicable; a test that proves only that a collaborator was invoked is insufficient. Full application
 integration coverage does not replace this unit coverage.
 
+Plain unit tests have no Spring context or security filter chain. Test a security policy as an
+ordinary unit only when that policy is the subject; prove runtime authentication and authorization in
+full application integration tests.
+
 Use Mockito's JUnit Jupiter extension when Mockito is the established project library. Construct the
 subject explicitly when that makes dependencies and test setup clearer. Do not use lenient stubbing
 or broad `any()` matching to hide an inaccurate fixture.
@@ -117,10 +121,10 @@ collaborators mocked through the mechanism supported by the project version. Pro
 routing and delegation plus applicable validation, request and response serialization, status,
 headers, and public error contract.
 
-This project's focused unit and MVC slice tests do not load or simulate Spring Security. Disable the
-MVC security filters explicitly and do not use mock users, mock JWTs, authorities, or CSRF request
-post-processors in those tests. Security behavior is verified only by full application integration
-tests through the real filter chain. This separation must not remove validation, error-handler,
+Focused MVC slice tests do not exercise or verify the Spring Security filter chain. Disable security
+filters explicitly and do not use mock users, mock tokens, authorities, or CSRF request
+post-processors in those tests. Security behavior is verified by full application integration tests
+through the real filter chain. This separation must not remove validation, error-handler,
 serialization, or delegation coverage from the MVC slice.
 
 Do not use an MVC slice as evidence for transaction, database, or other full-application behavior
@@ -160,13 +164,17 @@ Integration tests must:
 - when the scenario touches SQL persistence, run schema migrations and use the same relational
   database engine and relevant major version as production through Testcontainers or the project's
   equivalent isolated environment;
+- when a migration or mapped schema contract changes, add the upgrade integration scenario required
+  by `spring-data-jpa`; do not treat a successful empty-database startup as proof that an existing
+  supported schema upgrades safely;
 - avoid H2-only evidence for persistence behavior when production uses another database;
 - keep the real entry point, service, relevant adapters, transaction configuration, serialization,
   and security controls involved in the tested path;
-- obtain a valid JWT through the application's authentication/token endpoint, or through the real
-  protocol endpoint of an approved isolated test identity provider, before calling a protected API;
-- send that JWT in the `Authorization: Bearer` header and do not forge authentication with a mock JWT
-  or security test post-processor;
+- obtain a valid credential through the service's selected application-owned authentication flow or
+  the real protocol endpoint of an approved isolated test identity provider before calling a
+  protected API;
+- for bearer-protected APIs, send the issued access token in the `Authorization: Bearer` header and
+  do not forge authentication with a mock token or security test post-processor;
 - replace only true external systems with controlled stubs, fakes, emulators, or containers;
 - verify the response or other public result and the committed database state after success;
 - verify the public error contract and prove that invalid or rejected data was not persisted after
@@ -249,11 +257,11 @@ scenarios. This project verifies authentication and authorization only in full a
 integration tests. Exercise the real filter chain, service and database scope for object or tenant
 authorization, serializer for data exposure, and provider adapter for outbound restrictions.
 
-The approved REST model is stateless bearer authentication: clients explicitly send the
-`Authorization` header, sessions are not used for authentication, and no ambient browser credential
-authenticates requests. Under that model, keep CSRF disabled consistently in production and
-integration configuration; do not add CSRF tokens to tests. If the credential model changes, stop
-and revise both the security configuration and this test policy through `application-security`.
+Use the authentication and credential model selected for the deployable service by
+`application-security`. For a stateless bearer filter chain in which clients explicitly send the
+`Authorization` header and no ambient browser credential authenticates requests, keep CSRF disabled
+consistently and do not add CSRF tokens to integration requests. For cookie, session, or mixed
+credential models, test the applicable CSRF behavior instead.
 
 Use synthetic identities and isolated test credentials only. Obtain tokens through the configured
 test authentication flow; never use production tokens, customer data, live identity providers, or
@@ -261,9 +269,10 @@ production endpoints.
 
 ## Execute and report verification
 
-Run the narrowest changed test first for quick feedback. Then run all relevant unit and integration
-tests using the repository's Maven or Gradle lifecycle, including the integration-test source set or
-plugin phase. Run the formatter, compiler, and static analysis required by the project.
+Run the narrowest changed test first for quick feedback. Then run all relevant unit, MVC slice,
+persistence slice, and full integration tests using the repository's Maven or Gradle lifecycle,
+including the integration-test source set or plugin phase. Run the formatter, compiler, and static
+analysis required by the project.
 
 Fix the production code or the test when a failure reveals a defect. Treat flaky tests as defects;
 identify and remove their nondeterminism instead of rerunning until green. Do not claim that tests
@@ -282,14 +291,14 @@ controlled dependencies is an integration test, not an end-to-end test.
 - [ ] Every affected behavioral application service has direct focused unit coverage without Spring.
 - [ ] Every affected REST controller has security-disabled `@WebMvcTest` coverage for its complete public MVC contract.
 - [ ] Full application integration tests prove applicable affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
-- [ ] Protected integration requests obtain and send a valid JWT through the approved test authentication flow.
+- [ ] Protected integration requests obtain and send a valid credential through the service's approved isolated authentication flow.
 - [ ] Overlap across levels proves different boundaries; no level was omitted because another exists.
 - [ ] Every changed scheduler has direct unit coverage and a real-trigger integration test.
 - [ ] Negative write scenarios prove that prohibited data was not persisted.
 - [ ] Test data uses the established generator or focused factory and is deterministic.
 - [ ] Tests are independent, secure, and free from arbitrary sleeps and live dependencies.
 - [ ] Every touched Java test follows `modern-java-21`, including the project import order.
-- [ ] Focused and relevant complete unit and integration suites pass.
+- [ ] Every relevant unit, MVC slice, persistence slice, and full integration suite passes.
 
 ## Primary guidance
 

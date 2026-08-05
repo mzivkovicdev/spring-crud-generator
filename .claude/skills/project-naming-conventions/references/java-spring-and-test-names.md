@@ -97,8 +97,8 @@ Use `UpperCamelCase`.
 
 | Kind | Default form | Examples |
 | --- | --- | --- |
-| Class or record | Noun or noun phrase | `UserDomain`, `OrderSummary`, `RetryPolicy` |
-| Interface | Role, capability, or contract | `CatalogClient`, `Clock`, `AuthorizationPolicy` |
+| Class or record | Noun or noun phrase | `UserDomain`, `OrderSummaryDomain`, `RetryPolicy` |
+| Interface | Role, capability, or contract | `CatalogClient`, `AuthorizationPolicy` |
 | Enum type | Singular concept | `OrderStatus`, `PaymentMethod` |
 | Annotation | Noun or adjective describing its meaning | `Audited`, `InternalApi` |
 | Exception | Cause, violated condition, or failed outcome plus `Exception` | `OrderNotFoundException` |

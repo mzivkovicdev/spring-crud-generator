@@ -61,7 +61,10 @@ public interface UserDomainMapper {
 
 This mapper demonstrates the directions owned by `../SKILL.md`: persistence output to domain and
 explicit, already-decided creation values to a new entity. Hashing, authorization, normalization,
-and business defaults happen before structural mapping.
+and business defaults happen before structural mapping. The entity reference is intentionally
+abridged; the real `UserEntity` must expose a MapStruct-compatible creation path for every mapped
+property through an accessible constructor, builder, object factory, or approved write method. Keep
+`ReportingPolicy.ERROR` and run annotation processing so an incompatible entity fails the build.
 
 ## Focused service parameter object
 
@@ -186,8 +189,6 @@ public interface UserService {
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private static final UserDomainMapper USER_DOMAIN_MAPPER = UserDomainMapper.INSTANCE;
-
     private final Clock clock;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
@@ -205,7 +206,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDomain getById(final Long userId) {
         return this.userRepository.findById(userId)
-            .map(USER_DOMAIN_MAPPER::mapUserEntityToUserDomain)
+            .map(UserDomainMapper.INSTANCE::mapUserEntityToUserDomain)
             .orElseThrow(() -> new ResourceNotFoundException("User", userId));
     }
 
@@ -217,7 +218,7 @@ public class UserServiceImpl implements UserService {
             final String rawPassword) {
 
         final String passwordHash = this.passwordEncoder.encode(rawPassword);
-        final UserEntity newUser = USER_DOMAIN_MAPPER.mapToNewUserEntity(
+        final UserEntity newUser = UserDomainMapper.INSTANCE.mapToNewUserEntity(
                 username,
                 email,
                 passwordHash,
@@ -225,7 +226,7 @@ public class UserServiceImpl implements UserService {
                 Instant.now(this.clock));
         final UserEntity savedUser = this.userRepository.save(newUser);
 
-        return USER_DOMAIN_MAPPER.mapUserEntityToUserDomain(savedUser);
+        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(savedUser);
     }
 
     @Override
@@ -236,7 +237,7 @@ public class UserServiceImpl implements UserService {
                 Sort.by(Sort.Order.asc("id"))
         );
         final Page<UserEntity> users = this.userRepository.findAll(pageable);
-        final List<UserDomain> items = USER_DOMAIN_MAPPER.mapUserEntitiesToUserDomains(
+        final List<UserDomain> items = UserDomainMapper.INSTANCE.mapUserEntitiesToUserDomains(
                 users.getContent()
         );
 
@@ -261,7 +262,7 @@ public class UserServiceImpl implements UserService {
                 .setEmail(email);
         final UserEntity savedUser = this.userRepository.save(existingUser);
 
-        return USER_DOMAIN_MAPPER.mapUserEntityToUserDomain(savedUser);
+        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(savedUser);
     }
 
     @Override

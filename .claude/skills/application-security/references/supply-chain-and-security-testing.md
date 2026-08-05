@@ -86,7 +86,7 @@ Match the test to the control:
 
 | Control | Minimum useful evidence |
 | --- | --- |
-| HTTP authentication and route rules | Full application integration test through the real filter chain and token flow |
+| HTTP authentication and route rules | Full application integration test through the real filter chain and selected authentication flow |
 | Object and tenant authorization | Service plus database-backed integration test with two users or tenants |
 | Input constraints | Boundary tests for valid, invalid, oversized, and malformed values |
 | Query injection resistance | Repository integration test plus review of construction and generated SQL |

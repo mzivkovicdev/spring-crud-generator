@@ -49,7 +49,7 @@ public class UserEntity {
     protected UserEntity() {
     }
 
-    // Getters used by persistence-to-domain mapping are omitted for brevity.
+    // Read access and the MapStruct-compatible creation path are omitted for brevity.
     public UserEntity setUsername(final String username) {
         this.username = username;
         return this;
@@ -63,6 +63,11 @@ public class UserEntity {
 ```
 
 `GenerationType.AUTO` is illustrative, not the project default. Select the identifier strategy for the configured database and verify its batching and round-trip behavior before implementation.
+
+This is a focused entity-mapping excerpt, not a complete class. The real entity must provide the
+read access required by persistence-to-domain mapping and one approved creation path for all mapped
+creation properties. Keep mutation no broader than required, and compile MapStruct-generated sources
+after changing either side of the mapping.
 
 `UserStatus` represents business state, so place it beside the related domain types rather than in a
 generic `enums` package. If a different enum exists only to represent persistence state, keep that

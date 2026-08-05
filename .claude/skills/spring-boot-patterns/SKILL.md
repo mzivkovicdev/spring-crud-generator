@@ -31,7 +31,9 @@ Read only the references relevant to the task:
 - Read [service and domain examples](references/service-domain-examples.md) when creating or changing a service, domain model, domain mapper, service parameter object, or repository boundary.
 - Read [infrastructure examples](references/infrastructure-examples.md) when deciding package placement or changing method validation, custom exceptions, configuration properties, infrastructure beans, or code that resembles a listed anti-pattern.
 
-The references contain complete examples and are normative where this file points to them. Do not load them for unrelated work.
+The references contain focused examples. Treat the illustrated decisions and accompanying rules as
+normative, but do not assume omitted members or configuration are complete. Do not load a reference
+for unrelated work.
 
 ## REST-only scope
 
@@ -99,7 +101,7 @@ Keep REST controllers thin. They must not query repositories, mutate entities, i
 - If the project has an OpenAPI contract, update and validate it with the implementation; do not allow endpoint, schema, status, or media-type drift.
 - Preserve backward compatibility in field names, enum values, requiredness, null behavior, status codes, and error shapes.
 
-Read the complete controller example in [REST API examples](references/rest-api-examples.md).
+Read the controller example in [REST API examples](references/rest-api-examples.md).
 
 ## Request and response TOs
 
@@ -166,7 +168,8 @@ Services implement operations and own orchestration.
 - Use `readOnly = true` for read services when it is compatible with the persistence implementation; treat it as an optimization hint, not security.
 - Do not add `@Transactional` mechanically to every service class.
 
-Read the complete service, parameter-object, mapper, and repository-boundary examples in [service and domain examples](references/service-domain-examples.md).
+Read the service, parameter-object, mapper, and repository-boundary examples in
+[service and domain examples](references/service-domain-examples.md).
 
 ## Repository boundary
 
@@ -202,9 +205,13 @@ Use the project's existing error contract. For a new API on a supported Spring v
 - Do not copy `exception.getMessage()` into a response unless that exception type guarantees a stable, user-safe message.
 - Do not log expected 4xx validation/not-found failures as server errors.
 - Never include stack traces, SQL, internal endpoints, credentials, or personal data in responses.
-- Place custom exceptions in `exception` and `@RestControllerAdvice` or other REST exception-handler classes in `exception.handler`.
+- Place custom exceptions in `exception` and MVC REST exception-handler classes in
+  `exception.handler`. Spring Security response handling belongs to the selected security
+  configuration boundary, not this package.
 
-Read the complete `ProblemDetail` handler in [REST API examples](references/rest-api-examples.md) and the custom exception examples in [infrastructure examples](references/infrastructure-examples.md).
+Read the `ProblemDetail` handler example in
+[REST API examples](references/rest-api-examples.md) and the custom exception examples in
+[infrastructure examples](references/infrastructure-examples.md).
 
 ## Configuration properties
 

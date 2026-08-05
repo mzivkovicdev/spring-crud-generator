@@ -102,9 +102,9 @@ Do not reorganize imports across untouched files as part of an unrelated feature
 - Validate record invariants in a compact constructor when they are intrinsic to the value.
 
 ```java
-public record Money(BigDecimal amount, Currency currency) {
+public record MoneyDomain(BigDecimal amount, Currency currency) {
 
-    public Money {
+    public MoneyDomain {
         Objects.requireNonNull(amount, "amount must not be null");
         Objects.requireNonNull(currency, "currency must not be null");
         if (amount.signum() < 0) {
@@ -116,7 +116,9 @@ public record Money(BigDecimal amount, Currency currency) {
 
 ### Use domain types
 
-Prefer a meaningful type such as `CustomerId`, `EmailAddress`, `Money`, or `OrderNumber` when it prevents mixing values or centralizes a real invariant. Do not wrap every primitive without a domain reason.
+Prefer a meaningful project domain type such as `CustomerIdDomain`, `EmailAddressDomain`,
+`MoneyDomain`, or `OrderNumberDomain` when it prevents mixing values or centralizes a real invariant.
+Do not wrap every primitive without a domain reason.
 
 ### Null and Optional
 
@@ -133,15 +135,15 @@ Prefer a meaningful type such as `CustomerId`, `EmailAddress`, `Money`, or `Orde
 Use a record for transparent immutable data:
 
 ```java
-public record CustomerRegistrationDetails(String name, String email) {}
+public record CustomerRegistrationDetailsDomain(String name, String email) {}
 ```
 
 Do not put mutable collections into records without making defensive copies:
 
 ```java
-public record CustomerSnapshot(UUID id, List<Address> addresses) {
+public record CustomerSnapshotDomain(UUID id, List<AddressDomain> addresses) {
 
-    public CustomerSnapshot {
+    public CustomerSnapshotDomain {
         addresses = List.copyOf(addresses);
     }
 }
@@ -153,9 +155,9 @@ Use exhaustive switch expressions for closed domain variants:
 
 ```java
 return switch (paymentResult) {
-    case PaymentSucceeded success -> receiptFor(success);
-    case PaymentRejected rejected -> rejectionFor(rejected);
-    case PaymentPending pending -> pendingFor(pending);
+    case PaymentSucceededDomain success -> receiptFor(success);
+    case PaymentRejectedDomain rejected -> rejectionFor(rejected);
+    case PaymentPendingDomain pending -> pendingFor(pending);
 };
 ```
 
@@ -166,8 +168,8 @@ Use a sealed hierarchy only when the variants are intentionally closed and contr
 Use explicit local variable types throughout project-controlled Java source, including production code, tests, examples, and generated-source templates:
 
 ```java
-final Customer customer = this.customerRepository.getRequired(customerId);
-final CalculationResult result = this.calculate(input);
+final CustomerDomain customer = this.customerRepository.getRequired(customerId);
+final CalculationResultDomain result = this.calculate(input);
 ```
 
 Do not use `var`. This is a deliberate project readability convention, not a claim that Java local-variable type inference is dynamically typed or universally incorrect. Java still resolves the type statically, but this codebase requires the declared type to remain visible. If a generator emits `var`, change its template or configuration instead of hand-editing generated output.
@@ -276,19 +278,20 @@ Javadoc is contract documentation, not a coverage metric. Do not add it based on
 
 Add complete Javadoc to:
 
-- public and protected APIs;
-- extension points and interfaces implemented outside the package;
+- published or externally consumed Java API contracts;
+- intentional extension points and interfaces implemented outside the package;
 - non-obvious invariants, preconditions, side effects, blocking behavior, concurrency guarantees, transaction requirements, retry behavior, and failure modes;
 - methods whose contract cannot be understood from their signature and type names.
 
 Do not add Javadoc by default to:
 
-- self-explanatory DTOs, TOs, records, enum constants, exceptions, constructors, getters, setters, and accessors;
+- self-explanatory TOs, records, enum constants, exceptions, constructors, getters, setters, and accessors;
 - routine framework adapters, generated-code contracts, mappers, repositories, dependency-injection configuration, and wiring classes whose behavior is clear from types and annotations;
 - overriding methods when the inherited contract is accurate;
 - private methods and tests whose purpose is clear from names, types, and structure.
 
-Javadoc should explain the contract and the reason, not narrate the implementation. A public or protected method Javadoc is incomplete unless it contains every applicable tag:
+Javadoc should explain the contract and the reason, not narrate the implementation. When a
+declaration requires Javadoc under this policy, include every applicable tag:
 
 - `@param parameterName` for every method or constructor parameter, including semantic meaning, accepted range/format, nullability, units, and ownership when relevant;
 - `@param <T>` for every generic type parameter;
@@ -308,12 +311,14 @@ Do not add `@return` to constructors or `void` methods. Do not document internal
  * @param orderId the unique identifier of the order requesting inventory; must not be {@code null}
  * @param lines   the non-empty immutable list of order lines to reserve; must not be {@code null}
  *                and must not contain {@code null} elements
- * @return        a {@link Reservation} containing the reserved quantities and reservation identifier;
- *                never {@code null}
+ * @return        a {@link ReservationDomain} containing the reserved quantities and reservation
+ *                identifier; never {@code null}
  * @throws InsufficientInventoryException when any requested item cannot be reserved
  * @throws InventoryUnavailableException when the inventory provider cannot be reached
  */
-Reservation reserve(final OrderId orderId, final List<OrderLine> lines);
+ReservationDomain reserve(
+        final OrderIdDomain orderId,
+        final List<OrderLineDomain> lines);
 ```
 
 Complete generic-type example:

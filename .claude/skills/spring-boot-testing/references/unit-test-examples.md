@@ -88,13 +88,13 @@ class UserServiceTest {
 
         final ArgumentCaptor<UserEntity> savedUser = ArgumentCaptor.forClass(UserEntity.class);
         verify(this.userRepository).save(savedUser.capture());
-        
+
         assertThat(savedUser.getValue().getUsername()).isEqualTo(updatedUsername);
         assertThat(savedUser.getValue().getEmail()).isEqualTo(updatedEmail);
         assertThat(result.id()).isEqualTo(existingUser.getId());
         assertThat(result.username()).isEqualTo(updatedUsername);
         assertThat(result.email()).isEqualTo(updatedEmail);
-        
+
         verifyNoInteractions(this.passwordEncoder);
     }
 

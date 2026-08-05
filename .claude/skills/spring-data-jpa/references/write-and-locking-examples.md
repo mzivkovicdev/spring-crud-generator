@@ -30,7 +30,7 @@ final UserEntity user = this.userRepository.findById(id).orElseThrow();
 
 this.userRepository.updateStatus(UserStatus.ACTIVE, UserStatus.SUSPENDED);
 
-return USER_DOMAIN_MAPPER.mapUserEntityToUserDomain(user);
+return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(user);
 ```
 
 The loaded entity can be stale because bulk DML bypasses normal persistence-context synchronization.
