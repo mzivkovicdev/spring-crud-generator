@@ -19,18 +19,8 @@ JPA scenarios those tests must prove. Do not repeat their rules here.
 
 Apply `application-security` when persistence affects confidential data, tenant or object ownership, authorization scope, encryption, audit data, backups, exports, or dangerous query input. Apply `project-naming-conventions` to entity, repository, table, column, constraint, index, and migration names and to every escaped rename.
 
-Use their established terminology consistently:
-
-| Type | Boundary |
-| --- | --- |
-| `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
-| `UserDomain` | Domain/service result |
-| `UserEntity` | JPA persistence |
-| `UserSummaryProjection` | Repository read projection |
-| `UserRestMapper` | Domain → response TO; request TO → a justified focused domain/service input |
-| `UserDomainMapper` | Entity/projection → domain; explicit creation values → entity |
-
-Repositories return entities or persistence projections. Services map them to domain objects before returning. This skill owns the JPA behavior beneath that boundary.
+Use the architecture, terminology, mapper directions, and package responsibilities from
+`spring-boot-patterns`. This skill owns the JPA behavior beneath those boundaries.
 
 This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier strategies.
 
@@ -173,8 +163,10 @@ Choose the smallest suitable fetch mechanism:
 - Keep transactions short; do not perform remote calls, unbounded iteration, or long CPU work inside them.
 - Do not rely on self-invocation. Move a separate transaction boundary to another bean when required.
 - Use `REQUIRES_NEW` only for a documented consistency reason and account for extra connection demand.
-- Follow the `spring-boot-patterns` update structure: load the entity inside the write transaction, invoke explicit mutations, call repository `save` exactly once, and map the saved entity returned by the repository to domain.
-- JPA can synchronize changes to a managed entity at flush/commit, but this project deliberately requires the explicit `save` call for update intent and consistency with the Spring Data repository abstraction. Do not omit it as a dirty-checking shortcut.
+- Follow the complete explicit update-and-save structure owned by `spring-boot-patterns`; do not
+  replace it with a dirty-checking-only implementation.
+- Treat flush timing separately from update intent. JPA can synchronize managed state at flush or
+  commit even when the project requires an explicit repository `save` call.
 - Use `flush` or `saveAndFlush` only when subsequent logic must observe database synchronization immediately, such as a deliberately handled constraint failure or database-generated effect; document and test that reason.
 - Never call `saveAndFlush` for every item in a loop.
 - Remember that JPQL/HQL and some native queries can trigger an automatic flush before query execution.

@@ -37,7 +37,7 @@ repository-enforced build configuration.
 - Read [scheduler test examples](references/scheduler-test-examples.md) whenever creating or changing
   a scheduled job, its trigger configuration, overlap protection, or scheduled side effects.
 
-Load only the reference required by the changed behavior.
+Load only applicable references for the changed behavior.
 
 ## Inspect before writing tests
 
@@ -115,11 +115,13 @@ A Spring slice test is neither a pure unit test nor a substitute for full integr
 Every REST controller requires focused `@WebMvcTest` coverage with its services and other downstream
 collaborators mocked through the mechanism supported by the project version. Prove every handler's
 routing and delegation plus applicable validation, request and response serialization, status,
-headers, security behavior, and public error contract.
+headers, and public error contract.
 
-Use `@DataJpaTest` for focused mapping and repository behavior when its database replacement and
-migration configuration still match the scenario. Use another slice only when the inspected project
-version supports it and the slice proves the required boundary.
+This project's focused unit and MVC slice tests do not load or simulate Spring Security. Disable the
+MVC security filters explicitly and do not use mock users, mock JWTs, authorities, or CSRF request
+post-processors in those tests. Security behavior is verified only by full application integration
+tests through the real filter chain. This separation must not remove validation, error-handler,
+serialization, or delegation coverage from the MVC slice.
 
 Do not use an MVC slice as evidence for transaction, database, or other full-application behavior
 excluded from that slice. Conversely, do not omit required MVC slice coverage because a full HTTP
@@ -131,6 +133,13 @@ exists. Add focused persistence coverage when custom queries, mappings, converte
 constraints, ordering, pagination, locking, flush behavior, or database-specific semantics require
 direct proof. A full application integration test may already provide sufficient persistence
 evidence for a simple path.
+
+## Write focused persistence slice tests
+
+Use `@DataJpaTest` only when a custom query, mapping, converter, projection, constraint, ordering,
+pagination, locking, flush behavior, or database-specific persistence rule needs direct proof. Use
+the actual supported database and migration configuration when replacement would change the
+semantics. Do not create a persistence slice merely to retest inherited repository CRUD behavior.
 
 ## Write application integration tests
 
@@ -154,6 +163,10 @@ Integration tests must:
 - avoid H2-only evidence for persistence behavior when production uses another database;
 - keep the real entry point, service, relevant adapters, transaction configuration, serialization,
   and security controls involved in the tested path;
+- obtain a valid JWT through the application's authentication/token endpoint, or through the real
+  protocol endpoint of an approved isolated test identity provider, before calling a protected API;
+- send that JWT in the `Authorization: Bearer` header and do not forge authentication with a mock JWT
+  or security test post-processor;
 - replace only true external systems with controlled stubs, fakes, emulators, or containers;
 - verify the response or other public result and the committed database state after success;
 - verify the public error contract and prove that invalid or rejected data was not persisted after
@@ -162,11 +175,11 @@ Integration tests must:
 - avoid test-managed `@Transactional` on HTTP write tests when rollback would hide commit behavior;
 - use the project's explicit database reset or cleanup strategy so tests remain isolated.
 
-Full application integration coverage must prove affected real wiring, transactions, persistence,
-migrations, concurrency behavior, and committed database state. Cover each item when the feature can
-exercise it; do not invent concurrency cases for a path with no concurrency contract. Important
-scenarios may overlap with service unit or MVC slice tests when the integration test proves a
-different boundary. Integration coverage never replaces either required lower level.
+Full application integration coverage must prove applicable affected real wiring, transactions,
+persistence, migrations, concurrency behavior, and committed database state. Cover each item only
+when the feature can exercise it; do not invent concurrency cases for a path with no concurrency
+contract. Important scenarios may overlap with service unit or MVC slice tests when the integration
+test proves a different boundary. Integration coverage never replaces either required lower level.
 
 Do not access live production or shared staging services. Do not mock the business path in a test
 whose purpose is to prove that the complete application path works.
@@ -231,11 +244,20 @@ HTTP statuses, and malformed inputs. Name fixtures by scenario under
 
 ## Prove security controls
 
-Apply `application-security` to select cases. Exercise the actual enforcement boundary: filter chain
-for HTTP access, service and database scope for object or tenant authorization, serializer for data
-exposure, and provider adapter for outbound restrictions. Do not disable filters, CSRF, or
-authorization merely to make integration tests pass. Use synthetic identities and never use real
-tokens, credentials, customer data, or production endpoints.
+Apply `application-security` as the owner of the security model, authorities, and required security
+scenarios. This project verifies authentication and authorization only in full application
+integration tests. Exercise the real filter chain, service and database scope for object or tenant
+authorization, serializer for data exposure, and provider adapter for outbound restrictions.
+
+The approved REST model is stateless bearer authentication: clients explicitly send the
+`Authorization` header, sessions are not used for authentication, and no ambient browser credential
+authenticates requests. Under that model, keep CSRF disabled consistently in production and
+integration configuration; do not add CSRF tokens to tests. If the credential model changes, stop
+and revise both the security configuration and this test policy through `application-security`.
+
+Use synthetic identities and isolated test credentials only. Obtain tokens through the configured
+test authentication flow; never use production tokens, customer data, live identity providers, or
+production endpoints.
 
 ## Execute and report verification
 
@@ -258,8 +280,9 @@ controlled dependencies is an integration test, not an end-to-end test.
 
 - [ ] Tests cover the happy path first, then every applicable reachable negative case.
 - [ ] Every affected behavioral application service has direct focused unit coverage without Spring.
-- [ ] Every affected REST controller has `@WebMvcTest` coverage for its complete public MVC contract.
-- [ ] Full application integration tests prove affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
+- [ ] Every affected REST controller has security-disabled `@WebMvcTest` coverage for its complete public MVC contract.
+- [ ] Full application integration tests prove applicable affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
+- [ ] Protected integration requests obtain and send a valid JWT through the approved test authentication flow.
 - [ ] Overlap across levels proves different boundaries; no level was omitted because another exists.
 - [ ] Every changed scheduler has direct unit coverage and a real-trigger integration test.
 - [ ] Negative write scenarios prove that prohibited data was not persisted.
