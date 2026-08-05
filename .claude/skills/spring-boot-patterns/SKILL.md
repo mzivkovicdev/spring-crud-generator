@@ -9,7 +9,9 @@ Implement vertical, tested features using the project's supported Spring Boot ve
 
 ## Coordination with other skills
 
-Apply `modern-java-21` to every touched Java file. It owns Java language use, imports, local type inference, Javadoc, nullability, exceptions, and source structure.
+Apply `modern-java-21` to every touched Java file. It owns Java language use, imports, local type
+inference, Javadoc, nullability, exception mechanics, and source structure. Apply
+`project-naming-conventions` to exception names; this skill owns REST error translation.
 
 Apply `spring-boot-testing` whenever production behavior or tests change. It owns test scope,
 realistic scenario selection, unit and integration structure, fixtures, isolation, and execution;
@@ -135,9 +137,17 @@ Read the domain and domain mapper examples in [service and domain examples](refe
 
 Services implement operations and own orchestration.
 
-- Treat application services used by inbound adapters as intentional application contracts. Define a `<Capability>Service` interface and a `<Capability>ServiceImpl` Spring bean.
-- Put caller-facing Javadoc and method-validation constraints on the service interface. Put `@Service`, `@Validated`, transactions, dependencies, and implementation logic on the implementation class without duplicating the contract.
-- Do not create interface/implementation pairs for internal helpers, stateless utilities, or types with no application-service contract.
+- Use a `<Capability>Service` interface with a `<Capability>ServiceImpl` Spring bean when the user
+  explicitly selects that convention or the repository already applies it coherently. Preserve that
+  convention for new application services in the same scope.
+- Otherwise, an interface is optional: introduce one for a meaningful application boundary, multiple
+  implementations, a port, or a stable test/substitution contract; use one concrete service class
+  when none of those reasons exists.
+- When an interface exists, put caller-facing Javadoc and method-validation constraints on it. Put
+  `@Service`, `@Validated`, transactions, dependencies, and implementation logic on the concrete
+  class without duplicating the contract.
+- Do not create an empty or responsibility-free interface merely to obtain an `Impl` class. Do not
+  prohibit `*Impl` when it is the selected project convention.
 - Use Lombok constructor generation only when Lombok is an established project dependency and the generated constructor remains obvious; otherwise write the constructor explicitly.
 - Do not accept REST request/response TOs and do not return JPA entities.
 - Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
@@ -210,12 +220,10 @@ Read the configuration records and bean example in [infrastructure examples](ref
 
 ## Security boundary
 
-- Authentication is not authorization. Enforce resource/tenant ownership in the use case or repository query, not only in the controller.
-- Use method or request authorization consistent with the project's Spring Security model.
-- Never trust tenant/user identifiers supplied in a body when the authenticated principal determines them.
-- Apply least privilege to data access, AWS clients, and operational endpoints.
-- Do not disable CSRF, CORS, authentication, or security filters just to make a test pass.
-- Do not log tokens, cookies, authorization headers, or sensitive payloads.
+Apply `application-security` as the single owner of authentication, authorization, CSRF, CORS,
+confidentiality, and security verification. Preserve the service and repository boundaries defined
+by this skill while applying those controls. Do not weaken production security to make tests pass;
+follow `spring-boot-testing` for which test levels include the security filter chain.
 
 ## Observability
 
@@ -240,10 +248,9 @@ Read the configuration records and bean example in [infrastructure examples](ref
 
 ## Tests required with every feature
 
-Apply `spring-boot-testing`. Every application service containing behavior requires a focused unit
-test without Spring, every REST controller requires a focused `@WebMvcTest`, and affected features
-require full application integration coverage. These levels may overlap because they prove different
-boundaries; full integration coverage does not replace required service unit or MVC slice coverage.
+Apply the complete `spring-boot-testing` workflow whenever production behavior changes. That skill is
+the single owner of required test levels, scenario selection, security participation in tests,
+fixtures, isolation, and execution.
 
 ## Anti-patterns
 
@@ -266,8 +273,8 @@ Reject:
 - generic exception swallowing;
 - unbounded collection endpoints;
 - remote I/O inside long transactions;
-- features without tests;
-- touched Java files with unused, wildcard, duplicate, or unordered imports.
+- test changes that violate `spring-boot-testing`;
+- source changes that violate `modern-java-21`.
 
 Read the rejected code examples in [infrastructure examples](references/infrastructure-examples.md) when reviewing or replacing suspicious existing code.
 
@@ -283,6 +290,6 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] Transactions and security ownership are explicit.
 - [ ] Error responses are stable and safe.
 - [ ] Configuration is type-safe, externalized, and validated.
-- [ ] Behavioral services have focused unit tests, every REST controller has MVC slice coverage, and affected full application paths have integration coverage.
-- [ ] Every touched Java file has clean, correctly ordered imports.
+- [ ] The complete `spring-boot-testing` workflow was applied and required tests pass.
+- [ ] Every touched Java file complies with `modern-java-21`.
 - [ ] Relevant formatter, tests, and build checks pass.
