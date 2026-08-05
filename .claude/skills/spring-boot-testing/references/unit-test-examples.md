@@ -73,6 +73,32 @@ class UserServiceTest {
     }
 
     @Test
+    void updateById_whenUserExists_savesAndReturnsUpdatedUserDomain() {
+        final UserCreateTestData input = UserTestData.validUserCreateData();
+        final UserEntity existingUser = UserTestData.persistedUserEntity(
+                input, UserTestData.passwordHash());
+        final String updatedUsername = UserTestData.updatedUsername();
+        final String updatedEmail = UserTestData.updatedEmail();
+        when(this.userRepository.findById(existingUser.getId()))
+                .thenReturn(Optional.of(existingUser));
+        when(this.userRepository.save(existingUser)).thenReturn(existingUser);
+
+        final UserDomain result = this.userService.updateById(
+                existingUser.getId(), updatedUsername, updatedEmail);
+
+        final ArgumentCaptor<UserEntity> savedUser = ArgumentCaptor.forClass(UserEntity.class);
+        verify(this.userRepository).save(savedUser.capture());
+        
+        assertThat(savedUser.getValue().getUsername()).isEqualTo(updatedUsername);
+        assertThat(savedUser.getValue().getEmail()).isEqualTo(updatedEmail);
+        assertThat(result.id()).isEqualTo(existingUser.getId());
+        assertThat(result.username()).isEqualTo(updatedUsername);
+        assertThat(result.email()).isEqualTo(updatedEmail);
+        
+        verifyNoInteractions(this.passwordEncoder);
+    }
+
+    @Test
     void getById_whenUserDoesNotExist_throwsResourceNotFoundException() {
         final Long userId = UserTestData.userId();
         when(this.userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -145,6 +171,14 @@ final class UserTestData {
 
     static String passwordHash() {
         return Instancio.gen().string().alphaNumeric().length(60).get();
+    }
+
+    static String updatedEmail() {
+        return Instancio.gen().net().email().get();
+    }
+
+    static String updatedUsername() {
+        return Instancio.gen().string().alphaNumeric().minLength(8).maxLength(20).get();
     }
 
     static UserEntity persistedUserEntity(
