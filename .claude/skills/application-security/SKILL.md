@@ -18,15 +18,7 @@ Apply this skill together with:
 - `spring-data-jpa` for entities, repositories, queries, locking, migrations, and database performance;
 - `project-naming-conventions` when security-sensitive or escaped names are created, changed, logged, persisted, published, cached, or provisioned.
 
-Do not redefine those rules. Use their terminology consistently:
-
-| Type | Boundary |
-| --- | --- |
-| `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
-| `UserDomain` | Domain/service result |
-| `UserEntity` | JPA persistence |
-| `UserRestMapper` | Domain → response TO; request TO → a justified focused domain/service input |
-| `UserDomainMapper` | Entity/projection → domain; explicit creation values → new entity |
+Do not redefine those rules. Use the architecture and terminology from `spring-boot-patterns`.
 
 This skill owns threat analysis, confidentiality, authentication, authorization, API abuse prevention, secrets, cryptography, dangerous trust boundaries, cloud and messaging security, security verification, and release risk. Follow the stricter compatible rule and never weaken an existing control merely to simplify a feature.
 
@@ -105,10 +97,11 @@ Every security-relevant feature requires tests at the boundary capable of provin
 - rate, quota, cost, concurrency, timeout, retry, idempotency, and dependency-failure behavior;
 - regression coverage for every confirmed vulnerability.
 
-Use unit, Spring Security, integration, database-backed, and contract verification within the
-single-service scope defined by `spring-boot-testing`. Security scenarios come from this skill; test
-structure and execution come from the testing skill. Scanners supplement design review and
-executable verification; they do not replace them.
+Security scenarios come from this skill; test levels, fixtures, isolation, and execution come from
+`spring-boot-testing`. Under this project's test policy, runtime authentication and authorization are
+proved through full application integration tests with the real filter chain and token flow, not in
+focused unit or MVC slice tests. Scanners supplement design review and executable verification; they
+do not replace them.
 
 ## Rejected patterns
 
