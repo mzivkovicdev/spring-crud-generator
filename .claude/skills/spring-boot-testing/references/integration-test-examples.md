@@ -10,6 +10,7 @@ the required `@WebMvcTest` for each REST controller.
 ## Contents
 
 - [HTTP application integration test](#http-application-integration-test)
+- [Authenticated request helper](#authenticated-request-helper)
 - [Container and database rules](#container-and-database-rules)
 - [Focused persistence integration test when justified](#focused-persistence-integration-test-when-justified)
 - [Rejected integration tests](#rejected-integration-tests)
@@ -25,8 +26,10 @@ real service transaction before repository verification.
 @AutoConfigureMockMvc
 class UserApiIntegrationTest {
 
+    private static final String BEARER_PREFIX = "Bearer ";
     private static final String USERS_PATH = "/api/v1/users";
 
+    private final AccessTokenTestClient accessTokenTestClient;
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
     private final PasswordEncoder passwordEncoder;
@@ -42,13 +45,17 @@ class UserApiIntegrationTest {
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
+        this.accessTokenTestClient = new AccessTokenTestClient(mockMvc, objectMapper);
     }
 
     @Test
     void usersPost_whenRequestIsValid_createsUser() throws Exception {
+        final String accessToken = this.accessTokenTestClient.obtainAccessToken(
+                AuthenticationTestData.userWithAuthority(UserAuthorities.USERS_WRITE));
         final UserCreateTO request = UserTestData.validUserCreateTO();
 
         this.mockMvc.perform(post(USERS_PATH)
+                        .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isCreated())
@@ -65,10 +72,13 @@ class UserApiIntegrationTest {
 
     @Test
     void usersPost_whenEmailIsInvalid_returnsValidationProblemAndDoesNotPersist() throws Exception {
+        final String accessToken = this.accessTokenTestClient.obtainAccessToken(
+                AuthenticationTestData.userWithAuthority(UserAuthorities.USERS_WRITE));
         final UserCreateTO request = UserTestData.userCreateTOWithInvalidEmail();
         final long initialUserCount = this.userRepository.count();
 
         this.mockMvc.perform(post(USERS_PATH)
+                        .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isBadRequest())
@@ -78,15 +88,80 @@ class UserApiIntegrationTest {
         assertThat(this.userRepository.count()).isEqualTo(initialUserCount);
         assertThat(this.userRepository.existsByEmail(request.email())).isFalse();
     }
+
+    @Test
+    void usersPost_whenTokenIsMissing_returnsUnauthorizedAndDoesNotPersist() throws Exception {
+        final UserCreateTO request = UserTestData.validUserCreateTO();
+        final long initialUserCount = this.userRepository.count();
+
+        this.mockMvc.perform(post(USERS_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(this.objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
+
+        assertThat(this.userRepository.count()).isEqualTo(initialUserCount);
+        assertThat(this.userRepository.existsByEmail(request.email())).isFalse();
+    }
 }
 ```
 
-Match status, `Location`, error code, and schema to the actual API contract. Apply authentication and
-authorization helpers required by `application-security`; do not disable the filter chain. For every
-negative write case, verify both the public error and the absence of prohibited database state.
-Extend full application coverage to the affected real wiring, transactions, migrations, concurrency
-contract, and committed state. Overlap an important scenario with a unit or MVC slice test when this
-test proves those different boundaries.
+`AuthenticationTestData.userWithAuthority(UserAuthorities.USERS_WRITE)` represents an isolated
+synthetic principal prepared by the project fixture and authorized by the same claim-to-authority
+mapping as production. Do not duplicate authority strings or hardcode credentials in the test
+method.
+
+Match status, `Location`, error code, and schema to the actual API contract. Keep the real security
+filter chain enabled. For every negative write case, verify both the public error and the absence of
+prohibited database state. Extend full application coverage to applicable affected wiring,
+transactions, migrations, concurrency contracts, and committed state. Overlap an important scenario
+with a unit or MVC slice test when this test proves a different boundary.
+
+## Authenticated request helper
+
+Obtain a valid JWT by sending a real request through the project's supported test authentication
+flow. This excerpt assumes the application owns `/api/v1/auth/token`; adapt the request and response
+TOs to the actual contract without bypassing token issuance or validation.
+
+```java
+final class AccessTokenTestClient {
+
+    private static final String TOKEN_PATH = "/api/v1/auth/token";
+
+    private final MockMvc mockMvc;
+    private final ObjectMapper objectMapper;
+
+    AccessTokenTestClient(
+            final MockMvc mockMvc,
+            final ObjectMapper objectMapper) {
+
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
+    }
+
+    String obtainAccessToken(final LoginTO login) throws Exception {
+        final MvcResult result = this.mockMvc.perform(post(TOKEN_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(this.objectMapper.writeValueAsBytes(login)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+        final AccessTokenTO token = this.objectMapper.readValue(
+                result.getResponse().getContentAsByteArray(),
+                AccessTokenTO.class);
+
+        return token.accessToken();
+    }
+}
+```
+
+When authentication is owned by an external provider, use its supported token protocol against an
+approved isolated test provider or container. Do not add a test-only token endpoint to production
+code, mint tokens directly in the API test, use a mock JWT post-processor, or call a live identity
+provider. The token's issuer, audience, signature, lifetime, claim mapping, and authority values must
+match `application-security`. The stateless bearer model has CSRF disabled, so these requests do not
+send CSRF tokens.
 
 ## Container and database rules
 
