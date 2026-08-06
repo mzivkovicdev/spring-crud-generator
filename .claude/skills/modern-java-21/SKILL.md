@@ -159,9 +159,9 @@ Use exhaustive switch expressions for closed domain variants:
 
 ```java
 return switch (paymentResult) {
-    case PaymentSucceededDomain success -> receiptFor(success);
-    case PaymentRejectedDomain rejected -> rejectionFor(rejected);
-    case PaymentPendingDomain pending -> pendingFor(pending);
+    case PaymentSucceededDomain success -> this.receiptFor(success);
+    case PaymentRejectedDomain rejected -> this.rejectionFor(rejected);
+    case PaymentPendingDomain pending -> this.pendingFor(pending);
 };
 ```
 
@@ -189,9 +189,9 @@ this.customerRepository.save(customer);
 return this.calculateTotal(order);
 ```
 
-Do not use `this.` for parameters or local variables. Access static members through their declaring
-type, except unqualified static constants or methods imported according to the project's import
-policy.
+Do not use `this.` for parameters or local variables. Access a static member declared by another
+type through that type, unless it is imported statically under the project's import policy. A static
+member declared by the current type may remain unqualified.
 
 ### Streams
 
@@ -329,16 +329,17 @@ Complete generic-type example:
 
 ```java
 /**
- * Returns a page of values matching the supplied query.
+ * Returns a page of values matching the supplied criteria.
  *
  * @param <T>         the immutable result element type
- * @param query       the query criteria; must not be {@code null}
+ * @param criteria    the search criteria; must not be {@code null}
  * @param pageRequest the zero-based page request including deterministic sorting; must not be
  *                    {@code null}
- * @return             a {@link Page} of matching values; never {@code null}
- * @throws InvalidQueryException when the query contains an unsupported filter or sort field
+ * @return             a {@link PageDomain} of matching values; never {@code null}
+ * @throws InvalidSearchCriteriaException when the criteria contain an unsupported filter or sort
+ *                                        field
  */
-<T> Page<T> search(final SearchQuery query, final PageRequest pageRequest);
+<T> PageDomain<T> search(final SearchCriteriaDomain criteria, final PageRequest pageRequest);
 ```
 
 When a record requires Javadoc under this policy, document every component with `@param`. For public classes/interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. An overriding method automatically inherits missing Javadoc from its supertype. Omit its Javadoc when the inherited contract is complete; do not add a comment containing only `{@inheritDoc}`. Use `{@inheritDoc}` when extending the inherited text with meaningful caller-visible guarantees or behavior, and only when the inherited contract remains accurate.

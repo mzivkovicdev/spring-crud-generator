@@ -160,8 +160,6 @@ business behavior in generated mapping.
 @RestControllerAdvice
 public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
-
     @ExceptionHandler(ResourceNotFoundException.class)
     ProblemDetail handleResourceNotFound() {
         return createProblem(
@@ -178,28 +176,6 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 "Invalid resource state",
                 "The operation is not allowed in the current resource state.",
                 "INVALID_STATE");
-    }
-
-    @ExceptionHandler(AuthenticationException.class)
-    ResponseEntity<ProblemDetail> handleAuthenticationRequired() {
-        final ProblemDetail problem = createProblem(
-                HttpStatus.UNAUTHORIZED,
-                "Authentication required",
-                "Authentication is required to access this resource.",
-                "AUTHENTICATION_REQUIRED");
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
-                .body(problem);
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    ProblemDetail handleAccessDenied() {
-        return createProblem(
-                HttpStatus.FORBIDDEN,
-                "Access denied",
-                "The authenticated principal cannot perform this operation.",
-                "ACCESS_DENIED");
     }
 
     // Project-owned category for caller-correctable validation failures.
@@ -254,16 +230,6 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 exception, problem, headers, responseStatus, request);
     }
 
-    @ExceptionHandler(Exception.class)
-    ProblemDetail handleUnexpected(final Exception exception) {
-        LOGGER.error("Unhandled REST request failure", exception);
-        return createProblem(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal server error",
-                "The request could not be completed.",
-                "INTERNAL_SERVER_ERROR");
-    }
-
     private static ProblemDetail createProblem(
             final HttpStatus status,
             final String title,
@@ -291,14 +257,10 @@ Place this advice in `<base-package>.exception.handler`. Keep the exceptions it 
 Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to the correct HTTP status and stable code. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a condition-specific handler only for a distinct status, code, or response contract. Map the project-owned `ValidationException` to `400` only when it represents caller-correctable input; do not catch `jakarta.validation.ValidationException` broadly. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
 
 Normal REST TO responses use `application/json`; RFC 9457 error responses use
-`application/problem+json`. The final `Exception` handler is a safe fallback, not a substitute for
-known mappings. Log unexpected failures under the security logging policy and never expose raw
-exception messages or stack traces. The MVC handlers above cover security exceptions that reach MVC
-advice; failures raised in the Spring Security filter chain require security-owned response handlers
-with the same public problem format. Handle listener, job, messaging, and asynchronous failures at
-their owning boundary because they do not pass through this advice. Test each status, code, content
-type, required header, and information-disclosure rule.
-
-Every `401` response must include a `WWW-Authenticate` challenge for the selected authentication
-scheme. The `Bearer` value above applies to the bearer-authenticated REST example; adapt it when the
-service uses another approved scheme.
+`application/problem+json`. The example intentionally omits a broad `Exception` handler. Route
+unknown failures through the project's approved top-level error path; it must return a safe `500`
+without consuming authentication or access-denied failures owned by Spring Security. Apply
+`application-security` for `401`, `403`, challenge headers, and any custom security body. Handle
+listener, job, messaging, and asynchronous failures at their owning boundary because they do not
+pass through this advice. Test each status, code, content type, required header, and
+information-disclosure rule.

@@ -82,12 +82,13 @@ Protect runtime deployment:
 Apply `spring-boot-testing` for test structure, fixtures, isolation, and execution. This reference
 defines the security controls and scenarios that those tests must prove.
 
-Match the test to the control:
+`spring-boot-testing` owns test-level placement and mechanics; this table identifies the security
+evidence required for each control:
 
 | Control | Minimum useful evidence |
 | --- | --- |
 | HTTP authentication and route rules | Full application integration test through the real filter chain and selected authentication flow |
-| Object and tenant authorization | Service plus database-backed integration test with two users or tenants |
+| Object and tenant authorization | Focused service or policy unit tests plus full application integration through the real HTTP, security, and database path with two subjects or tenants |
 | Input constraints | Boundary tests for valid, invalid, oversized, and malformed values |
 | Query injection resistance | Repository integration test plus review of construction and generated SQL |
 | CSRF and CORS | Full application integration test using the real credential model |

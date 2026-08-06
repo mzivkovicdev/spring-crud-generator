@@ -97,11 +97,9 @@ Every security-relevant feature requires tests at the boundary capable of provin
 - rate, quota, cost, concurrency, timeout, retry, idempotency, and dependency-failure behavior;
 - regression coverage for every confirmed vulnerability.
 
-Security scenarios come from this skill; test levels, fixtures, isolation, and execution come from
-`spring-boot-testing`. Under this project's test policy, runtime authentication and authorization are
-proved through full application integration tests with the real filter chain and selected
-authentication flow, not in focused unit or MVC slice tests. Scanners supplement design review and
-executable verification; they do not replace them.
+Security scenarios come from this skill; `spring-boot-testing` is the sole owner of test levels,
+fixtures, isolation, and execution. Apply its rules for runtime filter-chain proof and focused policy
+unit tests. Scanners supplement design review and executable verification; they do not replace them.
 
 ## Rejected patterns
 

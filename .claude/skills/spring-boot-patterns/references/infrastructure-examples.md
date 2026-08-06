@@ -149,10 +149,12 @@ public class ResourceNotFoundException extends RuntimeException {
 @Validated
 public record CatalogClientProperties(
         @NotNull URI baseUrl,
-        @NotNull Duration connectTimeout,
-        @NotNull Duration responseTimeout) {
+        @NotNull @DurationMin(millis = 1) Duration connectTimeout,
+        @NotNull @DurationMin(millis = 1) Duration responseTimeout) {
 }
 ```
+
+Validate required timeouts as strictly positive so invalid configuration fails during startup.
 
 ```java
 @Configuration(proxyBeanMethods = false)

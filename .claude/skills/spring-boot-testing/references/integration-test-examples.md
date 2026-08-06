@@ -17,10 +17,11 @@ the required `@WebMvcTest` for each REST controller.
 
 ## HTTP application integration test
 
-The example assumes the project selected stateless bearer authentication, JSON problem responses,
-an isolated supported-database container, and test-data reset between methods. Adapt those contract
-details to the service's selected model. It intentionally omits `@Transactional`: the request must
-commit through the real service transaction before repository verification.
+The example assumes the project selected stateless bearer authentication, JSON `ProblemDetail`
+responses for MVC errors, an isolated supported-database container, and test-data reset between
+methods. Adapt those contract details to the service's selected model. It intentionally omits
+`@Transactional`: the request must commit through the real service transaction before repository
+verification.
 
 ```java
 @SpringBootTest
@@ -105,9 +106,26 @@ class UserApiIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string(
                         HttpHeaders.WWW_AUTHENTICATE,
-                        startsWith(BEARER_SCHEME)))
-                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
+                        startsWith(BEARER_SCHEME)));
+
+        assertThat(this.userRepository.count()).isEqualTo(initialUserCount);
+        assertThat(this.userRepository.existsByEmail(request.email())).isFalse();
+    }
+
+    @Test
+    void usersPost_whenWriteScopeIsMissing_returnsForbiddenAndDoesNotPersist() throws Exception {
+        final String accessToken = this.accessTokenTestClient.obtainAccessToken(
+                AuthenticationTestData.userWithoutUsersWriteScope());
+        final UserCreateTO request = UserTestData.validUserCreateTO();
+        final long initialUserCount = this.userRepository.count();
+
+        this.mockMvc.perform(post(USERS_PATH)
+                        .header(
+                                HttpHeaders.AUTHORIZATION,
+                                "%s %s".formatted(BEARER_SCHEME, accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(this.objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isForbidden());
 
         assertThat(this.userRepository.count()).isEqualTo(initialUserCount);
         assertThat(this.userRepository.existsByEmail(request.email())).isFalse();
@@ -116,21 +134,25 @@ class UserApiIntegrationTest {
 ```
 
 `AuthenticationTestData.userWithUsersWriteAccess()` represents an isolated synthetic identity with
-the public OAuth scope `users:write`. Under Spring's default mapping, the resource server derives the
-authority `SCOPE_users:write`. Keep token fixtures expressed in public scopes rather than derived
-Spring authority names, and do not hardcode credentials in the test method.
+the public OAuth scope `users:write`; the second security fixture represents an authenticated
+identity without that scope. Keep OAuth token fixtures expressed in the public scope vocabulary
+owned by `application-security`, and do not hardcode credentials in the test method.
 
 Match status, `Location`, error code, and schema to the actual API contract. Keep the real security
-filter chain enabled. For every negative write case, verify both the public error and the absence of
-prohibited database state. Extend full application coverage to applicable affected wiring,
-transactions, migrations, concurrency contracts, and committed state. Overlap an important scenario
-with a unit or MVC slice test when this test proves a different boundary.
+filter chain enabled. The default bearer response may contain only the required status and challenge;
+assert a custom `ProblemDetail` body only when the public contract defines one. For every negative
+write case, verify both the public error and the absence of prohibited database state. Extend full
+application coverage to applicable affected wiring, transactions, migrations, concurrency
+contracts, and committed state. Overlap an important scenario with a unit or MVC slice test when
+this test proves a different boundary.
 
 ## Authenticated request helper
 
 Obtain a valid bearer access token through the project's supported isolated authentication flow.
 This excerpt applies only when the application owns `/api/v1/auth/token`; adapt the request and
 response TOs to the actual contract without bypassing token issuance or validation.
+The selected security configuration must expose that endpoint through its explicit public
+authentication policy and applicable abuse controls.
 
 ```java
 final class AccessTokenTestClient {
@@ -167,10 +189,11 @@ final class AccessTokenTestClient {
 When authentication is externally owned, use its supported protocol against an approved isolated
 test provider or container. For valid-token scenarios, do not add a test-only endpoint to production
 code, mint tokens directly in the API test, use a mock-token post-processor, or call a live identity
-provider. For validation failures that normal issuance cannot produce, a controlled invalid token or
-isolated provider configuration may create the invalid input, but it must traverse the real filter
-chain and configured decoder. Omit CSRF tokens only when the tested filter chain is stateless bearer
-and uses no ambient browser credential.
+provider. For validation failures that normal issuance cannot produce, create the invalid token only
+in isolated test infrastructure with test-only keys and claims, or configure the isolated provider
+to issue it. The token must traverse the real filter chain and configured decoder. Never add a
+production endpoint, reuse a production key, or apply this exception to valid-token tests. Omit CSRF
+tokens only when the tested filter chain is stateless bearer and uses no ambient browser credential.
 
 ## Container and database rules
 

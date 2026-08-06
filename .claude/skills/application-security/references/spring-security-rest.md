@@ -48,6 +48,10 @@ mechanism and authorities to the selected model.
 ```java
 package com.acme.myapp.config;
 
+import static org.springframework.security.oauth2.core.authorization.OAuth2AuthorizationManagers.hasScope;
+
+import jakarta.servlet.DispatcherType;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -60,12 +64,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
 
-    private static final String OAUTH_SCOPE_USERS_READ = "users:read";
-    private static final String OAUTH_SCOPE_USERS_WRITE = "users:write";
-    private static final String SPRING_AUTHORITY_USERS_READ =
-            "SCOPE_" + OAUTH_SCOPE_USERS_READ;
-    private static final String SPRING_AUTHORITY_USERS_WRITE =
-            "SCOPE_" + OAUTH_SCOPE_USERS_WRITE;
+    private static final String USERS_READ_SCOPE = "users:read";
+    private static final String USERS_WRITE_SCOPE = "users:write";
 
     @Bean
     SecurityFilterChain apiSecurity(final HttpSecurity http) throws Exception {
@@ -74,18 +74,19 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/users",
                                 "/api/v1/users/*")
-                        .hasAuthority(SPRING_AUTHORITY_USERS_READ)
+                        .access(hasScope(USERS_READ_SCOPE))
                         .requestMatchers(HttpMethod.POST, "/api/v1/users")
-                        .hasAuthority(SPRING_AUTHORITY_USERS_WRITE)
+                        .access(hasScope(USERS_WRITE_SCOPE))
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/*")
-                        .hasAuthority(SPRING_AUTHORITY_USERS_WRITE)
+                        .access(hasScope(USERS_WRITE_SCOPE))
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*")
-                        .hasAuthority(SPRING_AUTHORITY_USERS_WRITE)
+                        .access(hasScope(USERS_WRITE_SCOPE))
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults()));
@@ -104,23 +105,26 @@ Extract cohesive policy registration or a focused `AuthorizationManager` when th
 becomes difficult to review. Never replace explicit policy with a broad wildcard merely to shorten
 the configuration. Keep `anyRequest().denyAll()` as the fallback.
 
+Permit the `ERROR` dispatcher so an already-authorized REST request can complete Spring Boot error
+handling. A direct request to an error path is still a normal `REQUEST` dispatch and remains subject
+to the route rules and deny-by-default fallback.
+
 CSRF is disabled because this filter chain authenticates exclusively through an explicitly supplied
 `Authorization: Bearer` header and no browser-managed credential. Reassess this decision if the
 credential model changes.
 
-Keep public OAuth scopes and Spring authorities distinct. With Spring's default JWT conversion, the
-token scope `users:write` becomes the `GrantedAuthority` value `SCOPE_users:write`. Define the public
-scope vocabulary once, derive framework authority names in the security boundary, and use public
-scope values when issuing tokens or preparing token fixtures. If the project uses another mapping,
-configure and test it explicitly.
+For an OAuth scope-based policy, define the public scope vocabulary once and use `hasScope(...)` in
+authorization rules. With Spring's default JWT conversion, the token scope `users:write` becomes the
+internal authority `SCOPE_users:write`; do not create a parallel constant for that derived value.
+Roles are a separate model: use `hasRole(...)` only when the selected claim mapping deliberately
+produces `ROLE_...` authorities. Configure and test any custom claim mapping explicitly.
 
-When the REST contract requires JSON `401` and `403` problem responses, provide Spring Security
-`AuthenticationEntryPoint` and `AccessDeniedHandler` implementations and register them with the
-filter chain. These components are security response handlers, not servlet filters or MVC advice.
-They must emit the same safe public error codes as the REST layer and preserve protocol-required
-headers such as bearer `WWW-Authenticate`. Keep them with the established security configuration
-support selected by `spring-boot-patterns`; do not place them in `exception.handler`, which owns MVC
-advice.
+Let Spring Security own authentication and access-denied responses. The bearer resource-server
+defaults return `401` or `403` as appropriate, and a `401` includes the required bearer
+`WWW-Authenticate` challenge. Keep those defaults when they satisfy the public API contract.
+Configure focused `AuthenticationEntryPoint` and `AccessDeniedHandler` implementations only when
+the contract additionally requires a custom body or stable code. Register them through the filter
+chain, preserve protocol-required headers, and do not duplicate this handling in MVC advice.
 
 For the JWT option above, configure issuer and audience explicitly when the supported Spring Boot
 version provides these properties:
@@ -164,6 +168,12 @@ Use the project-approved identity model. An external identity provider may own t
 lifecycle, or an explicitly designated service may own registration, login, recovery, MFA, and token
 issuance. In either case, use reviewed Spring Security and protocol capabilities rather than custom
 cryptography or an ad hoc authentication protocol.
+
+For an identity-owning service, adopt an approved identity and authorization-server design before
+implementation. Define supported clients and grants, credential lifecycle, issuer and audience,
+signing-key storage and rotation, access- and refresh-token lifecycle, recovery and MFA, abuse
+controls, and audit. Do not infer token issuance from the resource-server excerpt or hand-roll the
+protocol.
 
 - Use an adaptive one-way function supported by Spring Security.
 - Benchmark the work factor on representative production hardware and review it periodically.
@@ -284,15 +294,12 @@ Add tests for:
 - secure cookie properties and session rotation where applicable;
 - management endpoint isolation;
 - safe `401`, `403`, and hidden-resource behavior;
+- application failures that must not be replaced by `401` or `403` during an error dispatch;
 - rate limits and lockout/recovery behavior at the appropriate integration boundary.
 
-Use full application integration tests with the real filter chain and selected authentication flow.
-Obtain valid tokens from the application-owned flow or an approved isolated identity provider. For
-validation failures that normal issuance cannot produce, such as an invalid signature, wrong issuer,
-wrong audience, or expired token, use a controlled invalid-token fixture or isolated provider
-configuration that still exercises the configured decoder. Do not substitute `@WithMockUser`, a
-security request post-processor, a mocked decoder, a disabled filter chain, or a controller slice.
-Follow `spring-boot-testing` for the exact test structure.
+Use `spring-boot-testing` as the owner of test levels, credential acquisition, invalid-token
+fixtures, and prohibited substitutes. Runtime security evidence must traverse the real configured
+filter chain and selected authentication flow.
 
 ## References
 

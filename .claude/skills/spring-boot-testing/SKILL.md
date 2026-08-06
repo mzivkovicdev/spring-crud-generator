@@ -10,8 +10,9 @@ publicly observable outcomes, not framework internals or invented edge cases.
 
 ## Coordinate the project skills
 
-Treat this skill as the owner of test scope, scenario selection, test doubles, fixtures, isolation,
-and execution. Apply the specialized skills for the behavior being verified:
+Treat this skill as the owner of test scope, realistic-scenario filtering, test-level placement,
+test doubles, fixtures, isolation, and execution. Apply the specialized skills for the behavior
+being verified:
 
 | Skill | Treat as owner of |
 | --- | --- |
@@ -254,9 +255,11 @@ HTTP statuses, and malformed inputs. Name fixtures by scenario under
 ## Prove security controls
 
 Apply `application-security` as the owner of the security model, authorities, and required security
-scenarios. This project verifies authentication and authorization only in full application
-integration tests. Exercise the real filter chain, service and database scope for object or tenant
-authorization, serializer for data exposure, and provider adapter for outbound restrictions.
+scenarios. Prove runtime authentication, authorization, and security filter-chain behavior only in
+full application integration tests. A focused authorization or policy component may also have plain
+unit tests for its decisions, but those tests do not prove runtime enforcement. Exercise the real
+filter chain, service and database scope for object or tenant authorization, serializer for data
+exposure, and provider adapter for outbound restrictions.
 
 Use the authentication and credential model selected for the deployable service by
 `application-security`. For a stateless bearer filter chain in which clients explicitly send the

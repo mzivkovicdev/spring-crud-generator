@@ -37,7 +37,9 @@ for unrelated work.
 
 ## REST-only scope
 
-Build backend HTTP APIs only. The application may use Spring Web's servlet infrastructure internally, but that does not authorize generating a server-rendered presentation layer.
+Build backend HTTP APIs only. In this skill, Spring MVC means the servlet-based REST infrastructure
+used by `@RestController`; it does not imply server-rendered views. Using that infrastructure does
+not authorize generating a server-rendered presentation layer.
 
 - Use `@RestController` and `@RestControllerAdvice` so handlers write status, headers, and serialized response bodies directly.
 - Return typed transport objects, `ProblemDetail`, an explicitly supported file/resource response, or an empty response with the correct status.
@@ -256,8 +258,8 @@ follow `spring-boot-testing` for which test levels include the security filter c
 ## Tests required with every feature
 
 Apply the complete `spring-boot-testing` workflow whenever production behavior changes. That skill is
-the single owner of required test levels, scenario selection, security participation in tests,
-fixtures, isolation, and execution.
+the single owner of required test levels, realistic-scenario filtering, security participation by
+test level, fixtures, isolation, and execution. Behavior-specific cases come from their owner skills.
 
 ## Anti-patterns
 
