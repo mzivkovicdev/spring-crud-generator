@@ -23,8 +23,8 @@ Whenever a `.java` file is created or modified, even for a one-line change:
 3. Never introduce wildcard imports such as `java.util.*` or `import static ...*`.
 4. Organize imports into the exact groups below. Sort every group lexicographically by the complete import statement.
 5. Separate consecutive non-empty groups with exactly one blank line. Do not leave blank lines for empty groups.
-6. If the repository has an enforced formatter, Checkstyle, Spotless, or IDE import layout that conflicts with this order, follow the build-enforced layout and report the conflict instead of repeatedly fighting the formatter.
-7. Run the formatter or the narrowest available compile/static-analysis check to confirm imports are valid.
+6. This import order is a project standard and has no exceptions. Write imports in this order even when a repository formatter, Checkstyle, Spotless, or IDE import layout would produce a different one. When such a configuration exists and conflicts, keep this order in the source, report the conflicting configuration, and offer to update it; never adopt the tool's layout instead.
+7. Run the narrowest available compile or static-analysis check to confirm the imports are valid. If a repository formatter would rewrite them, either configure it to match this order or exclude import organization from it; do not let it silently revert the project standard.
 
 Use this group order:
 
@@ -86,6 +86,7 @@ Do not reorganize imports across untouched files as part of an unrelated feature
 ## Modernity and compatibility
 
 - Inspect the configured Java release before coding. Java 21 is the minimum expected baseline, but use only stable features supported by the project.
+- When the repository does not yet declare what the task needs — an empty repository, or a bare Spring Initializr skeleton with no decisions recorded — ask the user for the missing settings instead of assuming a default. Ask at minimum for the Java release, the Spring Boot version, and the build tool, plus anything else the task depends on. Record the answers in the project profile described by `spring-boot-patterns` so later tasks do not ask again.
 - Do not enable preview features or change the Java version unless the task explicitly requires it.
 - Prefer a modern construct when it makes the code clearer, safer, or more exhaustive; do not modernize merely to make syntax shorter.
 - Preserve existing public behavior and serialized contracts unless the feature intentionally changes them.
@@ -206,7 +207,8 @@ member declared by the current type may remain unqualified.
 - Give each class one cohesive reason to change.
 - Keep methods at one level of abstraction and name extracted operations by intent.
 - Prefer guard clauses over deep nesting.
-- A method over roughly 40 lines requires scrutiny. A method from 61 through 100 lines must be
+- A method up to 40 lines needs no size justification. A method from 41 through 60 lines requires
+  scrutiny and a deliberate decision to keep it whole. A method from 61 through 100 lines must be
   refactored unless a concrete reason for keeping it intact is documented. A method over 100 lines
   must be refactored without exception. A class over 1000 lines must be refactored unless a concrete
   reason is documented.
@@ -249,6 +251,13 @@ public final class OrderTotalCalculator {
 - Do not use field injection, static mutable dependencies, or service locators.
 - Prefer an explicit constructor. Lombok `@RequiredArgsConstructor` is acceptable only when Lombok is already approved by the project and the generated constructor does not hide an oversized dependency list.
 - Many constructor dependencies usually indicate too many responsibilities; split the class by behavior instead of hiding them.
+
+A stateless, dependency-free MapStruct mapper obtained through its generated static
+`INSTANCE = Mappers.getMapper(...)` member is an explicit, deliberate exception to the
+service-locator prohibition, because the mapper holds no state, performs no I/O, and is generated
+rather than resolved at runtime from a mutable registry. `spring-boot-patterns` owns that decision.
+Do not report it as a service-locator or static-dependency violation, and do not extend the
+exception to any other collaborator.
 
 ## Exceptions
 
@@ -360,6 +369,17 @@ Apply the complete `spring-boot-testing` workflow. Every touched test file must 
 skill, including explicit local types, import order, source hygiene, Javadoc, and nondeterminism
 rules. Do not introduce a Java test pattern that conflicts with the testing owner skill.
 
+Test fixtures declared by a test framework are an explicit exception to the `final`-field and
+field-injection rules, because the framework itself assigns them after construction:
+
+- fields annotated with Mockito's `@Mock`, `@Spy`, `@Captor`, or `@InjectMocks`;
+- fields annotated with a Spring test bean override such as `@MockitoBean` or `@MockitoSpyBean`;
+- the subject under test when it is rebuilt in `@BeforeEach` for isolation.
+
+Declare those fields non-`final` and `private`. Keep every other test collaborator `final` and
+constructor-injected, including `MockMvc`, `ObjectMapper`, repositories, and project-owned test
+clients. Do not use `@Autowired` on a field to avoid this rule.
+
 ## Forbidden patterns
 
 - wildcard or unused imports;
@@ -381,7 +401,7 @@ rules. Do not introduce a Java test pattern that conflicts with the testing owne
 Before finishing any Java task:
 
 - [ ] Every touched Java file has clean, correctly ordered imports.
-- [ ] The configured formatter and relevant static checks were run.
+- [ ] Imports follow the project order exactly, and the relevant compile or static checks were run.
 - [ ] New code uses the project's Java version and no unapproved preview feature.
 - [ ] Methods and classes remain cohesive and reasonably sized.
 - [ ] Nullability, exceptions, time, and mutability are explicit.

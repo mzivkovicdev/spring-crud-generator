@@ -1,6 +1,6 @@
 ---
 name: project-naming-conventions
-description: Define, apply, review, and safely migrate developer-owned names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, Spring configuration, feature flags, cache keys, application messages, jobs, metrics, traces, or structured-log fields; when resolving inconsistent terminology; and when reviewing naming-related changes. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, spring-boot-testing, and spring-boot-code-review without redefining their rules. Defer physical cloud, IAM, Kubernetes, CI/CD, container, DNS, and infrastructure-resource naming to the approved platform standard.
+description: Define, apply, review, and safely migrate developer-owned names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, Spring configuration, feature flags, cache keys, application messages, jobs, metrics, traces, or structured-log fields; when resolving inconsistent terminology; and when reviewing naming-related changes. Excludes physical cloud, IAM, Kubernetes, CI/CD, container, DNS, and other infrastructure-resource naming, which follows the approved platform standard.
 ---
 
 # Project Naming Conventions
@@ -58,8 +58,8 @@ Application code should refer to physical resources through typed configuration 
 ## Route the references
 
 - Read [Java, Spring, and test names](references/java-spring-and-test-names.md) for identifiers, packages, modules, architectural roles, Spring components, exceptions, tests, and acronyms.
-- Read [API, data, and configuration names](references/api-data-and-configuration-names.md) for REST, JSON, OpenAPI, error codes, database objects, migrations, configuration, environment variables, profiles, and feature flags.
-- Read [application messaging and observability names](references/application-messaging-and-observability-names.md) for event/message types, publisher and consumer classes, logical destination properties, jobs, executors, Redis keys, metrics, tags, custom spans, and structured-log fields.
+- Read [API, data, and configuration names](references/api-data-and-configuration-names.md) for REST, JSON, OpenAPI, problem type URIs and internal error codes, database objects, migrations, configuration, environment variables, profiles, and feature flags.
+- Read [application messaging and observability names](references/application-messaging-and-observability-names.md) for event/message types, publisher and consumer classes, logical destination properties, jobs, executors, cache keys, metrics, tags, custom spans, and structured-log fields.
 - Load every reference whose resource type is created, renamed, serialized, persisted, published, monitored, or provisioned by the change. Avoid loading unrelated references for a narrow local rename.
 
 ## Apply the rule hierarchy
@@ -87,7 +87,7 @@ Do not convert subjective readability advice into a blocking rule when multiple 
 
 Before naming:
 
-1. Inspect the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code.
+1. Inspect `docs/project-profile.md`, the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code. The profile records decisions that change names, such as the JPA accessor style, the application-service interface convention, and whether a cache exists.
 2. Identify the business concept, its owner, lifecycle, scope, and whether the name is internal, public, persisted, externally provisioned, or operationally queried.
 3. Reuse the approved domain term for the same concept across layers. Use different names only when the concepts or contracts genuinely differ.
 4. Resolve synonyms and overloaded words with the domain owner. Do not guess between materially different business meanings.
@@ -152,7 +152,12 @@ Use a role suffix only when the type performs that role. Prefer the specific res
 | `UserRestMapper` | `UserConverterUtil` |
 | `CatalogClient` | `CatalogHelper` |
 | `ExpiredReservationCleanupJob` | `ReservationProcessor` |
-| `OrderNotFoundException` | `OrderException` |
+
+Exception names follow the handling contract, not the resource. An order is a resource, so a missing
+order is a `ResourceNotFoundException`; introduce `OrderNotFoundException` only when that condition
+needs a different status, problem type, or recovery from every other missing resource. See
+[Name exceptions](references/java-spring-and-test-names.md#name-exceptions).
+| `ResourceNotFoundException` | `OrderException` |
 
 Follow the application-service naming decision owned by `spring-boot-patterns`. Use
 `<Capability>ServiceImpl` when the user selected that convention or the repository already applies it
@@ -193,7 +198,7 @@ Avoid mixing an otherwise mechanical rename with unrelated behavior changes. If 
 
 Do not rename:
 
-- a public field, endpoint, error code, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
+- a public field, endpoint, problem type URI, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
 - a table, column, constraint, or index outside a migration;
 - a physical infrastructure resource under this skill alone; use the approved platform standard and replacement plan;
 - a security-sensitive identifier without applying `application-security`.

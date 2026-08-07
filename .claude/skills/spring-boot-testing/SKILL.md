@@ -42,16 +42,21 @@ Load only applicable references for the changed behavior.
 
 ## Inspect before writing tests
 
-1. Inspect the Maven or Gradle configuration, supported Java and Spring Boot versions, test source
+1. Read `docs/project-profile.md` for the database engine and version, the authentication profile,
+   the migration tool, and the test-selection configuration. When a decision the tests depend on is
+   missing — most often the database or the authentication profile — ask the user and record the
+   answer before writing tests. Do not substitute H2 for an undecided database, and do not invent an
+   authentication mechanism.
+2. Inspect the Maven or Gradle configuration, supported Java and Spring Boot versions, test source
    sets, test plugins, naming suffixes, profiles, and CI commands.
-2. Reuse the project's supported JUnit Jupiter version and assertion, mocking, data-generation,
+3. Reuse the project's supported JUnit Jupiter version and assertion, mocking, data-generation,
    container, HTTP, and stub-server libraries. Do not override the Spring Boot dependency
    management merely to obtain a newer test API.
-3. Inspect nearby sound tests, shared fixtures, container configuration, database cleanup, fixed
+4. Inspect nearby sound tests, shared fixtures, container configuration, database cleanup, fixed
    clocks, custom annotations, and test factories before creating alternatives.
-4. Trace the changed production path and identify its observable contract, transaction effects,
+5. Trace the changed production path and identify its observable contract, transaction effects,
    security controls, and external side effects.
-5. Derive test cases from requirements and reachable branches. Do not create cases that cannot
+6. Derive test cases from requirements and reachable branches. Do not create cases that cannot
    occur through the tested public boundary or supported system state.
 
 ## Keep tests synchronized with every change
@@ -106,6 +111,27 @@ decisions, returned state, declared exceptions, repository writes, and prohibite
 applicable; a test that proves only that a collaborator was invoked is insufficient. Full application
 integration coverage does not replace this unit coverage.
 
+### What is deliberately not unit tested
+
+The rule is coverage of behavior, not coverage of files. These types have no direct unit test, and
+their absence is correct rather than a gap:
+
+| Type | Where it is proven instead |
+| --- | --- |
+| REST controllers | `@WebMvcTest` slice plus full application integration |
+| MapStruct mappers with no hand-written logic | Through the service unit tests and integration tests that use them; a generated mapping is verified by the compiler and `ReportingPolicy.ERROR` |
+| Request and response TOs, domain records, entities | Through the boundaries that serialize, validate, and persist them |
+| Getters, setters, `equals`, `hashCode`, `toString` | Entity equality is proven where it matters, in a persistence test that puts instances in a collection across states |
+| Spring configuration classes, `@ConfigurationProperties`, `SecurityConfig` | Full application integration, including startup failure on invalid configuration |
+| Framework behavior itself | Not tested at all |
+
+A mapper method that contains hand-written logic — a `default` method, a custom expression, a
+qualifier, or a decorator — is behavior and does get a direct unit test. So does any static utility
+with a real decision in it.
+
+Everything else that contains a decision needs a unit test. Do not skip a service, domain rule,
+validator, policy, or job because an integration test happens to exercise it.
+
 Plain unit tests have no Spring context or security filter chain. Test a security policy as an
 ordinary unit only when that policy is the subject; prove runtime authentication and authorization in
 full application integration tests.
@@ -113,6 +139,13 @@ full application integration tests.
 Use Mockito's JUnit Jupiter extension when Mockito is the established project library. Construct the
 subject explicitly when that makes dependencies and test setup clearer. Do not use lenient stubbing
 or broad `any()` matching to hide an inaccurate fixture.
+
+Framework-assigned fixture fields — `@Mock`, `@Spy`, `@Captor`, `@InjectMocks`, `@MockitoBean`,
+`@MockitoSpyBean`, and a subject rebuilt in `@BeforeEach` — are declared `private` and non-`final`.
+`modern-java-21` names this an explicit exception to its `final`-field and field-injection rules,
+because the framework assigns them after construction and the compiler would otherwise reject them.
+Every other test collaborator, including `MockMvc`, `ObjectMapper`, repositories, and project-owned
+test clients, stays `final` and constructor-injected.
 
 ## Test every REST controller with an MVC slice
 
@@ -134,18 +167,14 @@ excluded from that slice. Conversely, do not omit required MVC slice coverage be
 integration test exercises the same route. The overlap is intentional: each level proves a different
 boundary.
 
-Do not create a repository integration test for inherited CRUD behavior merely because a repository
-exists. Add focused persistence coverage when custom queries, mappings, converters, projections,
-constraints, ordering, pagination, locking, flush behavior, or database-specific semantics require
-direct proof. A full application integration test may already provide sufficient persistence
-evidence for a simple path.
-
 ## Write focused persistence slice tests
 
 Use `@DataJpaTest` only when a custom query, mapping, converter, projection, constraint, ordering,
-pagination, locking, flush behavior, or database-specific persistence rule needs direct proof. Use
-the actual supported database and migration configuration when replacement would change the
-semantics. Do not create a persistence slice merely to retest inherited repository CRUD behavior.
+pagination, locking, flush behavior, entity equality across persistence states, or database-specific
+persistence rule needs direct proof. Use the actual supported database and migration configuration;
+replacement would change the semantics. Do not create a persistence slice for inherited
+`JpaRepository` CRUD behavior merely because a repository exists — a full application integration
+test already provides sufficient evidence for a simple path.
 
 ## Write application integration tests
 
@@ -169,9 +198,8 @@ Integration tests must:
 - avoid H2-only evidence for persistence behavior when production uses another database;
 - keep the real entry point, service, relevant adapters, transaction configuration, serialization,
   and security controls involved in the tested path;
-- for successful and authorization-policy scenarios, obtain a valid credential through the selected
-  application-owned authentication flow or the real protocol endpoint of an approved isolated test
-  identity provider;
+- for successful and authorization-policy scenarios, obtain a valid credential through the issuance
+  profile recorded for the service, as described under "Obtain a valid token per issuance profile";
 - for bearer-protected APIs, send the valid access token in the `Authorization: Bearer` header;
 - for token-validation failures that approved issuance cannot produce, use a controlled invalid
   token or isolated provider configuration that traverses the real filter chain and configured
@@ -184,6 +212,22 @@ Integration tests must:
 - verify absence of messages, cache entries, files, or external calls when failure must prevent them;
 - avoid test-managed `@Transactional` on HTTP write tests when rollback would hide commit behavior;
 - use the project's explicit database reset or cleanup strategy so tests remain isolated.
+
+Choose one cleanup strategy for the whole project and record it in `docs/project-profile.md`. In
+preference order:
+
+1. **Truncate all tables after each test method**, through one project-owned JUnit extension or
+   `@AfterEach` in a shared base class. It reads table names from the JDBC metadata or the migration
+   schema, disables and restores referential integrity for the operation, and resets sequences.
+   Preferred because it is deterministic, independent of test order, and does not depend on any
+   test knowing which rows a request created.
+2. **A per-class container** when a suite genuinely needs an isolated database, accepting the
+   startup cost.
+
+Do not use `@Transactional` rollback on HTTP write tests, do not delete only the rows a test
+believes it created, and do not rely on one test's inserts as another's fixture. Seed reference data
+that every test needs through migrations or a documented seeding step that runs after cleanup, not
+from an arbitrary earlier test.
 
 Full application integration coverage must prove applicable affected real wiring, transactions,
 persistence, migrations, concurrency behavior, and committed database state. Cover each item only
@@ -267,10 +311,57 @@ Use the authentication and credential model selected for the deployable service 
 consistently and do not add CSRF tokens to integration requests. For cookie, session, or mixed
 credential models, test the applicable CSRF behavior instead.
 
-Use synthetic identities and isolated test credentials only. Obtain valid tokens through the
-configured test authentication flow. Controlled invalid-token fixtures are allowed only for
-token-validation failures and must exercise the real configured decoder. Never use production
-tokens, customer data, live identity providers, or production endpoints.
+Use synthetic identities and isolated test credentials only. Never use production tokens, customer
+data, live identity providers, or production endpoints.
+
+### Obtain a valid token per issuance profile
+
+`application-security` records the service's issuance profile in `docs/project-profile.md`. It
+determines only how the test gets a token; everything after that is identical, because the filter
+chain is the same in both.
+
+**Profile A, application-issued tokens.** Seed a synthetic identity directly through the repository,
+a migration, or a SQL fixture, then call the service's real token endpoint and use the returned
+access token. Seeding is what breaks the bootstrap circle: the identity must exist before a token
+can be issued, and the endpoint that creates identities is itself protected. Never relax a protected
+endpoint, and never add a test-only production endpoint, to avoid seeding.
+
+**Profile B, externally issued tokens.** Run an approved identity-provider container or an isolated
+in-test authorization server, point the resource server's issuer configuration at it, and obtain the
+token through its real protocol endpoint.
+
+**Before either issuance path exists.** Authentication is often decided or built after the first
+endpoints. Until then, do not block or skip integration tests, and do not reach for a mock token.
+Write them against the same real filter chain with a documented, temporary test-only issuer: an
+in-test signing key registered as the configured issuer, used exclusively by a project-owned test
+token factory that mints tokens with the same claim set the real issuer will produce. The token
+still traverses the real decoder, the real validators, and the real authorization rules, so only the
+key source is temporary. Record it as a known gap, keep it in test sources only, and replace it with
+the real issuance path as soon as the profile is implemented. This is not permission to use
+`@WithMockUser`, a security request post-processor, a mocked `JwtDecoder`, or a forged
+`Authentication`; those bypass the chain the test exists to prove.
+
+Controlled invalid-token fixtures are allowed only for token-validation failures that valid issuance
+cannot produce, and must exercise the real configured decoder.
+
+## Configure test selection to match the naming convention
+
+`project-naming-conventions` names full application and persistence tests `*IntegrationTest`. That
+suffix matches no default in either build tool, so the build must be configured explicitly or the
+tests will run in the wrong phase — or not at all. Verify the configuration before relying on a
+green build, and fix it as part of the change when it is missing.
+
+For Maven, unit tests run in Surefire and integration tests in Failsafe:
+
+- Surefire includes `**/*Test.java` and **excludes** `**/*IntegrationTest.java`, otherwise every container-backed test runs in the `test` phase.
+- Failsafe includes `**/*IntegrationTest.java` and is bound to `integration-test` and `verify`.
+- Because `*IntegrationTest` also matches Surefire's default `*Test` pattern, the exclusion is required, not optional.
+
+For Gradle, declare a separate `integrationTest` source set or a `Test` task filtered on the same
+pattern, make `check` depend on it, and keep unit tests out of it.
+
+Whichever tool is used, `docs/project-profile.md` records the resulting commands so that "run the
+relevant suites" is unambiguous.
 
 ## Execute and report verification
 
@@ -304,6 +395,8 @@ controlled dependencies is an integration test, not an end-to-end test.
 - [ ] Tests are independent, secure, and free from arbitrary sleeps and live dependencies.
 - [ ] Every touched Java test follows `modern-java-21`, including the project import order.
 - [ ] Every relevant unit, MVC slice, persistence slice, and full integration suite passes.
+- [ ] Test selection is configured so integration tests actually run, in the correct phase.
+- [ ] Database cleanup follows the project strategy and no test depends on another test's data.
 
 ## Primary guidance
 

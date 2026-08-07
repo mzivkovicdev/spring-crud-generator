@@ -16,14 +16,50 @@
 ## Security model
 
 Inspect the actual Spring Boot and Spring Security versions and the complete authentication flow
-before editing configuration. Select and document the authentication model for each deployable
-service or filter chain; different services may use different approved models. Do not paste a
-universal `SecurityFilterChain` from an example.
+before editing configuration. Do not paste a universal `SecurityFilterChain` from an example.
 
-A service may validate credentials issued by an external identity provider, while an
-identity-owning service may implement an approved registration, login, recovery, and token flow.
-Make credential ownership and token issuance explicit. Do not add a local identity store or token
-endpoint merely to make an example work, and do not create an ad hoc authentication protocol.
+### One generalized model, two issuance profiles
+
+Every protected API in this project is a **stateless bearer resource server**. Clients send
+`Authorization: Bearer <token>`, the filter chain validates the token against a configured issuer,
+and authorities are derived from validated claims. That half of the model is fixed, so route rules,
+authorization code, error contract, and tests are written the same way regardless of who issued the
+token.
+
+Only token issuance varies. Exactly one profile is selected per deployable service and recorded in
+`docs/project-profile.md`:
+
+| Profile | Who issues the token | Typical use |
+| --- | --- | --- |
+| **A — application-issued** | This service owns identity: registration, login, credential storage, recovery, and token issuance through its own authentication endpoints | The service is the identity provider for its own clients |
+| **B — externally issued** | A separate identity provider issues the token; this service only validates it | A shared IdP, an internal authorization server, or a partner OIDC provider |
+
+An identity provider exists in both profiles. In Profile A this service *is* it. Profile B is not
+an alternative security model, only a different issuer and trust anchor.
+
+Consequences that hold in both profiles:
+
+- The resource-server configuration, route matchers, `denyAll` fallback, and `401`/`403` contract are identical. Write them once.
+- Integration tests obtain a real token through the selected issuance path and send it in the `Authorization` header. There is no profile in which tokens are mocked. `spring-boot-testing` owns how that token is acquired per profile.
+- Authorities come from validated claims, never from a request field.
+
+When the profile is not recorded and cannot be inferred from the repository, **ask the user which
+profile applies and record the answer before implementing authentication**. Do not add a local
+identity store or token endpoint merely to make an example work, and do not create an ad hoc
+authentication protocol in either profile.
+
+### Separate self-registration from administrative user creation
+
+These are different operations with different policies, and conflating them produces a contract
+that cannot be satisfied:
+
+- **Self-registration**, when the product has it, is a public endpoint in the authentication boundary, such as `POST /api/v1/auth/registrations`. It creates an identity for the caller, applies anti-abuse controls, and never accepts privileged fields such as roles, scopes, tenant, or status.
+- **Administrative user creation**, `POST /api/v1/users`, is a protected operation that requires an existing privileged token. It may set fields self-registration must not.
+
+If the product has no self-registration, the first identity is provisioned out of band — a seeded
+administrator, a migration, or an operator tool — not by relaxing the protected endpoint. Tests seed
+the identity the same way and then obtain a token through the real issuance path, so the protected
+endpoint stays protected.
 
 Document:
 
@@ -40,10 +76,14 @@ Keep framework defaults unless a verified requirement justifies a change. A comm
 
 ## Authorization
 
-The following excerpt shows one stateless JWT resource-server option. It protects an API but does
-not issue tokens and is not the default for every service. Following the layered layout owned by
-`spring-boot-patterns`, keep `SecurityConfig` in the configuration package. Adapt the authentication
-mechanism and authorities to the selected model.
+The excerpt below is the resource-server half of the model, which is identical in Profile A and
+Profile B. Following the layered layout owned by `spring-boot-patterns`, keep `SecurityConfig` in
+the configuration package. Route constants come from the controllers that own them, so a route
+cannot be protected under one spelling and served under another.
+
+The authentication endpoints are permitted explicitly. In Profile A they are this service's own
+issuance and registration endpoints; in Profile B that block is absent because no such endpoints
+exist here. Everything else stays the same.
 
 ```java
 package com.acme.myapp.config;
@@ -51,6 +91,9 @@ package com.acme.myapp.config;
 import static org.springframework.security.oauth2.core.authorization.OAuth2AuthorizationManagers.hasScope;
 
 import jakarta.servlet.DispatcherType;
+
+import com.acme.myapp.controller.AuthController;
+import com.acme.myapp.controller.UserController;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,16 +119,20 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        // Profile A only: this service's own token issuance and registration.
+                        .requestMatchers(HttpMethod.POST, AuthController.TOKEN_PATH).permitAll()
+                        .requestMatchers(HttpMethod.POST, AuthController.REGISTRATIONS_PATH)
+                        .permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/v1/users",
-                                "/api/v1/users/*")
+                                UserController.USERS_PATH,
+                                UserController.USERS_PATH + "/*")
                         .access(hasScope(USERS_READ_SCOPE))
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users")
+                        .requestMatchers(HttpMethod.POST, UserController.USERS_PATH)
                         .access(hasScope(USERS_WRITE_SCOPE))
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/*")
+                        .requestMatchers(HttpMethod.PUT, UserController.USERS_PATH + "/*")
                         .access(hasScope(USERS_WRITE_SCOPE))
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*")
+                        .requestMatchers(HttpMethod.DELETE, UserController.USERS_PATH + "/*")
                         .access(hasScope(USERS_WRITE_SCOPE))
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -126,8 +173,10 @@ Configure focused `AuthenticationEntryPoint` and `AccessDeniedHandler` implement
 the contract additionally requires a custom body or stable code. Register them through the filter
 chain, preserve protocol-required headers, and do not duplicate this handling in MVC advice.
 
-For the JWT option above, configure issuer and audience explicitly when the supported Spring Boot
-version provides these properties:
+Configure issuer and audience explicitly in both profiles. In Profile B the issuer is the external
+provider. In Profile A the issuer is this service's own configured issuer identifier, and the
+service validates the tokens it signs through the same resource-server path every client uses, so
+there is exactly one validation implementation:
 
 ```yaml
 spring:
@@ -147,6 +196,13 @@ If the supported version or identity-provider model requires custom JWT handling
 algorithms. Do not consider the resource server complete until the full token-validation policy is
 configured and tested.
 
+In Profile A, additionally define and configure the issuance side before it is used: the signing key
+source and its rotation, the access-token lifetime, refresh-token rotation and reuse detection if
+refresh tokens exist, the claim set that carries subject, tenant, and scopes, and the revocation and
+logout behavior. Never sign with a hardcoded or committed key, and never publish a verification key
+the service does not own. Prefer an established Spring Security authorization-server capability over
+a hand-assembled signing path.
+
 - Use the narrowest maintainable matchers and verify matcher ordering.
 - Do not rely only on URL rules. Enforce operation, object, field, and tenant authorization in the service and persistence path.
 - Derive subject and tenant from the authenticated principal, not from request TO values.
@@ -164,10 +220,10 @@ Optional<DocumentEntity> findByIdAndTenantId(
 
 ## Authentication and password storage
 
-Use the project-approved identity model. An external identity provider may own the credential
-lifecycle, or an explicitly designated service may own registration, login, recovery, MFA, and token
-issuance. In either case, use reviewed Spring Security and protocol capabilities rather than custom
-cryptography or an ad hoc authentication protocol.
+This section applies to Profile A, where this service owns the credential lifecycle. Under Profile B
+the provider owns it and this service stores no passwords at all; do not add a local credential
+store "just in case". In either profile, use reviewed Spring Security and protocol capabilities
+rather than custom cryptography or an ad hoc authentication protocol.
 
 For an identity-owning service, adopt an approved identity and authorization-server design before
 implementation. Define supported clients and grants, credential lifecycle, issuer and audience,

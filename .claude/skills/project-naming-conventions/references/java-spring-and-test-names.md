@@ -54,7 +54,7 @@ com.acme.myapp.domain
 com.acme.myapp.repository
 com.acme.myapp.repository.projection
 com.acme.myapp.repository.specification
-com.acme.myapp.model
+com.acme.myapp.entity
 com.acme.myapp.transferobject.request
 com.acme.myapp.transferobject.response
 com.acme.myapp.exception
@@ -62,7 +62,7 @@ com.acme.myapp.exception.handler
 com.acme.myapp.config
 ```
 
-This project uses a layered package layout. Keep controllers, services, domain models, repositories, persistence models, mappers, transfer objects, exceptions, and configuration in their established layer packages. Introduce a deeper package only with its first type and only when it represents a distinct responsibility; never create empty package scaffolding. Follow `spring-boot-patterns` for exact package responsibilities.
+This project uses a layered package layout. Keep controllers, services, domain models, repositories, JPA entities, mappers, transfer objects, exceptions, and configuration in their established layer packages. Introduce a deeper package only with its first type and only when it represents a distinct responsibility; never create empty package scaffolding. Follow `spring-boot-patterns` for exact package responsibilities.
 
 Rules:
 
@@ -101,7 +101,7 @@ Use `UpperCamelCase`.
 | Interface | Role, capability, or contract | `CatalogClient`, `AuthorizationPolicy` |
 | Enum type | Singular concept | `OrderStatus`, `PaymentMethod` |
 | Annotation | Noun or adjective describing its meaning | `Audited`, `InternalApi` |
-| Exception | Cause, violated condition, or failed outcome plus `Exception` | `OrderNotFoundException` |
+| Exception | Handling contract it represents, plus `Exception` | `ResourceNotFoundException`, `BusinessValidationException` |
 | Test class | Subject plus test scope suffix | `UserServiceTest`, `UserRepositoryIntegrationTest` |
 
 Do not prefix interfaces with `I` or suffix them with `Interface`. Use `Impl` for application-service
@@ -172,6 +172,15 @@ use distinguishing names such as `CachedCatalogService` instead of ambiguous `*I
 ## Name methods
 
 Use `lowerCamelCase` and start behavioral methods with a verb or verb phrase.
+
+**Carve-out: REST controller handler methods.** A controller handler method is not named under the
+verb-phrase, intention-revealing, or no-encoding heuristics in this reference. Its name is a public
+tooling contract that must equal its OpenAPI `operationId`, so it is derived mechanically from the
+Path Item plus the HTTP method and legitimately begins with a noun, as in `usersUserIdGet`. Apply
+[Name OpenAPI operations and schemas](api-data-and-configuration-names.md#name-openapi-operations-and-schemas)
+for those names and do not "correct" them toward `getUserById`. Every other method in the project,
+including service, domain, repository, mapper, job, and test methods, follows the normal rules
+below.
 
 Preserve established service forms when their contracts match:
 
@@ -271,8 +280,9 @@ Treat enum renames as compatibility and data migrations when values are serializ
 Choose exception granularity from the handling contract, not from the number of validation rules or state transitions.
 
 - Reuse an existing JDK, framework, or established project exception when it already represents the condition.
-- Use a shared category such as `ValidationException`, `InvalidStateException`, or `ResourceNotFoundException` when multiple failures intentionally have the same handling and error contract.
-- Create a more specific exception only when the condition needs different recovery, translation, error code, or context.
+- Use a shared category such as `BusinessValidationException`, `InvalidStateException`, or `ResourceNotFoundException` when multiple failures intentionally have the same handling and error contract. A missing order, user, or invoice is a `ResourceNotFoundException`; they are all resources and they all produce the same status and problem type.
+- Never give a project exception the simple name of a framework type it is not, such as `ValidationException`, `ConstraintViolationException`, or `AccessDeniedException`. One wrong import silently changes which failures a handler catches.
+- Create a more specific exception only when the condition needs different recovery, translation, problem type, or context.
 - Do not create one custom exception per validation rule or state transition.
 - Use broad base exceptions such as `BusinessException` only for a deliberate hierarchy; avoid vague concrete names such as `ApplicationException`, `ServiceException`, or `SomethingWentWrongException`.
 - Do not leak provider-specific names through a service contract unless callers are expected to handle that provider condition.

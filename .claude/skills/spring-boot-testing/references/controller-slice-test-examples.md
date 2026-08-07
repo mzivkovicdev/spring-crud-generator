@@ -22,8 +22,6 @@ set for `UserController`.
 @Import(ApiExceptionHandler.class)
 class UserControllerTest {
 
-    private static final String USERS_PATH = "/api/v1/users";
-
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
 
@@ -46,13 +44,13 @@ class UserControllerTest {
                 request.username(), request.email(), request.password()))
                 .thenReturn(createdUser);
 
-        this.mockMvc.perform(post(USERS_PATH)
+        this.mockMvc.perform(post(UserController.USERS_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(
                         HttpHeaders.LOCATION,
-                        "%s/%d".formatted(USERS_PATH, createdUser.id())))
+                        "%s/%d".formatted(UserController.USERS_PATH, createdUser.id())))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(createdUser.id()))
                 .andExpect(jsonPath("$.username").value(createdUser.username()))
@@ -68,12 +66,12 @@ class UserControllerTest {
 
         final UserCreateTO request = UserTestData.userCreateTOWithInvalidEmail();
 
-        this.mockMvc.perform(post(USERS_PATH)
+        this.mockMvc.perform(post(UserController.USERS_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+                .andExpect(jsonPath("$.type").value(ProblemTypes.VALIDATION_FAILED.toString()));
 
         verifyNoInteractions(this.userService);
     }
@@ -84,15 +82,20 @@ class UserControllerTest {
         when(this.userService.getById(userId))
                 .thenThrow(new ResourceNotFoundException("User", userId));
 
-        this.mockMvc.perform(get("%s/{userId}".formatted(USERS_PATH), userId))
+        this.mockMvc.perform(get("%s/{userId}".formatted(UserController.USERS_PATH), userId))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+                .andExpect(jsonPath("$.type").value(ProblemTypes.RESOURCE_NOT_FOUND.toString()));
 
         verify(this.userService).getById(userId);
     }
 }
 ```
+
+The test reuses `UserController.USERS_PATH` and `ProblemTypes` instead of repeating the route and
+the problem identifier as literals, so a route or contract change fails at compile time rather than
+in an assertion message. `@MockitoBean` fields are `private` and non-`final` under the fixture
+exception in `modern-java-21`; `MockMvc` and `ObjectMapper` remain `final` and constructor-injected.
 
 Focused MVC slice tests do not exercise or verify the Spring Security filter chain. The project's
 `addFilters = false` convention excludes every servlet filter from this `MockMvc` slice, so use it to
@@ -108,7 +111,8 @@ For every controller, add at least one successful test for each handler and ever
 validation, serialization, status, header, and error-contract case. Mock downstream
 services so the test proves the MVC boundary and delegation only. Assert both the response and the
 exact service input when delegation is part of the contract; assert no service interaction when MVC
-validation rejects the request.
+validation rejects the request. Assert the RFC 9457 `type` URI for every error case; there is no
+`code` member in the body.
 
 Keep the corresponding full application integration tests. Repeating an important route at both
 levels is intentional when the slice proves MVC behavior and the integration test proves real wiring,

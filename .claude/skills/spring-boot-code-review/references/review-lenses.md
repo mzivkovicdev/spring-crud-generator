@@ -37,9 +37,9 @@ Apply `spring-boot-patterns` and `application-security`.
 
 Trace each changed REST endpoint as an external contract:
 
-- Verify method, path, media type, status, headers, request and response TO shape, validation, and `ProblemDetail` behavior.
+- Verify method, path, media type, status, headers, request and response TO shape, validation, and `ProblemDetail` behavior, including that the RFC 9457 `type` URI is the only machine-readable identifier in the body.
 - Compare implementation, OpenAPI, examples, contract tests, clients, and gateway rules when they exist.
-- Check compatibility of field names, requiredness, defaults, null versus absent values, enum values, numeric types, dates, pagination, sorting, and error codes.
+- Check compatibility of field names, requiredness, defaults, null versus absent values, enum values, numeric types, dates, pagination, sorting, and problem type URIs.
 - Verify that a request TO remains at the REST boundary and that a response is mapped from a domain result rather than a JPA entity or provider model.
 - Verify that `UserRestMapper`-style mapping does not hide business rules, database access, remote calls, authorization, or silent lossy conversion.
 - Check that validation covers path, query, header, and body values and that bounds prevent oversized collections, pages, strings, files, and expensive filters.

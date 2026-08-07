@@ -48,8 +48,6 @@ public interface UserDomainMapper {
 
     List<UserDomain> mapUserEntitiesToUserDomains(final List<UserEntity> entities);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "version", ignore = true)
     UserEntity mapToNewUserEntity(
             final String username,
             final String email,
@@ -61,10 +59,14 @@ public interface UserDomainMapper {
 
 This mapper demonstrates the directions owned by `../SKILL.md`: persistence output to domain and
 explicit, already-decided creation values to a new entity. Hashing, authorization, normalization,
-and business defaults happen before structural mapping. The entity reference is intentionally
-abridged; the real `UserEntity` must expose a MapStruct-compatible creation path for every mapped
-property through an accessible constructor, builder, object factory, or approved write method. Keep
-`ReportingPolicy.ERROR` and run annotation processing so an incompatible entity fails the build.
+and business defaults happen before structural mapping.
+
+`mapToNewUserEntity` targets the single public constructor of the `UserEntity` shown in
+`spring-data-jpa`. Because `id` and `version` are provider-owned and have no constructor parameter
+and no setter, they are not writable target properties at all, so no `@Mapping(target = ..., ignore = true)`
+entry is needed or valid for them. Adding one would fail the build with an unknown-target-property
+error. Keep `ReportingPolicy.ERROR` and run annotation processing so any other incompatibility
+between mapper and entity fails the build rather than a request.
 
 ## Focused service parameter object
 
@@ -111,9 +113,64 @@ Do not introduce a catch-all input class to hide unrelated values, and do not cr
 
 ## Service contract and implementation
 
-This example assumes the user or repository selected the service-interface and `*ServiceImpl`
-convention. Use a concrete service directly when `../SKILL.md` does not justify or require an
-interface.
+The application-service interface is optional and the decision is recorded in
+`docs/project-profile.md`. Both shapes appear below. Use exactly one of them across the project.
+
+### Shape A: concrete service, no interface
+
+This is the default when the profile records no interface convention and no concrete reason for a
+boundary exists. Everything the interface would have carried — caller-facing Javadoc, method
+validation constraints, `@Validated`, `@Service`, transactions — lives on the one class. Mockito
+mocks this class directly, so unit testing is unaffected.
+
+```java
+/**
+ * Implements user application operations used by inbound adapters.
+ */
+@Service
+@Validated
+@Transactional(readOnly = true)
+public class UserService {
+
+    private final Clock clock;
+    private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+
+    public UserService(
+            final Clock clock,
+            final PasswordEncoder passwordEncoder,
+            final UserRepository userRepository) {
+
+        this.clock = clock;
+        this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
+    }
+
+    /**
+     * Returns a user by identifier.
+     *
+     * @param userId user identifier; must not be {@code null}
+     * @return       the matching user; never {@code null}
+     * @throws ConstraintViolationException when the identifier violates a structural constraint
+     * @throws ResourceNotFoundException    when no user exists for the supplied identifier
+     */
+    public UserDomain getById(@NotNull final Long userId) {
+        return this.userRepository.findById(userId)
+            .map(UserDomainMapper.INSTANCE::mapUserEntityToUserDomain)
+            .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+    }
+}
+```
+
+Do not introduce `UserService` plus an empty `UserServiceImpl` in order to reach Shape B. An
+interface with one implementation, no external implementor, and no substitution requirement adds a
+file and a jump without adding a contract.
+
+### Shape B: interface plus implementation
+
+Use this shape when `docs/project-profile.md` records the `*ServiceImpl` convention, or when a real
+boundary exists: another module implements the contract, more than one implementation is deployed,
+or the type is a port with substitutable adapters.
 
 ```java
 /**
@@ -149,13 +206,14 @@ public interface UserService {
      * Returns one bounded page of users.
      *
      * @param pageNumber zero-based page number; must not be {@code null}
-     * @param pageSize   page size from 1 through 100; must not be {@code null}
+     * @param pageSize   page size from 1 through {@link PaginationConstraints#MAXIMUM_PAGE_SIZE};
+     *                   must not be {@code null}
      * @return           a framework-independent page result; never {@code null}
      * @throws ConstraintViolationException when an argument violates a structural constraint
      */
     PageDomain<UserDomain> getAll(
             @NotNull @PositiveOrZero final Integer pageNumber,
-            @NotNull @Min(1) @Max(100) final Integer pageSize);
+            @NotNull @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final Integer pageSize);
 
     /**
      * Updates the editable user profile fields.
@@ -279,7 +337,20 @@ public class UserServiceImpl implements UserService {
 }
 ```
 
-The interface is the single source for service Javadoc and validation constraints. Overriding methods inherit that documentation automatically; omit implementation Javadoc unless it adds meaningful caller-visible detail. `updateById` deliberately calls `save` after explicit mutations and maps the returned entity. Do not replace it with dirty-checking-only persistence or `saveAndFlush` without a documented immediate-flush requirement. Translate expected persistence failures into the stable application error contract and test the real database constraint.
+In Shape B, the interface is the single source for service Javadoc and validation constraints.
+Overriding methods inherit that documentation automatically; omit implementation Javadoc unless it
+adds meaningful caller-visible detail. In Shape A, the same Javadoc and constraints sit on the
+concrete class instead. `updateById` deliberately calls `save` after explicit mutations and maps the
+returned entity.
+
+`existingUser.setUsername(username).setEmail(email)` uses the fluent entity setters shown in
+`spring-data-jpa`. Plain `void` setters are equally acceptable; the choice is recorded in
+`docs/project-profile.md` and applied consistently, and with `void` setters the same code becomes
+two statements.
+
+`UserDomainMapper.INSTANCE` is the generated static MapStruct member. `modern-java-21` names this an
+explicit exception to its service-locator rule because the mapper is stateless, generated, and
+performs no I/O; do not inject it, and do not extend the exception to any other collaborator. Do not replace it with dirty-checking-only persistence or `saveAndFlush` without a documented immediate-flush requirement. Translate expected persistence failures into the stable application error contract and test the real database constraint.
 
 ## Repository boundary
 

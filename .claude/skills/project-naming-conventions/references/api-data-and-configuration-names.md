@@ -21,7 +21,7 @@ Use this reference for REST paths and parameters, JSON fields, OpenAPI component
 
 Treat these application-owned names as contracts once consumed outside one atomically deployable unit:
 
-- URL paths, parameter names, headers, media types, JSON fields, enum wire values, and error codes;
+- URL paths, parameter names, headers, media types, JSON fields, enum wire values, and problem type URIs;
 - OpenAPI `operationId`, schema, security-scheme, and component names used by generators or policy;
 - tables, columns, constraints, indexes, sequences, triggers, views, stored routines, and migration identifiers;
 - configuration keys, directly bound environment variables, profile names, and feature flags.
@@ -216,25 +216,39 @@ Apply this convention automatically to new operations. Treat changes to existing
 
 ## Name errors and problem types
 
-Use stable machine-readable identifiers and separate them from human-readable messages.
-
-When the project uses error codes, choose one documented format and preserve it. Default example:
+This project has exactly one public, machine-readable error identifier: the RFC 9457 `type` URI in
+the `ProblemDetail` body. Clients branch on it. `title` and `detail` are human-readable text and
+carry no contract.
 
 ```text
-USER_NOT_FOUND
+https://api.acme.example/problems/resource-not-found
+https://api.acme.example/problems/duplicate-email
+https://api.acme.example/problems/invalid-order-transition
+```
+
+Rules for the type URI:
+
+- Use a stable absolute URI under one project-owned base, declared once in a `ProblemTypes` holder in `exception.handler`. Do not build it from the deployment hostname, so the identifier survives environment and infrastructure changes.
+- Use lowercase kebab-case in the final segment and name the condition, not the exception class, HTTP status, provider, or layer.
+- Make it dereferenceable only when project policy requires published problem documentation. An unresolvable but stable URI is still a valid identifier under RFC 9457.
+- Do not include dynamic values such as identifiers, tenant names, field names, or counts.
+- Do not add a parallel `code`, `errorCode`, or `errorId` member to the response body. Two identifiers for one condition guarantee that some client branches on the wrong one. `spring-boot-patterns` owns that decision.
+
+Internal error codes remain useful, and stay internal:
+
+```text
+RESOURCE_NOT_FOUND
 DUPLICATE_EMAIL
 INVALID_ORDER_TRANSITION
 ```
 
-Do not include dynamic values in an error code. Do not expose exception class names or provider details as the public identifier.
+Use `UPPER_SNAKE_CASE` codes for structured logs, audit events, metrics, and application events only.
+Keep each code and its problem type in a one-to-one relationship, with the type's final segment as
+the kebab-case form of the code, so an operator can move between a log line and the public contract
+without a lookup table.
 
-When the project uses RFC problem type URIs, make them stable, dereferenceable when policy requires it, and independent of deployment hostnames where possible:
-
-```text
-https://api.acme.example/problems/user-not-found
-```
-
-Apply `application-security` to error details and identifiers. A stable name must not reveal a secret, internal host, vulnerable component, or protected customer information.
+Apply `application-security` to error details and identifiers. A stable name must not reveal a
+secret, internal host, vulnerable component, or protected customer information.
 
 ## Name database objects
 
@@ -406,7 +420,7 @@ Use the appropriate migration:
 | Configuration key | Bind old and new temporarily, define precedence, warn without exposing values, update deployments, then remove |
 | Directly bound environment variable or explicit alias | Coordinate every deployment source and platform mapping before removal |
 | Feature flag | Migrate targeting and telemetry, then retire old evaluation and cleanup |
-| Error code or problem type | Version or accept both where clients branch on the identifier |
+| Problem type URI | Version or accept both where clients branch on the identifier; keep the internal error code aligned with it |
 
 Test mixed-version deployment when old and new application versions can coexist.
 

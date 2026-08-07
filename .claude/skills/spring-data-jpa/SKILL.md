@@ -33,7 +33,15 @@ Read only the examples required by the change:
 
 ## Before changing persistence
 
-Inspect:
+Read `docs/project-profile.md` first. It records the relational database engine and major version
+and the migration tool. When it does not, or when the repository contains no database dependency,
+no datasource configuration, and no migration directory, **ask the user which database engine and
+version and which migration tool the project uses, and record the answer in the profile before
+writing persistence code**. Do not pick a database, a dialect, an identifier strategy, or a
+migration tool by default, and do not infer the production database from a test dependency such as
+H2.
+
+Then inspect:
 
 1. Spring Boot, Spring Data JPA, Jakarta Persistence, Hibernate, JDBC driver, database, and migration-tool versions;
 2. entity mappings, association ownership, converters, listeners, inheritance, identifier generation, and equality;
@@ -53,6 +61,7 @@ Entity rules:
 - Keep entities and persistent accessors non-final unless verified bytecode enhancement removes proxy limitations.
 - Provide a `protected` no-argument constructor when possible.
 - Use field or property access consistently; place mapping annotations according to the chosen strategy.
+- Use one accessor style across every entity. The examples use fluent setters that return the entity, which keeps multi-field updates to one statement and is fully supported by MapStruct and by field-access JPA. Plain `void` setters are equally acceptable. Record the choice in `docs/project-profile.md` and do not mix the two.
 - Expose the getters required by persistence-to-domain mapping. With field access, JPA does not require public accessors, but mapping code must still be able to read the selected state.
 - Keep entity mappings, migrations, and database definitions aligned for names, nullability, length, precision, scale, uniqueness, defaults, foreign keys, and indexes.
 - Database constraints enforce integrity; application validation does not replace them.
@@ -62,7 +71,43 @@ Entity rules:
 - Choose identifier generation for the actual database and verify its effect on batching and round trips.
 - Never use Lombok `@Data` on entities.
 - Exclude lazy associations and mutable state from `equals`, `hashCode`, and `toString`.
+- Implement `equals` and `hashCode` explicitly using the project strategy below. Never let Lombok, an IDE template, or a record-like default generate them for an entity, and never leave the JVM identity default in place when instances enter a `Set`, a `Map`, or a bidirectional collection.
 - Test equality across transient, managed, detached, and proxied instances when entities enter sets or maps.
+
+### Entity equality strategy
+
+Choose per entity, in this order:
+
+1. **Stable natural key.** When the entity has an immutable, non-null business key assigned before persistence, such as an ISO country code or an externally issued order number, compare on that key and derive `hashCode` from it. This is the preferred strategy because the contract holds in every state.
+2. **Surrogate identifier with a constant hash.** Otherwise compare on the surrogate identifier and return a constant `hashCode`. A constant hash is required, not a shortcut: the identifier is null before persistence and assigned afterwards, so any identifier-derived hash changes while the instance sits in a hash-based collection.
+
+```java
+@Override
+public boolean equals(final Object other) {
+    if (this == other) {
+        return true;
+    }
+    if (!(other instanceof UserEntity otherUser)) {
+        return false;
+    }
+
+    return this.id != null && this.id.equals(otherUser.getId());
+}
+
+@Override
+public int hashCode() {
+    return UserEntity.class.hashCode();
+}
+```
+
+Rules for this strategy:
+
+- `instanceof` with pattern matching is the type check. It accepts a provider proxy of the same entity, so no provider-specific class unwrapping is needed and none is used in this project.
+- Read the other instance's identifier through its getter, never through direct field access, so a proxy resolves correctly.
+- Two transient instances are never equal, and a transient instance is never equal to a persisted one. That is the intended contract.
+- Return a constant class-derived `hashCode`. Do not use `Objects.hash(id)` or `getClass().hashCode()`; the first breaks on persist, and the second differs between an entity and its proxy.
+- Do not include mutable columns, versions, associations, or collections in either method.
+- Apply the same strategy to every entity so behavior in collections is uniform.
 - Keep entity listeners limited to persistence concerns; never perform repository or remote calls from callbacks.
 
 ## Association ownership

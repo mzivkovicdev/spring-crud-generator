@@ -17,11 +17,13 @@ the required `@WebMvcTest` for each REST controller.
 
 ## HTTP application integration test
 
-The example assumes the project selected stateless bearer authentication, JSON `ProblemDetail`
-responses for MVC errors, an isolated supported-database container, and test-data reset between
-methods. Adapt those contract details to the service's selected model. It intentionally omits
-`@Transactional`: the request must commit through the real service transaction before repository
-verification.
+The example assumes stateless bearer authentication, RFC 9457 `ProblemDetail` responses for MVC
+errors, an isolated supported-database container, and the project cleanup strategy between methods.
+It intentionally omits `@Transactional`: the request must commit through the real service
+transaction before repository verification.
+
+Routes and problem identifiers come from `UserController.USERS_PATH` and `ProblemTypes`, never from
+repeated literals. Error assertions use the `type` URI; the body has no `code` member.
 
 ```java
 @SpringBootTest
@@ -29,7 +31,6 @@ verification.
 class UserApiIntegrationTest {
 
     private static final String BEARER_SCHEME = "Bearer";
-    private static final String USERS_PATH = "/api/v1/users";
 
     private final AccessTokenTestClient accessTokenTestClient;
     private final MockMvc mockMvc;
@@ -52,11 +53,11 @@ class UserApiIntegrationTest {
 
     @Test
     void usersPost_whenRequestIsValid_createsUser() throws Exception {
-        final String accessToken = this.accessTokenTestClient.obtainAccessToken(
-                AuthenticationTestData.userWithUsersWriteAccess());
+        final String accessToken = this.accessTokenTestClient.obtainAccessTokenFor(
+                AuthenticationTestData.identityWithUsersWriteScope());
         final UserCreateTO request = UserTestData.validUserCreateTO();
 
-        this.mockMvc.perform(post(USERS_PATH)
+        this.mockMvc.perform(post(UserController.USERS_PATH)
                         .header(
                                 HttpHeaders.AUTHORIZATION,
                                 "%s %s".formatted(BEARER_SCHEME, accessToken))
@@ -76,12 +77,12 @@ class UserApiIntegrationTest {
 
     @Test
     void usersPost_whenEmailIsInvalid_returnsValidationProblemAndDoesNotPersist() throws Exception {
-        final String accessToken = this.accessTokenTestClient.obtainAccessToken(
-                AuthenticationTestData.userWithUsersWriteAccess());
+        final String accessToken = this.accessTokenTestClient.obtainAccessTokenFor(
+                AuthenticationTestData.identityWithUsersWriteScope());
         final UserCreateTO request = UserTestData.userCreateTOWithInvalidEmail();
         final long initialUserCount = this.userRepository.count();
 
-        this.mockMvc.perform(post(USERS_PATH)
+        this.mockMvc.perform(post(UserController.USERS_PATH)
                         .header(
                                 HttpHeaders.AUTHORIZATION,
                                 "%s %s".formatted(BEARER_SCHEME, accessToken))
@@ -89,7 +90,7 @@ class UserApiIntegrationTest {
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+                .andExpect(jsonPath("$.type").value(ProblemTypes.VALIDATION_FAILED.toString()));
 
         assertThat(this.userRepository.count()).isEqualTo(initialUserCount);
         assertThat(this.userRepository.existsByEmail(request.email())).isFalse();
@@ -100,7 +101,7 @@ class UserApiIntegrationTest {
         final UserCreateTO request = UserTestData.validUserCreateTO();
         final long initialUserCount = this.userRepository.count();
 
-        this.mockMvc.perform(post(USERS_PATH)
+        this.mockMvc.perform(post(UserController.USERS_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isUnauthorized())
@@ -114,12 +115,12 @@ class UserApiIntegrationTest {
 
     @Test
     void usersPost_whenWriteScopeIsMissing_returnsForbiddenAndDoesNotPersist() throws Exception {
-        final String accessToken = this.accessTokenTestClient.obtainAccessToken(
-                AuthenticationTestData.userWithoutUsersWriteScope());
+        final String accessToken = this.accessTokenTestClient.obtainAccessTokenFor(
+                AuthenticationTestData.identityWithoutUsersWriteScope());
         final UserCreateTO request = UserTestData.validUserCreateTO();
         final long initialUserCount = this.userRepository.count();
 
-        this.mockMvc.perform(post(USERS_PATH)
+        this.mockMvc.perform(post(UserController.USERS_PATH)
                         .header(
                                 HttpHeaders.AUTHORIZATION,
                                 "%s %s".formatted(BEARER_SCHEME, accessToken))
@@ -133,12 +134,15 @@ class UserApiIntegrationTest {
 }
 ```
 
-`AuthenticationTestData.userWithUsersWriteAccess()` represents an isolated synthetic identity with
-the public OAuth scope `users:write`; the second security fixture represents an authenticated
-identity without that scope. Keep OAuth token fixtures expressed in the public scope vocabulary
-owned by `application-security`, and do not hardcode credentials in the test method.
+`AuthenticationTestData.identityWithUsersWriteScope()` describes an isolated synthetic identity
+holding the public scope `users:write`; the second fixture describes an authenticated identity
+without it. Keep token fixtures expressed in the public scope vocabulary owned by
+`application-security`, and do not hardcode credentials in the test method.
 
-Match status, `Location`, error code, and schema to the actual API contract. Keep the real security
+`AccessTokenTestClient` hides the issuance profile from the test. Whichever profile the service
+uses, the test seeds the identity, asks for a token, and sends it; the assertions do not change.
+
+Match status, `Location`, problem type URI, and schema to the actual API contract. Keep the real security
 filter chain enabled. The default bearer response may contain only the required status and challenge;
 assert a custom `ProblemDetail` body only when the public contract defines one. For every negative
 write case, verify both the public error and the absence of prohibited database state. Extend full
@@ -148,30 +152,41 @@ this test proves a different boundary.
 
 ## Authenticated request helper
 
-Obtain a valid bearer access token through the project's supported isolated authentication flow.
-This excerpt applies only when the application owns `/api/v1/auth/token`; adapt the request and
-response TOs to the actual contract without bypassing token issuance or validation.
-The selected security configuration must expose that endpoint through its explicit public
-authentication policy and applicable abuse controls.
+The helper is the only place that knows how tokens are issued. Tests call one method, so switching
+issuance profiles later changes this class and nothing else.
+
+A protected endpoint cannot be used to create the identity that will authenticate against it. Seed
+the synthetic identity directly — through the repository, a migration, or a SQL fixture — and then
+obtain a token through the real issuance path. Never relax a production route, and never add a
+test-only production endpoint, to break that circle.
+
+### Profile A: the service issues its own tokens
+
+This excerpt applies when the application owns `AuthController.TOKEN_PATH`. Adapt the request and
+response TOs to the actual contract without bypassing token issuance or validation. The selected
+security configuration must expose that endpoint through its explicit public authentication policy
+and applicable abuse controls.
 
 ```java
 final class AccessTokenTestClient {
 
-    private static final String TOKEN_PATH = "/api/v1/auth/token";
-
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
+    private final TestIdentitySeeder testIdentitySeeder;
 
     AccessTokenTestClient(
             final MockMvc mockMvc,
-            final ObjectMapper objectMapper) {
+            final ObjectMapper objectMapper,
+            final TestIdentitySeeder testIdentitySeeder) {
 
         this.mockMvc = mockMvc;
         this.objectMapper = objectMapper;
+        this.testIdentitySeeder = testIdentitySeeder;
     }
 
-    String obtainAccessToken(final LoginTO login) throws Exception {
-        final MvcResult result = this.mockMvc.perform(post(TOKEN_PATH)
+    String obtainAccessTokenFor(final TestIdentity identity) throws Exception {
+        final LoginTO login = this.testIdentitySeeder.seed(identity);
+        final MvcResult result = this.mockMvc.perform(post(AuthController.TOKEN_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(this.objectMapper.writeValueAsBytes(login)))
                 .andExpect(status().isOk())
@@ -186,14 +201,56 @@ final class AccessTokenTestClient {
 }
 ```
 
-When authentication is externally owned, use its supported protocol against an approved isolated
-test provider or container. For valid-token scenarios, do not add a test-only endpoint to production
-code, mint tokens directly in the API test, use a mock-token post-processor, or call a live identity
-provider. For validation failures that normal issuance cannot produce, create the invalid token only
-in isolated test infrastructure with test-only keys and claims, or configure the isolated provider
-to issue it. The token must traverse the real filter chain and configured decoder. Never add a
-production endpoint, reuse a production key, or apply this exception to valid-token tests. Omit CSRF
-tokens only when the tested filter chain is stateless bearer and uses no ambient browser credential.
+`TestIdentitySeeder` writes the synthetic user and its authorities straight into the database with
+an encoded password from the application's own `PasswordEncoder`, and returns the credentials the
+token endpoint expects. It lives in test sources only.
+
+### Profile B: an external identity provider issues tokens
+
+Run an approved isolated provider — a container or an in-test authorization server — point the
+resource server's issuer configuration at it, and obtain the token through its real protocol
+endpoint. Seed the identity through the provider's own administrative interface rather than through
+the application. Do not call a live identity provider.
+
+### Before either issuance path exists
+
+Authentication is frequently built after the first endpoints, and integration tests must not wait
+for it. Configure a temporary test-only issuer: an in-test signing key registered as the configured
+issuer, with a project-owned token factory that mints tokens carrying the same claim set the real
+issuer will produce.
+
+```java
+final class AccessTokenTestClient {
+
+    private final TestTokenFactory testTokenFactory;
+
+    AccessTokenTestClient(final TestTokenFactory testTokenFactory) {
+        this.testTokenFactory = testTokenFactory;
+    }
+
+    String obtainAccessTokenFor(final TestIdentity identity) {
+        return this.testTokenFactory.signedTokenFor(identity);
+    }
+}
+```
+
+The token still traverses the real filter chain, the real configured `JwtDecoder`, the real issuer,
+audience, expiry, and signature validators, and the real authorization rules. Only the key source is
+temporary. Keep it in test sources, record it as a known gap, and replace it when the profile is
+implemented — the test methods do not change, because they only call `obtainAccessTokenFor`.
+
+This is not permission to use `@WithMockUser`, a security request post-processor, a mocked
+`JwtDecoder`, or a forged `Authentication` object. Those skip the chain the test exists to prove and
+remain prohibited in every profile.
+
+### Invalid-token fixtures
+
+For validation failures that valid issuance cannot produce — a wrong issuer, a wrong audience, an
+expired token, an unapproved algorithm — build the invalid token in isolated test infrastructure
+with test-only keys and claims, or configure the isolated provider to issue it. It must reach the
+real configured decoder. Never reuse a production key and never apply this exception to valid-token
+tests. Omit CSRF tokens only when the tested filter chain is stateless bearer and uses no ambient
+browser credential.
 
 ## Container and database rules
 
@@ -206,10 +263,12 @@ Run Flyway or Liquibase migrations in the integration context. Do not let Hibern
 that bypasses the migration path being verified. Keep the container isolated from production and
 shared environments, and never put real credentials in container configuration.
 
-Use a deterministic, project-owned cleanup mechanism outside the HTTP request transaction. Cleanup
-must respect foreign keys and sequences required by assertions. Do not rely on method ordering or
-another test's inserts. If tests run in parallel, allocate independent data or disable parallelism for
-that infrastructure explicitly.
+Use the project cleanup strategy from `../SKILL.md`, outside the HTTP request transaction. The
+default is truncation of every table after each test method through one shared extension or base
+class, with referential integrity temporarily relaxed and sequences reset. Reference data required
+by every test comes from migrations or a documented seeding step that runs after cleanup, never from
+another test's inserts. Do not rely on method ordering. If tests run in parallel, allocate
+independent data or disable parallelism for that infrastructure explicitly.
 
 ## Focused persistence integration test when justified
 
@@ -293,4 +352,10 @@ class UserApiIntegrationTest {
 @Transactional
 class UserApiIntegrationTest {
 }
+```
+
+```java
+// Wrong: the request never reaches the real filter chain, decoder, or authorization rules,
+// so this proves nothing about the security configuration it appears to test.
+this.mockMvc.perform(post(UserController.USERS_PATH).with(jwt().authorities(...)))
 ```

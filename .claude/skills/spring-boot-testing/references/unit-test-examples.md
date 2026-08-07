@@ -14,6 +14,11 @@ Use these examples for focused Java tests that do not load Spring. Apply every r
 This excerpt is not the complete required `UserService` suite. Keep the happy path first in source
 order, followed by exception cases. The tests remain independent; the order is for readability only.
 
+The example instantiates `UserServiceImpl` because it assumes the interface convention. With the
+concrete-service convention the subject is `new UserService(...)` and nothing else changes; Mockito
+mocks a concrete class just as well. `@Mock` fields and the subject field are `private` and
+non-`final` under the fixture exception in `modern-java-21`.
+
 ```java
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {

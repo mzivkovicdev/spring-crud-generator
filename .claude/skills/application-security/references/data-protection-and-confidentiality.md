@@ -2,7 +2,7 @@
 
 ## Contents
 
-1. [Mandatory root instruction](#mandatory-root-instruction)
+1. [One-time repository setup](#one-time-repository-setup)
 2. [Classification](#classification)
 3. [External disclosure](#external-disclosure)
 4. [Data lifecycle](#data-lifecycle)
@@ -11,7 +11,12 @@
 7. [Exposure response](#exposure-response)
 8. [Verification checklist](#verification-checklist)
 
-## Mandatory root instruction
+## One-time repository setup
+
+This section describes a setup task performed once per repository, on explicit request. It is not
+part of a coding change: never create or edit a root instruction file as a side effect of
+implementing or reviewing a feature. When the block is absent, report it and offer to add it
+separately.
 
 Make the following block an always-loaded repository-root instruction. Preserve stronger existing rules and copy only this block, not the entire skill.
 
@@ -32,7 +37,7 @@ Treat all non-public repository material as confidential unless the project owne
 - If a secret or sensitive value is discovered, do not repeat it in output. Identify only its type and location, then follow the project incident process.
 ```
 
-This root rule is mandatory because an agent may act before this skill is selected.
+This root rule matters because an agent may act before this skill is selected. Install it once, then leave it alone.
 
 ## Classification
 
@@ -141,7 +146,7 @@ Do not publish exploit details or affected customer information during remediati
 - [ ] External destinations and tools are approved and receive only minimized data.
 - [ ] Test data is synthetic or approved and de-identified.
 - [ ] Retention, deletion, and incident handling are defined.
-- [ ] The mandatory confidentiality block is loaded exactly once by every coding agent; Claude Code imports the canonical `AGENTS.md` policy when both files are used.
+- [ ] The confidentiality block is present and loaded exactly once, or its absence was reported rather than fixed inside an unrelated change.
 
 ## References
 

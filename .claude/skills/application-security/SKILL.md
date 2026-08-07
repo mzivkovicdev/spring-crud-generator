@@ -1,6 +1,6 @@
 ---
 name: application-security
-description: Secure-by-design rules for Java 21+ Spring Boot REST applications. Use when implementing or reviewing a change that crosses a trust boundary or affects authentication, authorization, tenant or object ownership, API contracts, sensitive business operations, confidential or personal data, secrets, cryptography, logs, errors, files, URLs, WebClient calls, Redis, messaging, scheduled jobs, AWS or other cloud resources, dependencies, configuration, deployment, vulnerability remediation, or release security.
+description: Secure-by-design rules for Java 21+ Spring Boot REST applications. Use when implementing or reviewing a change that crosses a trust boundary or affects authentication, authorization, tenant or object ownership, API contracts, sensitive business operations, confidential or personal data, secrets, cryptography, logs, errors, files, URLs, WebClient calls, caches, messaging, scheduled jobs, AWS or other cloud resources, dependencies, configuration, deployment, vulnerability remediation, or release security.
 ---
 
 # Application Security Skill
@@ -24,7 +24,14 @@ This skill owns threat analysis, confidentiality, authentication, authorization,
 
 ## Always-on confidentiality rule
 
-Skill activation is conditional, but confidentiality is not. Ensure the mandatory block from [data protection and confidentiality](references/data-protection-and-confidentiality.md#mandatory-root-instruction) is loaded exactly once by every coding agent. For Claude-only projects, place it in repository-root `CLAUDE.md`. For multi-agent projects, keep it canonically in repository-root `AGENTS.md` and make `CLAUDE.md` import `@AGENTS.md` (or use an equivalent symlink). Do not maintain two copied blocks.
+Skill activation is conditional, but confidentiality is not. The rules below apply to every task
+that reaches this skill.
+
+Installing the repository-root confidentiality instruction is a **one-time project setup task, not
+part of any coding change**. Do not create or modify `CLAUDE.md`, `AGENTS.md`, or another root
+instruction file while implementing a feature, fixing a bug, or reviewing code. If the block is
+missing, say so once in the handoff and offer to add it as its own change. Perform the setup only
+when the user asks for it, following [data protection and confidentiality](references/data-protection-and-confidentiality.md#one-time-repository-setup).
 
 Treat non-public source code, prompts, architecture, schemas, API contracts, internal names and URLs, tickets, configuration, logs, credentials, production data, customer data, and vulnerability details as confidential until explicitly classified otherwise.
 
@@ -50,7 +57,13 @@ Before applying a generic standard, inspect the repository for a security profil
 
 Read only the references required by the change:
 
-- Read [data protection and confidentiality](references/data-protection-and-confidentiality.md) for sensitive data, secrets, logs, telemetry, Redis, test data, retention, deletion, external transfers, or AI/tool use.
+- Read [data protection and confidentiality](references/data-protection-and-confidentiality.md) for sensitive data, secrets, logs, telemetry, caching, test data, retention, deletion, external transfers, or AI/tool use.
+
+Caching technology is a project decision recorded in `docs/project-profile.md`. Where these
+references name Redis, read it as "the selected cache or key-value store"; Redis is the expected
+choice if one is adopted, but the rules on classification, key format, TTL, tenant scope,
+serialization, and sensitive values apply to any cache. When no cache has been selected, do not
+introduce one to satisfy a rule.
 - Read [Spring Security for REST](references/spring-security-rest.md) for authentication, authorization, sessions, JWT or opaque tokens, API keys, OAuth2/OIDC, cookies, CSRF, CORS, headers, Actuator, or Spring Security configuration.
 - Read [API security and abuse prevention](references/api-security-and-abuse-prevention.md) for endpoints, callbacks, webhooks, OpenAPI, versioning, API inventory, object-property authorization, rate limits, quotas, batch operations, idempotency, expensive operations, sensitive business flows, or HTTP caching.
 - Read [untrusted input and dangerous sinks](references/untrusted-input-and-dangerous-sinks.md) for SQL, commands, expressions, reflection, HTML, URLs, WebClient, redirects, files, archives, XML, deserialization, regexes, headers, or resource exhaustion.
@@ -108,7 +121,7 @@ Reject authentication without object and tenant authorization; request-supplied 
 ## Completion checklist
 
 - [ ] Security profile, assets, data classification, actors, trust boundaries, and abuse cases are identified.
-- [ ] Confidential project material remained inside approved boundaries.
+- [ ] Confidential project material remained inside approved boundaries, and no root instruction file was modified as a side effect of this change.
 - [ ] Authentication, authorization, object/property ownership, and tenant isolation are enforced at the correct layers.
 - [ ] API inventory, lifecycle, business abuse, input, output, files, URLs, serialization, messaging, jobs, and resource use are safe where applicable.
 - [ ] Secrets, cryptography, TLS, errors, telemetry, storage, Redis, cloud, and supply-chain controls follow the relevant references.

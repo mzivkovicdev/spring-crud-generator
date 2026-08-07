@@ -1,6 +1,6 @@
 ---
 name: spring-boot-code-review
-description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, spring-boot-testing, and project-naming-conventions without redefining their rules. Produce revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
+description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Produces revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
 ---
 
 # Spring Boot Code Review
@@ -66,7 +66,8 @@ Record the reviewed base and head revisions before starting. For working-tree re
 
 Before judging the diff:
 
-- inspect repository instructions, contribution rules, architecture decisions, security profile, data-classification policy, API and event contracts, migration conventions, and CI quality gates relevant to the change;
+- read `docs/project-profile.md` and inspect repository instructions, contribution rules, architecture decisions, security profile, data-classification policy, API and event contracts, migration conventions, and CI quality gates relevant to the change;
+- report a change that assumed a database, authentication profile, cache, service convention, or accessor style the profile does not record, and a change that added or edited a repository-root instruction file as a side effect;
 - inspect the configured Java, Spring Boot, Spring Framework, build-plugin, and dependency versions relevant to the change;
 - identify the intended behavior from the task, acceptance criteria, API or event contract, migration, tests, and established behavior;
 - inspect enough callers, implementations, configuration, data access, tests, and downstream consumers to validate the changed path;

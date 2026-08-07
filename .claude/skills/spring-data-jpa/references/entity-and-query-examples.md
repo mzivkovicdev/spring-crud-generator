@@ -25,31 +25,75 @@ public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
     @Version
+    @Column(name = "version", nullable = false)
     private Long version;
 
-    @Column(nullable = false, length = 120)
+    @Column(name = "username", nullable = false, length = 120)
     private String username;
 
-    @Column(nullable = false, length = 254)
+    @Column(name = "email", nullable = false, length = 254)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
+    @Column(name = "status", nullable = false, length = 32)
     private UserStatus status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected UserEntity() {
+        // Required by the persistence provider.
     }
 
-    // Read access and the MapStruct-compatible creation path are omitted for brevity.
+    public UserEntity(
+            final String username,
+            final String email,
+            final String passwordHash,
+            final UserStatus status,
+            final Instant createdAt) {
+
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.status = status;
+        this.createdAt = createdAt;
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
+    public Long getVersion() {
+        return this.version;
+    }
+
+    public String getUsername() {
+        return this.username;
+    }
+
+    public String getEmail() {
+        return this.email;
+    }
+
+    public String getPasswordHash() {
+        return this.passwordHash;
+    }
+
+    public UserStatus getStatus() {
+        return this.status;
+    }
+
+    public Instant getCreatedAt() {
+        return this.createdAt;
+    }
+
     public UserEntity setUsername(final String username) {
         this.username = username;
         return this;
@@ -59,15 +103,46 @@ public class UserEntity {
         this.email = email;
         return this;
     }
+
+    public UserEntity setStatus(final UserStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof UserEntity otherUser)) {
+            return false;
+        }
+
+        return this.id != null && this.id.equals(otherUser.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return UserEntity.class.hashCode();
+    }
 }
 ```
 
-`GenerationType.AUTO` is illustrative, not the project default. Select the identifier strategy for the configured database and verify its batching and round-trip behavior before implementation.
+This class is complete and compiles as written; copy its structure rather than a reduced version.
 
-This is a focused entity-mapping excerpt, not a complete class. The real entity must provide the
-read access required by persistence-to-domain mapping and one approved creation path for all mapped
-creation properties. Keep mutation no broader than required, and compile MapStruct-generated sources
-after changing either side of the mapping.
+Why each part is there:
+
+- The `protected` no-argument constructor belongs to the provider. The `public` constructor is the single creation path and is what `UserDomainMapper.mapToNewUserEntity` uses, so every mapped creation property is set exactly once.
+- `id` and `version` are provider-owned. They have getters and no constructor parameter and no setter, so application code and MapStruct cannot write them.
+- Setters exist only for the fields a use case actually updates. Add another setter when a real operation needs it, not preemptively; a setter for `passwordHash` belongs to the credential-change operation that hashes the new value.
+- Every `@Column` names its column explicitly so the mapping, the migration, and native SQL cannot drift apart through an implicit naming strategy.
+- `equals` and `hashCode` follow the surrogate-identifier strategy from `../SKILL.md`: `instanceof` accepts a provider proxy, the other identifier is read through its getter, and the hash is a constant derived from the class literal so it is stable before and after persistence.
+
+`GenerationType.AUTO` is illustrative, not the project default. Select the identifier strategy for the database recorded in `docs/project-profile.md` and verify its effect on batching and round trips before implementation.
+
+Mutation stays as narrow as the use cases require. Recompile MapStruct-generated sources after changing either side of the mapping, so an incompatible entity fails the build rather than a request.
+
+If `docs/project-profile.md` records plain `void` setters instead of the fluent style shown here, declare them as `void` and split chained calls into separate statements. Everything else in this example is unchanged.
 
 `UserStatus` represents business state, so place it beside the related domain types rather than in a
 generic `enums` package. If a different enum exists only to represent persistence state, keep that

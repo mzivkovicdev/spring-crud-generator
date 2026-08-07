@@ -47,6 +47,28 @@ not authorize generating a server-rendered presentation layer.
 - Do not generate `@Controller`, `Model`, `ModelMap`, `ModelAndView`, `View`, view-name return values, redirects to rendered pages, view resolvers, template directories, or server-side UI flows.
 - Using `WebClient` for an outgoing call does not make the server reactive. Do not migrate the server from the established servlet stack to WebFlux solely because `WebClient` is present.
 
+## Establish the project profile
+
+This skill owns one small, durable record of the decisions every other skill inspects:
+`docs/project-profile.md`.
+
+Read it before coding. It must state, at minimum:
+
+- Java release, Spring Boot version, and build tool;
+- relational database engine and major version, and the migration tool (Flyway or Liquibase);
+- authentication model for this deployable service, per `application-security`;
+- whether a cache is used and which technology, when one has been selected;
+- whether the project uses the application-service interface plus `*ServiceImpl` convention;
+- whether entities use fluent or `void` setters;
+- test source-set and test-selection configuration, per `spring-boot-testing`.
+
+When the file is missing or a required decision is absent — an empty repository, or a bare Spring
+Initializr skeleton with nothing recorded — **ask the user for the missing decisions and write them
+into `docs/project-profile.md` before implementing**. Ask once, in one message, for everything the
+task depends on. Do not silently assume a database, an authentication model, a cache, or a service
+convention. Existing repository evidence, such as a declared dependency or an applied migration,
+is an acceptable answer; record it in the profile so later tasks do not ask again.
+
 ## Rules before coding
 
 1. Inspect `pom.xml` or Gradle files, the configured Java and Spring Boot versions, existing package layout, tests, configuration, migrations, security, and API error format.
@@ -57,7 +79,7 @@ not authorize generating a server-rendered presentation layer.
 
 ## Java source rules
 
-Apply the complete `modern-java-21` workflow to every created or modified `.java` file. Do not restate or fork its import, type-inference, Javadoc, exception, size, or source-hygiene rules in this skill. Run the repository formatter and the narrowest relevant compile or static-analysis check before finishing.
+Apply the complete `modern-java-21` workflow to every created or modified `.java` file. Do not restate or fork its import, type-inference, Javadoc, exception, size, or source-hygiene rules in this skill. That skill's import order is a project standard without exceptions; run the narrowest relevant compile or static-analysis check before finishing.
 
 ## Architecture and boundaries
 
@@ -92,10 +114,13 @@ Keep REST controllers thin. They must not query repositories, mutate entities, i
 
 - Use `@RestController`; do not use a view-oriented `@Controller` for REST endpoints.
 - Keep API versioning consistent with the existing public contract; do not introduce versioning arbitrarily.
+- Declare the API base path exactly once in Java, as a constant such as `ApiPaths.API_V1`, and build every controller's route constant from it. Declare each controller's own route as a `public static final String` on that controller so tests and `Location` construction reuse it instead of repeating the literal.
+- The same prefix appears in the OpenAPI document only as `servers.url`. OpenAPI Path Items stay resource-relative, such as `/users/{userId}`, so the version never reaches `operationId` or the handler method name. `project-naming-conventions` owns that derivation.
 - Use nouns in resource paths and correct HTTP methods/status codes.
 - Define or preserve supported request and response media types. Return serialized bodies rather than view names.
 - Validate path, query, header, and body input at the boundary.
 - Define collection bounds, string lengths, numeric bounds, and pagination limits for untrusted input.
+- Declare each shared numeric bound once as a `public static final` compile-time constant, for example a project-owned `PaginationConstraints.MAXIMUM_PAGE_SIZE`, and reference that constant from every annotation that enforces it at the REST boundary and on the service contract. Never repeat the literal value in a second annotation or in Javadoc.
 - On Spring Framework 6.1+, prefer built-in REST handler method validation and do not place `@Validated` on the controller. On earlier supported versions, use type-level `@Validated` only when proxy-based controller method validation is required. Never place it on an individual handler method.
 - When controller parameters can trigger both object and method validation, preserve Spring's standard handling or map both validation exception types into the same public error contract.
 - For a synchronous operation that creates an addressable resource, return `201 Created` and a server-owned `Location` URI for that resource. Do not require this combination for a POST action that does not have resource-creation semantics; preserve the documented API contract.
@@ -141,12 +166,19 @@ Read the domain and domain mapper examples in [service and domain examples](refe
 
 Services implement operations and own orchestration.
 
-- Use a `<Capability>Service` interface with a `<Capability>ServiceImpl` Spring bean when the user
-  explicitly selects that convention or the repository already applies it coherently. Preserve that
-  convention for new application services in the same scope.
-- Otherwise, an interface is optional: introduce one for a meaningful application boundary, multiple
-  implementations, a port, or a stable test/substitution contract; use one concrete service class
-  when none of those reasons exists.
+- The application-service interface is optional. Read `docs/project-profile.md` first: if it records
+  the `<Capability>Service` plus `<Capability>ServiceImpl` convention, follow it for every new
+  application service in that scope. If it records the concrete-service convention, follow that. If
+  the profile is silent, ask the user once and record the answer.
+- With no recorded convention and no answer yet, default to a single concrete `<Capability>Service`
+  class annotated with `@Service`, and introduce an interface only when there is a concrete reason:
+  a meaningful application boundary crossed by another module, more than one implementation, a port
+  with a substitutable adapter, or a contract that an external consumer implements.
+- Wanting an `Impl` suffix, wanting somewhere to put Javadoc, or wanting to mock the service in a
+  unit test are not reasons. Mockito mocks a concrete class, and Javadoc belongs on the concrete
+  service when no interface exists.
+- Both shapes are shown in [service and domain examples](references/service-domain-examples.md).
+  Do not mix them for services in the same scope.
 - When an interface exists, put caller-facing Javadoc and method-validation constraints on it. Put
   `@Service`, `@Validated`, transactions, dependencies, and implementation logic on the concrete
   class without duplicating the contract.
@@ -155,6 +187,7 @@ Services implement operations and own orchestration.
 - Use Lombok constructor generation only when Lombok is an established project dependency and the generated constructor remains obvious; otherwise write the constructor explicitly.
 - Do not accept REST request/response TOs and do not return JPA entities.
 - Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
+- Apply entity mutations through the accessor style recorded in `docs/project-profile.md`. The examples use fluent setters that return the entity; plain `void` setters are equally acceptable when the profile records that choice. Use one style across the project.
 - For update operations, load the entity inside the write transaction, apply explicit business or persistence mutations, call repository `save` exactly once, and map the returned saved entity to a domain object. This project requires the explicit repository write even when JPA dirty checking would persist a managed entity. Use `saveAndFlush` only when subsequent logic must observe immediate database synchronization for a documented reason. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity.
 - Prefer explicit separate parameters when a project-owned service method has up to seven declared parameters and the signature remains clear.
 - Treat eight or more declared parameters as a design warning. Group only values that form a cohesive domain concept or invariant into a focused parameter/value object; otherwise redesign the operation or document why the signature must remain. Do not create one catch-all input class merely to conceal unrelated values or satisfy the threshold.
@@ -175,14 +208,16 @@ Read the service, parameter-object, mapper, and repository-boundary examples in
 
 ## Repository boundary
 
-Apply `spring-data-jpa` for detailed repository and query rules.
+`spring-data-jpa` is the sole owner of repository and query design: derived versus explicit queries,
+`Optional` and `existsBy` usage, native SQL, projections, fetch plans, `@EntityGraph`, pagination,
+bulk DML, locking, and transaction mechanics. Do not restate, weaken, or fork those rules here, and
+resolve any question about them in that skill.
 
-- Use derived queries when they remain readable and unambiguous.
-- Return `Optional` for an optional single result; never accept `Optional` as a parameter or entity field.
-- Use `existsBy` instead of loading an entity for existence checks.
-- Avoid native queries unless JPQL, Criteria, or a repository abstraction cannot express the required behavior clearly.
-- Use `@EntityGraph`, projections, or explicit fetch joins to solve measured fetch-plan problems; do not default every association to eager loading.
-- Place persistence projection types in `repository.projection` and reusable Specification types in `repository.specification`. Add either subpackage only when a corresponding type exists.
+This skill owns only where the boundary sits and what may cross it:
+
+- The repository is reached from the service, never from a controller, mapper, TO, domain model, or entity callback.
+- Entities and persistence projections stop at the service. Map them to domain objects before the service returns.
+- Repository types live in `repository`, persistence projections in `repository.projection`, and reusable Specification types in `repository.specification`. Add either subpackage only with its first type.
 
 Read the repository-boundary example in [service and domain examples](references/service-domain-examples.md) only when a Spring Boot feature requires a repository change.
 
@@ -193,19 +228,32 @@ Use Jakarta Bean Validation for structural constraints.
 - Use `@Valid` for nested object validation.
 - Use method validation when the service can be called outside the REST request boundary.
 - Create a custom constraint only for reusable structural validation; keep database-dependent and business validation in a service/domain policy.
+- Prefer separate request TOs per operation, such as `UserCreateTO` and `UserUpdateTO`, over Bean Validation groups. Groups make one type's contract depend on the caller and are easy to apply to the wrong boundary.
+- Use validation groups only when one TO genuinely serves several operations and duplicating it would be worse. Then define the group interfaces in the transport boundary beside the TO, name them for the operation, and activate them explicitly with `@Validated(Group.class)` at the handler parameter. Do not rely on `Default` group inheritance to make a constraint apply.
 - Error messages exposed to users must be stable and safe. Do not expose implementation class names or SQL/provider details.
+- Constraint messages are human-readable text, not the machine-readable contract. Clients branch on the problem type, never on message text.
+- Localize messages only when the API contract requires it. If it does, resolve them through the project's `MessageSource` and Bean Validation message interpolation with explicit keys, drive the locale from the `Accept-Language` header with a configured default and a bounded set of supported locales, and never localize the problem type, HTTP status, or any stable identifier.
 
 Read the method-validation example in [infrastructure examples](references/infrastructure-examples.md).
 
 ## Error handling
 
-Use the project's existing error contract. For a new API on a supported Spring version, prefer RFC 9457 `ProblemDetail` with stable application error codes.
+Use the project's existing error contract. For a new API on a supported Spring version, use RFC 9457
+`ProblemDetail`.
+
+The public, machine-readable identifier of an error is the RFC 9457 `type` URI, and nothing else.
+Do not add a parallel `code`, `errorCode`, or `errorId` extension member to the response body;
+two identifiers for one condition guarantee that clients branch on the wrong one. Clients branch on
+`type`; `title` and `detail` are human-readable and may change. `project-naming-conventions` owns
+the URI form. Internal error codes remain useful in logs, events, and metrics, and stay out of the
+HTTP body.
 
 - Map expected application failures explicitly.
 - Let Spring's framework handler preserve standard REST error behavior where appropriate.
 - Avoid a catch-all handler that leaks exception messages. If a top-level handler is required, return a generic message and log the cause once.
 - Do not copy `exception.getMessage()` into a response unless that exception type guarantees a stable, user-safe message.
 - Do not log expected 4xx validation/not-found failures as server errors.
+- Name a project-owned validation exception unambiguously, for example `BusinessValidationException`. Never declare a project exception whose simple name collides with a framework type such as `jakarta.validation.ValidationException`, and never register a handler for that framework type as if it were the project's own category.
 - Never include stack traces, SQL, internal endpoints, credentials, or personal data in responses.
 - Place custom exceptions in `exception` and MVC REST exception-handler classes in
   `exception.handler`. Spring Security response handling belongs to the selected security
@@ -214,6 +262,19 @@ Use the project's existing error contract. For a new API on a supported Spring v
 Read the `ProblemDetail` handler example in
 [REST API examples](references/rest-api-examples.md) and the custom exception examples in
 [infrastructure examples](references/infrastructure-examples.md).
+
+## Idempotency
+
+`application-security` owns the idempotency policy: when a key is required, how it is bound to the
+authenticated subject and request fingerprint, its format, retention, and abuse controls. This skill
+owns where that policy lives in the layers.
+
+- Accept the idempotency key at the REST boundary as an explicit, validated, bounded header or field. Do not read it from arbitrary request state.
+- Pass it into the service as an ordinary explicit parameter or as part of the focused service input. Never pass the request TO.
+- Claim the key, execute the effect, and record the outcome inside the service transaction that owns the operation, so the claim and the effect commit or roll back together.
+- Keep the claim store behind a repository or adapter like any other persistence concern. Do not put it in a controller, mapper, or entity callback.
+- Return the recorded original outcome for a repeated key through the same response mapping as the first call, so the public contract is identical.
+- Test simultaneous duplicates and retry-after-timeout at the integration boundary, per `spring-boot-testing`.
 
 ## Configuration properties
 
@@ -274,6 +335,9 @@ Reject:
 - parameter objects that merely hide unrelated values or mechanically satisfy a numeric threshold;
 - project-owned service methods with eight or more declared parameters and no cohesive grouping, redesign, or documented justification;
 - generic `Map` responses;
+- a parallel `code` or `errorCode` member in a `ProblemDetail` body alongside the RFC 9457 `type`;
+- a project exception whose simple name collides with a framework type such as `ValidationException`;
+- assuming a database, authentication model, cache, or service convention that `docs/project-profile.md` does not record;
 - generic `enums` packages;
 - handwritten structural REST or domain mappers when approved MapStruct can express the mapping;
 - REST exception handlers placed directly in the custom-exception package;
@@ -289,6 +353,7 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 
 ## Completion checklist
 
+- [ ] `docs/project-profile.md` records every decision the change relied on, and nothing was assumed.
 - [ ] Controller/listener is a thin transport boundary.
 - [ ] Business rules are in service/domain code.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
@@ -297,7 +362,8 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] Approved MapStruct handles structural mapping with `ReportingPolicy.ERROR`; any handwritten mapper exception is documented.
 - [ ] Projections, reusable Specifications, enums, exceptions, and exception handlers use their owning packages without empty scaffolding.
 - [ ] Transactions and security ownership are explicit.
-- [ ] Error responses are stable and safe.
+- [ ] Error responses are stable and safe, and the RFC 9457 `type` URI is their only machine-readable identifier.
+- [ ] Shared numeric bounds such as the maximum page size are declared once and referenced, not repeated.
 - [ ] Configuration is type-safe, externalized, and validated.
 - [ ] The complete `spring-boot-testing` workflow was applied and required tests pass.
 - [ ] Every touched Java file complies with `modern-java-21`.

@@ -2,6 +2,9 @@
 
 Use these examples when implementing or reviewing REST controllers, transport objects, REST mapping, validation responses, or API error handling. Apply all rules from `../SKILL.md`, `modern-java-21`, `project-naming-conventions`, and `application-security`; imports are omitted.
 
+An example marked as an excerpt shows the decision under discussion, not a complete type. Generate
+the omitted members rather than copying the excerpt verbatim.
+
 ## Contents
 
 - [REST controller](#rest-controller)
@@ -16,8 +19,8 @@ Use these examples when implementing or reviewing REST controllers, transport ob
 @RequestMapping(UserController.USERS_PATH)
 public class UserController {
 
-    private static final String USERS_PATH = "/api/v1/users";
-    private static final int MAXIMUM_PAGE_SIZE = 100;
+    public static final String USERS_PATH = ApiPaths.API_V1 + "/users";
+
     private final UserService userService;
 
     public UserController(final UserService userService) {
@@ -48,8 +51,10 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<PageTO<UserTO>> usersGet(
-            @RequestParam(defaultValue = "0") @PositiveOrZero final Integer pageNumber,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(MAXIMUM_PAGE_SIZE) final Integer pageSize) {
+            @RequestParam(defaultValue = "0")
+            @PositiveOrZero final Integer pageNumber,
+            @RequestParam(defaultValue = PaginationConstraints.DEFAULT_PAGE_SIZE)
+            @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final Integer pageSize) {
 
         final PageDomain<UserDomain> users = this.userService.getAll(pageNumber, pageSize);
         return ResponseEntity.ok(
@@ -77,7 +82,20 @@ public class UserController {
 }
 ```
 
-This project uses URI major versioning under `/api/v1`. Declare that common prefix in the OpenAPI `servers.url`, define Path Items as resource paths such as `/users/{userId}`, and derive both `operationId` and controller method name from the Path Item plus HTTP method. Therefore, `GET /users/{userId}` maps to `usersUserIdGet`. Keep controller routes, OpenAPI, gateways, and tests aligned when introducing a new version.
+This project uses URI major versioning under `/api/v1`. The prefix is declared exactly once in Java,
+as `ApiPaths.API_V1`, and each controller builds its own `public static final String` route from it.
+Tests, `Location` construction, and security matchers reuse those constants instead of repeating the
+literal. Because `USERS_PATH` is a compile-time constant, `@RequestMapping(UserController.USERS_PATH)`
+resolves at compile time; the qualified form is required here only because the annotation precedes
+the field declaration.
+
+In the OpenAPI document, the same prefix appears only in `servers.url`. Path Items stay
+resource-relative, such as `/users/{userId}`, so the version never reaches `operationId` or the
+handler method name: `GET /users/{userId}` maps to `usersUserIdGet`, never `apiV1UsersUserIdGet`.
+Keep controller routes, OpenAPI, gateways, and tests aligned when introducing a new version.
+
+`PaginationConstraints.MAXIMUM_PAGE_SIZE` is the single declaration of that bound. The service
+contract references the same constant, so the REST boundary and the service contract cannot drift.
 
 The mapper is stateless and dependency-free, so the controller uses its static MapStruct instance rather than DI. This POST creates an addressable resource, so `201 Created` and its server-owned `Location` URI are intentional; other POST semantics may use a different documented status.
 
@@ -157,35 +175,51 @@ business behavior in generated mapping.
 ## ProblemDetail exception handling
 
 ```java
+public final class ProblemTypes {
+
+    private static final String PROBLEM_BASE = "https://api.acme.example/problems/";
+
+    public static final URI INVALID_STATE = URI.create(PROBLEM_BASE + "invalid-state");
+    public static final URI RESOURCE_NOT_FOUND = URI.create(PROBLEM_BASE + "resource-not-found");
+    public static final URI RESPONSE_VALIDATION_FAILED =
+            URI.create(PROBLEM_BASE + "response-validation-failed");
+    public static final URI VALIDATION_FAILED = URI.create(PROBLEM_BASE + "validation-failed");
+
+    private ProblemTypes() {
+    }
+}
+```
+
+```java
 @RestControllerAdvice
-public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    ProblemDetail handleResourceNotFound() {
+    public ProblemDetail handleResourceNotFound() {
         return createProblem(
                 HttpStatus.NOT_FOUND,
+                ProblemTypes.RESOURCE_NOT_FOUND,
                 "Resource not found",
-                "The requested resource does not exist.",
-                "RESOURCE_NOT_FOUND");
+                "The requested resource does not exist.");
     }
 
     @ExceptionHandler(InvalidStateException.class)
-    ProblemDetail handleInvalidState() {
+    public ProblemDetail handleInvalidState() {
         return createProblem(
                 HttpStatus.CONFLICT,
+                ProblemTypes.INVALID_STATE,
                 "Invalid resource state",
-                "The operation is not allowed in the current resource state.",
-                "INVALID_STATE");
+                "The operation is not allowed in the current resource state.");
     }
 
     // Project-owned category for caller-correctable validation failures.
-    @ExceptionHandler(ValidationException.class)
-    ProblemDetail handleValidation() {
+    @ExceptionHandler(BusinessValidationException.class)
+    public ProblemDetail handleBusinessValidation() {
         return createProblem(
                 HttpStatus.BAD_REQUEST,
+                ProblemTypes.VALIDATION_FAILED,
                 "Validation failed",
-                "The request contains invalid values.",
-                "VALIDATION_FAILED");
+                "The request contains invalid values.");
     }
 
     @Override
@@ -197,9 +231,9 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
         final ProblemDetail problem = createProblem(
                 HttpStatus.BAD_REQUEST,
+                ProblemTypes.VALIDATION_FAILED,
                 "Validation failed",
-                "The request contains invalid values.",
-                "VALIDATION_FAILED");
+                "The request contains invalid values.");
 
         return this.handleExceptionInternal(
                 exception, problem, headers, HttpStatus.BAD_REQUEST, request);
@@ -218,13 +252,13 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 : HttpStatus.BAD_REQUEST;
         final ProblemDetail problem = createProblem(
                 responseStatus,
+                responseValidationFailed
+                        ? ProblemTypes.RESPONSE_VALIDATION_FAILED
+                        : ProblemTypes.VALIDATION_FAILED,
                 responseValidationFailed ? "Response validation failed" : "Validation failed",
                 responseValidationFailed
                         ? "The server could not produce a valid response."
-                        : "The request contains invalid values.",
-                responseValidationFailed
-                        ? "RESPONSE_VALIDATION_FAILED"
-                        : "VALIDATION_FAILED");
+                        : "The request contains invalid values.");
 
         return this.handleExceptionInternal(
                 exception, problem, headers, responseStatus, request);
@@ -232,18 +266,24 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static ProblemDetail createProblem(
             final HttpStatus status,
+            final URI type,
             final String title,
-            final String detail,
-            final String code) {
+            final String detail) {
 
         final ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setType(type);
         problem.setTitle(title);
-        problem.setProperty("code", code);
 
         return problem;
     }
 }
 ```
+
+The RFC 9457 `type` URI is the only machine-readable identifier in the response body. There is no
+parallel `code` member: two identifiers for one condition guarantee that some client branches on the
+wrong one, and `title` and `detail` are human-readable text that may change without a contract
+change. Declare every type URI once in `ProblemTypes` so the same condition cannot acquire two
+spellings. `project-naming-conventions` owns the URI form and its migration rules.
 
 Use one project-owned `@RestControllerAdvice` extending `ResponseEntityExceptionHandler` as the MVC
 error-contract owner. It preserves Spring MVC handling for malformed requests, unsupported methods
@@ -254,7 +294,7 @@ second overlapping global handler.
 Place this advice in `<base-package>.exception.handler`. Keep the exceptions it handles in
 `<base-package>.exception`; do not place the advice directly beside them.
 
-Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to the correct HTTP status and stable code. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a condition-specific handler only for a distinct status, code, or response contract. Map the project-owned `ValidationException` to `400` only when it represents caller-correctable input; do not catch `jakarta.validation.ValidationException` broadly. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
+Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to the correct HTTP status and stable problem type. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a condition-specific handler only for a distinct status, problem type, or response contract. Map `BusinessValidationException` to `400` only when it represents caller-correctable input, and never register a handler for `jakarta.validation.ValidationException`. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
 
 Normal REST TO responses use `application/json`; RFC 9457 error responses use
 `application/problem+json`. The example intentionally omits a broad `Exception` handler. Route
@@ -262,5 +302,5 @@ unknown failures through the project's approved top-level error path; it must re
 without consuming authentication or access-denied failures owned by Spring Security. Apply
 `application-security` for `401`, `403`, challenge headers, and any custom security body. Handle
 listener, job, messaging, and asynchronous failures at their owning boundary because they do not
-pass through this advice. Test each status, code, content type, required header, and
+pass through this advice. Test each status, problem type, content type, required header, and
 information-disclosure rule.
