@@ -19,6 +19,10 @@ this skill owns the Spring contracts those tests must prove.
 
 Apply `spring-data-jpa` whenever code touches entities, repositories, persistence queries, transactions, locking, migrations, or database performance. It owns persistence behavior; this skill owns the Spring Boot boundaries around it.
 
+Apply `build-and-dependencies` whenever a build file, dependency, plugin, version, compiler setting, annotation processor, or test-selection configuration changes. It owns the build; this skill owns the application design the build serves.
+
+Apply `observability-and-logging` whenever a change adds or alters logging, correlation context, metrics, tracing, actuator endpoints, or health indicators. It owns instrumentation; this skill owns the layers being instrumented.
+
 Apply `application-security` whenever a change crosses a trust boundary or affects identity, authorization, confidential data, dangerous input, external systems, dependencies, deployment, messaging, jobs, or operational security. Apply `project-naming-conventions` whenever a name or escaped contract is created or changed.
 
 Each owner skill is authoritative in its area. Follow a repository-enforced formatter or policy when the owner skill permits it, preserve compatible established contracts, and report an unresolved conflict instead of inventing a second standard here.
@@ -54,13 +58,14 @@ This skill owns one small, durable record of the decisions every other skill ins
 
 Read it before coding. It must state, at minimum:
 
-- Java release, Spring Boot version, and build tool;
+- Java release, Spring Boot version, and build tool, per `build-and-dependencies`;
 - relational database engine and major version, and the migration tool (Flyway or Liquibase);
 - authentication model for this deployable service, per `application-security`;
 - whether a cache is used and which technology, when one has been selected;
 - whether the project uses the application-service interface plus `*ServiceImpl` convention;
 - whether entities use fluent or `void` setters;
-- test source-set and test-selection configuration, per `spring-boot-testing`.
+- test source-set and test-selection configuration, per `spring-boot-testing`;
+- log format, correlation header, tracing, metrics registry, and exposed actuator endpoints, per `observability-and-logging`.
 
 When the file is missing or a required decision is absent — an empty repository, or a bare Spring
 Initializr skeleton with nothing recorded — **ask the user for the missing decisions and write them

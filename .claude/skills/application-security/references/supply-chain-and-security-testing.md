@@ -29,6 +29,7 @@ Security requirements must be testable. Replace “secure endpoint” with concr
 
 ## Dependencies and build integrity
 
+- Apply `build-and-dependencies` for the declarations themselves: justification, scopes, version management, plugin pinning, and the audit and removal workflow. This section owns the security judgement about them.
 - Prefer the supported Spring Boot dependency-management baseline or an approved BOM.
 - Use only approved artifact and plugin repositories over authenticated TLS.
 - Pin build plugins and direct dependencies according to the project's reproducibility policy.

@@ -21,6 +21,8 @@ Apply the normative skills as follows:
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
 | `spring-boot-testing` | Production behavior or tests are changed or reviewed | Realistic scenario selection, unit and integration scope, fixtures, doubles, isolation, negative persistence verification, and test execution |
 | `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
+| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, or test-selection configuration is affected | Dependency justification, version management, compiler and processor configuration, test phase separation, and the dependency audit and removal workflow |
+| `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected | Log levels and placement, correlation propagation, meter selection and tag cardinality, trace propagation, endpoint exposure, and probe composition |
 
 Resolve every applicable owner skill before evaluating compliance:
 

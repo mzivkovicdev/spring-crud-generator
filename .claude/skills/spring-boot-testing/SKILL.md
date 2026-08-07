@@ -22,6 +22,8 @@ being verified:
 | `spring-data-jpa` | Database mappings, constraints, queries, transactions, locking, migrations, and production-database semantics |
 | `application-security` | Required security scenarios, protected data, credentials, and trust-boundary controls |
 | `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
+| `build-and-dependencies` | Build files, test plugins, source sets, and the configuration that decides which suites run in which phase |
+| `observability-and-logging` | What about logging, metrics, tracing, and probes is worth asserting, and what is not |
 
 Do not redefine those standards here. Resolve a conflict through the owning skill and the
 repository-enforced build configuration.
@@ -350,6 +352,9 @@ cannot produce, and must exercise the real configured decoder.
 suffix matches no default in either build tool, so the build must be configured explicitly or the
 tests will run in the wrong phase — or not at all. Verify the configuration before relying on a
 green build, and fix it as part of the change when it is missing.
+
+`build-and-dependencies` owns the build files themselves and contains the worked configuration for
+both tools. The requirement here is only that the phases are separated and enforced.
 
 For Maven, unit tests run in Surefire and integration tests in Failsafe:
 
