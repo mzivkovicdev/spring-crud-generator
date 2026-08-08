@@ -23,25 +23,39 @@ resource filtering are configured consistently.
 <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.0</version>
+    <version>CHOOSE</version>
     <relativePath/>
 </parent>
 
 <properties>
     <java.version>21</java.version>
-    <checkstyle.version>10.21.0</checkstyle.version>
-    <mapstruct.version>1.6.3</mapstruct.version>
-    <spotless.version>2.44.0</spotless.version>
+    <checkstyle.version>CHOOSE</checkstyle.version>
+    <mapstruct.version>CHOOSE</mapstruct.version>
+    <spotless.version>CHOOSE</spotless.version>
     <!-- Only when docs/project-profile.md records that the project uses Lombok. -->
-    <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+    <lombok-mapstruct-binding.version>CHOOSE</lombok-mapstruct-binding.version>
 </properties>
 
-Every version property referenced anywhere in this skill's references is declared here.
-`checkstyle.version` and `spotless.version` are used by
-[quality gates](quality-gates.md); the Spring Boot BOM manages neither tool, so both are pinned.
+Every version property referenced anywhere in this skill's references is declared here. The Spring
+Boot BOM manages none of these tools, so each is pinned explicitly.
+
+`CHOOSE` means exactly that: resolve the current release at setup time and record it in
+`docs/project-profile.md`. This reference deliberately does not carry a pinned number, because a
+number written into documentation is stale the month after it is written and is then copied into
+projects for years. Respect these minimums when choosing:
+
+| Property | Minimum | Reason |
+| --- | --- | --- |
+| `maven-compiler-plugin` (from the parent) | 3.12.0 | Below it, `annotationProcessorPaths` ignores `dependencyManagement`, so every processor entry needs an explicit version |
+| `checkstyle.version` | 10.12.x | Earlier versions handle `record` constructs inconsistently |
+| `spotless.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
+| `mapstruct.version` | 1.6.x | Constructor-based mapping and `unmappedTargetPolicy` behave as this skill set assumes |
+| `lombok-mapstruct-binding.version` | 0.2.0 | Required for Java 17+ toolchains |
+
+Verify the choice by running the build once, not by trusting the table.
 ```
 
-The versions above are placeholders. Use the versions recorded in `docs/project-profile.md`.
+Resolve each `CHOOSE` at setup time and record the result in `docs/project-profile.md`.
 
 Rules:
 

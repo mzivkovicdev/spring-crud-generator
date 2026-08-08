@@ -21,16 +21,22 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 ```kotlin
 plugins {
     java
-    id("org.springframework.boot") version "3.5.0"
-    id("io.spring.dependency-management") version "1.1.7"
+    id("org.springframework.boot") version "CHOOSE"
+    id("io.spring.dependency-management") version "CHOOSE"
 }
 
-extra["mapstructVersion"] = "1.6.3"
+extra["mapstructVersion"] = "CHOOSE"
 // Only when docs/project-profile.md records that the project uses Lombok.
-extra["lombokMapstructBindingVersion"] = "0.2.0"
+extra["lombokMapstructBindingVersion"] = "CHOOSE"
 ```
 
-The versions above are placeholders. Use the versions recorded in `docs/project-profile.md`.
+`CHOOSE` means resolve the current release at setup time and record it in
+`docs/project-profile.md`. This reference deliberately carries no pinned number, because a number in
+documentation goes stale and then propagates. The minimum versions and their reasons are listed in
+[Maven configuration](maven-configuration.md#project-skeleton-and-version-management); they apply to
+Gradle identically.
+
+Resolve each `CHOOSE` at setup time and record the result in `docs/project-profile.md`.
 
 Rules:
 
@@ -121,7 +127,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:CHOOSE"))
     testImplementation("org.testcontainers:junit-jupiter")
 }
 ```
