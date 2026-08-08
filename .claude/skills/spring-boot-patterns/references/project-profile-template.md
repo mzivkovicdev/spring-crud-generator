@@ -27,7 +27,7 @@ Last updated: YYYY-MM-DD
 
 | Decision | Value | Owner skill |
 | --- | --- | --- |
-| Java release | 21 | `modern-java-21` |
+| Java release | 21 | `build-and-dependencies` |
 | Spring Boot version |  | `build-and-dependencies` |
 | Build tool | Maven \| Gradle | `build-and-dependencies` |
 | Uses Lombok | yes \| no | `build-and-dependencies` |
@@ -76,8 +76,8 @@ Last updated: YYYY-MM-DD
 
 | Decision | Value | Owner skill |
 | --- | --- | --- |
-| Cache used | yes \| no \| UNDECIDED | `application-security` |
-| Cache technology |  | `application-security` |
+| Cache used | yes \| no \| UNDECIDED | none yet |
+| Cache technology |  | none yet |
 
 ## Testing and build commands
 
@@ -101,6 +101,8 @@ Last updated: YYYY-MM-DD
 
 - **Token issuance profile** determines how integration tests obtain a credential. Until it is decided, `spring-boot-testing` permits a documented temporary test-only issuer; record that here as a deferred decision with its removal condition.
 - **Entity accessor style** and **application-service convention** both change generated code shape, so a project that leaves them unrecorded will produce a different shape per feature.
-- **Cache technology** stays `UNDECIDED` until a cache is actually needed. Do not introduce one to fill the row.
+- **Caching has no owner skill yet.** No skill in this set decides whether the project uses a cache or which technology it uses; a caching skill will own that. Record the answer here when it is made, and leave both rows `UNDECIDED` until then. Do not introduce a cache to fill the row.
+  - `application-security` owns what may be cached and under what conditions: classification of cached values, TTL, tenant scope, serialization, and eviction of sensitive data. It does not own the decision itself.
+  - `project-naming-conventions` owns cache and cache-key names.
 - **Management authority** depends on whether a custom authority converter is installed; record the literal value the configuration uses, not the scope name.
 - **Quality gate commands** exist so that the first response to a failed gate is to run the fixer rather than to disable the gate.
