@@ -389,19 +389,16 @@ comes from. Concretely:
 - Every type referenced across skills is named with the reference that defines it, so the reader can find it.
 - Omit imports, and omit members that are irrelevant to the decision being shown — but never omit something the snippet itself refers to.
 
-An undeclared identifier is the most common defect in this material and the easiest to miss, because
-the surrounding code reads correctly. `${spring-boot.version}` in a Maven snippet and a constant that
-exists only in the author's head both compile in the reader's mind and fail on the reader's machine.
+An undeclared identifier is the easiest defect to miss, because the surrounding code reads correctly
+and fails only on the reader's machine.
 
 **Excerpts.** A snippet marked as an excerpt shows one decision, not a complete type. Generate the
 members it omits rather than copying it verbatim. When an omitted member is required for the code to
 work at all — an accessible constructor for a mapper, a bean registration for a filter — the example
 says so explicitly instead of leaving it implied.
 
-**Verification.** Before presenting a snippet as correct, check that it uses real API signatures for
-the versions the project profile records, and that nothing in it silently depends on a default that
-is not stated. When a snippet cannot be verified, say which part is unverified rather than
-presenting it with the same confidence as the rest.
+**Verification.** Check a snippet against the versions the project profile records. When part of it
+cannot be verified, say which part rather than presenting it with the same confidence as the rest.
 
 ## Tests are part of the code change
 
