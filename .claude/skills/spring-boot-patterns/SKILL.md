@@ -58,7 +58,7 @@ This skill owns one small, durable record of the decisions every other skill ins
 
 Read it before coding. It must state, at minimum:
 
-- Java release, Spring Boot version, and build tool, per `build-and-dependencies`;
+- Java release, Spring Boot version, build tool, and whether the project uses Lombok, per `build-and-dependencies`;
 - relational database engine and major version, and the migration tool (Flyway or Liquibase);
 - authentication model for this deployable service, per `application-security`;
 - whether a cache is used and which technology, when one has been selected;
@@ -250,8 +250,17 @@ The public, machine-readable identifier of an error is the RFC 9457 `type` URI, 
 Do not add a parallel `code`, `errorCode`, or `errorId` extension member to the response body;
 two identifiers for one condition guarantee that clients branch on the wrong one. Clients branch on
 `type`; `title` and `detail` are human-readable and may change. `project-naming-conventions` owns
-the URI form. Internal error codes remain useful in logs, events, and metrics, and stay out of the
-HTTP body.
+the URI form.
+
+Declare every caller-visible failure once, as a constant in a single project-owned error catalog
+that carries the status, the `type` URI, the title, the detail, and the internal code used in logs,
+events, and metrics. One declaration is what keeps the public type and the internal code from
+drifting apart. Do not add a second holder for either.
+
+`correlationId` is the one permitted extension member. It identifies the request rather than the
+failure, so it is not a second error identifier, and support workflows need it in the payload a
+caller copies into a ticket. Keep `traceId`, `spanId`, stack traces, exception class names, provider
+messages, and internal hostnames out of the body entirely.
 
 - Map expected application failures explicitly.
 - Let Spring's framework handler preserve standard REST error behavior where appropriate.
@@ -341,6 +350,9 @@ Reject:
 - project-owned service methods with eight or more declared parameters and no cohesive grouping, redesign, or documented justification;
 - generic `Map` responses;
 - a parallel `code` or `errorCode` member in a `ProblemDetail` body alongside the RFC 9457 `type`;
+- a second declaration of a problem type URI or an internal error code outside the error catalog;
+- `traceId`, `spanId`, or a stack trace in a `ProblemDetail` body;
+- the same failure logged by both the service that threw it and the advice that handles it;
 - a project exception whose simple name collides with a framework type such as `ValidationException`;
 - assuming a database, authentication model, cache, or service convention that `docs/project-profile.md` does not record;
 - generic `enums` packages;
@@ -367,7 +379,7 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] Approved MapStruct handles structural mapping with `ReportingPolicy.ERROR`; any handwritten mapper exception is documented.
 - [ ] Projections, reusable Specifications, enums, exceptions, and exception handlers use their owning packages without empty scaffolding.
 - [ ] Transactions and security ownership are explicit.
-- [ ] Error responses are stable and safe, and the RFC 9457 `type` URI is their only machine-readable identifier.
+- [ ] Error responses are stable and safe, the RFC 9457 `type` URI is their only machine-readable error identifier, and every caller-visible failure comes from the single error catalog.
 - [ ] Shared numeric bounds such as the maximum page size are declared once and referenced, not repeated.
 - [ ] Configuration is type-safe, externalized, and validated.
 - [ ] The complete `spring-boot-testing` workflow was applied and required tests pass.

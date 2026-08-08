@@ -71,7 +71,7 @@ class UserControllerTest {
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.type").value(ProblemTypes.VALIDATION_FAILED.toString()));
+                .andExpect(jsonPath("$.type").value(ApplicationError.VALIDATION_FAILED.type().toString()));
 
         verifyNoInteractions(this.userService);
     }
@@ -85,15 +85,15 @@ class UserControllerTest {
         this.mockMvc.perform(get("%s/{userId}".formatted(UserController.USERS_PATH), userId))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.type").value(ProblemTypes.RESOURCE_NOT_FOUND.toString()));
+                .andExpect(jsonPath("$.type").value(ApplicationError.RESOURCE_NOT_FOUND.type().toString()));
 
         verify(this.userService).getById(userId);
     }
 }
 ```
 
-The test reuses `UserController.USERS_PATH` and `ProblemTypes` instead of repeating the route and
-the problem identifier as literals, so a route or contract change fails at compile time rather than
+The test reuses `UserController.USERS_PATH` and the `ApplicationError` catalog instead of repeating
+the route and the problem identifier as literals, so a route or contract change fails at compile time rather than
 in an assertion message. `@MockitoBean` fields are `private` and non-`final` under the fixture
 exception in `modern-java-21`; `MockMvc` and `ObjectMapper` remain `final` and constructor-injected.
 

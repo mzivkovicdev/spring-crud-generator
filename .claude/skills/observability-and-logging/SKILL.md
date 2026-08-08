@@ -68,7 +68,7 @@ thing to build and the easiest to get subtly wrong.
 - Accept the configured correlation header when the caller supplies it, and generate one when it is absent. Validate its format and bound its length; it is untrusted input that ends up in every log line.
 - Put it into MDC in a filter that runs **before the security filter chain**, so authentication and authorization failures are correlated too. A correlation filter ordered after security silently loses every `401` and `403`.
 - Always clear MDC in a `finally` block. Threads are pooled: a key left behind reappears in an unrelated request and attributes one user's activity to another.
-- Return the correlation identifier in a response header so a user can quote it in a support ticket.
+- Return the correlation identifier in a response header on every response, and additionally as the `correlationId` member of an error body, so a caller can quote it in a support ticket. `spring-boot-patterns` owns the error contract; `traceId` and `spanId` never appear in a response body.
 - Propagate it on every outbound call through a client interceptor, and into `@Async` and `@Scheduled` work through a task decorator. MDC is thread-local and does not cross a thread boundary by itself.
 - When tracing is enabled, Micrometer places `traceId` and `spanId` in MDC automatically. Keep the correlation identifier as well: it is the value a human can read, quote, and search for.
 
@@ -78,8 +78,8 @@ thing to build and the easiest to get subtly wrong.
 - Log expected `4xx` failures at `INFO` or `WARN` with the internal error code, never at `ERROR`. Reserve `ERROR` for unexpected server failures, and always include the exception so the stack trace is captured.
 - Never log inside a loop per element. Log the aggregate.
 - Use parameterized placeholders, never string concatenation. Concatenation runs even when the level is disabled.
-- Include the internal error code, the correlation identifier, and the RFC 9457 problem type on every error log, so an operator moves from a log line to the public contract without a lookup table.
-- Keep the message a stable, searchable constant and put the variable parts in fields. A message assembled from values cannot be grouped.
+- Emit every caller-visible failure from the single REST exception advice that owns the error contract, with the catalog constant's internal `errorCode` as a structured field. That code and the public problem type are the same condition under two names, so an operator moves between a log line and the public contract without a lookup table.
+- Keep the message a stable, searchable constant. Values named in the project's structured-field vocabulary go into MDC or SLF4J key-value pairs, never into the message text; other values may use `{}` placeholders. A message assembled from values cannot be grouped, and a value that appears both as a field and inside the sentence is indexed twice.
 - Log a state transition that matters to the business at `INFO`. Log a decision an operator could not otherwise reconstruct. Do not log method entry and exit.
 
 `application-security` decides what may appear in a log at all. Never log credentials, tokens,

@@ -85,6 +85,9 @@ The authentication endpoints are permitted explicitly. In Profile A they are thi
 issuance and registration endpoints; in Profile B that block is absent because no such endpoints
 exist here. Everything else stays the same.
 
+Actuator endpoints do not appear in this chain at all. They are served on a separate management port
+and secured by their own chain, described below.
+
 ```java
 package com.acme.myapp.config;
 
@@ -118,7 +121,6 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // Profile A only: this service's own token issuance and registration.
                         .requestMatchers(HttpMethod.POST, AuthController.TOKEN_PATH).permitAll()
                         .requestMatchers(HttpMethod.POST, AuthController.REGISTRATIONS_PATH)
@@ -172,6 +174,42 @@ defaults return `401` or `403` as appropriate, and a `401` includes the required
 Configure focused `AuthenticationEntryPoint` and `AccessDeniedHandler` implementations only when
 the contract additionally requires a custom body or stable code. Register them through the filter
 chain, preserve protocol-required headers, and do not duplicate this handling in MVC advice.
+
+### Management endpoints
+
+`observability-and-logging` requires actuator endpoints on a separate management port that the
+public ingress does not route. Network segmentation is not authorization, so the endpoints still get
+their own filter chain, ordered ahead of the API chain and matched by `EndpointRequest` rather than
+by path strings, so a change to `management.endpoints.web.base-path` cannot silently unprotect them.
+
+```java
+@Bean
+@Order(0)
+SecurityFilterChain managementSecurityFilterChain(final HttpSecurity http) throws Exception {
+    return http
+            .securityMatcher(EndpointRequest.toAnyEndpoint())
+            .authorizeHttpRequests(authorize -> authorize
+                    .requestMatchers(EndpointRequest.to(
+                            HealthEndpoint.class, InfoEndpoint.class)).permitAll()
+                    .anyRequest().hasAuthority(MANAGEMENT_AUTHORITY))
+            .csrf(CsrfConfigurer::disable)
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .httpBasic(Customizer.withDefaults())
+            .build();
+}
+```
+
+Rules for this chain:
+
+- Only the platform's probe and build-information endpoints are open. Everything else the project chooses to expose requires an authenticated operator identity.
+- Health details stay at `when-authorized`, so an unauthenticated probe receives a status and nothing more. An open `/actuator/health` with `show-details: always` publishes internal hostnames, database versions, and failure reasons to anyone who can reach the port.
+- The management chain is ordered ahead of the API chain, and the API chain never matches an actuator path. Two chains matching the same request is a misconfiguration, not a defence in depth.
+- The credential for this chain is an operator credential managed by the platform, never a customer identity and never a shared static secret in configuration.
+- Never expose `heapdump`, `threaddump`, `env`, or `configprops`. A heap dump contains every credential the process holds, and no filter chain makes that acceptable on a reachable port.
+- If the deployment cannot provide a separate port, keep the same chain and matcher and rely on ingress rules to block the actuator base path externally. Record that as a compensating control.
+
+### Token validation
 
 Configure issuer and audience explicitly in both profiles. In Profile B the issuer is the external
 provider. In Profile A the issuer is this service's own configured issuer identifier, and the

@@ -18,6 +18,8 @@ Treat this skill as the owner of naming vocabulary, identifier form, cross-bound
 | `spring-data-jpa` | Persistence semantics, mappings, queries, transactions, migrations, indexes, constraints, and database behavior |
 | `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
 | `spring-boot-testing` | Test scope, scenarios, fixtures, doubles, isolation, and execution; this skill still owns test names |
+| `build-and-dependencies` | Build files, dependency and plugin declarations, and version management; this skill owns module and artifact names |
+| `observability-and-logging` | What must be instrumented, log levels and placement, correlation propagation, and endpoint exposure; this skill owns meter, tag, span, and structured-log field names |
 | `spring-boot-code-review` | Review scope, evidence, severity, reporting, and merge-readiness decisions |
 
 Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric, feature flag, or infrastructure resource that the design does not require.
@@ -59,7 +61,7 @@ Application code should refer to physical resources through typed configuration 
 
 - Read [Java, Spring, and test names](references/java-spring-and-test-names.md) for identifiers, packages, modules, architectural roles, Spring components, exceptions, tests, and acronyms.
 - Read [API, data, and configuration names](references/api-data-and-configuration-names.md) for REST, JSON, OpenAPI, problem type URIs and internal error codes, database objects, migrations, configuration, environment variables, profiles, and feature flags.
-- Read [application messaging and observability names](references/application-messaging-and-observability-names.md) for event/message types, publisher and consumer classes, logical destination properties, jobs, executors, cache keys, metrics, tags, custom spans, and structured-log fields.
+- Read [application messaging and observability names](references/application-messaging-and-observability-names.md) for event/message types, publisher and consumer classes, logical destination properties, jobs, executors, cache keys, metrics, tags, custom spans, and structured-log fields. `observability-and-logging` owns what must be instrumented and how; this skill owns what those meters, spans, and fields are called.
 - Load every reference whose resource type is created, renamed, serialized, persisted, published, monitored, or provisioned by the change. Avoid loading unrelated references for a narrow local rename.
 
 ## Apply the rule hierarchy

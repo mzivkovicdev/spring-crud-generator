@@ -54,7 +54,7 @@ without correlation. Spring Security's chain is ordered at `-100`, so use highes
 ```java
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
-    public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
+    public static final String CORRELATION_ID_HEADER = "Correlation-Id";
     public static final String CORRELATION_ID_MDC_KEY = "correlationId";
 
     private static final int MAXIMUM_CORRELATION_ID_LENGTH = 64;
@@ -105,9 +105,9 @@ FilterRegistrationBean<CorrelationIdFilter> correlationIdFilterRegistration() {
 
 Why each part is there:
 
-- The supplied header is untrusted input that will appear in every log line and in the response. Bounding its length and character set prevents log injection and unbounded field values. A value that fails validation is replaced, not rejected: a malformed header is not worth failing a request over.
+- The supplied header is untrusted input that will appear in every log line, in the response, and in the error body. Bounding its length and character set prevents log injection and unbounded field values. A value that fails validation is replaced, not rejected: a malformed header is not worth failing a request over.
 - `finally` is mandatory. Servlet threads are pooled, so a key left in MDC reappears in an unrelated request and attributes one user's activity to another.
-- Setting the response header lets a user quote the identifier in a support ticket.
+- Setting the response header lets a user quote the identifier in a support ticket. The REST exception advice additionally copies it from MDC into the `correlationId` member of an error body, because a caller pasting a failed response into a ticket rarely includes the headers. `spring-boot-patterns` owns that decision; `traceId` and `spanId` never go into a response body.
 - The filter is registered with explicit order rather than annotated as a component, so the ordering relative to the security chain is visible and reviewable.
 
 When Micrometer Tracing is enabled, `traceId` and `spanId` appear in MDC automatically. Keep the
@@ -169,32 +169,66 @@ for the same pooling reason as in the filter.
 A scheduled job has no inbound request, so it generates its own correlation identifier at the start
 of each execution and clears it at the end. Do not let a job run without one.
 
+## Fields, not interpolated values
+
+`project-naming-conventions` defines a vocabulary of structured field names: `correlationId`,
+`traceId`, `spanId`, `operation`, `outcome`, `errorCode`, and approved identifiers such as
+`tenantId` and `userId`. Those are **fields**, and they must never also be interpolated into the
+message text. A value that exists both as a field and inside the sentence is indexed twice, queried
+inconsistently, and destroys message grouping.
+
+The rule is mechanical:
+
+| Value | Where it goes | How |
+| --- | --- | --- |
+| Named in the structured-field vocabulary, request-scoped | MDC | Written once in a filter or decorator, cleared in `finally` |
+| Named in the structured-field vocabulary, record-scoped | Key-value on the record | SLF4J fluent API `addKeyValue` |
+| Not in the vocabulary, useful only for a human reading one line | Message placeholder | SLF4J `{}` |
+| Anything at all | Never | String concatenation |
+
+The message itself is always a stable constant sentence, so records of the same kind group together
+regardless of their field values.
+
+```java
+LOGGER.atInfo()
+        .addKeyValue("operation", "user.status.change")
+        .addKeyValue("userId", userId)
+        .addKeyValue("outcome", "success")
+        .log("User status changed");
+```
+
+Spring Boot's structured logging emits MDC entries and SLF4J key-value pairs as top-level JSON
+fields in every supported format, so this record is queryable by field in any backend without a
+parser rule. `correlationId`, and `traceId` and `spanId` when tracing is enabled, are already in MDC
+and are attached automatically; never add them by hand.
+
+Classic parameterized logging remains correct for values outside the vocabulary:
+
+```java
+LOGGER.debug("Resolved fetch plan for query template={}", queryTemplate);
+```
+
 ## What to log at each layer
 
 | Layer | Level | Content |
 | --- | --- | --- |
 | Inbound request and response | `DEBUG` | Method, templated route, status, duration. Never bodies. |
-| Expected client failure, `4xx` | `INFO` or `WARN` | Internal error code, problem type, correlation identifier. No stack trace. |
-| Unexpected server failure, `5xx` | `ERROR` | Internal error code, correlation identifier, and the exception passed as the last argument. |
-| Service business decision | `INFO` | The state transition and its inputs by identifier, when an operator could not otherwise reconstruct it. |
+| Expected client failure, `4xx` | `WARN` | `errorCode` field. No stack trace. Emitted by the REST exception advice only. |
+| Unexpected server failure, `5xx` | `ERROR` | `errorCode` field and the exception attached as the cause. Emitted by the REST exception advice only. |
+| Service business decision | `INFO` | The state transition, as fields, when an operator could not otherwise reconstruct it. |
 | Outbound call | `DEBUG` | Target system, operation, duration, outcome. |
 | Outbound failure | `WARN` | Target system, error category, whether a retry or fallback occurred. |
 | Persistence | — | Nothing. The service layer already logged the operation. |
 | Mapper, TO, domain record | — | Nothing. |
 
-```java
-LOGGER.info("User status changed userId={} fromStatus={} toStatus={}",
-        userId, previousStatus, newStatus);
-```
+**Caller-visible failures are logged in exactly one place: the `@RestControllerAdvice` that owns the
+error contract.** That advice already knows the error catalog constant, so it emits the `errorCode`
+field, chooses the level from the HTTP status, and attaches the exception only for `5xx`.
+`spring-boot-patterns` shows the implementation. A service that logs an exception and then throws it
+produces the same failure twice, at two levels, with two different field sets. Do not do it.
 
-```java
-LOGGER.error("Unhandled failure while creating user errorCode={} problemType={}",
-        InternalErrorCodes.USER_CREATION_FAILED, ProblemTypes.INTERNAL_ERROR, exception);
-```
-
-The message is a stable constant and the variable parts are placeholders, so the two records group
-together in any backend. The exception is the last argument, without a placeholder, which is how
-SLF4J captures the stack trace.
+Failures on boundaries the advice does not cover — listeners, scheduled jobs, messaging consumers,
+asynchronous work — are logged at their own boundary, once, following the same rule.
 
 Guard a log call only when producing its arguments is genuinely expensive:
 
@@ -204,6 +238,8 @@ if (LOGGER.isDebugEnabled()) {
 }
 ```
 
+A guard is unnecessary around the fluent API, which evaluates nothing when the level is disabled.
+
 A guard around a call whose arguments are already-computed values adds noise and no benefit.
 
 ## Rejected logging
@@ -212,6 +248,12 @@ A guard around a call whose arguments are already-computed values adds noise and
 // Wrong: concatenation runs even when the level is disabled, and the message
 // cannot be grouped because every record has a different text.
 LOGGER.debug("Loading user " + userId + " for tenant " + tenantId);
+```
+
+```java
+// Wrong: errorCode is in the structured-field vocabulary, so interpolating it into the
+// message indexes it twice and makes the message text vary per record.
+LOGGER.error("Request failed errorCode={}", error.code(), exception);
 ```
 
 ```java

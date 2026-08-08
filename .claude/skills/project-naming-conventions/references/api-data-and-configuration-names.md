@@ -228,13 +228,14 @@ https://api.acme.example/problems/invalid-order-transition
 
 Rules for the type URI:
 
-- Use a stable absolute URI under one project-owned base, declared once in a `ProblemTypes` holder in `exception.handler`. Do not build it from the deployment hostname, so the identifier survives environment and infrastructure changes.
+- Use a stable absolute URI under one project-owned base. Do not build it from the deployment hostname, so the identifier survives environment and infrastructure changes.
 - Use lowercase kebab-case in the final segment and name the condition, not the exception class, HTTP status, provider, or layer.
 - Make it dereferenceable only when project policy requires published problem documentation. An unresolvable but stable URI is still a valid identifier under RFC 9457.
 - Do not include dynamic values such as identifiers, tenant names, field names, or counts.
 - Do not add a parallel `code`, `errorCode`, or `errorId` member to the response body. Two identifiers for one condition guarantee that some client branches on the wrong one. `spring-boot-patterns` owns that decision.
 
-Internal error codes remain useful, and stay internal:
+Internal error codes use `UPPER_SNAKE_CASE` and appear in structured logs, audit events, metrics,
+and application events only:
 
 ```text
 RESOURCE_NOT_FOUND
@@ -242,10 +243,12 @@ DUPLICATE_EMAIL
 INVALID_ORDER_TRANSITION
 ```
 
-Use `UPPER_SNAKE_CASE` codes for structured logs, audit events, metrics, and application events only.
-Keep each code and its problem type in a one-to-one relationship, with the type's final segment as
-the kebab-case form of the code, so an operator can move between a log line and the public contract
-without a lookup table.
+Each internal code and its problem type are one and the same condition under two names, so declare
+them together in the single error catalog that `spring-boot-patterns` requires, and derive the
+type's final segment from the code as its kebab-case form. Deriving rather than typing the URI is
+what makes the pairing structural: an operator moves between a log line and the public contract
+without a lookup table, and neither identifier can be changed in isolation. Never declare a problem
+type URI or an internal error code anywhere else.
 
 Apply `application-security` to error details and identifiers. A stable name must not reveal a
 secret, internal host, vulnerable component, or protected customer information.

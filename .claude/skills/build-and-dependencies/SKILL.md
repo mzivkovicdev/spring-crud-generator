@@ -86,8 +86,10 @@ The compiler settings are what make `modern-java-21` and the mapper architecture
 
 This is the single most common way to break this stack.
 
-- Declare every processor the project needs in one explicit processor path: MapStruct, the Spring Boot configuration processor, and Lombok if the project uses it.
-- When both Lombok and MapStruct are present, the order is **Lombok, then `lombok-mapstruct-binding`, then the MapStruct processor**. Without the binding, MapStruct runs before Lombok generates accessors, and it either fails or silently produces mappers that ignore fields.
+- Declare every processor the project needs in one explicit processor path. For this skill set that is the MapStruct processor and the Spring Boot configuration processor.
+- **Lombok is optional.** Nothing here requires it, and the decision belongs in `docs/project-profile.md`. Do not introduce it because an example shows it, and do not remove it from a project that already uses it coherently. If the profile is silent and the repository has no Lombok dependency, the project does not use Lombok.
+- When the project does use Lombok alongside MapStruct, the processor order is **Lombok, then `lombok-mapstruct-binding`, then the MapStruct processor**. Without the binding, MapStruct runs before Lombok generates accessors, and it either fails or silently produces mappers that ignore fields.
+- Omit a version for any processor the Spring Boot BOM manages, and pin only the artifacts it does not, such as the MapStruct processor. Confirm the build tool actually resolves managed versions on the processor path before relying on it; the reference for each tool states the condition.
 - On Maven, declaring `annotationProcessorPaths` disables classpath processor discovery entirely, so every processor must appear in that list. A processor declared only as a dependency stops running.
 - Configure the MapStruct unmapped-target policy at the build level so it cannot be forgotten on an individual mapper.
 - After any change to a processor, its version, or an entity or mapper it reads, rebuild and **inspect the generated sources**. Do not assume generation succeeded because compilation did.
@@ -136,6 +138,7 @@ Reject:
 - a version pinned for an artifact the Spring Boot BOM already manages;
 - an unpinned build plugin;
 - an annotation processor declared as an ordinary dependency, or a processor path missing Lombok's MapStruct binding when both are present;
+- Lombok introduced because an example showed it, rather than because the project profile records it;
 - integration tests that run in the unit-test phase, or that no phase runs at all;
 - skipped tests, ignored test failures, or disabled quality gates in committed configuration;
 - credentials, tokens, or environment-specific URLs in build files;
@@ -151,7 +154,7 @@ Reject:
 - [ ] Managed artifacts carry no version; unmanaged ones are pinned with a recorded reason.
 - [ ] Every plugin version is pinned.
 - [ ] The Java release and `-parameters` are configured explicitly.
-- [ ] The annotation processor path lists every processor in the correct order, and the generated sources were inspected after the build.
+- [ ] The annotation processor path lists every processor in the correct order, matches the project's recorded Lombok decision, and the generated sources were inspected after the build.
 - [ ] Unit, slice, and integration suites each run in their intended phase, and the verification lifecycle fails on integration-test failure.
 - [ ] No credentials, unapproved repositories, or unreviewed wrapper changes were introduced.
 - [ ] Any removal was user-approved, applied one dependency at a time, and verified by a full build including integration tests and application startup.

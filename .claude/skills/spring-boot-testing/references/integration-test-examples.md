@@ -22,8 +22,9 @@ errors, an isolated supported-database container, and the project cleanup strate
 It intentionally omits `@Transactional`: the request must commit through the real service
 transaction before repository verification.
 
-Routes and problem identifiers come from `UserController.USERS_PATH` and `ProblemTypes`, never from
-repeated literals. Error assertions use the `type` URI; the body has no `code` member.
+Routes and problem identifiers come from `UserController.USERS_PATH` and the `ApplicationError`
+catalog, never from repeated literals. Error assertions use the `type` URI; the body has no `code`
+member.
 
 ```java
 @SpringBootTest
@@ -90,7 +91,7 @@ class UserApiIntegrationTest {
                         .content(this.objectMapper.writeValueAsBytes(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.type").value(ProblemTypes.VALIDATION_FAILED.toString()));
+                .andExpect(jsonPath("$.type").value(ApplicationError.VALIDATION_FAILED.type().toString()));
 
         assertThat(this.userRepository.count()).isEqualTo(initialUserCount);
         assertThat(this.userRepository.existsByEmail(request.email())).isFalse();

@@ -24,6 +24,7 @@ plugins {
 }
 
 extra["mapstructVersion"] = "1.6.3"
+// Only when docs/project-profile.md records that the project uses Lombok.
 extra["lombokMapstructBindingVersion"] = "0.2.0"
 ```
 
@@ -65,8 +66,24 @@ derivation.
 
 ## Annotation processors
 
-Gradle builds the processor path from the `annotationProcessor` configuration in declaration order,
-so declare Lombok, then the binding, then MapStruct.
+Gradle builds the processor path from the `annotationProcessor` configuration in declaration order.
+
+### Default: no Lombok
+
+```kotlin
+dependencies {
+    annotationProcessor("org.mapstruct:mapstruct-processor:${property("mapstructVersion")}")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
+    implementation("org.mapstruct:mapstruct:${property("mapstructVersion")}")
+}
+```
+
+### When the project uses Lombok
+
+Lombok is optional and the decision belongs in `docs/project-profile.md`. Nothing in this skill set
+requires it. Add these declarations **only** when the profile records that the project uses it, and
+keep Lombok, then the binding, then MapStruct in this order.
 
 ```kotlin
 dependencies {
@@ -83,11 +100,15 @@ dependencies {
 }
 ```
 
-Notes:
+`lombok-mapstruct-binding` exists only to make MapStruct wait for Lombok's generated accessors.
+Without it, generation order is undefined: the build either fails with missing properties or
+produces a mapper that quietly skips fields. It is meaningless without Lombok, so it appears only in
+this variant. Lombok also needs a separate `testAnnotationProcessor` declaration, or it silently
+stops working in test sources.
 
-- `lombok-mapstruct-binding` exists only to make MapStruct wait for Lombok's generated accessors. Without it, generation order is undefined: the build either fails with missing properties or produces a mapper that quietly skips fields. Include it whenever both are present, and omit it when the project does not use Lombok.
+### Rules that apply either way
+
 - `mapstruct` is a compile dependency; `mapstruct-processor` is a processor. Both are required, and they are not interchangeable.
-- Lombok needs a separate `testAnnotationProcessor` declaration, or it silently stops working in test sources.
 - `spring-boot-configuration-processor` produces metadata for `@ConfigurationProperties`. Its absence is invisible until IDE completion disappears.
 - Verify the order in the resolved configuration rather than assuming it. After changing any processor, its version, an entity, or a mapper, rebuild and read the generated sources under `build/generated/sources/annotationProcessor`. A green compile does not prove the mapper mapped what you expected.
 

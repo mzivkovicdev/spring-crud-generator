@@ -38,7 +38,9 @@ Rules:
 - Never expose `heapdump`, `threaddump`, `env`, or `configprops` on a publicly reachable port. A heap dump contains every credential the process holds.
 - `shutdown` stays disabled.
 - `show-details` is never `always` on a reachable endpoint. Health details name internal hosts, database versions, and failure reasons.
-- The management port and its authorization follow `application-security`. A separate port is network segmentation, not authentication; if the endpoint can be reached, it is still protected.
+- The management port and its authorization follow `application-security`, which defines a dedicated filter chain matched by `EndpointRequest`, ordered ahead of the API chain. A separate port is network segmentation, not authentication; if the endpoint can be reached, it is still protected. The API filter chain never matches an actuator path.
+- Only the probe and build-information endpoints are unauthenticated. Anything else the project exposes requires an operator identity.
+- When the deployment cannot provide a separate port, keep the same chain and matcher and block the actuator base path at the ingress. Record that as a compensating control.
 - `info` contains build and version data only. Never put an environment URL, an account identifier, or anything operationally sensitive in it.
 - The Prometheus endpoint is exposed only when the project uses a scraped registry. With a pushed registry, it is unnecessary.
 
@@ -125,6 +127,6 @@ void healthReadiness_whenApplicationIsRunning_returnsUp() throws Exception {
 ```
 
 - Assert the probe groups return the expected status through the real endpoint, at the integration level.
-- Assert that a disabled or unexposed endpoint is not reachable. That test is what stops an accidental `include: *` from merging.
+- Assert that a disabled or unexposed endpoint is not reachable, and that an authenticated-only endpoint returns `401` without a credential. Those tests are what stop an accidental `include: *` or a dropped management chain from merging.
 - Assert that a health indicator reports `DOWN` when its dependency fails, and that the response body contains no host, version, or exception detail.
 - Do not assert full health payload shape; it changes with configuration and adds no value.

@@ -78,6 +78,7 @@ Prefer an observation, which produces a timer and a trace span from one instrume
 @Transactional(readOnly = true)
 public class UserService {
 
+    private static final String OUTCOME_KEY = "outcome";
     private static final String USER_CREATION_OBSERVATION = "user.creation";
 
     private final ObservationRegistry observationRegistry;
@@ -93,29 +94,68 @@ public class UserService {
 
     @Transactional
     public UserDomain create(final String username, final String email, final String rawPassword) {
-        return Observation.createNotStarted(USER_CREATION_OBSERVATION, this.observationRegistry)
-                .lowCardinalityKeyValue("outcome", "success")
-                .observe(() -> this.doCreate(username, email, rawPassword));
+        final Observation observation =
+                Observation.createNotStarted(USER_CREATION_OBSERVATION, this.observationRegistry)
+                        .start();
+
+        try (Observation.Scope ignoredScope = observation.openScope()) {
+            final UserDomain createdUser = this.doCreate(username, email, rawPassword);
+
+            observation.lowCardinalityKeyValue(OUTCOME_KEY, "success");
+
+            return createdUser;
+        } catch (final RuntimeException exception) {
+            observation.lowCardinalityKeyValue(OUTCOME_KEY, "failure");
+            observation.error(exception);
+
+            throw exception;
+        } finally {
+            observation.stop();
+        }
     }
 }
 ```
+
+The outcome tag is set **after** the operation completes, in the branch that knows what happened.
+Setting it before execution, or setting it once on the builder, records `success` even when the
+operation throws. That is not a cosmetic defect: it produces a metric that reports a healthy service
+during an incident, which is the exact failure this instrumentation exists to prevent. Verify the
+failure branch with a test.
+
+`observe(...)` with a lambda is acceptable only when the observation needs no outcome tag at all,
+because it gives no place to set one after the fact. It still records the error automatically.
 
 `lowCardinalityKeyValue` becomes a metric tag and a span attribute. `highCardinalityKeyValue`
 becomes a span attribute only, which is where an identifier belongs: a trace can carry a user
 identifier, a metric cannot.
 
+Opening a scope is what makes the observation the current one, so nested instrumentation and log
+correlation attach to it. Closing it in a try-with-resources and stopping in `finally` is required;
+an observation that is started and never stopped leaks and never records.
+
 For a simple duration where a span adds nothing, a timer is enough:
 
 ```java
-private static final String EXTERNAL_LOOKUP_TIMER = "external.lookup.duration";
+private static final String BILLING_LOOKUP_TIMER = "billing.client.lookups";
 
 final Timer.Sample sample = Timer.start(this.meterRegistry);
+String outcome = "failure";
 try {
-    return this.externalClient.lookup(request);
+    final BillingAccount account = this.billingClient.lookup(request);
+
+    outcome = "success";
+
+    return account;
 } finally {
-    sample.stop(this.meterRegistry.timer(EXTERNAL_LOOKUP_TIMER, "system", "billing"));
+    sample.stop(this.meterRegistry.timer(BILLING_LOOKUP_TIMER, OUTCOME_KEY, outcome));
 }
 ```
+
+The meter is named for the phenomenon being measured, `billing.client.lookups`, not for the layer or
+the mechanism. `project-naming-conventions` owns that form: name the measured phenomenon, keep the
+name stable across refactors, and let the registry add the exporter's unit suffix rather than
+writing `duration` or `_seconds` into the source name. Note that the outcome is again resolved
+before the meter is recorded, for the same reason as above.
 
 `@Observed` on a method is acceptable when the project declares an `ObservedAspect` bean, but it
 does not apply to self-invocation and it hides the instrumentation from the reader. Prefer the
@@ -169,4 +209,4 @@ void create_whenRequestIsValid_recordsCreationTimer() {
 - Use `SimpleMeterRegistry` in unit tests, and the application's registry in integration tests.
 - Assert the meter name and the tags, because those are the contract a dashboard and an alert depend on.
 - Do not assert timing values; they are nondeterministic.
-- Assert that a failure path increments its counter. That is the assertion that catches silent degradation, and it is the one most often missing.
+- Assert that a failure path increments its counter, and that a failing operation is tagged `outcome=failure`. Those two assertions catch silent degradation and the mis-set outcome tag, and they are the ones most often missing.

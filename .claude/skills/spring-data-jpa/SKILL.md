@@ -41,6 +41,10 @@ writing persistence code**. Do not pick a database, a dialect, an identifier str
 migration tool by default, and do not infer the production database from a test dependency such as
 H2.
 
+Apply `build-and-dependencies` for the driver, migration-tool, and annotation-processor declarations
+that this skill depends on; it owns the build files, and this skill owns the persistence behavior
+they enable.
+
 Then inspect:
 
 1. Spring Boot, Spring Data JPA, Jakarta Persistence, Hibernate, JDBC driver, database, and migration-tool versions;

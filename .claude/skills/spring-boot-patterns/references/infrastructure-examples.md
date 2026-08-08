@@ -54,7 +54,8 @@ src/main/java/com/example/myapp/
 │   └── response/
 │       ├── PageTO.java
 │       └── UserTO.java
-├── exception/                     # Custom exceptions
+├── exception/                     # Custom exceptions and the error catalog
+│   ├── ApplicationError.java      # Status, problem type, title, detail, internal code
 │   ├── BusinessValidationException.java
 │   ├── InvalidStateException.java
 │   ├── ResourceNotFoundException.java
