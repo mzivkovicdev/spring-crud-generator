@@ -1,6 +1,6 @@
 ---
 name: spring-boot-testing
-description: Production testing standard for Java 21+ Spring Boot REST applications. Use whenever production behavior, APIs, services, persistence, security, configuration, scheduled jobs, schedulers, listeners, caches, or external adapters are created or changed; when creating or updating JUnit unit tests, Spring test slices, database-backed integration tests, fixtures, mocks, test containers, or test infrastructure; and when verifying a bug fix or refactor. Covers realistic scenario selection, unit and integration scope, generated test data, negative persistence verification, scheduler testing, isolation, and mandatory test execution. Excludes end-to-end and UI testing.
+description: Testing standard for Java 21+ Spring Boot REST applications. Use whenever production behavior is created or changed, and when writing or updating unit tests, Spring test slices, database-backed integration tests, fixtures, mocks, containers, or scheduler tests. Covers scenario selection, test scope, test data, isolation, and execution. Excludes end-to-end and UI testing.
 ---
 
 # Spring Boot Testing
@@ -45,9 +45,9 @@ Load only applicable references for the changed behavior.
 ## Inspect before writing tests
 
 1. Read `docs/project-profile.md` for the database engine and version, the authentication profile,
-   the migration tool, and the test-selection configuration. When a decision the tests depend on is
-   missing — most often the database or the authentication profile — ask the user and record the
-   answer before writing tests. Do not substitute H2 for an undecided database, and do not invent an
+   the migration tool, the cleanup strategy, and the test-selection configuration. When a decision
+   the tests depend on is missing, fill it through the process `spring-boot-patterns` owns before
+   writing tests. Do not substitute H2 for an undecided database, and do not invent an
    authentication mechanism.
 2. Inspect the Maven or Gradle configuration, supported Java and Spring Boot versions, test source
    sets, test plugins, naming suffixes, profiles, and CI commands.

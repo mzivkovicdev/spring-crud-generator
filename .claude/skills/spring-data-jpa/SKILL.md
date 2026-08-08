@@ -1,6 +1,6 @@
 ---
 name: spring-data-jpa
-description: Production Spring Data JPA and Hibernate patterns for Java 21+ applications using any supported relational database. Covers entity mapping, repositories, associations, fetch plans, JPQL, native SQL, transactions, pagination, bulk work, locking, migrations, query performance, and persistence tests. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, schema migrations, database reads or writes, or transactional persistence behavior.
+description: Spring Data JPA and Hibernate patterns for Java 21+ applications on any supported relational database. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, schema migrations, database reads or writes, or transactional behavior. Covers mapping, associations, fetch plans, queries, transactions, pagination, locking, migrations, and persistence tests.
 ---
 
 # Spring Data JPA Skill
@@ -33,8 +33,9 @@ Read only the examples required by the change:
 
 ## Before changing persistence
 
-Read `docs/project-profile.md` first. It records the relational database engine and major version
-and the migration tool. When it does not, or when the repository contains no database dependency,
+Read `docs/project-profile.md` first, whose template `spring-boot-patterns` owns. It records the
+relational database engine and major version, the migration tool, the entity accessor style, and the
+identifier strategy. When it does not, or when the repository contains no database dependency,
 no datasource configuration, and no migration directory, **ask the user which database engine and
 version and which migration tool the project uses, and record the answer in the profile before
 writing persistence code**. Do not pick a database, a dialect, an identifier strategy, or a

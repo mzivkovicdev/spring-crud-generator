@@ -1,6 +1,6 @@
 ---
 name: build-and-dependencies
-description: Build configuration and dependency governance for Java 21+ Spring Boot REST projects using Maven or Gradle. Use when creating or changing build files, dependency or plugin declarations, versions, BOMs, wrappers, compiler settings, annotation processors, test selection and source sets, packaging, or build profiles; when adding, replacing, or upgrading a dependency; when auditing a project for unnecessary, duplicated, misscoped, or obsolete dependencies; and when setting up or changing automated quality gates such as Checkstyle, Spotless, editor configuration, or dependency enforcement. Owns the dependency justification gate, the removal workflow, and the quality-gate configuration.
+description: Maven and Gradle build configuration and dependency governance for Java 21+ Spring Boot projects. Use when changing build files, dependencies, plugins, versions, compiler settings, annotation processors, test selection, or packaging; when adding or upgrading a dependency; when auditing for unnecessary or duplicated dependencies; and when configuring quality gates such as Checkstyle or Spotless.
 ---
 
 # Build and Dependencies
@@ -29,8 +29,9 @@ findings under `spring-boot-code-review` and do not edit build files.
 
 ## Determine the build tool before editing
 
-Read `docs/project-profile.md`, which `spring-boot-patterns` owns. It records the build tool, the
-Java release, and the Spring Boot version.
+Read `docs/project-profile.md`, which `spring-boot-patterns` owns and whose template lists every
+entry. It records the build tool, the Java release, the Spring Boot version, and whether the project
+uses Lombok.
 
 - If the repository already contains `pom.xml` or `build.gradle`/`build.gradle.kts`, that is the answer. Record it in the profile if it is missing there.
 - If the repository contains neither — an empty repository, or a skeleton with nothing generated yet — **ask the user which build tool the project will use** along with the Java release and Spring Boot version. Do not pick one.

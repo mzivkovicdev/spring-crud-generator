@@ -33,6 +33,7 @@ Read only the references relevant to the task:
 
 - Read [REST API examples](references/rest-api-examples.md) when creating or changing a REST controller, request/response TO, REST mapper, validation response, or `ProblemDetail` handler.
 - Read [service and domain examples](references/service-domain-examples.md) when creating or changing a service, domain model, domain mapper, service parameter object, or repository boundary.
+- Read [project profile template](references/project-profile-template.md) when creating the profile or filling a missing decision.
 - Read [infrastructure examples](references/infrastructure-examples.md) when deciding package placement or changing method validation, custom exceptions, configuration properties, infrastructure beans, or code that resembles a listed anti-pattern.
 
 The references contain focused examples. Treat the illustrated decisions and accompanying rules as
@@ -54,26 +55,18 @@ not authorize generating a server-rendered presentation layer.
 ## Establish the project profile
 
 This skill owns one small, durable record of the decisions every other skill inspects:
-`docs/project-profile.md`.
+`docs/project-profile.md`. Read it before coding.
 
-Read it before coding. It must state, at minimum:
-
-- Java release, Spring Boot version, build tool, and whether the project uses Lombok, per `build-and-dependencies`;
-- relational database engine and major version, and the migration tool (Flyway or Liquibase);
-- authentication model for this deployable service, per `application-security`;
-- whether a cache is used and which technology, when one has been selected;
-- whether the project uses the application-service interface plus `*ServiceImpl` convention;
-- whether entities use fluent or `void` setters;
-- test source-set and test-selection configuration, per `spring-boot-testing`;
-- quality-gate commands, including the local auto-fix command, per `build-and-dependencies`;
-- log format, correlation header, tracing, metrics registry, and exposed actuator endpoints, per `observability-and-logging`.
+[Project profile template](references/project-profile-template.md) lists every entry, its allowed
+values, and the skill that owns it. Use it rather than assembling the fields from nine skills.
 
 When the file is missing or a required decision is absent — an empty repository, or a bare Spring
 Initializr skeleton with nothing recorded — **ask the user for the missing decisions and write them
 into `docs/project-profile.md` before implementing**. Ask once, in one message, for everything the
-task depends on. Do not silently assume a database, an authentication model, a cache, or a service
-convention. Existing repository evidence, such as a declared dependency or an applied migration,
-is an acceptable answer; record it in the profile so later tasks do not ask again.
+task depends on, using the template's allowed values so the user can answer in a word. Repository
+evidence such as a declared dependency or an applied migration is an acceptable answer; record it so
+later tasks do not ask again. Never assume a database, an authentication model, a cache, or a
+service convention, and never infer one from a test dependency or an example.
 
 ## Rules before coding
 

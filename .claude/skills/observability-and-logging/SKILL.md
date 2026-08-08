@@ -1,6 +1,6 @@
 ---
 name: observability-and-logging
-description: Logging, metrics, tracing, and operational endpoints for Java 21+ Spring Boot REST applications. Use when adding or changing log statements, log configuration, correlation or request context, MDC, Micrometer meters, tracing, actuator endpoints, health indicators, or readiness and liveness probes; when a change makes a failure hard to diagnose; and when verifying that a feature is operable in production. Backend-neutral: the same instrumentation serves ELK, Grafana with Loki and Prometheus, OpenTelemetry collectors, or a managed platform.
+description: Logging, metrics, tracing, and operational endpoints for Java 21+ Spring Boot REST applications. Use when adding or changing log statements, log configuration, correlation context, MDC, Micrometer meters, tracing, actuator endpoints, health indicators, or probes, and when verifying that a feature is operable in production. Backend-neutral.
 ---
 
 # Observability and Logging
@@ -42,17 +42,12 @@ Those follow the approved platform standard.
 
 ## Record the decisions before instrumenting
 
-`docs/project-profile.md` must state:
+`docs/project-profile.md` records the log format, correlation header, tracing decision, metrics
+registry, and exposed actuator endpoints. Its template, owned by `spring-boot-patterns`, lists the
+allowed values; fill a missing decision through the process that skill defines.
 
-- the log JSON format, and whether local development uses a human-readable console format instead;
-- the correlation header name and the MDC keys the project uses;
-- whether distributed tracing is enabled, which bridge and exporter, and the sampling policy;
-- the metrics registry, and whether metrics are scraped or pushed;
-- the management port and which actuator endpoints are exposed.
-
-When a decision is missing, ask once and record the answer. Until the observability backend is
-chosen, still emit structured JSON and Micrometer meters: that work is not wasted, because it is
-what every candidate backend consumes.
+Until the observability backend is chosen, still emit structured JSON and Micrometer meters. That
+work is not wasted, because it is what every candidate backend consumes.
 
 ## Reference routing
 

@@ -1,6 +1,6 @@
 ---
 name: project-naming-conventions
-description: Define, apply, review, and safely migrate developer-owned names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, Spring configuration, feature flags, cache keys, application messages, jobs, metrics, traces, or structured-log fields; when resolving inconsistent terminology; and when reviewing naming-related changes. Excludes physical cloud, IAM, Kubernetes, CI/CD, container, DNS, and other infrastructure-resource naming, which follows the approved platform standard.
+description: Naming and safe renaming of developer-owned names in Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, tests, REST paths and fields, OpenAPI components, database objects, configuration, cache keys, jobs, metrics, spans, or structured-log fields, and when resolving inconsistent terminology. Excludes infrastructure-resource naming.
 ---
 
 # Project Naming Conventions

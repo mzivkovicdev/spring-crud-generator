@@ -1,6 +1,6 @@
 ---
 name: application-security
-description: Secure-by-design rules for Java 21+ Spring Boot REST applications. Use when implementing or reviewing a change that crosses a trust boundary or affects authentication, authorization, tenant or object ownership, API contracts, sensitive business operations, confidential or personal data, secrets, cryptography, logs, errors, files, URLs, WebClient calls, caches, messaging, scheduled jobs, AWS or other cloud resources, dependencies, configuration, deployment, vulnerability remediation, or release security.
+description: Secure-by-design rules for Java 21+ Spring Boot REST applications. Use when a change crosses a trust boundary or affects authentication, authorization, tenant or object ownership, sensitive operations, confidential or personal data, secrets, cryptography, logs, errors, outbound calls, caches, messaging, cloud resources, configuration, deployment, or vulnerability remediation.
 ---
 
 # Application Security Skill

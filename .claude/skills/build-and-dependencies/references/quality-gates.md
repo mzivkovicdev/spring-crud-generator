@@ -208,6 +208,7 @@ fix is not a gate.
         <module name="UnusedImports">
             <property name="processJavadoc" value="true"/>
         </module>
+        <!-- VERIFY ON FIRST RUN: see "Modules to verify before relying on them". -->
         <module name="ImportOrder">
             <property name="groups" value="java,jakarta,javax,com,org,*"/>
             <property name="option" value="top"/>
@@ -254,11 +255,8 @@ fix is not a gate.
         </module>
         <module name="OuterTypeFilename"/>
         <module name="OneTopLevelClass"/>
-        <module name="HideUtilityClassConstructor"/>
-        <module name="VisibilityModifier">
-            <property name="protectedAllowed" value="false"/>
-            <property name="packageAllowed" value="false"/>
-        </module>
+        <!-- HideUtilityClassConstructor and VisibilityModifier are deliberately absent.
+             See "Modules to verify before relying on them". -->
 
         <!-- ===== modern-java-21: exceptions ===== -->
         <module name="IllegalCatch">
@@ -329,6 +327,23 @@ Configuration decisions worth knowing before someone "fixes" them:
 - **`MagicNumber` is not enabled.** In a Spring project it fires mostly on validation annotations and produces more noise than value; the real rule — shared bounds declared once — is covered by review and by the constants the skills already require.
 - **The log-concatenation regex is a heuristic.** It catches the common case and will not catch every one. It is a gate, not a proof.
 - **`RequireThis` with `validateOnlyOverlapping=false`** is what makes the `this.` rule real. It is the single noisiest module on an existing codebase and the single most valuable one on a new project, which is why it goes in before the first feature.
+
+## Modules to verify before relying on them
+
+The configuration above is the high-confidence core. The following are useful but behave in ways
+that depend on the installed Checkstyle version and on constructs this project uses heavily, so they
+are either flagged or left out. Verify each on the first real run, then adopt or discard it
+deliberately.
+
+| Module | What to verify | Why it is uncertain |
+| --- | --- | --- |
+| `ImportOrder` (included, flagged) | That `option=top`, `separated=true`, and the `*` catch-all group interact as intended, and that a file matching the project order passes | Static-group separation is governed by `separated` in some versions and by `separatedStaticGroups` in others. Spotless already applies the order, so a false positive here is noise rather than a missing gate. If it misbehaves, remove the module and keep Spotless as the enforcement point. |
+| `VisibilityModifier` (omitted) | Its behaviour on `record` components and on Mockito fixture fields before adding it | Records declare implicitly private final fields, and older versions reported them. The rule it would enforce is already covered by `modern-java-21` in review. |
+| `HideUtilityClassConstructor` (omitted) | Whether it fires on `@Configuration` classes that declare only static `@Bean` methods | Such a class is not a utility class, but it matches the module's shape. `ApiPaths` and `PaginationConstraints` already declare private constructors by convention. |
+
+Adopt a module by moving it into the main configuration and running a full build. Do not adopt one
+because it sounds useful; a gate that produces false positives teaches people to ignore the tool,
+which costs more than the rule was worth.
 
 ## Layer 3: dependency and runtime guards
 
