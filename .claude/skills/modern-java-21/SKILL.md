@@ -377,8 +377,9 @@ Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remov
 
 ## Worked examples in these skills
 
-Every code, configuration, and build snippet in this skill set and its references is an instruction
-that an agent will copy. Treat each one as production material, not illustration.
+Every code, configuration, and build snippet in this skill set is a **pattern to adapt, not a file to
+copy**. An agent asked for a product service writes `ProductService` from scratch; it does not rename
+`UserService` and keep the rest.
 
 **Self-containment.** A snippet must declare every identifier it uses, or name where the identifier
 comes from. Concretely:
