@@ -4,6 +4,8 @@ Use this reference when the project profile records Gradle. Apply every rule fro
 The snippets are Kotlin DSL excerpts of `build.gradle.kts`, not a complete file. Translate to Groovy
 only if the repository already uses it; do not migrate an existing project between the two DSLs.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+
 ## Contents
 
 1. [Plugins and version management](#plugins-and-version-management)

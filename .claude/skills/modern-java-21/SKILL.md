@@ -375,6 +375,33 @@ Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remov
 - Use `ERROR` for failures that require action, `WARN` for degraded/expected exceptional conditions, `INFO` for significant lifecycle/business events, and `DEBUG` for diagnostic detail.
 - Avoid duplicate logging of the same exception across layers.
 
+## Worked examples in these skills
+
+Every code, configuration, and build snippet in this skill set and its references is an instruction
+that an agent will copy. Treat each one as production material, not illustration.
+
+**Self-containment.** A snippet must declare every identifier it uses, or name where the identifier
+comes from. Concretely:
+
+- Every constant referenced in a snippet is declared in that same snippet, unless the snippet states which example or type declares it.
+- Every build property referenced as `${...}` is declared in the same file, or the file says where it is declared.
+- Every type referenced across skills is named with the reference that defines it, so the reader can find it.
+- Omit imports, and omit members that are irrelevant to the decision being shown — but never omit something the snippet itself refers to.
+
+An undeclared identifier is the most common defect in this material and the easiest to miss, because
+the surrounding code reads correctly. `${spring-boot.version}` in a Maven snippet and a constant that
+exists only in the author's head both compile in the reader's mind and fail on the reader's machine.
+
+**Excerpts.** A snippet marked as an excerpt shows one decision, not a complete type. Generate the
+members it omits rather than copying it verbatim. When an omitted member is required for the code to
+work at all — an accessible constructor for a mapper, a bean registration for a filter — the example
+says so explicitly instead of leaving it implied.
+
+**Verification.** Before presenting a snippet as correct, check that it uses real API signatures for
+the versions the project profile records, and that nothing in it silently depends on a default that
+is not stated. When a snippet cannot be verified, say which part is unverified rather than
+presenting it with the same confidence as the rest.
+
 ## Tests are part of the code change
 
 Apply the complete `spring-boot-testing` workflow. Every touched test file must also follow this

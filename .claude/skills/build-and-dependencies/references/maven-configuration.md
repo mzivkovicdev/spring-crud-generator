@@ -3,6 +3,8 @@
 Use this reference when the project profile records Maven. Apply every rule from `../SKILL.md`.
 The snippets are excerpts of a `pom.xml`, not a complete file.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+
 ## Contents
 
 1. [Project skeleton and version management](#project-skeleton-and-version-management)
@@ -27,10 +29,16 @@ resource filtering are configured consistently.
 
 <properties>
     <java.version>21</java.version>
+    <checkstyle.version>10.21.0</checkstyle.version>
     <mapstruct.version>1.6.3</mapstruct.version>
+    <spotless.version>2.44.0</spotless.version>
     <!-- Only when docs/project-profile.md records that the project uses Lombok. -->
     <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
 </properties>
+
+Every version property referenced anywhere in this skill's references is declared here.
+`checkstyle.version` and `spotless.version` are used by
+[quality gates](quality-gates.md); the Spring Boot BOM manages neither tool, so both are pinned.
 ```
 
 The versions above are placeholders. Use the versions recorded in `docs/project-profile.md`.

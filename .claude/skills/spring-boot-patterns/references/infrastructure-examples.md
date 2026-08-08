@@ -7,6 +7,8 @@ the members it omits â€” accessors, constructors, and the rest of the contract â
 the excerpt verbatim into production code. When an omitted member is required for the code to
 compile, such as a MapStruct-visible creation path, the example says so explicitly.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+
 ## Contents
 
 - [Package layout](#package-layout)

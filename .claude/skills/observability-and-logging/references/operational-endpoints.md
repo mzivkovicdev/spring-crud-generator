@@ -4,6 +4,8 @@ Use this reference when exposing actuator endpoints, writing a health indicator,
 liveness and readiness probes. Apply every rule from `../SKILL.md` and `application-security`;
 imports are omitted.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+
 ## Contents
 
 1. [Exposure and the management port](#exposure-and-the-management-port)

@@ -5,6 +5,8 @@ Use these examples when implementing or reviewing REST controllers, transport ob
 An example marked as an excerpt shows the decision under discussion, not a complete type. Generate
 the omitted members rather than copying the excerpt verbatim.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+
 ## Contents
 
 - [REST controller](#rest-controller)
@@ -312,7 +314,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
         final ProblemDetail problem =
                 ProblemDetail.forStatusAndDetail(error.status(), error.detail());
-        final String correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+        final String correlationId = CorrelationContext.correlationId();
 
         problem.setType(error.type());
         problem.setTitle(error.title());
@@ -355,6 +357,11 @@ The response body carries exactly one machine-readable error identifier, the `ty
 the request, not the failure, and support workflows need it in the payload a caller copies into a
 ticket. `traceId` and `spanId` stay out of the body; they are internal correlation values that
 belong in logs and in the trace backend.
+
+`CorrelationContext` is the small read accessor that `observability-and-logging` defines for the
+current request's correlation identifier. The advice reads it through that accessor rather than
+touching `MDC` or the correlation filter directly, so the error contract does not depend on how
+request context is stored or on the package the filter lives in.
 
 Declare the catalog once, in the `exception` package. Do not add a parallel constants holder for
 problem type URIs or internal error codes; a second declaration is what allows one condition to

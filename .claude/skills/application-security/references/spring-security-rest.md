@@ -1,5 +1,9 @@
 # Spring Security for REST APIs
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses
+is declared in that snippet or attributed to the example that declares it, and an excerpt names any
+omitted member that the code depends on.
+
 ## Contents
 
 1. [Security model](#security-model)
@@ -110,10 +114,14 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
 
+    private static final int API_CHAIN_ORDER = 100;
+    private static final int MANAGEMENT_CHAIN_ORDER = 0;
+    private static final String MANAGEMENT_AUTHORITY = "SCOPE_management:read";
     private static final String USERS_READ_SCOPE = "users:read";
     private static final String USERS_WRITE_SCOPE = "users:write";
 
     @Bean
+    @Order(API_CHAIN_ORDER)
     SecurityFilterChain apiSecurity(final HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -183,8 +191,10 @@ their own filter chain, ordered ahead of the API chain and matched by `EndpointR
 by path strings, so a change to `management.endpoints.web.base-path` cannot silently unprotect them.
 
 ```java
+// Same SecurityConfig class as the API chain above; MANAGEMENT_CHAIN_ORDER and
+// MANAGEMENT_AUTHORITY are declared there.
 @Bean
-@Order(0)
+@Order(MANAGEMENT_CHAIN_ORDER)
 SecurityFilterChain managementSecurityFilterChain(final HttpSecurity http) throws Exception {
     return http
             .securityMatcher(EndpointRequest.toAnyEndpoint())
@@ -204,7 +214,9 @@ Rules for this chain:
 
 - Only the platform's probe and build-information endpoints are open. Everything else the project chooses to expose requires an authenticated operator identity.
 - Health details stay at `when-authorized`, so an unauthenticated probe receives a status and nothing more. An open `/actuator/health` with `show-details: always` publishes internal hostnames, database versions, and failure reasons to anyone who can reach the port.
+- Both chains carry an explicit `@Order`. A chain without one falls back to the lowest precedence, so the ordering that makes this work would depend on a default nobody can see in the code. State it.
 - The management chain is ordered ahead of the API chain, and the API chain never matches an actuator path. Two chains matching the same request is a misconfiguration, not a defence in depth.
+- `MANAGEMENT_AUTHORITY` is written as a scope-derived authority because the resource server maps scopes to `SCOPE_` authorities by default. If the project installs a custom authority converter, change this constant to match it rather than assuming the prefix.
 - The credential for this chain is an operator credential managed by the platform, never a customer identity and never a shared static secret in configuration.
 - Never expose `heapdump`, `threaddump`, `env`, or `configprops`. A heap dump contains every credential the process holds, and no filter chain makes that acceptable on a reachable port.
 - If the deployment cannot provide a separate port, keep the same chain and matcher and rely on ingress rules to block the actuator base path externally. Record that as a compensating control.

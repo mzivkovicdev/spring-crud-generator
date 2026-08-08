@@ -4,6 +4,8 @@ Use this reference when setting up or changing the automated enforcement of proj
 every rule from `../SKILL.md`. The owner of each *rule* is the skill that defines it; this reference
 owns only the configuration that makes the rule fail a build.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+
 ## Contents
 
 1. [What is gated and what is not](#what-is-gated-and-what-is-not)
@@ -127,6 +129,7 @@ Spotless applies import order and source hygiene automatically, so nobody argues
 <plugin>
     <groupId>com.diffplug.spotless</groupId>
     <artifactId>spotless-maven-plugin</artifactId>
+    <!-- spotless.version is declared in the properties block in maven-configuration.md -->
     <version>${spotless.version}</version>
     <configuration>
         <java>
@@ -372,12 +375,22 @@ Cardinality is a runtime property, so no static tool can enforce it. A `MeterFil
 degrades one meter instead of the monitoring backend:
 
 ```java
-@Bean
-MeterFilter boundedTagsMeterFilter() {
-    return MeterFilter.maximumAllowableTags(
-            "", "userId", MAXIMUM_ALLOWED_TAG_VALUES, MeterFilter.deny());
+public class MetricsConfiguration {
+
+    private static final int MAXIMUM_ALLOWED_TAG_VALUES = 100;
+    private static final String ALL_METERS = "";
+
+    @Bean
+    MeterFilter boundedTagsMeterFilter() {
+        return MeterFilter.maximumAllowableTags(
+                ALL_METERS, "userId", MAXIMUM_ALLOWED_TAG_VALUES, MeterFilter.deny());
+    }
 }
 ```
+
+The empty meter-name prefix applies the cap to every meter. `userId` stands for any tag key that
+could plausibly grow; register one filter per such key, and choose the cap from what the metrics
+backend can carry, not from what the application currently produces.
 
 Apply it per tag key that could plausibly grow, and pair it with a denied-meter alert so an
 accidental unbounded tag is visible rather than silent. This is a safety net, not permission to

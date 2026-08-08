@@ -2,6 +2,8 @@
 
 Use these examples when implementing or reviewing entity mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths. Apply every rule from `../SKILL.md`; imports are omitted.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+
 ## Contents
 
 1. [Entity mapping](#entity-mapping)
@@ -133,6 +135,7 @@ This class is complete and compiles as written; copy its structure rather than a
 Why each part is there:
 
 - The `protected` no-argument constructor belongs to the provider. The `public` constructor is the single creation path and is what `UserDomainMapper.mapToNewUserEntity` uses, so every mapped creation property is set exactly once.
+- MapStruct selects that constructor **because it is the only `public` one**. Widening the no-argument constructor to `public` would make MapStruct prefer it and silently produce an entity with every mapped property left null. Keep it `protected`, and treat a change to its visibility as a change to the mapping contract.
 - `id` and `version` are provider-owned. They have getters and no constructor parameter and no setter, so application code and MapStruct cannot write them.
 - Setters exist only for the fields a use case actually updates. Add another setter when a real operation needs it, not preemptively; a setter for `passwordHash` belongs to the credential-change operation that hashes the new value.
 - Every `@Column` names its column explicitly so the mapping, the migration, and native SQL cannot drift apart through an implicit naming strategy.

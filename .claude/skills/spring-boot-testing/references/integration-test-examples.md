@@ -4,6 +4,8 @@ Use these examples for application and database-backed integration tests. Apply 
 `../SKILL.md`, `spring-boot-patterns`, `spring-data-jpa`, `application-security`,
 `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+
 These tests complement, and never replace, direct unit tests for behavioral application services or
 the required `@WebMvcTest` for each REST controller.
 

@@ -4,6 +4,8 @@ Use this reference when configuring log output, building correlation context, pr
 threads and HTTP clients, or deciding what to log at a given layer. Apply every rule from
 `../SKILL.md`, `modern-java-21`, and `application-security`; imports are omitted.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+
 ## Contents
 
 1. [Structured output](#structured-output)
@@ -90,6 +92,31 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
     }
 }
 ```
+
+Everything outside the correlation infrastructure reads the identifier through one small accessor,
+never through `MDC` directly. That keeps the storage mechanism replaceable and stops unrelated
+packages from depending on the filter.
+
+```java
+public final class CorrelationContext {
+
+    private CorrelationContext() {
+    }
+
+    /**
+     * Returns the correlation identifier of the current request.
+     *
+     * @return the correlation identifier, or {@code null} when no request context is established
+     */
+    public static String correlationId() {
+        return MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+    }
+}
+```
+
+`spring-boot-patterns` uses this accessor in the REST exception advice to place `correlationId` in
+an error body. Place `CorrelationContext` where both the correlation filter and the exception
+handler may depend on it, and do not widen it into a general MDC facade.
 
 ```java
 @Bean
