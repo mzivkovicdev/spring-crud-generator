@@ -1,6 +1,6 @@
 ---
 name: build-and-dependencies
-description: Build configuration and dependency governance for Java 21+ Spring Boot REST projects using Maven or Gradle. Use when creating or changing build files, dependency or plugin declarations, versions, BOMs, wrappers, compiler settings, annotation processors, test selection and source sets, packaging, or build profiles; when adding, replacing, or upgrading a dependency; and when auditing a project for unnecessary, duplicated, misscoped, or obsolete dependencies. Owns the dependency justification gate and the removal workflow.
+description: Build configuration and dependency governance for Java 21+ Spring Boot REST projects using Maven or Gradle. Use when creating or changing build files, dependency or plugin declarations, versions, BOMs, wrappers, compiler settings, annotation processors, test selection and source sets, packaging, or build profiles; when adding, replacing, or upgrading a dependency; when auditing a project for unnecessary, duplicated, misscoped, or obsolete dependencies; and when setting up or changing automated quality gates such as Checkstyle, Spotless, editor configuration, or dependency enforcement. Owns the dependency justification gate, the removal workflow, and the quality-gate configuration.
 ---
 
 # Build and Dependencies
@@ -43,6 +43,7 @@ Read only what the change requires:
 - Read [Maven configuration](references/maven-configuration.md) when the project uses Maven.
 - Read [Gradle configuration](references/gradle-configuration.md) when the project uses Gradle.
 - Read [dependency audit and removal](references/dependency-audit.md) when adding, replacing, or removing a dependency, and whenever the user asks which dependencies do not belong.
+- Read [quality gates](references/quality-gates.md) when setting up or changing Checkstyle, Spotless, editor configuration, dependency enforcement, or any other automated check.
 
 ## The dependency justification gate
 
@@ -106,6 +107,22 @@ tool, so it must be configured or the suites run in the wrong phase — or silen
 - Record the resulting commands in `docs/project-profile.md` so "run the relevant suites" is unambiguous.
 - Do not skip tests in any committed configuration or profile, and do not configure a build to ignore test failures.
 
+## Quality gates
+
+A rule a tool can check must fail the build; a rule a tool cannot check belongs to
+`spring-boot-code-review`. This skill owns the configuration that makes the first group real.
+
+- Configure the gates before the first feature, not after. Retrofitting `RequireThis` or an import order onto an existing codebase is expensive; applying it from the first commit costs nothing.
+- Run them in order: formatter, then static analysis, then compile, then tests. A gate that runs after the test suite wastes the slowest part of the cycle.
+- Set every gate to fail the build. A warning nobody must fix is not a gate.
+- Commit the editor configuration alongside the formatter configuration. Checkstyle reports a violated import order; it does not stop an IDE from reintroducing it on the next "Optimize Imports".
+- Use no baseline file and no suppressions. This project rejects legacy code, so there is nothing to grandfather, and a suppression file is where a standard goes to die. If a rule does not fit, change the rule and say so in review.
+- Label which rules are gated and which are review-only, so nobody mistakes a green build for compliance.
+
+[Quality gates](references/quality-gates.md) contains the full Checkstyle configuration, the Spotless
+and editor setup, the dependency enforcement rules, and the mapping from each project rule to the
+tool that enforces it.
+
 ## Build integrity and packaging
 
 - Commit the wrapper and pin the distribution it downloads. Review any change to the wrapper, its distribution URL, or its checksum as executable code.
@@ -141,6 +158,8 @@ Reject:
 - Lombok introduced because an example showed it, rather than because the project profile records it;
 - integration tests that run in the unit-test phase, or that no phase runs at all;
 - skipped tests, ignored test failures, or disabled quality gates in committed configuration;
+- a Checkstyle suppression file, a baseline, or a `@SuppressWarnings` used to silence a project rule;
+- a full source formatter that reformats the codebase to its own conventions;
 - credentials, tokens, or environment-specific URLs in build files;
 - an unreviewed repository, wrapper, or distribution URL change;
 - a blanket dependency upgrade without triage;
@@ -156,6 +175,7 @@ Reject:
 - [ ] The Java release and `-parameters` are configured explicitly.
 - [ ] The annotation processor path lists every processor in the correct order, matches the project's recorded Lombok decision, and the generated sources were inspected after the build.
 - [ ] Unit, slice, and integration suites each run in their intended phase, and the verification lifecycle fails on integration-test failure.
+- [ ] Quality gates run before the tests, fail the build, and were not weakened by a suppression or baseline.
 - [ ] No credentials, unapproved repositories, or unreviewed wrapper changes were introduced.
 - [ ] Any removal was user-approved, applied one dependency at a time, and verified by a full build including integration tests and application startup.
 

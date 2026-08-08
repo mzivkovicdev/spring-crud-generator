@@ -21,7 +21,7 @@ Apply the normative skills as follows:
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
 | `spring-boot-testing` | Production behavior or tests are changed or reviewed | Realistic scenario selection, unit and integration scope, fixtures, doubles, isolation, negative persistence verification, and test execution |
 | `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
-| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, or test-selection configuration is affected | Dependency justification, version management, compiler and processor configuration, test phase separation, and the dependency audit and removal workflow |
+| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test-selection, or quality-gate configuration is affected | Dependency justification, version management, compiler and processor configuration, test phase separation, quality-gate configuration, and the dependency audit and removal workflow |
 | `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected | Log levels and placement, correlation propagation, meter selection and tag cardinality, trace propagation, endpoint exposure, and probe composition |
 
 Resolve every applicable owner skill before evaluating compliance:
@@ -68,6 +68,8 @@ Record the reviewed base and head revisions before starting. For working-tree re
 
 Before judging the diff:
 
+- distinguish gated rules from review-only rules: a rule enforced by Checkstyle, Spotless, or the enforcer plugin is already proven by a green build, so spend review attention on the rules no tool can check — layer boundaries and entity leakage, whether a name reveals intent, whether a failure is logged exactly once, whether a test asserts real behavior, whether a dependency has a justification, whether a tag is genuinely bounded;
+- report a weakened gate — a new suppression, a baseline file, a lowered severity, a disabled plugin — as a finding in its own right, regardless of what it was silencing;
 - read `docs/project-profile.md` and inspect repository instructions, contribution rules, architecture decisions, security profile, data-classification policy, API and event contracts, migration conventions, and CI quality gates relevant to the change;
 - report a change that assumed a database, authentication profile, cache, service convention, or accessor style the profile does not record, and a change that added or edited a repository-root instruction file as a side effect;
 - inspect the configured Java, Spring Boot, Spring Framework, build-plugin, and dependency versions relevant to the change;

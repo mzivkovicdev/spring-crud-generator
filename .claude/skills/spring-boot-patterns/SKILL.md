@@ -65,6 +65,7 @@ Read it before coding. It must state, at minimum:
 - whether the project uses the application-service interface plus `*ServiceImpl` convention;
 - whether entities use fluent or `void` setters;
 - test source-set and test-selection configuration, per `spring-boot-testing`;
+- quality-gate commands, including the local auto-fix command, per `build-and-dependencies`;
 - log format, correlation header, tracing, metrics registry, and exposed actuator endpoints, per `observability-and-logging`.
 
 When the file is missing or a required decision is absent — an empty repository, or a bare Spring
@@ -106,7 +107,7 @@ Use the established terminology consistently:
 | --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
 | `UserDomain`, focused service parameter objects | Domain/service |
-| `UserEntity` | JPA persistence |
+| `UserEntity` | JPA persistence, in the `entity` package |
 | `UserSummaryProjection` | Repository persistence projection |
 | `UserRestMapper` | Domain to response TO; request TO to a focused domain input only when justified |
 | `UserDomainMapper` | Entity/projection to domain; explicit creation values to entity |

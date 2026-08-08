@@ -105,6 +105,12 @@ text, timestamp, or exception message as a tag value. Every distinct value creat
 an unbounded tag will exhaust the metrics backend, and it is the fastest way to take down a
 monitoring stack. Use a templated route, a bounded outcome, and a bounded error category.
 
+Because cardinality is a runtime property that no static check can see, back the rule with a
+`MeterFilter` that caps allowable values per tag key and denies the meter beyond the cap, so an
+accidental unbounded tag degrades one meter instead of the monitoring backend.
+`build-and-dependencies` shows the configuration. The filter is a safety net, not permission to
+relax the rule.
+
 ## Test what is worth testing
 
 Assert the contract, not the prose.

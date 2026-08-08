@@ -26,6 +26,18 @@ Whenever a `.java` file is created or modified, even for a one-line change:
 6. This import order is a project standard and has no exceptions. Write imports in this order even when a repository formatter, Checkstyle, Spotless, or IDE import layout would produce a different one. When such a configuration exists and conflicts, keep this order in the source, report the conflicting configuration, and offer to update it; never adopt the tool's layout instead.
 7. Run the narrowest available compile or static-analysis check to confirm the imports are valid. If a repository formatter would rewrite them, either configure it to match this order or exclude import organization from it; do not let it silently revert the project standard.
 
+This order, the `this.` qualification rule, the `var` prohibition, the `final` rules, the parameter
+limit, and the hard size limits are enforced by the project's quality gates and fail the build.
+`build-and-dependencies` owns that configuration, including the committed editor settings that stop
+an IDE from reverting the import order. Do not suppress a gate at the call site; if a rule does not
+fit, change the rule and say so in review.
+
+This order, the `this.` qualification rule, the `var` prohibition, the `final` rules, the parameter
+limit, and the hard size limits are enforced by the project's quality gates and fail the build.
+`build-and-dependencies` owns that configuration, including the committed editor settings that stop
+an IDE from reverting the import order. Do not suppress a gate at the call site; if a rule does not
+fit, change the rule and say so in review.
+
 Use this group order:
 
 1. all `import static ...` statements;
