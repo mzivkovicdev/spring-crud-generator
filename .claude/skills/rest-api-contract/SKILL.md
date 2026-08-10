@@ -108,7 +108,7 @@ Consumers read the document, not the controller. Optional-looking fields are wha
 - Name an owner for the contract. A contract everyone can change is a contract nobody maintains.
 - A breaking change requires confirmation from known consumers before it merges, not after.
 - Publish the document where consumers can reach it, and say where that is in the project profile.
-- Interactive documentation such as Swagger UI is a development and internal tool. Exposing it publicly, and especially in production, is an `application-security` decision, not a default.
+- Interactive documentation such as Swagger UI is a development and internal tool. Record in the project profile which environments expose it, if any; `never` is a valid answer and the safe default. Wherever it is exposed, `application-security` owns how it is protected, exactly as it does for actuator endpoints.
 
 ## Anti-patterns
 
