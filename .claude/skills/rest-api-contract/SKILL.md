@@ -77,10 +77,18 @@ the lower-friction default for a single service whose consumers are in the same 
 contract-first earns its cost when a second service, an external consumer, or a separate frontend
 team needs the contract before the implementation exists.
 
-Contract-first has one consequence that must be settled at the same time, not later: the generator
-produces model types whose names will not match this project's `TO` suffix and `transferobject`
-package unless it is configured to. [Contract-first generation](references/contract-first-generation.md)
-covers the configuration and the alternatives.
+The direction has two consequences that must be settled at the same time, not discovered later.
+
+**Generated type names.** Under contract-first the generator produces model types whose names will
+not match this project's `TO` suffix and `transferobject` package unless it is configured to.
+[Contract-first generation](references/contract-first-generation.md) covers the configuration and
+the alternatives.
+
+**Where route constants live.** Under contract-first the generated interface carries the routes, so
+a controller declares none, and the constants that tests and security matchers reference live in
+`ApiPaths` and equal the document's Path Items. Under code-first the direction is reversed and each
+controller owns its own route constant. `spring-boot-patterns` owns that rule; follow whichever the
+project profile records, and never mix the two.
 
 ## Reference routing
 
