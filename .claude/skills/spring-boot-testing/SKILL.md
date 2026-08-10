@@ -24,6 +24,7 @@ being verified:
 | `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
 | `build-and-dependencies` | Build files, test plugins, source sets, and the configuration that decides which suites run in which phase |
 | `observability-and-logging` | What about logging, metrics, tracing, and probes is worth asserting, and what is not |
+| `rest-api-contract` | What about the OpenAPI contract must be asserted, including the document drift gate |
 
 Do not redefine those standards here. Resolve a conflict through the owning skill and the
 repository-enforced build configuration.

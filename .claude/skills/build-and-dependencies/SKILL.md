@@ -19,6 +19,7 @@ applies to whichever one the project uses.
 | `spring-boot-patterns` | The project profile, architecture, and Spring feature design; this skill owns the build files that realize it |
 | `modern-java-21` | Java language level use and source rules; this skill owns the compiler configuration that enables them |
 | `spring-boot-testing` | Test levels, scenarios, and execution; this skill owns the plugin and source-set configuration that makes those suites actually run |
+| `rest-api-contract` | The OpenAPI document and the authoring direction; this skill owns the springdoc or generator declaration and the build wiring it needs |
 | `spring-data-jpa` | Persistence behavior; this skill owns the driver, migration-tool, and annotation-processor declarations it depends on |
 | `application-security` | Supply-chain risk, provenance, SBOM, vulnerability triage, and CI/CD protection; this skill owns the declarations those rules evaluate |
 | `project-naming-conventions` | Module and artifact names |

@@ -59,6 +59,11 @@ Read only the references required by the change:
 
 - Read [data protection and confidentiality](references/data-protection-and-confidentiality.md) for sensitive data, secrets, logs, telemetry, caching, test data, retention, deletion, external transfers, or AI/tool use.
 
+Interactive API documentation, such as Swagger UI, and the raw document endpoint are exposed only by
+an explicit decision recorded in the project profile. Absent that decision they are off, and they are
+never exposed in production by default. `rest-api-contract` owns the document itself; this skill owns
+whether it is reachable and by whom.
+
 Caching technology is a project decision recorded in `docs/project-profile.md`. Where these
 references name Redis, read it as "the selected cache or key-value store"; Redis is the expected
 choice if one is adopted, but the rules on classification, key format, TTL, tenant scope,

@@ -19,6 +19,7 @@ Treat this skill as the owner of naming vocabulary, identifier form, cross-bound
 | `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
 | `spring-boot-testing` | Test scope, scenarios, fixtures, doubles, isolation, and execution; this skill still owns test names |
 | `build-and-dependencies` | Build files, dependency and plugin declarations, and version management; this skill owns module and artifact names |
+| `rest-api-contract` | The OpenAPI document, compatibility judgement, versioning, and deprecation; this skill owns the names that appear in it and how they may be migrated |
 | `observability-and-logging` | What must be instrumented, log levels and placement, correlation propagation, and endpoint exposure; this skill owns meter, tag, span, and structured-log field names |
 | `spring-boot-code-review` | Review scope, evidence, severity, reporting, and merge-readiness decisions |
 

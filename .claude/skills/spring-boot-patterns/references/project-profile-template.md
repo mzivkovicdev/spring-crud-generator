@@ -51,6 +51,19 @@ Last updated: YYYY-MM-DD
 | Error catalog type | `com.example.myapp.exception.ApplicationError` | `spring-boot-patterns` |
 | Problem type base URI |  | `project-naming-conventions` |
 
+## API contract
+
+| Decision | Value | Owner skill |
+| --- | --- | --- |
+| Authoring direction | code-first \| contract-first | `rest-api-contract` |
+| OpenAPI version | 3.0 \| 3.1 | `rest-api-contract` |
+| Committed document path | src/main/resources/openapi/openapi.json | `rest-api-contract` |
+| Document regeneration command |  | `rest-api-contract` |
+| Published document location |  | `rest-api-contract` |
+| Live API versions and retirement dates |  | `rest-api-contract` |
+| Interactive UI exposed | never \| non-production only | `rest-api-contract` |
+| Generated-type naming resolution | suffix \| interfaces only \| n/a | `rest-api-contract` |
+
 ## Security
 
 | Decision | Value | Owner skill |
@@ -106,3 +119,4 @@ Last updated: YYYY-MM-DD
   - `project-naming-conventions` owns cache and cache-key names.
 - **Management authority** depends on whether a custom authority converter is installed; record the literal value the configuration uses, not the scope name.
 - **Quality gate commands** exist so that the first response to a failed gate is to run the fixer rather than to disable the gate.
+- **Authoring direction** must be decided before the first endpoint. It cannot be switched later without a dedicated project, and under contract-first it also forces the generated-type naming resolution. `rest-api-contract` presents the trade-off; the user chooses.

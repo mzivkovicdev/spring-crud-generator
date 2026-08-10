@@ -32,6 +32,8 @@ resource filtering are configured consistently.
     <checkstyle.version>CHOOSE</checkstyle.version>
     <mapstruct.version>CHOOSE</mapstruct.version>
     <spotless.version>CHOOSE</spotless.version>
+    <!-- Only when docs/project-profile.md records contract-first. -->
+    <openapi-generator.version>CHOOSE</openapi-generator.version>
     <!-- Only when docs/project-profile.md records that the project uses Lombok. -->
     <lombok-mapstruct-binding.version>CHOOSE</lombok-mapstruct-binding.version>
 </properties>
@@ -49,7 +51,7 @@ projects for years. Respect these minimums when choosing:
 | `maven-compiler-plugin` (from the parent) | 3.12.0 | Below it, `annotationProcessorPaths` ignores `dependencyManagement`, so every processor entry needs an explicit version |
 | `checkstyle.version` | 10.12.x | Earlier versions handle `record` constructs inconsistently |
 | `spotless.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
-| `mapstruct.version` | 1.6.x | Constructor-based mapping and `unmappedTargetPolicy` behave as this skill set assumes |
+| `mapstruct.version` | 1.5.x | Constructor-based mapping and `unmappedTargetPolicy` behave as this skill set assumes |
 | `lombok-mapstruct-binding.version` | 0.2.0 | Required for Java 17+ toolchains |
 
 Verify the choice by running the build once, not by trusting the table.

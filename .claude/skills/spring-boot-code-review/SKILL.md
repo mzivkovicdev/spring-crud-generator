@@ -23,6 +23,7 @@ Apply the normative skills as follows:
 | `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
 | `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test-selection, or quality-gate configuration is affected | Dependency justification, version management, compiler and processor configuration, test phase separation, quality-gate configuration, and the dependency audit and removal workflow |
 | `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected | Log levels and placement, correlation propagation, meter selection and tag cardinality, trace propagation, endpoint exposure, and probe composition |
+| `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed | Contract completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, and document drift |
 
 Resolve every applicable owner skill before evaluating compliance:
 

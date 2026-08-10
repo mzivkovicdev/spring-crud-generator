@@ -23,6 +23,8 @@ Apply `build-and-dependencies` whenever a build file, dependency, plugin, versio
 
 Apply `observability-and-logging` whenever a change adds or alters logging, correlation context, metrics, tracing, actuator endpoints, or health indicators. It owns instrumentation; this skill owns the layers being instrumented.
 
+Apply `rest-api-contract` whenever a public endpoint, request or response shape, status, header, or error condition is created or changed. It owns the OpenAPI document and whether a change is breaking; this skill owns the controller, the TOs, and the error contract it describes.
+
 Apply `application-security` whenever a change crosses a trust boundary or affects identity, authorization, confidential data, dangerous input, external systems, dependencies, deployment, messaging, jobs, or operational security. Apply `project-naming-conventions` whenever a name or escaped contract is created or changed.
 
 Each owner skill is authoritative in its area. Follow a repository-enforced formatter or policy when the owner skill permits it, preserve compatible established contracts, and report an unresolved conflict instead of inventing a second standard here.
