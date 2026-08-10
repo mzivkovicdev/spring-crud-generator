@@ -3,6 +3,11 @@
 Use this reference when changing an existing endpoint, deciding whether a change is breaking, or
 versioning, deprecating, or retiring an API. Apply every rule from `../SKILL.md`.
 
+Everything here applies whether or not the project publishes a contract document. These are
+properties of the API that consumers observe, not of any artefact describing it. Where a rule refers
+to marking something in a document, a project recording `none` applies the same rule through
+release notes, direct notification of known consumers, and tests.
+
 ## Contents
 
 1. [The asymmetry that catches people](#the-asymmetry-that-catches-people)
@@ -81,7 +86,7 @@ Most breaking changes are avoidable at design time:
 
 Deprecation without a date is a wish, not a plan.
 
-- Mark the operation or field `deprecated: true` in the document, and say in its `description` what replaces it and when it retires.
+- With a document, mark the operation or field `deprecated: true` and say in its `description` what replaces it and when it retires. Without one, record the same three facts — what is deprecated, what replaces it, and the retirement date — in the release notes and in the project profile.
 - Send the `Deprecation` header on responses from a deprecated endpoint, and `Sunset` with the retirement date.
 - Announce to known consumers directly. A flag in a document nobody re-reads is not an announcement.
 - Do not remove anything before its sunset date, and do not extend the date silently.
@@ -100,8 +105,9 @@ paths:
 
 ## Reviewing a contract change
 
-The document diff is the part of a pull request a consumer will feel. Review it first, and for each
-change answer:
+With a document, its diff is the part of a pull request a consumer will feel; review it first.
+Without one, the same review happens against the controller signatures, the TOs, and the tests, and
+it is the only place a breaking change can be caught at all. Either way, for each change answer:
 
 1. Which direction is it, request or response?
 2. Is it breaking under the table above?

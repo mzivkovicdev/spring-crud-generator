@@ -118,7 +118,7 @@ Keep REST controllers thin. They must not query repositories, mutate entities, i
 - Declare the API base path exactly once in Java, as a constant such as `ApiPaths.API_V1`. Where each controller's own route constant lives depends on the authoring direction recorded in the project profile:
   - **Code-first:** declare it as a `public static final String` on the controller, so tests, security matchers, and `Location` construction reuse it instead of repeating the literal.
   - **Contract-first:** routes come from the generated API interface, so a controller has no route constant to expose. Declare the route constants in `ApiPaths` beside the base path, keep them equal to the document's Path Items, and have tests and security matchers reference those. Never repeat a literal, and never add a second `@RequestMapping` on the implementation.
-- The same prefix appears in the OpenAPI document only as `servers.url`. OpenAPI Path Items stay resource-relative, such as `/users/{userId}`, so the version never reaches `operationId` or the handler method name. `project-naming-conventions` owns that derivation.
+- When the project publishes an OpenAPI document, the same prefix appears there only as `servers.url`, and Path Items stay resource-relative, such as `/users/{userId}`, so the version never reaches `operationId` or the handler method name. `project-naming-conventions` owns that derivation, and it applies to handler method names whether or not a document exists.
 - Use nouns in resource paths and correct HTTP methods/status codes.
 - Define or preserve supported request and response media types. Return serialized bodies rather than view names.
 - Validate path, query, header, and body input at the boundary.
@@ -128,7 +128,7 @@ Keep REST controllers thin. They must not query repositories, mutate entities, i
 - When controller parameters can trigger both object and method validation, preserve Spring's standard handling or map both validation exception types into the same public error contract.
 - For a synchronous operation that creates an addressable resource, return `201 Created` and a server-owned `Location` URI for that resource. Do not require this combination for a POST action that does not have resource-creation semantics; preserve the documented API contract.
 - Return typed response models, not entities, `Map<String, Object>`, or `ResponseEntity<?>`.
-- A change to a public endpoint is not complete until the OpenAPI contract reflects it. `rest-api-contract` owns the document, its completeness, and the drift gate that proves it matches the implementation.
+- A change to a public endpoint is not complete until the project's contract record reflects it. `rest-api-contract` owns whether that record is an OpenAPI document or none, its completeness, and the drift gate when there is one.
 - Preserve backward compatibility in field names, enum values, requiredness, null behavior, status codes, and error shapes.
 
 Read the controller example in [REST API examples](references/rest-api-examples.md).

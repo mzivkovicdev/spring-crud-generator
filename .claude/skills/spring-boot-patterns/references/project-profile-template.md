@@ -55,8 +55,10 @@ Last updated: YYYY-MM-DD
 
 | Decision | Value | Owner skill |
 | --- | --- | --- |
-| Authoring direction | code-first \| contract-first | `rest-api-contract` |
-| OpenAPI version | 3.0 \| 3.1 | `rest-api-contract` |
+| Contract document | OpenAPI \| none | `rest-api-contract` |
+| Authoring direction | code-first \| contract-first \| n/a | `rest-api-contract` |
+| OpenAPI version | 3.0 \| 3.1 \| n/a | `rest-api-contract` |
+| Known consumers |  | `rest-api-contract` |
 | Committed document path | src/main/resources/openapi/openapi.json | `rest-api-contract` |
 | Document regeneration command |  | `rest-api-contract` |
 | Published document location |  | `rest-api-contract` |
@@ -120,4 +122,6 @@ Last updated: YYYY-MM-DD
 - **Management authority** depends on whether a custom authority converter is installed; record the literal value the configuration uses, not the scope name.
 - **Quality gate commands** exist so that the first response to a failed gate is to run the fixer rather than to disable the gate.
 - **Interactive UI exposed** follows the same split as the actuator row above: the skill that owns the artifact records whether it is exposed, and `application-security` owns how it is protected wherever it is. Recording `never` is a valid and common answer.
-- **Authoring direction** must be decided before the first endpoint. It cannot be switched later without a dedicated project, and under contract-first it also forces the generated-type naming resolution. `rest-api-contract` presents the trade-off; the user chooses.
+- **Contract document** is decided before the authoring direction, and `none` is a legitimate answer. Without a document there is no drift gate and no generated client, so breaking-change judgement rests entirely on review. Do not record `OpenAPI` because springdoc is on the classpath.
+- **Authoring direction** applies only when the contract document is OpenAPI, and must be decided before the first endpoint. It cannot be switched later without a dedicated project, and under contract-first it also forces the generated-type naming resolution. `rest-api-contract` presents the trade-off; the user chooses.
+- **Known consumers** is the list a breaking change must be confirmed against. It carries the most weight when there is no document, because nothing else surfaces a contract change to the people it affects.

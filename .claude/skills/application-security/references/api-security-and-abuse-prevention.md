@@ -42,7 +42,7 @@ Maintain an authoritative inventory of:
 - public, partner, internal, management, callback, webhook, and machine-to-machine APIs;
 - host, environment, base path, protocol, owner, audience, data classification, and authentication method;
 - deployed and supported versions;
-- OpenAPI or equivalent contract location;
+- contract location, or a recorded statement that the service publishes no contract document;
 - internet, partner-network, private-network, and management-network exposure;
 - upstream and downstream dependencies;
 - deprecation date, sunset date, and removal status.

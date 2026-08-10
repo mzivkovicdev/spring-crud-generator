@@ -1,6 +1,6 @@
 # OpenAPI document
 
-Use this reference when producing, structuring, or improving the OpenAPI document itself. Apply
+Read this only when `docs/project-profile.md` records an OpenAPI contract document. Use it when producing, structuring, or improving that document. Apply
 every rule from `../SKILL.md`, `project-naming-conventions` for every name, and `spring-boot-patterns`
 for the shapes being described.
 
