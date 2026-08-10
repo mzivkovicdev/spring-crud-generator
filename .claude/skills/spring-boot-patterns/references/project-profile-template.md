@@ -61,7 +61,7 @@ Last updated: YYYY-MM-DD
 | Document regeneration command |  | `rest-api-contract` |
 | Published document location |  | `rest-api-contract` |
 | Live API versions and retirement dates |  | `rest-api-contract` |
-| Interactive UI exposed | never \| non-production only | `rest-api-contract` |
+| Interactive UI exposed | never \| non-production only | `application-security` |
 | Generated-type naming resolution | suffix \| interfaces only \| n/a | `rest-api-contract` |
 
 ## Security

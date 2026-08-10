@@ -32,6 +32,11 @@ OWASP Top 10 documents are awareness resources, not substitutes for a security p
 
 ## Inventory and lifecycle
 
+`rest-api-contract` owns the compatibility procedure: whether a change is breaking, how a version is
+raised, how deprecation and sunset are declared, and how consumers are notified. This section owns
+what exists, who owns it, where it is reachable, and whether obsolete surface is actually gone.
+Record the dates here; do not restate or fork the procedure that produces them.
+
 Maintain an authoritative inventory of:
 
 - public, partner, internal, management, callback, webhook, and machine-to-machine APIs;
@@ -44,9 +49,8 @@ Maintain an authoritative inventory of:
 
 - Register every new endpoint and version through the project's API governance process.
 - Treat internal and non-production APIs as protected assets; network location is not authorization.
-- Remove or disable obsolete versions, debug routes, temporary bypasses, sample endpoints, and abandoned environments.
-- Define backward-compatibility, deprecation, sunset, client-notification, telemetry, and removal procedures.
-- Prevent undocumented routes from drifting away from the reviewed OpenAPI contract.
+- Remove or disable obsolete versions, debug routes, temporary bypasses, sample endpoints, and abandoned environments. A version past its sunset date that is still reachable is a security finding, not a documentation lapse.
+- Confirm that a route absent from the reviewed contract is also absent from the deployment. `rest-api-contract` owns the drift gate that proves document and implementation agree; this section owns the case the gate cannot see, where a route exists but no contract describes it.
 - Restrict interactive API documentation and schema endpoints according to their exposure and information sensitivity.
 - Do not expose internal hostnames, security schemes, examples with real data, or administrative operations through public API documentation.
 - Inventory management, gateway routes, load balancers, service discovery, DNS, deployment manifests, and application routes must agree.

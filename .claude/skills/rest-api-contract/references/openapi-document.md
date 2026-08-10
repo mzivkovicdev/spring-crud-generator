@@ -88,7 +88,7 @@ operation can produce is named in the operation's responses.
 ```yaml
 components:
   schemas:
-    ProblemTO:
+    ProblemDetail:
       type: object
       required: [type, title, status]
       properties:
@@ -113,7 +113,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/ProblemTO"
+            $ref: "#/components/schemas/ProblemDetail"
           example:
             type: https://api.acme.example/problems/resource-not-found
             title: Resource not found
@@ -124,6 +124,7 @@ components:
 
 Rules:
 
+- The schema is named `ProblemDetail` after the type the application actually serializes, Spring's `ProblemDetail`. It is the one schema in the document with no `TO` suffix, because there is no project-owned transfer object behind it; naming it `ProblemTO` would invent a Java type that does not exist. `project-naming-conventions` owns schema naming, and this is its single documented exception.
 - The media type is `application/problem+json`, not `application/json`.
 - `type` is documented as the value consumers branch on, and `title` and `detail` as text that may change. Saying so in the contract is what stops a consumer from matching on the message.
 - The body carries no second error identifier. `correlationId` identifies the request, not the failure; `spring-boot-patterns` owns that decision.
@@ -169,6 +170,11 @@ Notes:
 - The failure message tells the reader what to do. A contract gate that fails with a wall of JSON teaches people to regenerate without looking, which defeats the gate.
 - Provide a documented command that rewrites the committed document, so updating it is deliberate and one step.
 - The test needs the application context, so it is an integration test and follows the naming and phase rules in `spring-boot-testing`.
+- **The document endpoint is behind the filter chain like everything else.** With the `denyAll` fallback that `application-security` prescribes, an unauthenticated request to `/v3/api-docs` returns `401` and the test fails for the wrong reason. Resolve it one of two ways, and record which:
+  - permit the document endpoint explicitly in the non-production profile the test runs under, matching it the same way any other route is matched; or
+  - have the test obtain a credential through `AccessTokenTestClient`, exactly as every other integration test does.
+
+  Do not disable the filter chain for this test. A drift gate that runs outside the real configuration proves less than it appears to, and it hides the case where the document endpoint is unintentionally public.
 - Annotate controllers and TOs enough that the generated document is useful. Summaries, descriptions, and examples come from annotations in code-first; without them the generated document is a type dump.
 
 ## Exposure

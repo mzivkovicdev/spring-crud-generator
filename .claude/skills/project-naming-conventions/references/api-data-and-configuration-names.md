@@ -197,6 +197,8 @@ updateUserById
 deleteUserById
 ```
 
+The `@Operation` annotation above is code-first, where the Java method declares the `operationId`; under contract-first the document declares it and the annotation must not appear, because the generated interface already carries the name. `rest-api-contract` owns which direction the project uses.
+
 If the project uses contract-first generated interfaces, configure the generator so the generated Java method name matches `operationId`. Do not manually edit generated source.
 
 If two different paths normalize to the same `operationId`, resolve the collision with a stable domain-specific path qualifier. Do not use numeric suffixes such as `usersGet2`.
@@ -233,6 +235,10 @@ Rules for the type URI:
 - Make it dereferenceable only when project policy requires published problem documentation. An unresolvable but stable URI is still a valid identifier under RFC 9457.
 - Do not include dynamic values such as identifiers, tenant names, field names, or counts.
 - Do not add a parallel `code`, `errorCode`, or `errorId` member to the response body. Two identifiers for one condition guarantee that some client branches on the wrong one. `spring-boot-patterns` owns that decision.
+
+The OpenAPI schema for the problem body is named `ProblemDetail`, after the framework type the
+application serializes. It is the single documented exception to naming a schema after a project TO,
+because no project-owned transfer object stands behind it.
 
 Internal error codes use `UPPER_SNAKE_CASE` and appear in structured logs, audit events, metrics,
 and application events only:
