@@ -94,8 +94,10 @@ class UserControllerTest {
 }
 ```
 
-The test reuses `UserController.USERS_PATH` and the `ApplicationError` catalog instead of repeating
-the route and the problem identifier as literals, so a route or contract change fails at compile time rather than
+The test reuses the route constant and the `ApplicationError` catalog instead of repeating the route
+and the problem identifier as literals. `UserController.USERS_PATH` is the code-first form; under
+contract-first the same test references the corresponding `ApiPaths` constant, and nothing else
+changes, so a route or contract change fails at compile time rather than
 in an assertion message. `@MockitoBean` fields are `private` and non-`final` under the fixture
 exception in `modern-java-21`; `MockMvc` and `ObjectMapper` remain `final` and constructor-injected.
 

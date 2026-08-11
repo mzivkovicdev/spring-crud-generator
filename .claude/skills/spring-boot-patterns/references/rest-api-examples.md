@@ -84,8 +84,15 @@ public class UserController {
 }
 ```
 
+**These controller examples assume the code-first authoring direction**, where the controller owns its
+route. Under contract-first the route lives on the generated API interface, the controller declares
+no route constant and no `@RequestMapping`, and `ApiPaths` holds the constants that tests and
+security matchers reference. `rest-api-contract` owns that decision; everything below the controller
+— mapper, service, domain, error contract — is identical either way.
+
 This project uses URI major versioning under `/api/v1`. The prefix is declared exactly once in Java,
-as `ApiPaths.API_V1`, and each controller builds its own `public static final String` route from it.
+as `ApiPaths.API_V1`, and under code-first each controller builds its own `public static final String`
+route from it.
 Tests, `Location` construction, and security matchers reuse those constants instead of repeating the
 literal. Because `USERS_PATH` is a compile-time constant, `@RequestMapping(UserController.USERS_PATH)`
 resolves at compile time; the qualified form is required here only because the annotation precedes

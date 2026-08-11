@@ -19,6 +19,8 @@ JPA scenarios those tests must prove. Do not repeat their rules here.
 
 Apply `application-security` when persistence affects confidential data, tenant or object ownership, authorization scope, encryption, audit data, backups, exports, or dangerous query input. Apply `project-naming-conventions` to entity, repository, table, column, constraint, index, and migration names and to every escaped rename.
 
+Apply `observability-and-logging` when persistence behavior needs to be diagnosable: it owns log levels and placement, and the rule that the service layer, not the repository, records the operation. Apply `build-and-dependencies` for the driver, migration-tool, and annotation-processor declarations this skill depends on.
+
 Use the architecture, terminology, mapper directions, and package responsibilities from
 `spring-boot-patterns`. This skill owns the JPA behavior beneath those boundaries.
 

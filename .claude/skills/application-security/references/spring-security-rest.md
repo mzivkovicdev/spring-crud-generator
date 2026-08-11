@@ -82,11 +82,12 @@ Keep framework defaults unless a verified requirement justifies a change. A comm
 
 The excerpt below is the resource-server half of the model, which is identical in Profile A and
 Profile B. Following the layered layout owned by `spring-boot-patterns`, keep `SecurityConfig` in
-the configuration package. Route constants come from the controllers that own them, so a route
-cannot be protected under one spelling and served under another. Under contract-first the controller
-has no route constant, because the route lives on the generated interface; reference the `ApiPaths`
-constants instead, exactly as `spring-boot-patterns` prescribes for that direction. The rule is
-unchanged either way: a matcher never contains a repeated path literal.
+the configuration package. Route constants come from wherever the project's authoring direction puts them, so a route cannot be
+protected under one spelling and served under another. **The matchers below are written for
+code-first**, where the controller owns the constant. Under contract-first replace every
+`UserController.USERS_PATH` with the corresponding `ApiPaths` constant; nothing else in the chain
+changes. `spring-boot-patterns` owns that split, and the rule is the same either way: a matcher never
+contains a repeated path literal.
 
 The authentication endpoints are permitted explicitly. In Profile A they are this service's own
 issuance and registration endpoints; in Profile B that block is absent because no such endpoints

@@ -16,7 +16,10 @@ Apply this skill together with:
   and execution;
 - `spring-boot-patterns` for REST controllers, TO–Domain–Entity boundaries, mappers, services, transactions, errors, and configuration;
 - `spring-data-jpa` for entities, repositories, queries, locking, migrations, and database performance;
-- `project-naming-conventions` when security-sensitive or escaped names are created, changed, logged, persisted, published, cached, or provisioned.
+- `project-naming-conventions` when security-sensitive or escaped names are created, changed, logged, persisted, published, cached, or provisioned;
+- `observability-and-logging` for how logs, metrics, traces, and operational endpoints are produced. This skill owns what must never appear in them and who may reach them; that skill owns the mechanism;
+- `build-and-dependencies` for the dependency, plugin, and version declarations that supply-chain and vulnerability rules here evaluate;
+- `rest-api-contract` for the public API contract and its evolution. This skill owns exposure, inventory, and authorization; that skill owns compatibility, versioning, and deprecation.
 
 Do not redefine those rules. Use the architecture and terminology from `spring-boot-patterns`.
 

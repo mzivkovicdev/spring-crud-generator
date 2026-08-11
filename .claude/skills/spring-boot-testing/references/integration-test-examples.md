@@ -24,8 +24,9 @@ errors, an isolated supported-database container, and the project cleanup strate
 It intentionally omits `@Transactional`: the request must commit through the real service
 transaction before repository verification.
 
-Routes and problem identifiers come from `UserController.USERS_PATH` and the `ApplicationError`
-catalog, never from repeated literals. Error assertions use the `type` URI; the body has no `code`
+Routes and problem identifiers come from the project's route constant and the `ApplicationError`
+catalog, never from repeated literals. `UserController.USERS_PATH` is the code-first form; under
+contract-first the same tests reference the corresponding `ApiPaths` constant. Error assertions use the `type` URI; the body has no `code`
 member.
 
 ```java

@@ -38,6 +38,8 @@ repository-enforced build configuration.
 - Read [integration test examples](references/integration-test-examples.md) when testing an HTTP
   boundary, persistence, Spring configuration, security filter chain, transaction, migration, or
   external adapter with real infrastructure or a controlled substitute.
+- Read `rest-api-contract` when the change touches a public endpoint. It owns the contract drift test
+  and states what about the contract must be asserted; this skill owns the level it runs at.
 - Read [scheduler test examples](references/scheduler-test-examples.md) whenever creating or changing
   a scheduled job, its trigger configuration, overlap protection, or scheduled side effects.
 
@@ -215,6 +217,12 @@ Integration tests must:
 - verify absence of messages, cache entries, files, or external calls when failure must prevent them;
 - avoid test-managed `@Transactional` on HTTP write tests when rollback would hide commit behavior;
 - use the project's explicit database reset or cleanup strategy so tests remain isolated.
+
+When the project publishes an OpenAPI document, the contract drift test is a required application
+integration test. It follows every rule in this section, including the credential rules: the document
+endpoint sits behind the same filter chain as everything else, so the test either authenticates or
+the endpoint is explicitly permitted in the profile the test runs under. `rest-api-contract` owns
+what it asserts and why.
 
 Choose one cleanup strategy for the whole project and record it in `docs/project-profile.md`. In
 preference order:
