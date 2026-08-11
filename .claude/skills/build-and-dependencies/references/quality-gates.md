@@ -33,7 +33,7 @@ compliance.
 | No concatenation in a log call | `observability-and-logging` | Checkstyle regex |
 | Identifier naming form | `project-naming-conventions` | Checkstyle naming modules |
 | Integration tests run in their own phase | `spring-boot-testing` | Surefire/Failsafe or Gradle suites |
-| Banned and duplicated dependencies | `build-and-dependencies` | `maven-enforcer-plugin` or Gradle constraints |
+| Banned and duplicated dependencies, JDK version, profile presence | `build-and-dependencies` | `maven-enforcer-plugin` or Gradle constraints |
 | Metric tag cardinality | `observability-and-logging` | `MeterFilter` at runtime |
 
 Deliberately **not** gated:
@@ -347,7 +347,11 @@ which costs more than the rule was worth.
 
 ## Layer 3: dependency and runtime guards
 
-### Banned and converging dependencies
+### Enforcer rules
+
+One plugin declaration, one execution, one `<rules>` block. Do not split these across several
+executions; a second floating `<rules>` block is the most common way this configuration ends up
+half-applied.
 
 ```xml
 <plugin>
@@ -355,10 +359,20 @@ which costs more than the rule was worth.
     <artifactId>maven-enforcer-plugin</artifactId>
     <executions>
         <execution>
-            <id>enforce-dependency-rules</id>
+            <id>enforce-project-rules</id>
             <goals><goal>enforce</goal></goals>
             <configuration>
                 <rules>
+                    <requireJavaVersion>
+                        <version>[${java.version},)</version>
+                    </requireJavaVersion>
+                    <requireFilesExist>
+                        <files>
+                            <file>${maven.multiModuleProjectDirectory}/docs/project-profile.md</file>
+                        </files>
+                        <message>docs/project-profile.md is missing. Create it from the template
+                                 before building; see the project README.</message>
+                    </requireFilesExist>
                     <dependencyConvergence/>
                     <requireUpperBoundDeps/>
                     <bannedDependencies>
@@ -378,6 +392,13 @@ which costs more than the rule was worth.
     </executions>
 </plugin>
 ```
+
+Four decisions in that block are deliberate:
+
+- **`${java.version}` rather than a literal.** The Java release is recorded in the project profile and declared once as a property, per [Maven configuration](maven-configuration.md). A literal here would be a second source of truth that silently disagrees with the compiler setting. Note that this rule checks the JDK **running Maven**, which is a different thing from `maven.compiler.release`; both matter, because a toolchain mismatch produces different bytecode with no visible failure.
+- **`${maven.multiModuleProjectDirectory}` rather than `${project.basedir}`.** The profile lives once at the repository root. `project.basedir` resolves per module, so in a multi-module build every submodule would look for its own copy and fail.
+- **The message names a path, not a skill.** A developer reading a build failure has no idea what `spring-boot-patterns` is; skills are agent-facing, build output is human-facing. Point at something a person can open.
+- **The profile rule proves existence only**, not that the file is filled in correctly. That stays a review responsibility. It is still worth having, because a missing profile is exactly the case that silently produces an inconsistent codebase.
 
 The exclusion list encodes the duplicated-capability rule from
 [dependency audit and removal](dependency-audit.md): one JSON library, one mapping library, one

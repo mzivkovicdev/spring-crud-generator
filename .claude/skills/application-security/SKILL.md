@@ -9,21 +9,24 @@ Build security into every affected boundary. Protect confidentiality, integrity,
 
 ## Coordination with other skills
 
-Apply this skill together with:
+This skill owns threat analysis, confidentiality, authentication, authorization, API abuse
+prevention, secrets, cryptography, dangerous trust boundaries, cloud and messaging security,
+security verification, and release risk. Follow the stricter compatible rule and never weaken an
+existing control merely to simplify a feature.
 
-- `modern-java-21` for Java language rules, imports, Javadoc, exceptions, and source structure;
-- `spring-boot-testing` for realistic test scope, fixtures, isolation, unit and integration structure,
-  and execution;
-- `spring-boot-patterns` for REST controllers, TO–Domain–Entity boundaries, mappers, services, transactions, errors, and configuration;
-- `spring-data-jpa` for entities, repositories, queries, locking, migrations, and database performance;
-- `project-naming-conventions` when security-sensitive or escaped names are created, changed, logged, persisted, published, cached, or provisioned;
-- `observability-and-logging` for how logs, metrics, traces, and operational endpoints are produced. This skill owns what must never appear in them and who may reach them; that skill owns the mechanism;
-- `build-and-dependencies` for the dependency, plugin, and version declarations that supply-chain and vulnerability rules here evaluate;
-- `rest-api-contract` for the public API contract and its evolution. This skill owns exposure, inventory, and authorization; that skill owns compatibility, versioning, and deprecation.
+Use the architecture and terminology from `spring-boot-patterns`, and do not redefine an owner's
+rules:
 
-Do not redefine those rules. Use the architecture and terminology from `spring-boot-patterns`.
-
-This skill owns threat analysis, confidentiality, authentication, authorization, API abuse prevention, secrets, cryptography, dangerous trust boundaries, cloud and messaging security, security verification, and release risk. Follow the stricter compatible rule and never weaken an existing control merely to simplify a feature.
+| Owner | Owns |
+| --- | --- |
+| `modern-java-21` | Java language rules, imports, Javadoc, exceptions, source structure |
+| `spring-boot-patterns` | Controllers, TO–Domain–Entity boundaries, mappers, services, transactions, errors, configuration |
+| `spring-data-jpa` | Entities, repositories, queries, locking, migrations, database performance |
+| `spring-boot-testing` | Test scope, fixtures, isolation, execution |
+| `observability-and-logging` | How logs, metrics, traces, and operational endpoints are produced; this skill owns what must never appear in them and who may reach them |
+| `rest-api-contract` | Compatibility, versioning, deprecation; this skill owns exposure, inventory, and authorization |
+| `build-and-dependencies` | The dependency, plugin, and version declarations these supply-chain rules evaluate |
+| `project-naming-conventions` | Security-sensitive and escaped names |
 
 ## Always-on confidentiality rule
 

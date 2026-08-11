@@ -111,10 +111,10 @@ Use the project's supported JUnit Jupiter version, JUnit 5 or newer. A unit test
 - avoid testing getters, setters, records, framework behavior, generated mapper code without custom
   logic, or private methods directly.
 
-Every application service containing behavior requires direct unit tests. Cover its business
-decisions, returned state, declared exceptions, repository writes, and prohibited interactions when
-applicable; a test that proves only that a collaborator was invoked is insufficient. Full application
-integration coverage does not replace this unit coverage.
+Every application service containing behavior requires direct unit tests covering its business
+decisions, returned state, declared exceptions, repository writes, and prohibited interactions. A
+test proving only that a collaborator was invoked is insufficient, and integration coverage does not
+replace this.
 
 ### What is deliberately not unit tested
 
@@ -130,20 +130,18 @@ their absence is correct rather than a gap:
 | Spring configuration classes, `@ConfigurationProperties`, `SecurityConfig` | Full application integration, including startup failure on invalid configuration |
 | Framework behavior itself | Not tested at all |
 
-A mapper method that contains hand-written logic — a `default` method, a custom expression, a
-qualifier, or a decorator — is behavior and does get a direct unit test. So does any static utility
-with a real decision in it.
-
-Everything else that contains a decision needs a unit test. Do not skip a service, domain rule,
+A mapper method with hand-written logic — a `default` method, custom expression, qualifier, or
+decorator — is behavior and does get a unit test, as does any static utility containing a real
+decision. Everything else with a decision in it needs one: do not skip a service, domain rule,
 validator, policy, or job because an integration test happens to exercise it.
 
-Plain unit tests have no Spring context or security filter chain. Test a security policy as an
-ordinary unit only when that policy is the subject; prove runtime authentication and authorization in
-full application integration tests.
+Plain unit tests have no Spring context or security filter chain. Test a security policy as a unit
+only when that policy is the subject; runtime authentication and authorization are proven in
+integration tests.
 
-Use Mockito's JUnit Jupiter extension when Mockito is the established project library. Construct the
-subject explicitly when that makes dependencies and test setup clearer. Do not use lenient stubbing
-or broad `any()` matching to hide an inaccurate fixture.
+Use Mockito's JUnit Jupiter extension when it is the established project library, and construct the
+subject explicitly when that clarifies setup. Do not use lenient stubbing or broad `any()` matching
+to hide an inaccurate fixture.
 
 Framework-assigned fixture fields — `@Mock`, `@Spy`, `@Captor`, `@InjectMocks`, `@MockitoBean`,
 `@MockitoSpyBean`, and a subject rebuilt in `@BeforeEach` — are declared `private` and non-`final`.
@@ -309,18 +307,15 @@ HTTP statuses, and malformed inputs. Name fixtures by scenario under
 
 ## Prove security controls
 
-Apply `application-security` as the owner of the security model, authorities, and required security
-scenarios. Prove runtime authentication, authorization, and security filter-chain behavior only in
-full application integration tests. A focused authorization or policy component may also have plain
-unit tests for its decisions, but those tests do not prove runtime enforcement. Exercise the real
-filter chain, service and database scope for object or tenant authorization, serializer for data
-exposure, and provider adapter for outbound restrictions.
+`application-security` owns the security model, authorities, and required scenarios. Prove runtime
+authentication, authorization, and filter-chain behavior only in full application integration tests;
+a focused policy component may have unit tests for its decisions, but those do not prove enforcement.
+Exercise the real filter chain, the service and database scope for object or tenant authorization,
+the serializer for data exposure, and the provider adapter for outbound restrictions.
 
-Use the authentication and credential model selected for the deployable service by
-`application-security`. For a stateless bearer filter chain in which clients explicitly send the
-`Authorization` header and no ambient browser credential authenticates requests, keep CSRF disabled
-consistently and do not add CSRF tokens to integration requests. For cookie, session, or mixed
-credential models, test the applicable CSRF behavior instead.
+With a stateless bearer chain where clients send the `Authorization` header and no ambient browser
+credential exists, keep CSRF disabled consistently and add no CSRF tokens. For cookie, session, or
+mixed credential models, test the applicable CSRF behavior instead.
 
 Use synthetic identities and isolated test credentials only. Never use production tokens, customer
 data, live identity providers, or production endpoints.
@@ -331,51 +326,32 @@ data, live identity providers, or production endpoints.
 determines only how the test gets a token; everything after that is identical, because the filter
 chain is the same in both.
 
-**Profile A, application-issued tokens.** Seed a synthetic identity directly through the repository,
-a migration, or a SQL fixture, then call the service's real token endpoint and use the returned
-access token. Seeding is what breaks the bootstrap circle: the identity must exist before a token
-can be issued, and the endpoint that creates identities is itself protected. Never relax a protected
-endpoint, and never add a test-only production endpoint, to avoid seeding.
+- **Profile A, application-issued.** Seed a synthetic identity directly through the repository, a migration, or a SQL fixture, then call the service's real token endpoint. Seeding breaks the bootstrap circle, because the endpoint that creates identities is itself protected. Never relax a protected endpoint or add a test-only production endpoint to avoid seeding.
+- **Profile B, externally issued.** Run an approved provider container or isolated in-test authorization server, point the issuer configuration at it, and obtain the token through its real protocol endpoint.
+- **Before either exists.** Do not block, skip, or mock. Use a documented temporary test-only issuer: an in-test signing key registered as the configured issuer, minting the claim set the real issuer will produce. Only the key source is temporary; the token still traverses the real decoder, validators, and authorization rules. Record it as a known gap and replace it when the profile is implemented.
 
-**Profile B, externally issued tokens.** Run an approved identity-provider container or an isolated
-in-test authorization server, point the resource server's issuer configuration at it, and obtain the
-token through its real protocol endpoint.
-
-**Before either issuance path exists.** Authentication is often decided or built after the first
-endpoints. Until then, do not block or skip integration tests, and do not reach for a mock token.
-Write them against the same real filter chain with a documented, temporary test-only issuer: an
-in-test signing key registered as the configured issuer, used exclusively by a project-owned test
-token factory that mints tokens with the same claim set the real issuer will produce. The token
-still traverses the real decoder, the real validators, and the real authorization rules, so only the
-key source is temporary. Record it as a known gap, keep it in test sources only, and replace it with
-the real issuance path as soon as the profile is implemented. This is not permission to use
-`@WithMockUser`, a security request post-processor, a mocked `JwtDecoder`, or a forged
-`Authentication`; those bypass the chain the test exists to prove.
-
-Controlled invalid-token fixtures are allowed only for token-validation failures that valid issuance
-cannot produce, and must exercise the real configured decoder.
+None of this permits `@WithMockUser`, a security request post-processor, a mocked `JwtDecoder`, or a
+forged `Authentication`; those bypass the chain the test exists to prove. Controlled invalid-token
+fixtures are allowed only for validation failures valid issuance cannot produce, and must exercise
+the real configured decoder. [Integration test examples](references/integration-test-examples.md)
+shows each profile.
 
 ## Configure test selection to match the naming convention
 
 `project-naming-conventions` names full application and persistence tests `*IntegrationTest`. That
-suffix matches no default in either build tool, so the build must be configured explicitly or the
-tests will run in the wrong phase — or not at all. Verify the configuration before relying on a
-green build, and fix it as part of the change when it is missing.
+suffix matches no default in either build tool, so without explicit configuration those tests run in
+the wrong phase — or not at all, which looks identical to a green build.
 
-`build-and-dependencies` owns the build files themselves and contains the worked configuration for
-both tools. The requirement here is only that the phases are separated and enforced.
+Three requirements, whichever tool the project uses:
 
-For Maven, unit tests run in Surefire and integration tests in Failsafe:
+- unit and slice tests run in the fast phase, integration tests in a separate later phase or task;
+- the verification lifecycle fails when an integration test fails, so a separate phase is not one nobody runs;
+- `docs/project-profile.md` records the resulting commands, so "run the relevant suites" is unambiguous.
 
-- Surefire includes `**/*Test.java` and **excludes** `**/*IntegrationTest.java`, otherwise every container-backed test runs in the `test` phase.
-- Failsafe includes `**/*IntegrationTest.java` and is bound to `integration-test` and `verify`.
-- Because `*IntegrationTest` also matches Surefire's default `*Test` pattern, the exclusion is required, not optional.
-
-For Gradle, declare a separate `integrationTest` source set or a `Test` task filtered on the same
-pattern, make `check` depend on it, and keep unit tests out of it.
-
-Whichever tool is used, `docs/project-profile.md` records the resulting commands so that "run the
-relevant suites" is unambiguous.
+`build-and-dependencies` owns the build files and carries the worked Maven and Gradle configuration,
+including the Surefire exclusion that is mandatory because `*IntegrationTest` also matches its
+default pattern. Verify the configuration before relying on a green build, and fix it as part of the
+change when it is missing.
 
 ## Execute and report verification
 

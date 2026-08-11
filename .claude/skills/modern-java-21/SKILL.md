@@ -7,12 +7,14 @@ description: Modern Java 21+ coding standard for every creation, edit, refactor,
 
 Write production-grade Java that is easy to understand, test, change, and operate. Existing code is context for behavior, not automatic permission to repeat its design mistakes.
 
-Apply `spring-boot-testing` whenever production behavior or tests change. It owns test scope,
-scenario selection, fixtures, isolation, and execution; this skill remains authoritative for Java
-source rules in production and test files.
+This skill is authoritative for Java source rules in every file, production and test. Three owners
+sit beside it:
 
-Apply `project-naming-conventions` whenever names are created or changed. It owns identifier forms
-and suffixes; this skill owns the Java type-design rules.
+| Owner | Owns |
+| --- | --- |
+| `project-naming-conventions` | Identifier forms and suffixes; this skill owns Java type design |
+| `spring-boot-testing` | Test scope, scenarios, fixtures, isolation, execution |
+| `build-and-dependencies` | The compiler and quality-gate configuration that enforces these rules |
 
 ## Non-negotiable rule for every touched Java file
 
@@ -23,14 +25,8 @@ Whenever a `.java` file is created or modified, even for a one-line change:
 3. Never introduce wildcard imports such as `java.util.*` or `import static ...*`.
 4. Organize imports into the exact groups below. Sort every group lexicographically by the complete import statement.
 5. Separate consecutive non-empty groups with exactly one blank line. Do not leave blank lines for empty groups.
-6. This import order is a project standard and has no exceptions. Write imports in this order even when a repository formatter, Checkstyle, Spotless, or IDE import layout would produce a different one. When such a configuration exists and conflicts, keep this order in the source, report the conflicting configuration, and offer to update it; never adopt the tool's layout instead.
-7. Run the narrowest available compile or static-analysis check to confirm the imports are valid. If a repository formatter would rewrite them, either configure it to match this order or exclude import organization from it; do not let it silently revert the project standard.
-
-This order, the `this.` qualification rule, the `var` prohibition, the `final` rules, the parameter
-limit, and the hard size limits are enforced by the project's quality gates and fail the build.
-`build-and-dependencies` owns that configuration, including the committed editor settings that stop
-an IDE from reverting the import order. Do not suppress a gate at the call site; if a rule does not
-fit, change the rule and say so in review.
+6. This order is a project standard with no exceptions. Keep it even when a formatter, Checkstyle, Spotless, or IDE layout would produce a different one: report the conflicting configuration and offer to update it, rather than adopting the tool's layout.
+7. Run the narrowest available compile or static-analysis check to confirm the imports are valid.
 
 This order, the `this.` qualification rule, the `var` prohibition, the `final` rules, the parameter
 limit, and the hard size limits are enforced by the project's quality gates and fail the build.
@@ -346,26 +342,16 @@ ReservationDomain reserve(
         final List<OrderLineDomain> lines);
 ```
 
-Complete generic-type example:
+A generic method adds `@param <T>` first, describing the element type, before the value parameters.
 
-```java
-/**
- * Returns a page of values matching the supplied criteria.
- *
- * @param <T>         the immutable result element type
- * @param criteria    the search criteria; must not be {@code null}
- * @param pageRequest the zero-based page request including deterministic sorting; must not be
- *                    {@code null}
- * @return             a {@link PageDomain} of matching values; never {@code null}
- * @throws InvalidSearchCriteriaException when the criteria contain an unsupported filter or sort
- *                                        field
- */
-<T> PageDomain<T> search(final SearchCriteriaDomain criteria, final PageRequest pageRequest);
-```
+When a record requires Javadoc, document every component with `@param`. For public classes and
+interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. An
+overriding method inherits missing Javadoc automatically: omit it when the inherited contract is
+complete, never write a comment containing only `{@inheritDoc}`, and use `{@inheritDoc}` only to
+extend an inherited contract that remains accurate.
 
-When a record requires Javadoc under this policy, document every component with `@param`. For public classes/interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. An overriding method automatically inherits missing Javadoc from its supertype. Omit its Javadoc when the inherited contract is complete; do not add a comment containing only `{@inheritDoc}`. Use `{@inheritDoc}` when extending the inherited text with meaningful caller-visible guarantees or behavior, and only when the inherited contract remains accurate.
-
-Do not add Javadoc such as "Gets the name" to a self-explanatory accessor. Remove stale comments when the implementation changes.
+Do not write Javadoc such as "Gets the name" on a self-explanatory accessor, and remove stale
+comments when the implementation changes.
 
 ## Logging
 

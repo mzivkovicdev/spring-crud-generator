@@ -178,6 +178,7 @@ Reject:
 - [ ] The annotation processor path lists every processor in the correct order, matches the project's recorded Lombok decision, and the generated sources were inspected after the build.
 - [ ] Unit, slice, and integration suites each run in their intended phase, and the verification lifecycle fails on integration-test failure.
 - [ ] Quality gates run before the tests, fail the build, and were not weakened by a suppression or baseline.
+- [ ] The build fails when `docs/project-profile.md` is absent or the JDK is below the recorded release.
 - [ ] No credentials, unapproved repositories, or unreviewed wrapper changes were introduced.
 - [ ] Any removal was user-approved, applied one dependency at a time, and verified by a full build including integration tests and application startup.
 
