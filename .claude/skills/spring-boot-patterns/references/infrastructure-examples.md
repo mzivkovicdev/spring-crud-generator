@@ -22,9 +22,11 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 ```text
 src/main/java/com/example/myapp/
 ├── MyAppApplication.java          # @SpringBootApplication
-├── config/                        # Configuration classes
+├── config/                        # Bean configuration classes
 │   ├── SecurityConfig.java
-│   └── WebConfig.java
+│   ├── WebConfig.java
+│   └── properties/                # @ConfigurationProperties types
+│       └── CatalogClientProperties.java
 ├── controller/                    # REST controllers
 │   ├── ApiPaths.java              # Single declaration of the API base path
 │   └── UserController.java
@@ -217,6 +219,9 @@ an unnoticed import of the framework type turns one focused handler into a catch
 Bean Validation failure.
 
 ## Configuration properties and beans
+
+`CatalogClientProperties` is a configuration property type, so it lives in `config.properties`.
+`CatalogClientConfiguration` constructs beans, so it lives directly in `config`.
 
 ```java
 @ConfigurationProperties("clients.catalog")

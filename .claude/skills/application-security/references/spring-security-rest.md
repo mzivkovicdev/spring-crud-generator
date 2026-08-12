@@ -189,10 +189,12 @@ chain, preserve protocol-required headers, and do not duplicate this handling in
 
 ### Management endpoints
 
-`observability-and-logging` requires actuator endpoints on a separate management port that the
-public ingress does not route. Network segmentation is not authorization, so the endpoints still get
-their own filter chain, ordered ahead of the API chain and matched by `EndpointRequest` rather than
-by path strings, so a change to `management.endpoints.web.base-path` cannot silently unprotect them.
+`observability-and-logging` owns what is exposed and in what shape: the endpoint exposure list,
+which endpoints are never published at all, and the health detail level. It requires those endpoints
+on a separate management port that the public ingress does not route. Network segmentation is not
+authorization, so the endpoints still get their own filter chain, ordered ahead of the API chain and
+matched by `EndpointRequest` rather than by path strings, so a change to
+`management.endpoints.web.base-path` cannot silently unprotect them.
 
 ```java
 // Same SecurityConfig class as the API chain above; MANAGEMENT_CHAIN_ORDER and
@@ -217,12 +219,11 @@ SecurityFilterChain managementSecurityFilterChain(final HttpSecurity http) throw
 Rules for this chain:
 
 - Only the platform's probe and build-information endpoints are open. Everything else the project chooses to expose requires an authenticated operator identity.
-- Health details stay at `when-authorized`, so an unauthenticated probe receives a status and nothing more. An open `/actuator/health` with `show-details: always` publishes internal hostnames, database versions, and failure reasons to anyone who can reach the port.
+- This chain leaves the probe endpoints reachable without a credential, so it only holds if the exposure and health-detail settings `observability-and-logging` defines are actually in place. Verify them rather than assuming them.
 - Both chains carry an explicit `@Order`. A chain without one falls back to the lowest precedence, so the ordering that makes this work would depend on a default nobody can see in the code. State it.
 - The management chain is ordered ahead of the API chain, and the API chain never matches an actuator path. Two chains matching the same request is a misconfiguration, not a defence in depth.
 - `MANAGEMENT_AUTHORITY` is written as a scope-derived authority because the resource server maps scopes to `SCOPE_` authorities by default. If the project installs a custom authority converter, change this constant to match it rather than assuming the prefix.
 - The credential for this chain is an operator credential managed by the platform, never a customer identity and never a shared static secret in configuration.
-- Never expose `heapdump`, `threaddump`, `env`, or `configprops`. A heap dump contains every credential the process holds, and no filter chain makes that acceptable on a reachable port.
 - If the deployment cannot provide a separate port, keep the same chain and matcher and rely on ingress rules to block the actuator base path externally. Record that as a compensating control.
 
 ### Token validation

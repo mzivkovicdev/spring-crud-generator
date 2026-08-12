@@ -40,9 +40,7 @@ Rules:
 - Never expose `heapdump`, `threaddump`, `env`, or `configprops` on a publicly reachable port. A heap dump contains every credential the process holds.
 - `shutdown` stays disabled.
 - `show-details` is never `always` on a reachable endpoint. Health details name internal hosts, database versions, and failure reasons.
-- The management port and its authorization follow `application-security`, which defines a dedicated filter chain matched by `EndpointRequest`, ordered ahead of the API chain. A separate port is network segmentation, not authentication; if the endpoint can be reached, it is still protected. The API filter chain never matches an actuator path.
-- Only the probe and build-information endpoints are unauthenticated. Anything else the project exposes requires an operator identity.
-- When the deployment cannot provide a separate port, keep the same chain and matcher and block the actuator base path at the ingress. Record that as a compensating control.
+- `application-security` owns who may reach these endpoints: the dedicated filter chain, which endpoints are open, the operator credential, and what to do when the deployment cannot provide a separate port. This skill decides only what is exposed and in what shape. A separate port is network segmentation, not authentication.
 - `info` contains build and version data only. Never put an environment URL, an account identifier, or anything operationally sensitive in it.
 - The Prometheus endpoint is exposed only when the project uses a scraped registry. With a pushed registry, it is unnecessary.
 
