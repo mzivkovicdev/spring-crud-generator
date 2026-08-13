@@ -1,22 +1,26 @@
 ---
 name: project-naming-conventions
-description: Define, apply, review, and safely migrate developer-owned names across serious commercial Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, modules, tests, REST paths and fields, OpenAPI components, database objects and migrations, Spring configuration, feature flags, cache keys, application messages, jobs, metrics, traces, or structured-log fields; when resolving inconsistent terminology; and when reviewing naming-related changes. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, and spring-boot-code-review without redefining their rules. Defer physical cloud, IAM, Kubernetes, CI/CD, container, DNS, and infrastructure-resource naming to the approved platform standard.
+description: Naming and safe renaming of developer-owned names in Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, tests, REST paths and fields, OpenAPI components, database objects, configuration, cache keys, jobs, metrics, spans, or structured-log fields, and when resolving inconsistent terminology. Excludes infrastructure-resource naming.
 ---
 
 # Project Naming Conventions
 
 Choose names that preserve business meaning, architectural boundaries, compatibility, security, and operational clarity. Treat naming as part of the contract whenever another component, deployment, database, dashboard, or team consumes the name.
 
-## Coordinate the owner skills
+## Coordination with other skills
 
 Treat this skill as the owner of naming vocabulary, identifier form, cross-boundary consistency, and rename safety. Let the specialized skills own behavior:
 
 | Skill | Treat as owner of |
 | --- | --- |
-| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, exceptions, and general tests |
+| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, and exception handling; this skill owns exception names |
 | `spring-boot-patterns` | REST-only architecture, TO–Domain–Entity boundaries, service contracts, mapper responsibilities, configuration design, and package responsibilities |
-| `spring-data-jpa` | Persistence semantics, mappings, queries, transactions, migrations, indexes, constraints, and database behavior |
+| `spring-data-jpa` | Persistence semantics, mappings, queries, transaction behavior inside the boundary, migrations, indexes, constraints, and database behavior |
 | `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
+| `spring-boot-testing` | Test scope, scenarios, fixtures, doubles, isolation, and execution; this skill still owns test names |
+| `build-and-dependencies` | Build files, dependency and plugin declarations, and version management; this skill owns module and artifact names |
+| `rest-api-contract` | The OpenAPI document, compatibility judgement, versioning, and deprecation; this skill owns the names that appear in it and how they may be migrated |
+| `observability-and-logging` | What must be instrumented, log levels and placement, correlation propagation, and endpoint exposure; this skill owns meter, tag, span, and structured-log field names |
 | `spring-boot-code-review` | Review scope, evidence, severity, reporting, and merge-readiness decisions |
 
 Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric, feature flag, or infrastructure resource that the design does not require.
@@ -26,13 +30,16 @@ Preserve the established project terminology:
 | Name | Meaning |
 | --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller contract |
-| `UserDomain` | Domain/service result |
+| `UserDomain` | Project-owned domain data type |
 | `UserEntity` | JPA persistence model |
 | `UserSummaryProjection` | Repository read projection |
 | `UserRestMapper` | Domain → response TO; request TO → focused domain/service input only when `spring-boot-patterns` permits that input |
 | `UserDomainMapper` | Entity/projection → domain; explicit creation values → new entity |
 
 Do not replace these terms with DTO, View, Model, Command, Query, or similarly overlapping terminology unless the project explicitly adopts a different architecture and migration.
+
+Use `<Concept>Domain` for project-owned domain data types. Apply its exact scope and exceptions from
+the Java naming reference; do not redefine this convention in another skill.
 
 ## Keep application and platform naming separate
 
@@ -51,11 +58,11 @@ Ownership follows the artifact and repository policy, not a person's job title. 
 
 Application code should refer to physical resources through typed configuration named by application purpose. The platform supplies the environment-specific physical value. Use a provider-specific property namespace only when provider behavior is intentionally part of the application contract.
 
-## Route the references
+## Reference routing
 
 - Read [Java, Spring, and test names](references/java-spring-and-test-names.md) for identifiers, packages, modules, architectural roles, Spring components, exceptions, tests, and acronyms.
-- Read [API, data, and configuration names](references/api-data-and-configuration-names.md) for REST, JSON, OpenAPI, error codes, database objects, migrations, configuration, environment variables, profiles, and feature flags.
-- Read [application messaging and observability names](references/application-messaging-and-observability-names.md) for event/message types, publisher and consumer classes, logical destination properties, jobs, executors, Redis keys, metrics, tags, custom spans, and structured-log fields.
+- Read [API, data, and configuration names](references/api-data-and-configuration-names.md) for REST, JSON, OpenAPI, problem type URIs and internal error codes, database objects, migrations, configuration, environment variables, profiles, and feature flags.
+- Read [application messaging and observability names](references/application-messaging-and-observability-names.md) for event/message types, publisher and consumer classes, logical destination properties, jobs, executors, cache keys, metrics, tags, custom spans, and structured-log fields. `observability-and-logging` owns what must be instrumented and how; this skill owns what those meters, spans, and fields are called.
 - Load every reference whose resource type is created, renamed, serialized, persisted, published, monitored, or provisioned by the change. Avoid loading unrelated references for a narrow local rename.
 
 ## Apply the rule hierarchy
@@ -83,7 +90,7 @@ Do not convert subjective readability advice into a blocking rule when multiple 
 
 Before naming:
 
-1. Inspect the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code.
+1. Inspect `docs/project-profile.md`, the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code. The profile records decisions that change names, such as the JPA accessor style, the application-service interface convention, and whether a cache exists.
 2. Identify the business concept, its owner, lifecycle, scope, and whether the name is internal, public, persisted, externally provisioned, or operationally queried.
 3. Reuse the approved domain term for the same concept across layers. Use different names only when the concepts or contracts genuinely differ.
 4. Resolve synonyms and overloaded words with the domain owner. Do not guess between materially different business meanings.
@@ -102,7 +109,8 @@ Apply these readability principles:
 - Do not reuse one word for different concepts in the same bounded context.
 - Make meaningful distinctions. Reject numeric suffixes and noise words such as `data`, `info`, `object`, `item`, `value`, `manager`, `processor`, or `helper` when they do not narrow meaning.
 - Prefer pronounceable and searchable names. Use only approved domain, protocol, vendor, and technical abbreviations.
-- Avoid encodings such as Hungarian notation, member prefixes, interface prefixes, implementation suffixes, or embedded type names that add no semantic information.
+- Avoid encodings such as Hungarian notation, member prefixes, interface prefixes, unexplained
+  implementation suffixes, or embedded type names that add no semantic information.
 - Match length to scope. Use concise loop indices only in tiny conventional scopes; use explicit names when values live longer or cross boundaries.
 - Name collections with plural nouns and individual values with singular nouns.
 - Name booleans as positive predicates such as `active`, `hasPermission`, `canRetry`, or `isExpired`. Avoid double negatives.
@@ -147,9 +155,18 @@ Use a role suffix only when the type performs that role. Prefer the specific res
 | `UserRestMapper` | `UserConverterUtil` |
 | `CatalogClient` | `CatalogHelper` |
 | `ExpiredReservationCleanupJob` | `ReservationProcessor` |
-| `OrderNotFoundException` | `OrderException` |
 
-Use the application-service interface and `*ServiceImpl` convention owned by `spring-boot-patterns`. Do not create an interface only to produce an `Impl` class for helpers or types outside that boundary. When multiple implementations differ by stable behavior or mechanism, name the distinction, such as `HttpCatalogClient` and `InMemoryCatalogClient`.
+Exception names follow the handling contract, not the resource. An order is a resource, so a missing
+order is a `ResourceNotFoundException`; introduce `OrderNotFoundException` only when that condition
+needs a different status, problem type, or recovery from every other missing resource. See
+[Name exceptions](references/java-spring-and-test-names.md#name-exceptions).
+| `ResourceNotFoundException` | `OrderException` |
+
+Follow the application-service naming decision owned by `spring-boot-patterns`. Use
+`<Capability>ServiceImpl` when the user selected that convention or the repository already applies it
+coherently; otherwise, `Impl` is not required. Do not create an interface only to produce an `Impl`
+class. When multiple implementations differ by stable behavior or mechanism, prefer names such as
+`HttpCatalogClient` and `InMemoryCatalogClient`.
 
 ## Validate every proposed name
 
@@ -184,7 +201,7 @@ Avoid mixing an otherwise mechanical rename with unrelated behavior changes. If 
 
 Do not rename:
 
-- a public field, endpoint, error code, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
+- a public field, endpoint, problem type URI, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
 - a table, column, constraint, or index outside a migration;
 - a physical infrastructure resource under this skill alone; use the approved platform standard and replacement plan;
 - a security-sensitive identifier without applying `application-security`.
@@ -200,7 +217,7 @@ During code review:
 - identify pre-existing inconsistency separately from risk introduced by the change;
 - use `spring-boot-code-review` for evidence, severity, and final reporting.
 
-## Complete the naming task
+## Completion checklist
 
 - [ ] The relevant owner skills and resource references were applied.
 - [ ] The approved business term and architectural role are clear.

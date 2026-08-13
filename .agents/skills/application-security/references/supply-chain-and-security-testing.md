@@ -11,7 +11,7 @@
 
 ## Security requirements and threat analysis
 
-Use the project-pinned OWASP ASVS version and applicable requirement set as the verification baseline. Record versioned identifiers such as `v5.0.0-1.2.5`; do not silently change the baseline during a feature. Use the current OWASP Top 10 and API Security Top 10 to prompt risk discussion, not as proof that the application is secure.
+Verify against the project security baseline defined in `SKILL.md`. This section covers what a feature has to record on top of it.
 
 For a new or materially changed feature, record:
 
@@ -29,6 +29,7 @@ Security requirements must be testable. Replace “secure endpoint” with concr
 
 ## Dependencies and build integrity
 
+- Apply `build-and-dependencies` for the declarations themselves: justification, scopes, version management, plugin pinning, and the audit and removal workflow. This section owns the security judgement about them.
 - Prefer the supported Spring Boot dependency-management baseline or an approved BOM.
 - Use only approved artifact and plugin repositories over authenticated TLS.
 - Pin build plugins and direct dependencies according to the project's reproducibility policy.
@@ -50,7 +51,7 @@ Use checks relevant to the artifact:
 - secret scanning before merge and on history where authorized;
 - static analysis for source and configuration;
 - software composition analysis;
-- unit and integration tests for security controls;
+- full application integration tests for runtime security controls;
 - container image and base-image scanning;
 - infrastructure-as-code and cloud-policy checks;
 - API contract and dynamic security tests in an authorized environment;
@@ -79,15 +80,19 @@ Protect runtime deployment:
 
 ## Security test strategy
 
-Match the test to the control:
+Apply `spring-boot-testing` for test structure, fixtures, isolation, and execution. This reference
+defines the security controls and scenarios that those tests must prove.
+
+`spring-boot-testing` owns test-level placement and mechanics; this table identifies the security
+evidence required for each control:
 
 | Control | Minimum useful evidence |
 | --- | --- |
-| HTTP authentication and route rules | Spring Security integration test through the filter chain |
-| Object and tenant authorization | Service plus database-backed integration test with two users or tenants |
+| HTTP authentication and route rules | Full application integration test through the real filter chain and selected authentication flow |
+| Object and tenant authorization | Focused service or policy unit tests plus full application integration through the real HTTP, security, and database path with two subjects or tenants |
 | Input constraints | Boundary tests for valid, invalid, oversized, and malformed values |
 | Query injection resistance | Repository integration test plus review of construction and generated SQL |
-| CSRF and CORS | Mock-server or deployed-boundary test using the real credential model |
+| CSRF and CORS | Full application integration test using the real credential model |
 | Token validation | Tests for signature, algorithm, issuer, audience, time, type, and required claims |
 | Error confidentiality | HTTP test asserting the public body and protected telemetry behavior |
 | Logging confidentiality | Captured-log test proving sensitive values are absent |

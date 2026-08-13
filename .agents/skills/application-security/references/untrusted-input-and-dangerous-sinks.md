@@ -52,7 +52,7 @@ final String jpql = "select user from UserEntity user where user.email = '" + em
 - Use `spring-data-jpa` for query construction, plans, bounds, and tests.
 - Query parameters cannot safely bind identifiers such as column names or sort direction. Translate an external sort key through an explicit allowlist to a known property.
 - Do not expose arbitrary Specifications, predicates, operators, joins, or query languages to untrusted callers.
-- Scope queries by authenticated tenant and ownership where applicable.
+- Scope queries as [Spring Security for REST](spring-security-rest.md) requires; a bound parameter is not an authorization control.
 - Apply result, page, offset, and execution-time limits.
 
 ## Commands, expressions, and reflection

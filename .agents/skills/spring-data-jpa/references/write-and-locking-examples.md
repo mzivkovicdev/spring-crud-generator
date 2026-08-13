@@ -2,6 +2,8 @@
 
 Use these examples when implementing or reviewing bulk DML, persistence-context synchronization, or pessimistic locking. Apply every rule from `../SKILL.md`; imports are omitted.
 
+Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+
 ## Contents
 
 1. [Bulk DML](#bulk-dml)
@@ -30,7 +32,7 @@ final UserEntity user = this.userRepository.findById(id).orElseThrow();
 
 this.userRepository.updateStatus(UserStatus.ACTIVE, UserStatus.SUSPENDED);
 
-return USER_DOMAIN_MAPPER.mapUserEntityToUserDomain(user);
+return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(user);
 ```
 
 The loaded entity can be stale because bulk DML bypasses normal persistence-context synchronization.

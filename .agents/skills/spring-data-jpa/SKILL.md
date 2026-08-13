@@ -1,6 +1,6 @@
 ---
 name: spring-data-jpa
-description: Production Spring Data JPA and Hibernate patterns for Java 21+ applications using any supported relational database. Covers entity mapping, repositories, associations, fetch plans, JPQL, native SQL, transactions, pagination, bulk work, locking, migrations, query performance, and persistence tests. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, schema migrations, database reads or writes, or transactional persistence behavior.
+description: Spring Data JPA and Hibernate patterns for Java 21+ applications on any supported relational database. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, schema migrations, database reads or writes, or transactional behavior. Covers mapping, associations, fetch plans, queries, transactions, pagination, locking, migrations, and persistence tests.
 ---
 
 # Spring Data JPA Skill
@@ -9,26 +9,23 @@ Design persistence for correctness, predictable SQL, and verified performance. J
 
 ## Coordination with other skills
 
-Apply `modern-java-21` to every touched Java file and `spring-boot-patterns` to controller, service, domain, mapper, and transaction boundaries. Those skills own general Java style, imports, Javadoc, tests, TOs, domain models, service parameters, mapper construction, and service update structure. Do not repeat their rules here.
+This skill owns JPA and database behavior beneath the service boundary. Use the architecture,
+terminology, mapper directions, and package responsibilities from `spring-boot-patterns`, and do not
+restate an owner's rules here:
 
-Apply `application-security` when persistence affects confidential data, tenant or object ownership, authorization scope, encryption, audit data, backups, exports, or dangerous query input. Apply `project-naming-conventions` to entity, repository, table, column, constraint, index, and migration names and to every escaped rename.
-
-Use their established terminology consistently:
-
-| Type | Boundary |
+| Owner | Owns |
 | --- | --- |
-| `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
-| `UserDomain` | Domain/service result |
-| `UserEntity` | JPA persistence |
-| `UserSummaryProjection` | Repository read projection |
-| `UserRestMapper` | Domain → response TO; request TO → a justified focused domain/service input |
-| `UserDomainMapper` | Entity/projection → domain; explicit creation values → entity |
-
-Repositories return entities or persistence projections. Services map them to domain objects before returning. This skill owns the JPA behavior beneath that boundary.
+| `modern-java-21` | Java style, imports, Javadoc, source structure |
+| `spring-boot-patterns` | Controller, service, domain, and mapper boundaries, and where the transaction boundary sits; this skill owns transaction behavior inside it |
+| `spring-boot-testing` | Test scope, fixtures, isolation, execution; this skill owns the JPA scenarios they prove |
+| `application-security` | Confidential data, tenant and object ownership, encryption, audit, backups, dangerous query input |
+| `observability-and-logging` | Log levels and placement, including that the service records the operation, not the repository |
+| `build-and-dependencies` | Driver, migration-tool, and annotation-processor declarations |
+| `project-naming-conventions` | Entity, repository, table, column, constraint, index, and migration names |
 
 This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier strategies.
 
-## References
+## Reference routing
 
 Read only the examples required by the change:
 
@@ -37,7 +34,20 @@ Read only the examples required by the change:
 
 ## Before changing persistence
 
-Inspect:
+Read `docs/project-profile.md` first, whose template `spring-boot-patterns` owns. It records the
+relational database engine and major version, the migration tool, the entity accessor style, and the
+identifier strategy. When it does not, or when the repository contains no database dependency,
+no datasource configuration, and no migration directory, **ask the user which database engine and
+version and which migration tool the project uses, and record the answer in the profile before
+writing persistence code**. Do not pick a database, a dialect, an identifier strategy, or a
+migration tool by default, and do not infer the production database from a test dependency such as
+H2.
+
+Apply `build-and-dependencies` for the driver, migration-tool, and annotation-processor declarations
+that this skill depends on; it owns the build files, and this skill owns the persistence behavior
+they enable.
+
+Then inspect:
 
 1. Spring Boot, Spring Data JPA, Jakarta Persistence, Hibernate, JDBC driver, database, and migration-tool versions;
 2. entity mappings, association ownership, converters, listeners, inheritance, identifier generation, and equality;
@@ -57,6 +67,7 @@ Entity rules:
 - Keep entities and persistent accessors non-final unless verified bytecode enhancement removes proxy limitations.
 - Provide a `protected` no-argument constructor when possible.
 - Use field or property access consistently; place mapping annotations according to the chosen strategy.
+- Use one accessor style across every entity, recorded in `docs/project-profile.md`. The examples use fluent setters returning the entity; plain `void` setters are equally acceptable. Do not mix the two.
 - Expose the getters required by persistence-to-domain mapping. With field access, JPA does not require public accessors, but mapping code must still be able to read the selected state.
 - Keep entity mappings, migrations, and database definitions aligned for names, nullability, length, precision, scale, uniqueness, defaults, foreign keys, and indexes.
 - Database constraints enforce integrity; application validation does not replace them.
@@ -65,8 +76,40 @@ Entity rules:
 - Define timestamp/timezone policy explicitly and use `BigDecimal` precision and scale for fixed-decimal columns.
 - Choose identifier generation for the actual database and verify its effect on batching and round trips.
 - Never use Lombok `@Data` on entities.
-- Exclude lazy associations and mutable state from `equals`, `hashCode`, and `toString`.
-- Test equality across transient, managed, detached, and proxied instances when entities enter sets or maps.
+- Implement `equals` and `hashCode` explicitly using the strategy below, excluding lazy associations and mutable state from them and from `toString`. Never let Lombok, an IDE template, or a record-like default generate them, and never leave the JVM identity default in place when instances enter a `Set`, a `Map`, or a bidirectional collection. Test equality across transient, managed, detached, and proxied instances.
+
+### Entity equality strategy
+
+Choose per entity, in this order:
+
+1. **Stable natural key.** When the entity has an immutable, non-null business key assigned before persistence, such as an ISO country code or an externally issued order number, compare on that key and derive `hashCode` from it. This is the preferred strategy because the contract holds in every state.
+2. **Surrogate identifier with a constant hash.** Otherwise compare on the surrogate identifier and return a constant `hashCode`. A constant hash is required, not a shortcut: the identifier is null before persistence and assigned afterwards, so any identifier-derived hash changes while the instance sits in a hash-based collection.
+
+```java
+@Override
+public boolean equals(final Object other) {
+    if (this == other) {
+        return true;
+    }
+    if (!(other instanceof UserEntity otherUser)) {
+        return false;
+    }
+
+    return this.id != null && this.id.equals(otherUser.getId());
+}
+
+@Override
+public int hashCode() {
+    return UserEntity.class.hashCode();
+}
+```
+
+Rules for this strategy:
+
+- `instanceof` with pattern matching is the type check: it accepts a provider proxy of the same entity, so no provider-specific class unwrapping is needed or used here. Read the other identifier through its getter, never the field, so a proxy resolves.
+- Two transient instances are never equal, and a transient instance is never equal to a persisted one. That is the intended contract.
+- Return a constant class-derived `hashCode`. Not `Objects.hash(id)`, which breaks on persist, and not `getClass().hashCode()`, which differs between an entity and its proxy.
+- Exclude mutable columns, versions, associations, and collections from both methods, and apply the same strategy to every entity so collection behavior is uniform.
 - Keep entity listeners limited to persistence concerns; never perform repository or remote calls from callbacks.
 
 ## Association ownership
@@ -162,13 +205,15 @@ Choose the smallest suitable fetch mechanism:
 
 ## Transactions and flush behavior
 
-- Keep transaction boundaries on public service methods reached through the Spring proxy.
+`spring-boot-patterns` owns where the boundary sits: which method carries `@Transactional`, proxy
+semantics, and how long a transaction may stay open. This section owns what happens inside it.
+
 - Use `readOnly = true` for read operations as an optimization hint, not as an authorization guarantee.
-- Keep transactions short; do not perform remote calls, unbounded iteration, or long CPU work inside them.
-- Do not rely on self-invocation. Move a separate transaction boundary to another bean when required.
 - Use `REQUIRES_NEW` only for a documented consistency reason and account for extra connection demand.
-- Follow the `spring-boot-patterns` update structure: load the entity inside the write transaction, invoke explicit mutations, call repository `save` exactly once, and map the saved entity returned by the repository to domain.
-- JPA can synchronize changes to a managed entity at flush/commit, but this project deliberately requires the explicit `save` call for update intent and consistency with the Spring Data repository abstraction. Do not omit it as a dirty-checking shortcut.
+- Follow the complete explicit update-and-save structure owned by `spring-boot-patterns`; do not
+  replace it with a dirty-checking-only implementation.
+- Treat flush timing separately from update intent. JPA can synchronize managed state at flush or
+  commit even when the project requires an explicit repository `save` call.
 - Use `flush` or `saveAndFlush` only when subsequent logic must observe database synchronization immediately, such as a deliberately handled constraint failure or database-generated effect; document and test that reason.
 - Never call `saveAndFlush` for every item in a loop.
 - Remember that JPQL/HQL and some native queries can trigger an automatic flush before query execution.
@@ -208,10 +253,12 @@ Choose the smallest suitable fetch mechanism:
 - Do not run massive blocking backfills in application-startup migrations without lock, duration, recovery, and rollout analysis.
 - Separate large data backfills from schema changes when operational control is required.
 - Evaluate vendor-specific online/concurrent index features for large production tables.
-- Test migrations from the previous supported schema on the production database engine and major version.
+- Verify clean installation from an empty isolated production-engine database and the affected
+  application mappings. Migration checksum or syntax validation supplements runtime verification.
 
 ## Persistence tests and observability
 
+- Apply `spring-boot-testing` for test structure, data, isolation, and execution.
 - Use Testcontainers or an equivalent environment with the actual supported database engine; H2-only tests are not evidence of production behavior.
 - Test entity mappings, converters, constraints, generated identifiers, repository queries, projections, entity graphs, pagination, locking, bulk DML, and migrations where relevant.
 - Assert query counts for N+1-sensitive flows.
@@ -225,32 +272,28 @@ Choose the smallest suitable fetch mechanism:
 
 Reject:
 
-- records used as entities;
-- Lombok `@Data` on entities;
-- blanket `FetchType.EAGER`;
-- Open EntityManager in View and `hibernate.enable_lazy_load_no_trans`;
-- N+1 queries hidden in mappers, serializers, logging, loops, or accessors;
-- collection fetch joins combined with pagination;
-- multiple collection fetch joins that create cartesian multiplication;
-- `distinct` used to hide an incorrect join or fetch plan;
-- detached entities reconstructed from client input and saved as updates;
-- unbounded repository reads, streams, or association traversal;
-- full-entity loading when a bounded projection is sufficient;
-- query-per-row loops;
-- optional-filter `OR` queries and functions on indexed columns on hot paths without verified plans;
-- leading-wildcard searches on large tables without a suitable search index;
-- unbounded `IN` predicates;
-- unsafe user-controlled sorting;
-- missing, ineffective, redundant, or speculative indexes;
-- `CascadeType.ALL` without aggregate lifecycle ownership;
-- cascade remove from a child or shared reference to its parent;
-- lazy or mutable associations in `equals`, `hashCode`, or `toString`;
-- unnecessary early flushes and `saveAndFlush` inside per-row loops;
-- bulk DML followed by use of stale managed entities;
-- pessimistic locks without bounded scope and timeout consideration;
-- production schema mutation through Hibernate auto-DDL;
-- destructive one-step migrations and uncontrolled startup backfills;
-- H2-only persistence verification for another production database.
+**Entity shape.** Records used as entities; Lombok `@Data` on entities; lazy or mutable associations
+in `equals`, `hashCode`, or `toString`; `CascadeType.ALL` without aggregate lifecycle ownership;
+cascade remove from a child or shared reference to its parent.
+
+**Fetch plans.** Blanket `FetchType.EAGER`; Open EntityManager in View and
+`hibernate.enable_lazy_load_no_trans`; N+1 queries hidden in mappers, serializers, logging, loops, or
+accessors; collection fetch joins combined with pagination; multiple collection fetch joins causing
+cartesian multiplication; `distinct` used to hide an incorrect join or fetch plan.
+
+**Query shape.** Unbounded repository reads, streams, association traversal, or `IN` predicates;
+full-entity loading where a bounded projection suffices; query-per-row loops; optional-filter `OR`
+queries and functions on indexed columns on hot paths without verified plans; leading-wildcard
+searches on large tables without a search index; unsafe user-controlled sorting; missing,
+ineffective, redundant, or speculative indexes.
+
+**Write behavior.** Detached entities reconstructed from client input and saved as updates;
+unnecessary early flushes and `saveAndFlush` inside per-row loops; bulk DML followed by use of stale
+managed entities; pessimistic locks without bounded scope and timeout consideration.
+
+**Schema and verification.** Production schema mutation through Hibernate auto-DDL; destructive
+one-step migrations and uncontrolled startup backfills; H2-only persistence verification for another
+production database.
 
 ## Completion checklist
 

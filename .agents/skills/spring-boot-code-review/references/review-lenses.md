@@ -37,9 +37,9 @@ Apply `spring-boot-patterns` and `application-security`.
 
 Trace each changed REST endpoint as an external contract:
 
-- Verify method, path, media type, status, headers, request and response TO shape, validation, and `ProblemDetail` behavior.
+- Verify method, path, media type, status, headers, request and response TO shape, validation, and `ProblemDetail` behavior, including that the RFC 9457 `type` URI is the only machine-readable identifier in the body.
 - Compare implementation, OpenAPI, examples, contract tests, clients, and gateway rules when they exist.
-- Check compatibility of field names, requiredness, defaults, null versus absent values, enum values, numeric types, dates, pagination, sorting, and error codes.
+- Check compatibility of field names, requiredness, defaults, null versus absent values, enum values, numeric types, dates, pagination, sorting, and problem type URIs.
 - Verify that a request TO remains at the REST boundary and that a response is mapped from a domain result rather than a JPA entity or provider model.
 - Verify that `UserRestMapper`-style mapping does not hide business rules, database access, remote calls, authorization, or silent lossy conversion.
 - Check that validation covers path, query, header, and body values and that bounds prevent oversized collections, pages, strings, files, and expensive filters.
@@ -58,7 +58,8 @@ Apply `spring-boot-patterns` for the normative TO–Domain–Entity architecture
 - Verify that the domain object remains independent of REST, serialization, JPA, repositories, and Spring infrastructure.
 - Check whether `UserDomainMapper`-style mapping runs while all required persistence state is valid and available.
 - Check every mapper for omitted fields, wrong direction, privilege-bearing fields, mutable collection leakage, accidental lazy loading, and silent normalization.
-- Verify that updates load managed state inside the intended transaction, apply explicit changes, synchronize according to the established persistence pattern, and map the resulting state.
+- Verify mapper technology and update structure against the complete rules in `spring-boot-patterns`;
+  do not restate or weaken those rules in review guidance.
 - Check partial-update semantics carefully. Distinguish absent, clear, and set operations and ensure unchanged server-owned fields survive.
 - Check exception translation at the owning boundary and verify that causes, stable error semantics, and rollback behavior remain correct.
 
@@ -182,20 +183,14 @@ Do not turn every outdated transitive dependency into a finding. Report the conc
 
 ## Tests and review completeness
 
-Apply the test rules from all active owner skills.
+Apply `spring-boot-testing` as the single owner of test levels, scenarios, fixtures, isolation, and
+execution. Apply the behavior-owning skill to decide what the tests must prove.
 
-- Map each changed behavior and confirmed bug to the narrowest test capable of proving it.
-- Check success, invalid and boundary input, missing data, conflicts, authorization, failure translation, rollback, concurrency, retries, idempotency, and compatibility as applicable.
-- Prefer behavior assertions over implementation-detail assertions and mock-interaction counts.
-- Verify that unit tests do not claim framework guarantees and that integration tests exercise the real boundary under review.
-- Use the supported database for database-specific behavior and representative external stubs or contract tests for provider behavior.
-- For ORM integration tests, verify that constraints, SQL, lifecycle callbacks, and write failures are forced through the required flush; clear the persistence context when the assertion must prove a database reload.
-- Verify commit and rollback behavior outside a test-managed rollback transaction when the production contract depends on commit-time effects.
-- Reject preemptive test timeouts that move transactional work to another thread unless the test deliberately accounts for the resulting transaction boundary.
-- Exercise `@Transactional`, `@Async`, cache, retry, method-validation, and method-security behavior through the configured Spring proxy rather than a directly constructed target.
-- Reject current time, uncontrolled randomness, sleeps, real external networks, order dependence, disabled assertions, swallowed failures, and tests weakened solely to pass the build.
-- Check whether changed tests would have failed before the production fix. A regression test that passes both before and after may not prove the defect.
-- Inspect test data for secrets, production identifiers, personal data, and invalid anonymization.
-- Check build configuration, annotation processing, generated sources, static analysis, and test selection so the relevant tests actually run.
+- Verify that every required test boundary exists and that its assertions support the claim made for
+  that boundary.
+- Check whether a regression test would have failed before the production fix.
+- Inspect build configuration and test selection so the relevant suites actually run.
+- Treat missing supported-database, proxy, security, transaction, or external-boundary evidence
+  according to the applicable owner skill rather than inventing a second test standard here.
 
 Do not demand exhaustive tests for unchanged framework behavior. Name the missing scenario and the appropriate verification layer.

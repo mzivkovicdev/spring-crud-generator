@@ -1,13 +1,13 @@
 ---
 name: spring-boot-code-review
-description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Coordinate modern-java-21, spring-boot-patterns, spring-data-jpa, application-security, and project-naming-conventions without redefining their rules. Produce revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
+description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Produces revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
 ---
 
 # Spring Boot Code Review
 
 Review the change for concrete production risk. Prefer a small number of verified findings over a large checklist of hypothetical concerns. Evaluate the code, not the author.
 
-## Coordinate the project skills
+## Coordination with other skills
 
 Treat this skill as the owner of review scope, investigation, evidence, prioritization, and reporting. Do not use it as a second coding standard.
 
@@ -15,11 +15,15 @@ Apply the normative skills as follows:
 
 | Skill | Apply when | Treat as owner of |
 | --- | --- | --- |
-| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exceptions, source structure, and general test rules |
-| `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, service transaction boundaries, and feature structure |
-| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and persistence tests |
+| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exception mechanics, and source structure |
+| `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, where the transaction boundary sits, and feature structure |
+| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and database-specific test scenarios |
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
+| `spring-boot-testing` | Production behavior or tests are changed or reviewed | Realistic scenario selection, unit and integration scope, fixtures, doubles, isolation, negative persistence verification, and test execution |
 | `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
+| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test-selection, or quality-gate configuration is affected | Dependency justification, version management, compiler and processor configuration, test phase separation, quality-gate configuration, and the dependency audit and removal workflow |
+| `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected | Log levels and placement, correlation propagation, meter selection and tag cardinality, trace propagation, endpoint exposure, and probe composition |
+| `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed | Contract completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, and document drift |
 
 Resolve every applicable owner skill before evaluating compliance:
 
@@ -35,7 +39,7 @@ Do not restate an owner skill's exact rule in this skill. In particular, do not 
 
 In review-only mode, interpret an owner skill's instruction to add, copy, update, or ensure a repository artifact as an instruction to verify it. Report a missing mandatory artifact as a finding; do not create it until the user requests fixes.
 
-## Route the references
+## Reference routing
 
 - Read [review lenses](references/review-lenses.md) for a pull request, multi-file diff, cross-layer feature, production-readiness review, or any change involving REST contracts, transactions, JPA, Redis, WebClient, AWS, messaging, jobs, configuration, observability, or deployment.
 - Read [findings and reporting](references/findings-and-reporting.md) when producing a formal review report, assigning severity or confidence, deciding whether a concern is actionable, or reviewing a change with multiple findings.
@@ -65,7 +69,10 @@ Record the reviewed base and head revisions before starting. For working-tree re
 
 Before judging the diff:
 
-- inspect repository instructions, contribution rules, architecture decisions, security profile, data-classification policy, API and event contracts, migration conventions, and CI quality gates relevant to the change;
+- distinguish gated rules from review-only rules: a rule enforced by Checkstyle, Spotless, or the enforcer plugin is already proven by a green build, so spend review attention on the rules no tool can check — layer boundaries and entity leakage, whether a name reveals intent, whether a failure is logged exactly once, whether a test asserts real behavior, whether a dependency has a justification, whether a tag is genuinely bounded;
+- report a weakened gate — a new suppression, a baseline file, a lowered severity, a disabled plugin — as a finding in its own right, regardless of what it was silencing;
+- read `docs/project-profile.md` and inspect repository instructions, contribution rules, architecture decisions, security profile, data-classification policy, API and event contracts, migration conventions, and CI quality gates relevant to the change;
+- report as a blocking finding any production change made without a project profile covering the decisions it touches, and any change that assumed a database, authentication profile, cache, service convention, accessor style, contract document, or authoring direction the profile does not record, and a change that added or edited a repository-root instruction file as a side effect;
 - inspect the configured Java, Spring Boot, Spring Framework, build-plugin, and dependency versions relevant to the change;
 - identify the intended behavior from the task, acceptance criteria, API or event contract, migration, tests, and established behavior;
 - inspect enough callers, implementations, configuration, data access, tests, and downstream consumers to validate the changed path;
@@ -116,8 +123,7 @@ Do not:
 Inspect the build before selecting commands. Run the narrowest safe checks that can validate the suspected behavior:
 
 - compile or static analysis for source and import claims;
-- focused unit or slice tests for local behavior and REST boundaries;
-- integration and supported-database tests for persistence, transaction, serialization, and configuration behavior;
+- the test levels and suites required by `spring-boot-testing` for the affected behavior;
 - contract tests for HTTP, events, jobs, and external adapters;
 - generated SQL, query counts, and representative execution plans for performance-sensitive persistence claims;
 - security tests and project-approved scanners for changed trust boundaries and dependencies.
@@ -157,13 +163,14 @@ If no actionable finding remains after verification, say:
 
 Then state the exact scope and any checks not run. Do not translate “no finding” into a guarantee that the change is safe.
 
-## Complete the review
+## Completion checklist
 
 - [ ] The exact diff or target and intended behavior are identified.
 - [ ] The reviewed base/head or working-tree scope is recorded and unchanged, or the final delta was re-reviewed.
 - [ ] Applicable owner skills were used without redefining their rules.
 - [ ] Every changed file and affected execution path was examined, or exclusions are explicit in the coverage record.
 - [ ] Security, correctness, failure, data, performance, rollout, and test risks were considered proportionately.
+- [ ] Required coverage from `spring-boot-testing` was verified at each applicable test boundary.
 - [ ] Every finding has evidence, a trigger, impact, verification, and either a remediation direction or explicit containment/escalation.
 - [ ] Questions, suggestions, pre-existing issues, and verification gaps are not presented as defects.
 - [ ] Findings are deduplicated, severity-ranked, concise, and limited to the requested scope.

@@ -1,6 +1,6 @@
 # Application messaging and observability names
 
-Use this reference for names created or consumed by Spring Boot application code: event and message types, publisher and consumer classes, logical destination properties, scheduled jobs, executors, cache names and Redis keys, Micrometer meters and tags, custom spans, and structured-log fields. Apply `spring-boot-patterns` for component responsibilities and `application-security` for data classification, tenant isolation, telemetry, messaging, and secrets.
+Use this reference for names created or consumed by Spring Boot application code: event and message types, publisher and consumer classes, logical destination properties, scheduled jobs, executors, cache names and cache keys, Micrometer meters and tags, custom spans, and structured-log fields. Apply `spring-boot-patterns` for component responsibilities and `application-security` for data classification, tenant isolation, telemetry, messaging, and secrets.
 
 ## Contents
 
@@ -8,7 +8,7 @@ Use this reference for names created or consumed by Spring Boot application code
 2. [Name events and messages](#name-events-and-messages)
 3. [Name messaging components and destination properties](#name-messaging-components-and-destination-properties)
 4. [Name scheduled jobs and executors](#name-scheduled-jobs-and-executors)
-5. [Name caches and Redis keys](#name-caches-and-redis-keys)
+5. [Name caches and cache keys](#name-caches-and-cache-keys)
 6. [Name metrics and tags](#name-metrics-and-tags)
 7. [Name custom spans and structured logs](#name-custom-spans-and-structured-logs)
 8. [Migrate application-owned operational names](#migrate-application-owned-operational-names)
@@ -22,7 +22,7 @@ Apply this reference to application-owned names:
 - serialized event type or schema identifiers owned by the application contract;
 - publisher, consumer, listener, handler, scheduled-job, and executor identifiers in source;
 - canonical Spring configuration properties for messaging destinations and consumer groups;
-- application-defined cache regions and key formats;
+- application-defined cache regions and key formats, for the cache technology recorded in `docs/project-profile.md`;
 - source Micrometer meter names and tag keys/values;
 - custom business span names and application structured-log fields.
 
@@ -151,7 +151,12 @@ Avoid `ScheduledTask1`, `BackgroundProcessor`, `AsyncExecutor2`, and `JobRunner`
 
 Do not use this reference to name Kubernetes CronJobs, platform schedulers, CI jobs, or cloud functions. Coordinate those physical names with the platform standard.
 
-## Name caches and Redis keys
+## Name caches and cache keys
+
+Caching technology is recorded in `docs/project-profile.md`. Where this section says Redis, read it
+as the selected cache or key-value store; Redis is the expected choice if one is adopted, and the
+naming rules apply to any store. When no cache has been selected, do not introduce cache names or
+key formats.
 
 Name a cache from the lookup or result it stores:
 
