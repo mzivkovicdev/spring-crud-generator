@@ -25,7 +25,7 @@ restate an owner's rules here:
 
 This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier strategies.
 
-## References
+## Reference routing
 
 Read only the examples required by the change:
 

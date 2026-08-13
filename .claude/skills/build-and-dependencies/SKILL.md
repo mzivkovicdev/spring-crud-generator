@@ -99,14 +99,14 @@ This is the single most common way to break this stack.
 
 ## Test execution configuration
 
-`spring-boot-testing` requires unit tests, MVC slice tests, persistence slice tests, and full
-integration tests, and names the latter `*IntegrationTest`. That suffix matches no default in either
-tool, so it must be configured or the suites run in the wrong phase — or silently do not run at all.
+`spring-boot-testing` states which suites must exist, how they are separated, and what must be
+recorded in `docs/project-profile.md`. This skill implements that separation in the build. Read the
+requirements there; do not reinterpret them here.
 
-- Unit and slice tests run in the fast phase. Integration tests run in a separate, later phase or task.
-- On Maven, `*IntegrationTest` also matches Surefire's default patterns, so excluding it from Surefire is required, not optional.
-- Make the verification lifecycle fail on integration-test failure. A separate phase that nobody runs is worse than no separation.
-- Record the resulting commands in `docs/project-profile.md` so "run the relevant suites" is unambiguous.
+Implementation facts that belong to the build tool:
+
+- On Maven, `*IntegrationTest` also matches Surefire's default patterns, so excluding it from Surefire is required, not optional. Without that exclusion the integration suite runs twice, once in the wrong phase.
+- On Gradle, the suffix matches no default task, so the separate suite must be registered and wired into the check lifecycle explicitly.
 - Do not skip tests in any committed configuration or profile, and do not configure a build to ignore test failures.
 
 ## Quality gates

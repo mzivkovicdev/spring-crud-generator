@@ -7,7 +7,7 @@ description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits,
 
 Review the change for concrete production risk. Prefer a small number of verified findings over a large checklist of hypothetical concerns. Evaluate the code, not the author.
 
-## Coordinate the project skills
+## Coordination with other skills
 
 Treat this skill as the owner of review scope, investigation, evidence, prioritization, and reporting. Do not use it as a second coding standard.
 
@@ -39,7 +39,7 @@ Do not restate an owner skill's exact rule in this skill. In particular, do not 
 
 In review-only mode, interpret an owner skill's instruction to add, copy, update, or ensure a repository artifact as an instruction to verify it. Report a missing mandatory artifact as a finding; do not create it until the user requests fixes.
 
-## Route the references
+## Reference routing
 
 - Read [review lenses](references/review-lenses.md) for a pull request, multi-file diff, cross-layer feature, production-readiness review, or any change involving REST contracts, transactions, JPA, Redis, WebClient, AWS, messaging, jobs, configuration, observability, or deployment.
 - Read [findings and reporting](references/findings-and-reporting.md) when producing a formal review report, assigning severity or confidence, deciding whether a concern is actionable, or reviewing a change with multiple findings.
@@ -163,7 +163,7 @@ If no actionable finding remains after verification, say:
 
 Then state the exact scope and any checks not run. Do not translate “no finding” into a guarantee that the change is safe.
 
-## Complete the review
+## Completion checklist
 
 - [ ] The exact diff or target and intended behavior are identified.
 - [ ] The reviewed base/head or working-tree scope is recorded and unchanged, or the final delta was re-reviewed.

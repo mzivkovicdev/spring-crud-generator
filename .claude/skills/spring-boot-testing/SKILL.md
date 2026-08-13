@@ -8,7 +8,7 @@ description: Testing standard for Java 21+ Spring Boot REST applications. Use wh
 Prove production behavior with deterministic, maintainable tests. Test reachable scenarios and
 publicly observable outcomes, not framework internals or invented edge cases.
 
-## Coordinate the project skills
+## Coordination with other skills
 
 Treat this skill as the owner of test scope, realistic-scenario filtering, test-level placement,
 test doubles, fixtures, isolation, and execution. Apply the specialized skills for the behavior
@@ -29,7 +29,7 @@ being verified:
 Do not redefine those standards here. Resolve a conflict through the owning skill and the
 repository-enforced build configuration.
 
-## Route the references
+## Reference routing
 
 - Read [unit test examples](references/unit-test-examples.md) when testing a service, domain rule,
   mapper behavior, validator, or focused Java component without a Spring context.

@@ -57,8 +57,10 @@ work is not wasted, because it is what every candidate backend consumes.
 
 ## Correlation context is the backbone
 
-Without a correlation identifier, a distributed failure cannot be reconstructed. This is the first
-thing to build and the easiest to get subtly wrong.
+Without a correlation identifier, a distributed failure cannot be reconstructed. It is the first
+piece of observability infrastructure the application needs, and the easiest to get subtly wrong.
+Build it when the application first handles a request that needs it; the rules below apply from
+that point on.
 
 - Accept the configured correlation header when the caller supplies it, and generate one when it is absent. Validate its format and bound its length; it is untrusted input that ends up in every log line.
 - Put it into MDC in a filter that runs **before the security filter chain**, so authentication and authorization failures are correlated too. A correlation filter ordered after security silently loses every `401` and `403`.
@@ -80,9 +82,20 @@ thing to build and the easiest to get subtly wrong.
 `application-security` decides what may appear in a log at all. Never log credentials, tokens,
 personal data, full request or response bodies, or full SQL with parameters.
 
+## Instrument the change, not the application
+
+Instrumentation is required by what a change introduces, not by the fact that a change happened.
+
+- A change that introduces none of the elements in the table below needs no new instrumentation. Exposing or configuring an actuator endpoint, adding a health indicator, changing configuration, adjusting a build file, renaming, or refactoring without new behavior introduces no service operation, no outbound call, no job, and no fallback path.
+- Correlation context, MDC handling, the log encoder, and the metrics registry are application-wide infrastructure installed once. Install them when the application first needs them or when the task asks for them, not as a side effect of an unrelated change. A task that asks for one actuator endpoint is not a request for a correlation filter.
+- When a requested change would be hard to operate without instrumentation the task did not ask for, name the gap and let the requester decide. Do not decide by adding it, and do not decide by staying silent.
+
+This is proportionality, not deferral. A change that does introduce one of these elements is
+instrumented in that same change; the anti-pattern list rejects instrumentation left for later.
+
 ## Instrument what a feature needs to be operable
 
-Every new feature is instrumented before it is considered complete:
+A feature that introduces any of these elements is instrumented before it is considered complete:
 
 | Element | Required instrumentation |
 | --- | --- |

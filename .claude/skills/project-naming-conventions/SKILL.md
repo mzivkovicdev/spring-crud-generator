@@ -7,7 +7,7 @@ description: Naming and safe renaming of developer-owned names in Java 21+ Sprin
 
 Choose names that preserve business meaning, architectural boundaries, compatibility, security, and operational clarity. Treat naming as part of the contract whenever another component, deployment, database, dashboard, or team consumes the name.
 
-## Coordinate the owner skills
+## Coordination with other skills
 
 Treat this skill as the owner of naming vocabulary, identifier form, cross-boundary consistency, and rename safety. Let the specialized skills own behavior:
 
@@ -58,7 +58,7 @@ Ownership follows the artifact and repository policy, not a person's job title. 
 
 Application code should refer to physical resources through typed configuration named by application purpose. The platform supplies the environment-specific physical value. Use a provider-specific property namespace only when provider behavior is intentionally part of the application contract.
 
-## Route the references
+## Reference routing
 
 - Read [Java, Spring, and test names](references/java-spring-and-test-names.md) for identifiers, packages, modules, architectural roles, Spring components, exceptions, tests, and acronyms.
 - Read [API, data, and configuration names](references/api-data-and-configuration-names.md) for REST, JSON, OpenAPI, problem type URIs and internal error codes, database objects, migrations, configuration, environment variables, profiles, and feature flags.
@@ -217,7 +217,7 @@ During code review:
 - identify pre-existing inconsistency separately from risk introduced by the change;
 - use `spring-boot-code-review` for evidence, severity, and final reporting.
 
-## Complete the naming task
+## Completion checklist
 
 - [ ] The relevant owner skills and resource references were applied.
 - [ ] The approved business term and architectural role are clear.

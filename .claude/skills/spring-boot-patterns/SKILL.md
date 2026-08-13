@@ -146,6 +146,8 @@ TO means transport object in this skill. Use records for immutable request and r
 - Do not pass request or response TOs into the service layer.
 - Map service results from `UserDomain` to `UserTO` in the REST mapper.
 - Map a request TO to a focused domain input only when the service parameter-object rule justifies that input.
+- Keep both mapping directions for one concept in that concept's single `<Concept>RestMapper`. Request-side and response-side mapping are two methods on one type, never two types: `UserRestMapper` owns both, and `UserRequestMapper` beside `UserResponseMapper` is a split with no benefit. The same applies to `<Concept>DomainMapper`.
+- Split a concept's mapper only for a reason recorded in the change, such as a generated mapper the project does not own or a mapping that genuinely requires different collaborators. Volume alone is not a reason; a mapper that has grown large is usually a signal that a mapping carries logic that belongs in domain or service code.
 - Keep transport validation on request TOs and business invariants in domain/service code.
 - Do not put repositories or services in TOs or mappers.
 - Normalize only when the contract permits it; do not silently change user data.
@@ -285,6 +287,7 @@ Use type-safe, validated configuration instead of scattered `@Value` fields.
 - Validate required configuration at startup.
 - Do not hardcode environment URLs, AWS regions, bucket names, timeouts, or feature behavior in production code.
 - Keep the main `@SpringBootApplication` class minimal; place feature configuration in focused classes.
+- Configuration property types live in `config.properties`. Bean configuration types live directly in `config`. A `@ConfigurationProperties` record is bound data with no beans of its own, and a `@Configuration` class constructs beans, so separating them keeps the two visible without reading annotations.
 - Avoid `proxyBeanMethods = true` unless inter-bean method proxying is required.
 
 Read the configuration records and bean example in [infrastructure examples](references/infrastructure-examples.md).
@@ -335,7 +338,7 @@ generic `Map` responses.
 that hide unrelated values or mechanically satisfy a numeric threshold; eight or more parameters
 with no grouping, redesign, or documented justification; generic `enums` packages; REST exception
 handlers in the custom-exception package; handwritten structural mappers where approved MapStruct
-can express the mapping.
+can express the mapping; a separate mapper per mapping direction for one concept.
 
 **Error contract.** A `code` or `errorCode` member beside the RFC 9457 `type`; a problem type URI or
 internal error code declared outside the error catalog; `traceId`, `spanId`, or a stack trace in a
@@ -357,7 +360,8 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] Service signatures use clear explicit parameters up to seven; signatures with eight or more were redesigned, cohesively grouped, or explicitly justified.
 - [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.
 - [ ] Approved MapStruct handles structural mapping with `ReportingPolicy.ERROR`; any handwritten mapper exception is documented.
-- [ ] Projections, Specifications, enums, exceptions, and handlers sit in their owning packages without empty scaffolding.
+- [ ] Each concept has one REST mapper and one domain mapper; any split is documented in the change.
+- [ ] Projections, Specifications, enums, exceptions, handlers, bean configuration, and configuration property types sit in their owning packages without empty scaffolding.
 - [ ] Transactions and security ownership are explicit.
 - [ ] Error responses are stable and safe, the `type` URI is their only machine-readable error identifier, and every caller-visible failure comes from the single error catalog.
 - [ ] Shared numeric bounds such as the maximum page size are declared once and referenced.
