@@ -11,7 +11,7 @@
 
 ## Security requirements and threat analysis
 
-Use the project-pinned OWASP ASVS version and applicable requirement set as the verification baseline. Record versioned identifiers such as `v5.0.0-1.2.5`; do not silently change the baseline during a feature. Use the current OWASP Top 10 and API Security Top 10 to prompt risk discussion, not as proof that the application is secure.
+Verify against the project security baseline defined in `SKILL.md`. This section covers what a feature has to record on top of it.
 
 For a new or materially changed feature, record:
 

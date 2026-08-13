@@ -20,7 +20,7 @@ rules:
 | Owner | Owns |
 | --- | --- |
 | `modern-java-21` | Java language rules, imports, Javadoc, exceptions, source structure |
-| `spring-boot-patterns` | Controllers, TO–Domain–Entity boundaries, mappers, services, transactions, errors, configuration |
+| `spring-boot-patterns` | Controllers, TO–Domain–Entity boundaries, mappers, services, where the transaction boundary sits, errors, configuration |
 | `spring-data-jpa` | Entities, repositories, queries, locking, migrations, database performance |
 | `spring-boot-testing` | Test scope, fixtures, isolation, execution |
 | `observability-and-logging` | How logs, metrics, traces, and operational endpoints are produced; this skill owns what must never appear in them and who may reach them |
@@ -54,8 +54,7 @@ Before applying a generic standard, inspect the repository for a security profil
 
 - Use the project-pinned OWASP ASVS version and applicable requirement set. Do not silently change the baseline during a feature.
 - When no profile exists, recommend creating `docs/security/security-profile.md`; do not invent compliance claims.
-- Record ASVS requirements with versioned identifiers such as `v5.0.0-1.2.5`.
-- Document applicability, verification evidence, approved exceptions, owner, expiry, and residual risk.
+- Record ASVS requirements with versioned identifiers such as `v5.0.0-1.2.5`. [API security and abuse prevention](references/api-security-and-abuse-prevention.md) lists everything the profile has to contain; do not restate that list elsewhere.
 - Treat the current OWASP Top 10 and API Security Top 10 as awareness inputs, not complete checklists.
 - Apply project-specific GDPR, PCI DSS, health-data, contractual, or regional requirements only when they are actually applicable.
 

@@ -19,7 +19,7 @@ being verified:
 | `modern-java-21` | Java version, explicit types, import order, source hygiene, and Javadoc |
 | `project-naming-conventions` | Test class, method, fixture, and test-data names |
 | `spring-boot-patterns` | REST, service, domain, mapper, validation, error, and configuration contracts |
-| `spring-data-jpa` | Database mappings, constraints, queries, transactions, locking, migrations, and production-database semantics |
+| `spring-data-jpa` | Database mappings, constraints, queries, transaction behavior inside the boundary, locking, migrations, and production-database semantics |
 | `application-security` | Required security scenarios, protected data, credentials, and trust-boundary controls |
 | `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
 | `build-and-dependencies` | Build files, test plugins, source sets, and the configuration that decides which suites run in which phase |

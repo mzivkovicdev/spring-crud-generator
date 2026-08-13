@@ -26,7 +26,7 @@ Use the project's approved security profile. If none exists, recommend `docs/sec
 - verification evidence for each applicable control;
 - approved exceptions with rationale, owner, expiry, compensating controls, and residual risk.
 
-Do not silently upgrade the baseline during a feature. Propose baseline migration as a separate reviewed change because identifiers, applicability, implementation, and evidence can change.
+Propose baseline migration as a separate reviewed change, because identifiers, applicability, implementation, and evidence all change with it.
 
 OWASP Top 10 documents are awareness resources, not substitutes for a security profile or control verification.
 
@@ -68,7 +68,7 @@ Evaluate authorization at four dimensions:
 
 - Derive subject and tenant from verified authentication context.
 - Do not trust request-supplied user, tenant, role, permission, ownership, status, price, discount, approval, or administrative fields.
-- Scope repository lookups and mutations by tenant and ownership where applicable.
+- Scope repository lookups and mutations as [Spring Security for REST](spring-security-rest.md) requires; authorization rules are not repeated here.
 - Use explicit input allowlists. Do not reflectively copy request properties onto domain or entity objects.
 - Construct response TOs from an explicit field contract; successful object authorization does not grant every property.
 - Apply the same checks to bulk operations, exports, nested resources, file downloads, search, count, existence, history, and metadata endpoints.
@@ -137,7 +137,7 @@ Use idempotency when duplicate execution can create additional state, cost, mess
 ## HTTP contracts, caching, and host handling
 
 - Accept only documented HTTP methods, media types, encodings, and schema shapes.
-- Return explicit media types and set `X-Content-Type-Options: nosniff`.
+- Return explicit media types. [Spring Security for REST](spring-security-rest.md) owns the response security headers.
 - Use `Cache-Control: no-store` for credentials, tokens, recovery data, one-time values, and sensitive responses that must not be retained by browsers or intermediaries.
 - For cacheable personalized responses, define private/shared cache behavior, authorization separation, cache keys, `Vary`, invalidation, and data classification explicitly.
 - Never place credentials, tokens, secrets, or avoidable personal data in URLs or query strings.

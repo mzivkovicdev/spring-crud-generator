@@ -15,7 +15,7 @@ Treat this skill as the owner of naming vocabulary, identifier form, cross-bound
 | --- | --- |
 | `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, and exception handling; this skill owns exception names |
 | `spring-boot-patterns` | REST-only architecture, TO–Domain–Entity boundaries, service contracts, mapper responsibilities, configuration design, and package responsibilities |
-| `spring-data-jpa` | Persistence semantics, mappings, queries, transactions, migrations, indexes, constraints, and database behavior |
+| `spring-data-jpa` | Persistence semantics, mappings, queries, transaction behavior inside the boundary, migrations, indexes, constraints, and database behavior |
 | `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
 | `spring-boot-testing` | Test scope, scenarios, fixtures, doubles, isolation, and execution; this skill still owns test names |
 | `build-and-dependencies` | Build files, dependency and plugin declarations, and version management; this skill owns module and artifact names |

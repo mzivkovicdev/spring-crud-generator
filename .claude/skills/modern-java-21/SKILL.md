@@ -7,14 +7,24 @@ description: Modern Java 21+ coding standard for every creation, edit, refactor,
 
 Write production-grade Java that is easy to understand, test, change, and operate. Existing code is context for behavior, not automatic permission to repeat its design mistakes.
 
-This skill is authoritative for Java source rules in every file, production and test. Three owners
-sit beside it:
+This skill is authoritative for Java source rules in every file, production and test.
+
+## Coordination with other skills
 
 | Owner | Owns |
 | --- | --- |
 | `project-naming-conventions` | Identifier forms and suffixes; this skill owns Java type design |
 | `spring-boot-testing` | Test scope, scenarios, fixtures, isolation, execution |
 | `build-and-dependencies` | The compiler and quality-gate configuration that enforces these rules |
+| `observability-and-logging` | Every logging rule: levels, placement, message and field structure, correlation context, and what a log call may cost |
+| `application-security` | What may never appear in a log, a message, or an exception, and data classification |
+| `spring-boot-patterns` | Layer responsibilities, service and mapper contracts, and the public error contract an exception ends up in |
+| `spring-data-jpa` | Persistence semantics behind the types this skill shapes |
+| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
+
+This skill states no logging rule of its own. When a touched file logs, read
+`observability-and-logging`; when it handles data that might be confidential, read
+`application-security`. Do not infer a level, a placement, or a redaction rule from this skill.
 
 ## Non-negotiable rule for every touched Java file
 
@@ -274,7 +284,7 @@ exception to any other collaborator.
 - Catch an exception only when adding context, translating at a boundary, compensating, retrying under an explicit policy, or producing a stable external response.
 - Never swallow an exception or return fake success.
 - Do not catch `Throwable`; avoid broad `Exception` catches except at a true top-level boundary.
-- Do not log and rethrow the same failure at every layer. Log once at the boundary that owns operational handling.
+- Do not catch a failure, log it, and rethrow it unchanged: that adds no context and duplicates the record. `observability-and-logging` decides where a failure is logged.
 - Exception messages must be actionable but must not expose secrets or sensitive personal data.
 
 ```java
@@ -352,14 +362,6 @@ extend an inherited contract that remains accurate.
 
 Do not write Javadoc such as "Gets the name" on a self-explanatory accessor, and remove stale
 comments when the implementation changes.
-
-## Logging
-
-- Use parameterized logging rather than string concatenation.
-- Log stable identifiers and outcomes, not entire objects or payloads.
-- Never log credentials, tokens, cookies, authorization headers, secrets, or unnecessary personal data.
-- Use `ERROR` for failures that require action, `WARN` for degraded/expected exceptional conditions, `INFO` for significant lifecycle/business events, and `DEBUG` for diagnostic detail.
-- Avoid duplicate logging of the same exception across layers.
 
 ## Worked examples in these skills
 

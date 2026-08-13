@@ -60,6 +60,7 @@ com.acme.myapp.transferobject.response
 com.acme.myapp.exception
 com.acme.myapp.exception.handler
 com.acme.myapp.config
+com.acme.myapp.config.properties
 ```
 
 This project uses a layered package layout. Keep controllers, services, domain models, repositories, JPA entities, mappers, transfer objects, exceptions, and configuration in their established layer packages. Introduce a deeper package only with its first type and only when it represents a distinct responsibility; never create empty package scaffolding. Follow `spring-boot-patterns` for exact package responsibilities.

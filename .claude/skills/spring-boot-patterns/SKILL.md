@@ -16,7 +16,7 @@ structure, and the error contract. Everything else has an owner, and that owner 
 | --- | --- |
 | `modern-java-21` | Java language use, imports, Javadoc, nullability, exception mechanics, source structure |
 | `spring-boot-testing` | Test scope, scenario selection, fixtures, isolation, execution |
-| `spring-data-jpa` | Entities, repositories, queries, transactions, locking, migrations, database performance |
+| `spring-data-jpa` | Entities, repositories, queries, transaction behavior inside the boundary, locking, migrations, database performance; this skill owns where that boundary sits |
 | `application-security` | Trust boundaries, identity, authorization, confidential data, dangerous input, external systems |
 | `rest-api-contract` | The public contract, its document, and whether a change is breaking |
 | `observability-and-logging` | Logging, correlation context, metrics, tracing, actuator endpoints |
@@ -203,9 +203,9 @@ Services implement operations and own orchestration.
   `View` terminology by default.
 - Do not pass raw passwords, tokens, or secrets beyond the narrow boundary that hashes, encrypts, or exchanges them. Never persist or log their raw values.
 - Keep business rules out of controller, mapper, repository, and entity callback code.
-- Place `@Transactional` on public service methods invoked through the Spring proxy, never relying on self-invocation for it or for `@Async`, `@Cacheable`, or method validation. Do not add it mechanically to every service.
+- Place `@Transactional` on public service methods invoked through the Spring proxy, never relying on self-invocation for it or for `@Async`, `@Cacheable`, or method validation. Do not add it mechanically to every service. When a separate boundary is genuinely required, move it to another bean rather than working around the proxy.
 - Keep transactions short. Do not make slow external calls while holding one unless the consistency design requires it.
-- Use `readOnly = true` for read services where the persistence implementation supports it; it is an optimization hint, not security.
+- `spring-data-jpa` owns what happens inside the boundary: `readOnly`, propagation, isolation, flush timing, and locking. Set none of them from here.
 
 Read the service, parameter-object, mapper, and repository-boundary examples in
 [service and domain examples](references/service-domain-examples.md).

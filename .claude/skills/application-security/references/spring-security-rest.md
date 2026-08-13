@@ -13,7 +13,7 @@ omitted member that the code depends on.
 5. [API keys and delegated login](#api-keys-and-delegated-login)
 6. [Sessions, cookies, and CSRF](#sessions-cookies-and-csrf)
 7. [CORS and headers](#cors-and-headers)
-8. [Management endpoints and proxies](#management-endpoints-and-proxies)
+8. [Trusted proxies](#trusted-proxies)
 9. [Failure handling](#failure-handling)
 10. [Verification](#verification)
 
@@ -369,13 +369,11 @@ Use current Spring Security defaults and current OWASP guidance for response hea
 
 Do not add the obsolete `X-XSS-Protection: 1; mode=block` header. Do not assume security headers fix unsafe output handling.
 
-## Management endpoints and proxies
+## Trusted proxies
 
-- Expose only required Actuator endpoints.
-- Keep health details minimal for unauthenticated callers.
-- Protect management access with a separate network path, port, authorization policy, or equivalent control when appropriate.
-- Never expose environment, heap dump, thread dump, log file, configuration properties, mappings, or metrics containing sensitive labels to untrusted callers.
-- Restrict shutdown and other state-changing management operations.
+`observability-and-logging` owns actuator exposure and health detail level; the management filter
+chain earlier in this reference owns access to it. Neither is restated here.
+
 - Configure which proxy addresses are trusted to supply forwarded headers.
 - Derive client scheme, host, and address only from trusted proxy processing; otherwise attacker-supplied forwarding headers can affect redirects, audit data, rate limits, and secure-cookie behavior.
 

@@ -16,7 +16,7 @@ restate an owner's rules here:
 | Owner | Owns |
 | --- | --- |
 | `modern-java-21` | Java style, imports, Javadoc, source structure |
-| `spring-boot-patterns` | Controller, service, domain, mapper, and transaction boundaries |
+| `spring-boot-patterns` | Controller, service, domain, and mapper boundaries, and where the transaction boundary sits; this skill owns transaction behavior inside it |
 | `spring-boot-testing` | Test scope, fixtures, isolation, execution; this skill owns the JPA scenarios they prove |
 | `application-security` | Confidential data, tenant and object ownership, encryption, audit, backups, dangerous query input |
 | `observability-and-logging` | Log levels and placement, including that the service records the operation, not the repository |
@@ -205,10 +205,10 @@ Choose the smallest suitable fetch mechanism:
 
 ## Transactions and flush behavior
 
-- Keep transaction boundaries on public service methods reached through the Spring proxy.
+`spring-boot-patterns` owns where the boundary sits: which method carries `@Transactional`, proxy
+semantics, and how long a transaction may stay open. This section owns what happens inside it.
+
 - Use `readOnly = true` for read operations as an optimization hint, not as an authorization guarantee.
-- Keep transactions short; do not perform remote calls, unbounded iteration, or long CPU work inside them.
-- Do not rely on self-invocation. Move a separate transaction boundary to another bean when required.
 - Use `REQUIRES_NEW` only for a documented consistency reason and account for extra connection demand.
 - Follow the complete explicit update-and-save structure owned by `spring-boot-patterns`; do not
   replace it with a dirty-checking-only implementation.
