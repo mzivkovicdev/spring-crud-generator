@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.builders.AlterTableContextBuilder;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
-import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
 import dev.markozivkovic.springcrudgenerator.migrations.MigrationDiffer;
@@ -46,6 +46,7 @@ import dev.markozivkovic.springcrudgenerator.models.flyway.DdlArtifactState.DdlA
 import dev.markozivkovic.springcrudgenerator.models.flyway.EntityState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.MigrationState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.SchemaDiff.Result;
+import dev.markozivkovic.springcrudgenerator.resolvers.JsonModelResolver;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
@@ -87,17 +88,9 @@ public class MigrationScriptGenerator implements CodeGenerator {
         version = migrationState.getLastScriptVersion() + 1;
         final MigrationManifestBuilder manifest = new MigrationManifestBuilder(migrationState);
 
-        final List<ModelDefinition> jsonModels = this.entities.stream()
-            .flatMap(entity -> entity.getFields().stream())
-            .filter(field -> FieldUtils.isJsonField(field))
-            .map(jsonField -> {
-                final String jsonType = FieldUtils.extractJsonInnerElementType(jsonField);
-                return this.entities.stream()
-                        .filter(entity -> entity.getName().equals(jsonType))
-                        .findFirst()
-                        .orElseThrow();
-            })
-            .collect(Collectors.toList());
+        final List<ModelDefinition> jsonModels = JsonModelResolver.resolveReferencedModels(
+                this.entities,
+                this.entities);
 
         final List<ModelDefinition> models = this.entities.stream()
                 .filter(model -> FieldUtils.isAnyFieldId(model.getFields()))
@@ -318,23 +311,11 @@ public class MigrationScriptGenerator implements CodeGenerator {
                 }
                 final Result diff = MigrationDiffer.diff(oldState, context);
                 if (!diff.isEmpty()) {
-                    final Map<String,Object> alterCtx = new LinkedHashMap<>();
-                    alterCtx.put("table", tableName);
-                    alterCtx.put("addedColumns", diff.getAddedColumns());
-                    alterCtx.put("removedColumns", diff.getRemovedColumns());
-                    alterCtx.put("modifiedColumns", diff.getModifiedColumns());
-                    alterCtx.put("pkChanged", diff.getPkChanged());
-                    alterCtx.put("newPk", diff.getNewPk());
-                    alterCtx.put("addedFks", diff.getAddedFks());
-                    alterCtx.put("removedFks", diff.getRemovedFks());
-                    alterCtx.put("db", this.configuration.getDatabase());
-                    alterCtx.put("auditAdded", diff.isAuditAdded());
-                    alterCtx.put("auditRemoved", diff.isAuditRemoved());
-                    alterCtx.put("auditTypeChanged", diff.isAuditTypeChanged());
-                    alterCtx.put("auditCreatedType", context.get("auditCreatedType"));
-                    alterCtx.put("auditUpdatedType", context.get("auditUpdatedType"));
-                    alterCtx.put("auditNowExpr", context.get("auditNowExpr"));
-                    alterCtx.put(TemplateContextConstants.SOFT_DELETE_ENABLED, context.get(TemplateContextConstants.SOFT_DELETE_ENABLED));
+                    final Map<String, Object> alterCtx = AlterTableContextBuilder.build(
+                            tableName,
+                            this.configuration.getDatabase(),
+                            diff,
+                            context);
                     
                     final String dbScript = FreeMarkerTemplateProcessorUtils.processTemplate(
                         "migration/flyway/alter-table-combined.sql.ftl", alterCtx

@@ -17,6 +17,7 @@
 package dev.markozivkovic.springcrudgenerator.plugins;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -26,17 +27,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.maven.project.MavenProject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.markozivkovic.springcrudgenerator.generators.SpringCrudGenerator;
 import dev.markozivkovic.springcrudgenerator.generators.tests.SpringCrudTestGenerator;
@@ -83,66 +84,114 @@ public class CrudGeneratorMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
 
+    @Override
     public void execute() throws MojoExecutionException {
 
-        if (Objects.isNull(inputSpecFile)) {
+        this.validateRequiredParameters();
+
+        try {
+            this.generateFromSpecification();
+        } catch (final Exception exception) {
+            throw new MojoExecutionException("Code generation failed", exception);
+        }
+    }
+
+    /**
+     * Validates that the parameters required to run code generation were supplied.
+     *
+     * @throws MojoExecutionException when the input specification file or output directory is not
+     *                                configured
+     */
+    private void validateRequiredParameters() throws MojoExecutionException {
+
+        if (Objects.isNull(this.inputSpecFile)) {
             throw new MojoExecutionException("inputSpecFile must be specified");
         }
         
-        if (Objects.isNull(outputDir)) {
+        if (Objects.isNull(this.outputDir)) {
             throw new MojoExecutionException("outputDir must be specified");
         }
-        
-        try {
-            CrudMojoUtils.printBanner(pluginDescriptor, inputSpecFile, outputDir);
-            final ObjectMapper mapper = CrudMojoUtils.createSpecMapper(inputSpecFile);
-            final Path specPath = Paths.get(inputSpecFile).toAbsolutePath().normalize();
+    }
 
-            LOGGER.info("Generator started for file: {}", specPath);
+    /**
+     * Reads and validates the CRUD specification, resolves the project metadata, and generates
+     * changed entities.
+     *
+     * @throws IOException when the specification cannot be read
+     */
+    private void generateFromSpecification() throws IOException {
 
-            final CrudSpecification spec = mapper.readValue(specPath.toFile(), CrudSpecification.class);
-            SpecificationValidator.validate(spec);
-            PackageConfigurationValidator.validate(spec.getPackages(), spec.getConfiguration());
-            SpringBootVersionUtils.resolveAndSetSpringBootMajor(spec, parentVersion);
-            
-            final ProjectMetadata projectMetadata = new ProjectMetadata(artifactId, version, projectBaseDir.getAbsolutePath());
-            final GeneratorState generatorState = GeneratorStateUtils.loadOrEmpty(projectMetadata.getProjectBaseDir());
-            final List<ModelDefinition> activeEntities = spec.getEntities().stream()
-                    .filter(entity -> !Boolean.TRUE.equals(entity.getIgnore()))
-                    .toList();
+        CrudMojoUtils.printBanner(this.pluginDescriptor, this.inputSpecFile, this.outputDir);
+        final ObjectMapper mapper = CrudMojoUtils.createSpecMapper(this.inputSpecFile);
+        final Path specPath = Paths.get(this.inputSpecFile).toAbsolutePath().normalize();
 
-            final Map<String, String> fingerprints = activeEntities.stream()
-                    .collect(Collectors.toMap(ModelDefinition::getName, entity -> GeneratorStateUtils.computeFingerprint(entity)));
-            final String configurationFingerprints = GeneratorStateUtils.computeFingerprint(spec.getConfiguration());
-            final List<ModelDefinition> entitiesToGenerate = this.computeEntitiesToGenerate(
-                    activeEntities, forceRegeneration, generatorState, fingerprints, configurationFingerprints
-            );
+        LOGGER.info("Generator started for file: {}", specPath);
 
-            if (entitiesToGenerate.isEmpty()) {
-                DependencyCheckUtils.warnMissingDependencies(spec.getConfiguration(), project);
-                LOGGER.info("No changes detected in CRUD spec. Skipping code generation.");
-                return;
-            }
-            
-            final SpringCrudGenerator generator = new SpringCrudGenerator(
-                    spec.getConfiguration(), entitiesToGenerate, projectMetadata, spec.getPackages()
-            );
-            final SpringCrudTestGenerator testGenerator = new SpringCrudTestGenerator(
-                    spec.getConfiguration(), entitiesToGenerate, spec.getPackages()
-            );
-            generator.generate(outputDir);
-            entitiesToGenerate.forEach(entity -> generator.generate(entity, outputDir));
-            entitiesToGenerate.forEach(entity -> testGenerator.generate(entity, outputDir));
-            entitiesToGenerate.forEach(entity ->
-                GeneratorStateUtils.updateFingerprint(generatorState, entity.getName(), fingerprints.get(entity.getName()), configurationFingerprints)
-            );
-            GeneratorStateUtils.save(projectMetadata.getProjectBaseDir(), generatorState);
-            DependencyCheckUtils.warnMissingDependencies(spec.getConfiguration(), project);
+        final CrudSpecification specification = mapper.readValue(specPath.toFile(), CrudSpecification.class);
+        SpecificationValidator.validate(specification);
+        PackageConfigurationValidator.validate(specification.getPackages(), specification.getConfiguration());
+        SpringBootVersionUtils.resolveAndSetSpringBootMajor(specification, this.parentVersion);
 
-            LOGGER.info("Generator finished for file: {}", inputSpecFile);
-        } catch (final Exception e) {
-            throw new MojoExecutionException("Code generation failed", e);
+        final ProjectMetadata projectMetadata = new ProjectMetadata(
+                this.artifactId,
+                this.version,
+                this.projectBaseDir.getAbsolutePath());
+        final GeneratorState generatorState = GeneratorStateUtils.loadOrEmpty(projectMetadata.getProjectBaseDir());
+        final List<ModelDefinition> activeEntities = specification.getEntities().stream()
+                .filter(entity -> !Boolean.TRUE.equals(entity.getIgnore()))
+                .toList();
+
+        this.generateChangedEntities(specification, projectMetadata, generatorState, activeEntities);
+        LOGGER.info("Generator finished for file: {}", this.inputSpecFile);
+    }
+
+    /**
+     * Generates artifacts for entities whose model or generator configuration changed and persists
+     * their fingerprints.
+     *
+     * @param specification   the validated CRUD specification that controls generation
+     * @param projectMetadata metadata for the Maven project receiving the generated artifacts
+     * @param generatorState  the persisted state used to detect changes between generator runs
+     * @param activeEntities  the non-ignored entity definitions available to the generators
+     */
+    private void generateChangedEntities(
+            final CrudSpecification specification,
+            final ProjectMetadata projectMetadata,
+            final GeneratorState generatorState,
+            final List<ModelDefinition> activeEntities) {
+
+        final Map<String, String> fingerprints = activeEntities.stream()
+                .collect(Collectors.toMap(
+                        ModelDefinition::getName,
+                        GeneratorStateUtils::computeFingerprint));
+        final String configurationFingerprint = GeneratorStateUtils.computeFingerprint(specification.getConfiguration());
+        final List<ModelDefinition> entitiesToGenerate = this.computeEntitiesToGenerate(
+                activeEntities,
+                this.forceRegeneration,
+                generatorState,
+                fingerprints,
+                configurationFingerprint);
+
+        if (entitiesToGenerate.isEmpty()) {
+            DependencyCheckUtils.warnMissingDependencies(specification.getConfiguration(), this.project);
+            LOGGER.info("No changes detected in CRUD spec. Skipping code generation.");
+            return;
         }
+
+        final SpringCrudGenerator generator = new SpringCrudGenerator(
+                specification.getConfiguration(), activeEntities, projectMetadata, specification.getPackages());
+        final SpringCrudTestGenerator testGenerator = new SpringCrudTestGenerator(
+                specification.getConfiguration(), activeEntities, specification.getPackages());
+        generator.generate(this.outputDir);
+        entitiesToGenerate.forEach(entity -> generator.generate(entity, this.outputDir));
+        entitiesToGenerate.forEach(entity -> testGenerator.generate(entity, this.outputDir));
+        entitiesToGenerate.forEach(entity -> GeneratorStateUtils.updateFingerprint(
+                generatorState,
+                entity.getName(),
+                fingerprints.get(entity.getName()),
+                configurationFingerprint));
+        GeneratorStateUtils.save(projectMetadata.getProjectBaseDir(), generatorState);
+        DependencyCheckUtils.warnMissingDependencies(specification.getConfiguration(), this.project);
     }
 
     /**

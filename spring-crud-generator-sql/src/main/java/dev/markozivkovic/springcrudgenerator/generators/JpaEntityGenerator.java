@@ -26,8 +26,8 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants.GeneratorContextKeys;
+import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.imports.ModelImports;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration;
@@ -36,6 +36,7 @@ import dev.markozivkovic.springcrudgenerator.models.FieldDefinition;
 import dev.markozivkovic.springcrudgenerator.models.IdDefinition.IdStrategyEnum;
 import dev.markozivkovic.springcrudgenerator.models.ModelDefinition;
 import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
+import dev.markozivkovic.springcrudgenerator.resolvers.JsonModelResolver;
 import dev.markozivkovic.springcrudgenerator.templates.JpaEntityTemplateContext;
 import dev.markozivkovic.springcrudgenerator.utils.AdditionalPropertiesUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
@@ -76,22 +77,8 @@ public class JpaEntityGenerator implements CodeGenerator {
         
         LOGGER.info("Generator JPA entity for model: {}", modelDefinition.getName());
         
-        modelDefinition.getFields().stream()
-                .filter(FieldUtils::isJsonField)
-                .forEach(field -> {
-
-                    final String jsonInnerElementType = FieldUtils.extractJsonInnerElementType(field);
-                    final ModelDefinition jsonModel = this.entities.stream()
-                            .filter(model -> model.getName().equals(jsonInnerElementType))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                String.format(
-                                    "JSON model not found: %s", jsonInnerElementType
-                                )
-                            ));
-                    
-                    this.generateHelperEntity(jsonModel, outputDir);
-                });
+        JsonModelResolver.resolveReferencedModels(List.of(modelDefinition), this.entities)
+                .forEach(jsonModel -> this.generateHelperEntity(jsonModel, outputDir));
        
         this.generateJpaEntity(modelDefinition, outputDir);
 
