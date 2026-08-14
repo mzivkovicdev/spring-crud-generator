@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dev.markozivkovic.springcrudgenerator.generators;
+package dev.markozivkovic.springcrudgenerator.resolvers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;

@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.markozivkovic.springcrudgenerator.builders.AlterTableContextBuilder;
 import dev.markozivkovic.springcrudgenerator.constants.GeneratorConstants;
 import dev.markozivkovic.springcrudgenerator.context.GeneratorContext;
 import dev.markozivkovic.springcrudgenerator.enums.RelationTypeEnum;
@@ -45,6 +46,7 @@ import dev.markozivkovic.springcrudgenerator.models.flyway.DdlArtifactState.DdlA
 import dev.markozivkovic.springcrudgenerator.models.flyway.EntityState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.MigrationState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.SchemaDiff.Result;
+import dev.markozivkovic.springcrudgenerator.resolvers.JsonModelResolver;
 import dev.markozivkovic.springcrudgenerator.utils.ContainerUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dev.markozivkovic.springcrudgenerator.generators;
+package dev.markozivkovic.springcrudgenerator.builders;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,12 +23,26 @@ import dev.markozivkovic.springcrudgenerator.constants.TemplateContextConstants;
 import dev.markozivkovic.springcrudgenerator.models.CrudConfiguration.DatabaseType;
 import dev.markozivkovic.springcrudgenerator.models.flyway.SchemaDiff.Result;
 
-final class AlterTableContextBuilder {
+/**
+ * Builds the template context used to render an SQL alter-table migration.
+ */
+public final class AlterTableContextBuilder {
 
     private AlterTableContextBuilder() {
     }
 
-    static Map<String, Object> build(
+    /**
+     * Builds an alter-table template context from the schema difference and the corresponding
+     * create-table context.
+     *
+     * @param tableName          the database table to alter; must not be {@code null}
+     * @param database           the target database dialect; must not be {@code null}
+     * @param diff               the detected schema changes to render; must not be {@code null}
+     * @param createTableContext the create-table context supplying audit-column expressions and
+     *                           types; must not be {@code null}
+     * @return a mutable context containing the values required by the alter-table template
+     */
+    public static Map<String, Object> build(
             final String tableName,
             final DatabaseType database,
             final Result diff,

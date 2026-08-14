@@ -96,6 +96,12 @@ public class CrudGeneratorMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * Validates that the parameters required to run code generation were supplied.
+     *
+     * @throws MojoExecutionException when the input specification file or output directory is not
+     *                                configured
+     */
     private void validateRequiredParameters() throws MojoExecutionException {
 
         if (Objects.isNull(this.inputSpecFile)) {
@@ -107,6 +113,12 @@ public class CrudGeneratorMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * Reads and validates the CRUD specification, resolves the project metadata, and generates
+     * changed entities.
+     *
+     * @throws IOException when the specification cannot be read
+     */
     private void generateFromSpecification() throws IOException {
 
         CrudMojoUtils.printBanner(this.pluginDescriptor, this.inputSpecFile, this.outputDir);
@@ -133,6 +145,15 @@ public class CrudGeneratorMojo extends AbstractMojo {
         LOGGER.info("Generator finished for file: {}", this.inputSpecFile);
     }
 
+    /**
+     * Generates artifacts for entities whose model or generator configuration changed and persists
+     * their fingerprints.
+     *
+     * @param specification   the validated CRUD specification that controls generation
+     * @param projectMetadata metadata for the Maven project receiving the generated artifacts
+     * @param generatorState  the persisted state used to detect changes between generator runs
+     * @param activeEntities  the non-ignored entity definitions available to the generators
+     */
     private void generateChangedEntities(
             final CrudSpecification specification,
             final ProjectMetadata projectMetadata,

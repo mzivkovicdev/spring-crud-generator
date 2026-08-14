@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dev.markozivkovic.springcrudgenerator.generators;
+package dev.markozivkovic.springcrudgenerator.builders;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
