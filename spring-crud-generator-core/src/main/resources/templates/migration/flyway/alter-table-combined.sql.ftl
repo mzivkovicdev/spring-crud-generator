@@ -3,8 +3,8 @@
 <#assign isMySql    = (db?string == "MYSQL")>
 <#assign isMariaDB  = (db?string == "MARIADB")>
 <#assign isMsSql    = (db?string == "MSSQL")>
-<#assign softDeleteOn  = (softDeleteEnabled?? && softDeleteEnabled)>
-<#assign softDeleteOff = (softDeleteEnabled?? && !softDeleteEnabled)>
+<#assign softDeleteOn  = (softDeleteChanged?? && softDeleteChanged && softDeleteEnabled?? && softDeleteEnabled)>
+<#assign softDeleteOff = (softDeleteChanged?? && softDeleteChanged && softDeleteEnabled?? && !softDeleteEnabled)>
 <#if addedColumns?has_content>
 <#list addedColumns as c>
 ALTER TABLE ${quoteIdent(table)}
@@ -27,6 +27,36 @@ CREATE INDEX ix_${table}_deleted ON ${quoteIdent(table)} (${quoteIdent("deleted"
 <#else>
 CREATE INDEX ix_${table}_deleted ON ${quoteIdent(table)} (${quoteIdent("deleted")});
 </#if>
+</#if><#t>
+<#if removedFks?has_content>
+<#list removedFks as fk>
+<#if isPostgres>
+ALTER TABLE ${quoteIdent(table)}
+  DROP CONSTRAINT IF EXISTS fk_${table}_${fk.column};
+<#elseif isMySql || isMariaDB>
+SET @fk_exists_${fk_index} := (
+  SELECT COUNT(1)
+  FROM information_schema.table_constraints
+  WHERE constraint_schema = DATABASE()
+    AND table_name = '${table}'
+    AND constraint_type = 'FOREIGN KEY'
+    AND constraint_name = 'fk_${table}_${fk.column}'
+);
+SET @sql_fk_${fk_index} := IF(
+  @fk_exists_${fk_index} > 0,
+  'ALTER TABLE ${quoteIdent(table)} DROP FOREIGN KEY fk_${table}_${fk.column}',
+  'DO 0'
+);
+PREPARE stmt_drop_fk_${fk_index} FROM @sql_fk_${fk_index};
+EXECUTE stmt_drop_fk_${fk_index};
+DEALLOCATE PREPARE stmt_drop_fk_${fk_index};
+<#elseif isMsSql>
+IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = 'fk_${table}_${fk.column}')
+BEGIN
+  ALTER TABLE ${quoteIdent(table)} DROP CONSTRAINT fk_${table}_${fk.column};
+END;
+</#if><#t>
+</#list>
 </#if><#t>
 <#if removedColumns?has_content>
 <#list removedColumns as c>
@@ -188,36 +218,6 @@ ALTER TABLE ${quoteIdent(table)}
   PRIMARY KEY (
     <#list newPk as k>${quoteIdent(k)}<#if k_has_next>, </#if></#list>
   );
-</#if><#t>
-<#if removedFks?has_content>
-<#list removedFks as fk>
-<#if isPostgres>
-ALTER TABLE ${quoteIdent(table)}
-  DROP CONSTRAINT IF EXISTS fk_${table}_${fk.column};
-<#elseif isMySql || isMariaDB>
-SET @fk_exists_${fk_index} := (
-  SELECT COUNT(1)
-  FROM information_schema.table_constraints
-  WHERE constraint_schema = DATABASE()
-    AND table_name = '${table}'
-    AND constraint_type = 'FOREIGN KEY'
-    AND constraint_name = 'fk_${table}_${fk.column}'
-);
-SET @sql_fk_${fk_index} := IF(
-  @fk_exists_${fk_index} > 0,
-  'ALTER TABLE ${quoteIdent(table)} DROP FOREIGN KEY fk_${table}_${fk.column}',
-  'DO 0'
-);
-PREPARE stmt_drop_fk_${fk_index} FROM @sql_fk_${fk_index};
-EXECUTE stmt_drop_fk_${fk_index};
-DEALLOCATE PREPARE stmt_drop_fk_${fk_index};
-<#elseif isMsSql>
-IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = 'fk_${table}_${fk.column}')
-BEGIN
-  ALTER TABLE ${quoteIdent(table)} DROP CONSTRAINT fk_${table}_${fk.column};
-END;
-</#if><#t>
-</#list>
 </#if><#t>
 <#if addedFks?has_content>
 <#list addedFks as fk>

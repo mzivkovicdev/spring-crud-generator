@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,11 +45,11 @@ import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition;
 import dev.markozivkovic.springcrudgenerator.models.RelationDefinition.JoinTableDefinition;
 import dev.markozivkovic.springcrudgenerator.models.flyway.DdlArtifactState.DdlArtifactType;
-import dev.markozivkovic.springcrudgenerator.models.flyway.SchemaDiff.Result;
 import dev.markozivkovic.springcrudgenerator.models.flyway.EntityState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.FkState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.JoinState;
 import dev.markozivkovic.springcrudgenerator.models.flyway.MigrationState;
+import dev.markozivkovic.springcrudgenerator.models.flyway.SchemaDiff.Result;
 import dev.markozivkovic.springcrudgenerator.utils.FieldUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FileWriterUtils;
 import dev.markozivkovic.springcrudgenerator.utils.FlywayUtils;
@@ -250,7 +249,7 @@ class MigrationScriptGeneratorTest {
 
             fieldUtils.when(() -> FieldUtils.isAnyFieldId(anyList())).thenReturn(true);
 
-            assertThrows(NoSuchElementException.class, () -> generator.generate(userModel, "out"));
+            assertThrows(IllegalArgumentException.class, () -> generator.generate(userModel, "out"));
 
             writer.verifyNoInteractions();
         }
