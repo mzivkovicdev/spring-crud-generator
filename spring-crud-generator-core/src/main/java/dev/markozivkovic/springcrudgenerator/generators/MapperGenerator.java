@@ -36,7 +36,7 @@ import dev.markozivkovic.springcrudgenerator.utils.FreeMarkerTemplateProcessorUt
 import dev.markozivkovic.springcrudgenerator.utils.ModelNameUtils;
 import dev.markozivkovic.springcrudgenerator.utils.PackageUtils;
 
-public class MapperGenerator implements CodeGenerator {
+public class MapperGenerator implements CodeGenerator, ProjectArtifactGenerator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MapperGenerator.class);
 
@@ -52,6 +52,17 @@ public class MapperGenerator implements CodeGenerator {
     }
 
     @Override
+    public void generate(final String outputDir) {
+
+        if (!isOpenApiResourceGenerationEnabled()) {
+            return;
+        }
+
+        final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
+        this.generateDateTimeMapper(outputDir, packagePath);
+    }
+
+    @Override
     public void generate(final ModelDefinition modelDefinition, final String outputDir) {
 
         if (FieldUtils.isModelUsedAsJsonField(modelDefinition, this.entities)) {
@@ -61,8 +72,7 @@ public class MapperGenerator implements CodeGenerator {
         LOGGER.info("Generating mapper for model: {}", modelDefinition.getName());
 
         final String packagePath = PackageUtils.getPackagePathFromOutputDir(outputDir);
-        final boolean swagger = configuration.getOpenApi() != null && Boolean.TRUE.equals(this.configuration.getOpenApi().getApiSpec()) &&
-                        Boolean.TRUE.equals(this.configuration.getOpenApi().getGenerateResources());
+        final boolean swagger = isOpenApiResourceGenerationEnabled();
 
         modelDefinition.getFields().stream()
                 .filter(FieldUtils::isJsonField)
@@ -88,6 +98,45 @@ public class MapperGenerator implements CodeGenerator {
         if (configuration != null && configuration.getGraphql() != null && Boolean.TRUE.equals(this.configuration.getGraphql().getEnabled())) {
             this.generateMapper(modelDefinition, outputDir, packagePath, true, false);
         }
+    }
+
+    /**
+     * Generates the shared mapper used by all REST mappers for date/time conversions.
+     * This project-level artifact is generated before the model-specific mappers.
+     *
+     * @param outputDir  the directory where the mapper is written
+     * @param packagePath the base package derived from the output directory
+     */
+    private void generateDateTimeMapper(final String outputDir, final String packagePath) {
+
+        LOGGER.info("Generating shared DateTimeMapper");
+
+        final String source = String.format(
+                PACKAGE, PackageUtils.computeRestMapperPackage(packagePath, packageConfiguration)
+        ) + FreeMarkerTemplateProcessorUtils.processTemplate(
+                "mapper/date-time-mapper-template.ftl", Map.of()
+        );
+
+        FileWriterUtils.writeToFile(
+                outputDir,
+                PackageUtils.computeRestMappersSubPackage(packageConfiguration),
+                "DateTimeMapper",
+                source
+        );
+    }
+
+    /**
+     * Determines whether OpenAPI specification and resource generation are enabled.
+     *
+     * @return true if both OpenAPI specification and resource generation are enabled,
+     *         false otherwise
+     */
+    private boolean isOpenApiResourceGenerationEnabled() {
+
+        return configuration != null
+                && configuration.getOpenApi() != null
+                && Boolean.TRUE.equals(configuration.getOpenApi().getApiSpec())
+                && Boolean.TRUE.equals(configuration.getOpenApi().getGenerateResources());
     }
 
     /**

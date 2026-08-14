@@ -59,6 +59,8 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
     public SpringCrudGenerator(final CrudConfiguration crudConfiguration, final List<ModelDefinition> entities,
             final ProjectMetadata projectMetadata, final PackageConfiguration packageConfiguration) {
 
+        final MapperGenerator mapperGenerator = new MapperGenerator(crudConfiguration, entities, packageConfiguration);
+
         this.ARTIFACT_GENERATORS = new LinkedHashMap<>();
         this.ARTIFACT_GENERATORS.put(ADDITIONAL_PROPERTY, new AdditionalPropertyGenerator(crudConfiguration, packageConfiguration, projectMetadata));
         this.ARTIFACT_GENERATORS.put(CACHE, new CacheGenerator(crudConfiguration, packageConfiguration, entities));
@@ -69,6 +71,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.ARTIFACT_GENERATORS.put(EXCEPTION_HANDLER, new GlobalExceptionHandlerGenerator(crudConfiguration, entities, packageConfiguration));
         this.ARTIFACT_GENERATORS.put(SWAGGER, new SwaggerDocumentationGenerator(crudConfiguration, projectMetadata, entities));
         this.ARTIFACT_GENERATORS.put(OPENAPI_CODEGEN, new OpenApiCodeGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration));
+        this.ARTIFACT_GENERATORS.put(MAPPER, mapperGenerator);
         this.ARTIFACT_GENERATORS.put(AI_CONTEXT, new AiContextGenerator(crudConfiguration, projectMetadata, entities));
 
         this.GENERATORS = new LinkedHashMap<>();
@@ -77,7 +80,7 @@ public class SpringCrudGenerator implements CodeGenerator, ProjectArtifactGenera
         this.GENERATORS.put(SERVICE, new ServiceGenerator(crudConfiguration, entities, packageConfiguration));
         this.GENERATORS.put(BUSINESS_SERVICE, new BusinessServiceGenerator(entities, packageConfiguration));
         this.GENERATORS.put(TRANSFER_OBJECT, new TransferObjectGenerator(crudConfiguration, entities, packageConfiguration));
-        this.GENERATORS.put(MAPPER, new MapperGenerator(crudConfiguration, entities, packageConfiguration));
+        this.GENERATORS.put(MAPPER, mapperGenerator);
         this.GENERATORS.put(CONTROLLER, new RestControllerGenerator(crudConfiguration, entities, packageConfiguration));
         this.GENERATORS.put(GRAPHQL, new GraphQlGenerator(crudConfiguration, projectMetadata, entities, packageConfiguration));
     }

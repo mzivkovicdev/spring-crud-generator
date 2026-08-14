@@ -1,15 +1,5 @@
 <#assign needsInstantDateTimeMapping = swagger?? && swagger && ((hasInstantField?? && hasInstantField) || (auditEnabled?? && auditEnabled && auditType == "Instant"))>
 <#assign needsLocalDateTimeMapping = swagger?? && swagger && ((hasLocalDateTimeField?? && hasLocalDateTimeField) || (auditEnabled?? && auditEnabled && auditType == "LocalDateTime"))>
-<#if needsInstantDateTimeMapping>
-import java.time.Instant;
-</#if><#t>
-<#if needsLocalDateTimeMapping>
-import java.time.LocalDateTime;
-</#if><#t>
-<#if needsInstantDateTimeMapping || needsLocalDateTimeMapping>
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-</#if><#t>
 import java.util.List;
 <#if helperMapper?? && helperMapper>
 import java.util.Set;
@@ -28,7 +18,7 @@ import org.mapstruct.Mapper;
 </#if><#t>
 
 ${projectImports}
-@Mapper(<#if parameters??>uses = { ${parameters} }</#if>)
+@Mapper(<#if needsInstantDateTimeMapping || needsLocalDateTimeMapping>uses = { DateTimeMapper.class<#if parameters??>, ${parameters}</#if> }<#elseif parameters??>uses = { ${parameters} }</#if>)
 public interface ${mapperName} {
 
     <#if openInViewEnabled?? && !openInViewEnabled && hasMappingFields>
@@ -92,26 +82,6 @@ public interface ${mapperName} {
     Set<${swaggerModel}> map${transferObjectName}To${swaggerModel}(final Set<${transferObjectName}> transferObject);
     </#if><#t>
 
-    <#if needsInstantDateTimeMapping>
-    default Instant map(final OffsetDateTime odt) {
-        return odt == null ? null : odt.toInstant();
-    }
-
-    default OffsetDateTime map(final Instant instant) {
-        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
-    }
-
-    </#if><#t>
-    <#if needsLocalDateTimeMapping>
-    default OffsetDateTime map(final LocalDateTime ldt) {
-        return ldt == null ? null : ldt.atOffset(ZoneOffset.UTC);
-    }
-
-    default LocalDateTime mapToLocalDateTime(final OffsetDateTime odt) {
-        return odt == null ? null : odt.toLocalDateTime();
-    }
-
-    </#if>
     </#if><#t>
     <#if generateAllHelperMethods?? && generateAllHelperMethods>
 

@@ -2,6 +2,7 @@ package dev.markozivkovic.springcrudgenerator.generators;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,6 +21,23 @@ import dev.markozivkovic.springcrudgenerator.models.PackageConfiguration;
 import dev.markozivkovic.springcrudgenerator.models.ProjectMetadata;
 
 class SpringCrudGeneratorTest {
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void constructor_shouldUseSameMapperGeneratorForProjectAndModelArtifacts() throws Exception {
+        final SpringCrudGenerator generator = createGenerator(DatabaseType.POSTGRESQL);
+        final Field artifactField = SpringCrudGenerator.class.getDeclaredField("ARTIFACT_GENERATORS");
+        final Field generatorField = SpringCrudGenerator.class.getDeclaredField("GENERATORS");
+        artifactField.setAccessible(true);
+        generatorField.setAccessible(true);
+
+        final Map<String, ProjectArtifactGenerator> artifactGenerators =
+                (Map<String, ProjectArtifactGenerator>) artifactField.get(generator);
+        final Map<String, CodeGenerator> codeGenerators =
+                (Map<String, CodeGenerator>) generatorField.get(generator);
+
+        assertSame(artifactGenerators.get("mapper"), codeGenerators.get("mapper"));
+    }
 
     @SuppressWarnings("unchecked")
     @Test
