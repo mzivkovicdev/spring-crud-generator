@@ -16,6 +16,7 @@ the required `@WebMvcTest` for each REST controller.
 - [Container and database rules](#container-and-database-rules)
 - [Focused persistence integration test when justified](#focused-persistence-integration-test-when-justified)
 - [Rejected integration tests](#rejected-integration-tests)
+- [Obtaining a valid token per issuance profile](#obtaining-a-valid-token-per-issuance-profile)
 
 ## HTTP application integration test
 
@@ -361,5 +362,15 @@ class UserApiIntegrationTest {
 ```java
 // Wrong: the request never reaches the real filter chain, decoder, or authorization rules,
 // so this proves nothing about the security configuration it appears to test.
-this.mockMvc.perform(post(UserController.USERS_PATH).with(jwt().authorities(...)))
+this.mockMvc.perform(post(UserController.USERS_PATH)
+        .with(jwt().authorities(new SimpleGrantedAuthority("SCOPE_users:write"))));
 ```
+
+## Obtaining a valid token per issuance profile
+
+`../SKILL.md` requires a real credential for successful and authorization-policy scenarios. The
+issuance profile recorded in `docs/project-profile.md` determines only how the test obtains one.
+
+- **Profile A, application-issued.** Seed a synthetic identity directly through the repository, a migration, or a SQL fixture, then call the service's real token endpoint. Seeding breaks the bootstrap circle, because the endpoint that creates identities is itself protected. Never relax a protected endpoint or add a test-only production endpoint to avoid seeding.
+- **Profile B, externally issued.** Run an approved provider container or isolated in-test authorization server, point the issuer configuration at it, and obtain the token through its real protocol endpoint.
+- **Before either exists.** Do not block, skip, or mock. Use a documented temporary test-only issuer: an in-test signing key registered as the configured issuer, minting the claim set the real issuer will produce. Only the key source is temporary; the token still traverses the real decoder, validators, and authorization rules. Record it as a known gap and replace it when the profile is implemented.

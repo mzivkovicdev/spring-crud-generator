@@ -153,14 +153,37 @@ enum in the persistence boundary.
 
 ## Association mapping
 
+An association is mapped inside one aggregate. This excerpt is a field of `UserAddressEntity`, the
+child of the `users` root:
+
 ```java
 @ManyToOne(fetch = FetchType.LAZY, optional = false)
 @JoinColumn(
-        name = "customer_id",
+        name = "user_id",
         nullable = false,
-        foreignKey = @ForeignKey(name = "fk_orders_customer"))
-private CustomerEntity customer;
+        foreignKey = @ForeignKey(name = "fk_user_address_user"))
+private UserEntity user;
 ```
+
+Across aggregates, store the identifier instead. This excerpt is a field of `UserEntity`, whose
+organization is a separate root with its own service and lifecycle:
+
+```java
+@Column(name = "organization_id", nullable = false, updatable = false)
+private Long organizationId;
+```
+
+Rejected, on the same field:
+
+```java
+@ManyToOne(fetch = FetchType.LAZY, optional = false)
+@JoinColumn(name = "organization_id", nullable = false)
+private OrganizationEntity organization;
+```
+
+The rejected form compiles and works, which is why it survives review unless the rule is explicit.
+It hands every holder of a `UserEntity` a writable path into the organization aggregate, and it
+invites a cascade or a fetch plan that loads one aggregate while saving another.
 
 ## Repository and projection queries
 

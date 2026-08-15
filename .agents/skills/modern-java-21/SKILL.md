@@ -236,7 +236,7 @@ member declared by the current type may remain unqualified.
   `Utils` dumping grounds for unrelated behavior.
 - Prefer composition over inheritance.
 - Create an interface for a real boundary, multiple behavior, a plugin strategy, or a useful port.
-  When `spring-boot-patterns` selects an application-service interface, treat it as that boundary; do
+  When `spring-boot-patterns` selects the service interface convention, treat it as that boundary; do
   not extend the convention mechanically to helpers or unrelated classes.
 
 Framework-neutral example of cohesive behavior:
@@ -321,8 +321,8 @@ Do not add Javadoc by default to:
 - overriding methods when the inherited contract is accurate;
 - private methods and tests whose purpose is clear from names, types, and structure.
 
-Javadoc should explain the contract and the reason, not narrate the implementation. When a
-declaration requires Javadoc under this policy, include every applicable tag:
+Javadoc explains the contract and the reason, not the implementation. When a declaration requires
+it, include every applicable tag:
 
 - `@param parameterName` for every method or constructor parameter, including semantic meaning, accepted range/format, nullability, units, and ownership when relevant;
 - `@param <T>` for every generic type parameter;
@@ -354,11 +354,11 @@ ReservationDomain reserve(
 
 A generic method adds `@param <T>` first, describing the element type, before the value parameters.
 
-When a record requires Javadoc, document every component with `@param`. For public classes and
-interfaces, document responsibility, invariants, thread-safety, and lifecycle where relevant. An
-overriding method inherits missing Javadoc automatically: omit it when the inherited contract is
-complete, never write a comment containing only `{@inheritDoc}`, and use `{@inheritDoc}` only to
-extend an inherited contract that remains accurate.
+A record documents every component with `@param`. A public class or interface documents
+responsibility, invariants, thread-safety, and lifecycle where relevant. An overriding method
+inherits missing Javadoc automatically: omit it when the inherited contract is complete, never write
+a comment containing only `{@inheritDoc}`, and use `{@inheritDoc}` only to extend an inherited
+contract that remains accurate.
 
 Do not write Javadoc such as "Gets the name" on a self-explanatory accessor, and remove stale
 comments when the implementation changes.
@@ -369,24 +369,19 @@ Every code, configuration, and build snippet in this skill set is a **pattern to
 copy**. An agent asked for a product service writes `ProductService` from scratch; it does not rename
 `UserService` and keep the rest.
 
-**Self-containment.** A snippet must declare every identifier it uses, or name where the identifier
-comes from. Concretely:
+**Self-containment.** A snippet declares every identifier it uses, or names where it comes from:
 
 - Every constant referenced in a snippet is declared in that same snippet, unless the snippet states which example or type declares it.
 - Every build property referenced as `${...}` is declared in the same file, or the file says where it is declared.
 - Every type referenced across skills is named with the reference that defines it, so the reader can find it.
 - Omit imports, and omit members that are irrelevant to the decision being shown — but never omit something the snippet itself refers to.
 
-An undeclared identifier is the easiest defect to miss, because the surrounding code reads correctly
-and fails only on the reader's machine.
-
-**Excerpts.** A snippet marked as an excerpt shows one decision, not a complete type. Generate the
-members it omits rather than copying it verbatim. When an omitted member is required for the code to
-work at all — an accessible constructor for a mapper, a bean registration for a filter — the example
-says so explicitly instead of leaving it implied.
+**Excerpts.** An excerpt shows one decision, not a complete type. Generate the members it omits
+rather than copying it verbatim. When an omitted member is required for the code to work at all — an
+accessible constructor for a mapper, a bean registration for a filter — the example says so.
 
 **Verification.** Check a snippet against the versions the project profile records. When part of it
-cannot be verified, say which part rather than presenting it with the same confidence as the rest.
+cannot be verified, say which part rather than presenting it with equal confidence.
 
 ## Tests are part of the code change
 

@@ -71,7 +71,7 @@ that point on.
 
 ## Log deliberately, at one place
 
-- **Log once, at the boundary that handles the failure.** Catching, logging, and rethrowing produces the same stack trace three times and triples the cost of every incident.
+- **Log once, at the boundary that handles the failure.** Catching, logging, and rethrowing produces the same stack trace three times and triples the cost of every incident. Where `spring-boot-patterns` defines a use-case level above the aggregate services, that level is the boundary: an operation is logged and metered once per use case, not once per aggregate it touches.
 - Log expected `4xx` failures at `INFO` or `WARN` with the internal error code, never at `ERROR`. Reserve `ERROR` for unexpected server failures, and always include the exception so the stack trace is captured.
 - Never log inside a loop per element. Log the aggregate.
 - Use parameterized placeholders, never string concatenation. Concatenation runs even when the level is disabled.

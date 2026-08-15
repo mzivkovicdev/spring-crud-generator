@@ -10,6 +10,8 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 - [Domain mapper](#domain-mapper)
 - [Focused service parameter object](#focused-service-parameter-object)
 - [Service contract and implementation](#service-contract-and-implementation)
+- [Aggregate service: owning an invariant](#aggregate-service-owning-an-invariant)
+- [Application service: owning a use case](#application-service-owning-a-use-case)
 - [Repository boundary](#repository-boundary)
 
 ## Domain models
@@ -115,7 +117,7 @@ Do not introduce a catch-all input class to hide unrelated values, and do not cr
 
 ## Service contract and implementation
 
-The application-service interface is optional and the decision is recorded in
+The service interface is optional and the decision is recorded in
 `docs/project-profile.md`. Both shapes appear below. Use exactly one of them across the project.
 
 ### Shape A: concrete service, no interface
@@ -353,6 +355,158 @@ two statements.
 `UserDomainMapper.INSTANCE` is the generated static MapStruct member. `modern-java-21` names this an
 explicit exception to its service-locator rule because the mapper is stateless, generated, and
 performs no I/O; do not inject it, and do not extend the exception to any other collaborator. Do not replace it with dirty-checking-only persistence or `saveAndFlush` without a documented immediate-flush requirement. Translate expected persistence failures into the stable application error contract and test the real database constraint.
+
+## Aggregate service: owning an invariant
+
+`UserService` above is an aggregate service. Its aggregate is the `users` root plus its
+`user_address` children: an address cannot exist without its user, nothing references an address by
+its own identifier, and "exactly one address is primary" is a rule about the user, not about the
+address row.
+
+This excerpt adds one method and one field to the `UserService` declared under Shape A; the class
+annotations, the existing constructor parameters, and the existing methods are unchanged.
+`UserAddressRepository` is the second repository of the same aggregate, which is why this service
+holds both and no other service does. `UserEntity.addAddress` appends the address and clears any
+previous primary flag — that method is where the invariant is actually enforced.
+`NewAddressDomain` is a focused parameter object declared like the one under
+[focused service parameter object](#focused-service-parameter-object). `ApplicationError` is the
+error catalog and `BusinessValidationException` the project validation exception, both described in
+`../SKILL.md`. `UserStatus` is the domain enum used by the Shape A example above.
+`UserAddressEntity` is the child entity of this aggregate; its single public constructor takes the
+owning `UserEntity` and the address values, following the entity creation rule in `spring-data-jpa`.
+`UserAddressRepository` is a `JpaRepository` for it.
+
+```java
+    private final UserAddressRepository userAddressRepository;
+
+    /**
+     * Adds an address to a user and applies the single-primary-address invariant.
+     *
+     * <p>Joins the caller's transaction when one is open. The address row and the updated user are
+     * written together in every case.
+     *
+     * @param userId     user identifier; must not be {@code null}
+     * @param newAddress address values to store; must not be {@code null}
+     * @return           the user including the stored address; never {@code null}
+     * @throws ResourceNotFoundException   when no user exists for the supplied identifier
+     * @throws BusinessValidationException when the user is not in a state that accepts addresses
+     */
+    @Override
+    @Transactional
+    public UserDomain addAddress(
+            @NotNull final Long userId,
+            @NotNull final NewAddressDomain newAddress) {
+
+        final UserEntity user = this.userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessValidationException(ApplicationError.USER_NOT_MODIFIABLE);
+        }
+
+        final UserAddressEntity address = new UserAddressEntity(
+                user, newAddress.street(), newAddress.city(), newAddress.primary());
+
+        this.userAddressRepository.save(address);
+        user.addAddress(address);
+        this.userRepository.save(user);
+
+        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(user);
+    }
+```
+
+The `@Transactional` here uses default propagation. Called from a use case it joins that
+transaction; called directly by a job it opens its own, so the two writes are never split. The
+use-case boundary is still the application service — this annotation only removes the failure mode
+where a direct caller commits each write separately.
+
+## Application service: owning a use case
+
+`UserManagementApplicationService` coordinates two aggregates and owns the transaction the use case
+runs in. It holds no repository: one here would give the `users` aggregate a second write path that
+bypasses `UserService` and its invariant.
+
+`OrganizationService` is the aggregate service for the `organization` root and the membership rows
+it owns. This example uses three of its operations: `getJoinable` returns an organization that
+currently accepts members or throws, `addMember` records the membership, and `getByMemberId` returns
+the organization a user belongs to or throws. `OrganizationDomain` is its domain record with `id()`
+and `displayName()`. `UserProfileDomain` is a domain record combining a `UserDomain` with that
+display name, and `UserRegisteredEvent` is a project event record.
+
+```java
+@Service
+@Transactional
+public class UserManagementApplicationService {
+
+    private final UserService userService;
+    private final OrganizationService organizationService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    // Constructor omitted; all three dependencies are required and assigned to final fields.
+
+    /**
+     * Registers a user as a member of an organization.
+     *
+     * <p>Defines the transaction for the use case. When the organization does not accept members,
+     * or the membership cannot be recorded, the user is not created either. The event is published
+     * for delivery after commit, so no notification is sent for a registration that rolled back.
+     *
+     * @param organizationId organization the user joins; must not be {@code null}
+     * @param username       requested username; must not be {@code null}
+     * @param email          requested email address; must not be {@code null}
+     * @param rawPassword    plain password, hashed inside {@code UserService} and never stored raw
+     * @return               the created user; never {@code null}
+     * @throws ResourceNotFoundException   when the organization does not exist
+     * @throws BusinessValidationException when the organization does not accept new members
+     */
+    public UserDomain register(
+            final Long organizationId,
+            final String username,
+            final String email,
+            final String rawPassword) {
+
+        final OrganizationDomain organization = this.organizationService.getJoinable(organizationId);
+        final UserDomain user = this.userService.create(username, email, rawPassword);
+        this.organizationService.addMember(organization.id(), user.id());
+
+        this.eventPublisher.publishEvent(new UserRegisteredEvent(user.id(), organization.id()));
+        return user;
+    }
+
+    /**
+     * Returns a user together with the display name of the organization they belong to.
+     *
+     * @param userId user identifier; must not be {@code null}
+     * @return       the combined profile; never {@code null}
+     * @throws ResourceNotFoundException when the user or its organization no longer exists
+     */
+    @Transactional(readOnly = true)
+    public UserProfileDomain getProfile(final Long userId) {
+        final UserDomain user = this.userService.getById(userId);
+        final OrganizationDomain organization = this.organizationService.getByMemberId(userId);
+
+        return new UserProfileDomain(user, organization.displayName());
+    }
+}
+```
+
+`register` writes to two aggregates, and neither aggregate service knows about the other. That is
+exactly why the boundary sits here: a failure in `addMember` must leave no user behind, and only the
+method that spans both can guarantee it. Note also what is *not* here — the rule about which
+organizations accept members lives in `getJoinable`, inside the aggregate that owns it, so it is not
+repeated by every caller that creates a user.
+
+`UserRegisteredEvent` is consumed by a `@TransactionalEventListener(phase = AFTER_COMMIT)` listener
+rather than by a direct call to a notification component, so a rollback cannot leave a message
+already sent.
+
+`getProfile` composes one read from each aggregate, which makes it a use case rather than a
+pass-through, and `readOnly` takes effect because this is the outermost transactional method. A
+method that only forwards a single call to one aggregate service does not earn a place here.
+
+Both examples follow the `get` and `find` distinction in `project-naming-conventions`: `getById`,
+`getJoinable`, and `getByMemberId` return a value or throw, while a method that may legitimately
+return nothing is named `find...` and returns `Optional`.
 
 ## Repository boundary
 

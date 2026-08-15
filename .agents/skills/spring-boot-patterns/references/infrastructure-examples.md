@@ -16,17 +16,23 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 - [Custom exceptions](#custom-exceptions)
 - [Configuration properties and beans](#configuration-properties-and-beans)
 - [Rejected code](#rejected-code)
+- [Idempotency placement](#idempotency-placement)
+- [Scheduled and asynchronous execution](#scheduled-and-asynchronous-execution)
 
 ## Package layout
 
 ```text
 src/main/java/com/example/myapp/
 ├── MyAppApplication.java          # @SpringBootApplication
+├── applicationservice/            # Use cases; owns the transaction boundary
+│   ├── UserManagementApplicationService.java
+│   └── impl/                      # Implementations when the project uses this convention
+│       └── UserManagementApplicationServiceImpl.java
 ├── config/                        # Bean configuration classes
 │   ├── SecurityConfig.java
 │   ├── WebConfig.java
 │   └── properties/                # @ConfigurationProperties types
-│       └── CatalogClientProperties.java
+│       └── CatalogClientProperties.java   # Outbound integration, not a domain type
 ├── controller/                    # REST controllers
 │   ├── ApiPaths.java              # Single declaration of the API base path
 │   └── UserController.java
@@ -35,8 +41,9 @@ src/main/java/com/example/myapp/
 │   │   └── UserRestMapper.java
 │   └── domain/                    # Entity/projection -> domain; creation values -> new entity
 │       └── UserDomainMapper.java
-├── service/                       # Business logic and application contracts
-│   ├── UserService.java
+├── service/                       # One service per aggregate root
+│   ├── UserService.java           # Owns users + user_address
+│   ├── OrganizationService.java   # Owns organization
 │   └── impl/                      # Implementations when the project uses this convention
 │       └── UserServiceImpl.java
 ├── domain/                        # Framework-independent business models
@@ -72,9 +79,9 @@ src/main/java/com/example/myapp/
 Use this layered layout consistently unless the repository already enforces a compatible layered
 variation; do not migrate a coherent layout unless migration is explicitly in scope. The projection
 and specification subpackages appear because the example contains corresponding types. Create either
-subpackage only with its first type, never as empty scaffolding. Application service interfaces
-and `service.impl` are shown because this example assumes that project convention. Follow the service
-interface decision from `../SKILL.md`; do not create interfaces for helpers or types without a real
+subpackage only with its first type, never as empty scaffolding. The `impl` subpackages are shown
+because this example assumes that project convention. Follow the service interface decision from
+`../SKILL.md`; do not create interfaces for helpers or types without a real
 contract. A `util` package is valid for cohesive stateless utilities, but it must not become a
 dumping ground for unrelated behavior.
 
@@ -221,7 +228,11 @@ Bean Validation failure.
 ## Configuration properties and beans
 
 `CatalogClientProperties` is a configuration property type, so it lives in `config.properties`.
-`CatalogClientConfiguration` constructs beans, so it lives directly in `config`.
+`CatalogClientConfiguration` constructs beans, so it lives directly in `config`. The catalog client
+is deliberately outside this example application's own vocabulary: it stands for any external system
+the application calls, and its naming follows the outbound-client rule in
+`project-naming-conventions` rather than the domain vocabulary used by the `user` types elsewhere in
+this file.
 
 ```java
 @ConfigurationProperties("clients.catalog")
@@ -273,3 +284,20 @@ interface CustomerService {
 class CustomerServiceImpl implements CustomerService {
 }
 ```
+
+## Idempotency placement
+
+- Accept the idempotency key at the REST boundary as an explicit, validated, bounded header or field. Do not read it from arbitrary request state.
+- Pass it into the service as an ordinary explicit parameter or as part of the focused service input. Never pass the request TO.
+- Claim the key, execute the effect, and record the outcome inside the service transaction that owns the operation, so the claim and the effect commit or roll back together.
+- Keep the claim store behind a repository or adapter like any other persistence concern. Do not put it in a controller, mapper, or entity callback.
+- Return the recorded original outcome for a repeated key through the same response mapping as the first call, so the public contract is identical.
+- Test simultaneous duplicates and retry-after-timeout at the integration boundary, per `spring-boot-testing`.
+
+## Scheduled and asynchronous execution
+
+- Use a distributed lock or database claim pattern when a job must run once across the cluster.
+- Bound batches and memory usage; persist progress or checkpoints for large work.
+- Configure executors explicitly where concurrency matters.
+- Propagate context intentionally and handle failures; never fire-and-forget critical work silently.
+- Evaluate virtual threads only after confirming blocking model, pinning, connection pools, and operational behavior.

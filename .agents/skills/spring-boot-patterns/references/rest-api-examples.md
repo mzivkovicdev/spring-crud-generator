@@ -16,6 +16,10 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 
 ## REST controller
 
+The controller depends on `UserManagementApplicationService`, the use-case level declared in
+[service and domain examples](service-domain-examples.md). It never injects an aggregate service or
+a repository, so every request enters the domain through one place.
+
 ```java
 @RestController
 @RequestMapping(UserController.USERS_PATH)
@@ -23,9 +27,12 @@ public class UserController {
 
     public static final String USERS_PATH = ApiPaths.API_V1 + "/users";
 
+    private final UserManagementApplicationService userManagement;
     private final UserService userService;
 
-    public UserController(final UserService userService) {
+    public UserController(final UserManagementApplicationService userManagement,
+                          final UserService userService) {
+        this.userManagement = userManagement;
         this.userService = userService;
     }
 
@@ -46,7 +53,7 @@ public class UserController {
 
         return ResponseEntity.ok(
                 UserRestMapper.INSTANCE.mapUserDomainToUserTO(
-                    this.userService.getById(userId)
+                    this.userManagement.getProfile(userId)
                 )
         );
     }

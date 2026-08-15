@@ -71,11 +71,10 @@ Follow this order on every task:
 4. **Ask the user, in one message, for everything still unresolved**, offering the template's allowed values so each answer is one word. Do not ask one question per skill, and do not ask again for something already recorded.
 5. Write the answers into the profile, then implement.
 
-Exceptions are narrow: a change confined to documentation, comments, or formatting needs no profile,
-and a task may proceed on a partially filled profile as long as every decision *that task* touches is
-recorded. Never assume a value, never infer one from a test dependency or an example, and never
-record a guess to unblock yourself. `UNDECIDED` with a note is a legitimate entry; a fabricated value
-is not.
+Exceptions are narrow: documentation, comment, or formatting changes need no profile, and a task may
+proceed on a partial profile as long as every decision *that task* touches is recorded. Never assume
+a value, infer one from a test dependency or an example, or record a guess to unblock yourself.
+`UNDECIDED` with a note is a legitimate entry; a fabricated value is not.
 
 ## Rules before coding
 
@@ -98,7 +97,8 @@ Use the repository's existing sound structure instead of performing a broad pack
 | --- | --- |
 | REST controller/listener | Parse and validate transport input, delegate, and map domain output to a TO |
 | REST mapper | Map domain results to response TOs and, only for a justified focused input, map a request TO to a domain/service input |
-| Service | Accept explicit method parameters or a justified parameter object, orchestrate the operation, return domain objects, and own the transaction boundary |
+| Application service | Own the use case: the transaction boundary, coordination across aggregates, and the only entry point the controller calls |
+| Aggregate service | Own one aggregate: its repositories, its invariants, and every write to it |
 | Domain | Represent business state, invariants, and decisions without REST or persistence dependencies |
 | Domain mapper | Translate between persistence entities/projections and domain objects; map explicit creation values to a new entity when required |
 | Repository/adapter | Encapsulate persistence or external-provider details |
@@ -109,6 +109,8 @@ Use the established terminology consistently:
 | Type | Boundary |
 | --- | --- |
 | `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
+| `UserManagementApplicationService` | Use case, in the `applicationservice` package |
+| `UserService`, `OrganizationService` | One aggregate root each, in the `service` package |
 | `UserDomain`, focused service parameter objects | Domain/service |
 | `UserEntity` | JPA persistence, in the `entity` package |
 | `UserSummaryProjection` | Repository persistence projection |
@@ -143,6 +145,7 @@ Read the controller example in [REST API examples](references/rest-api-examples.
 TO means transport object in this skill. Use records for immutable request and response TOs when compatible with the serializer and project conventions.
 
 - Never accept or return a JPA entity as an HTTP/message TO.
+- Delegate to an application service, never to an aggregate service or a repository.
 - Do not pass request or response TOs into the service layer.
 - Map service results from `UserDomain` to `UserTO` in the REST mapper.
 - Map a request TO to a focused domain input only when the service parameter-object rule justifies that input.
@@ -172,19 +175,35 @@ Read the domain and domain mapper examples in [service and domain examples](refe
 
 ## Services
 
-Services implement operations and own orchestration.
+The service layer has two levels. The split exists so that no service depends on another service at
+the same level, which is what keeps transaction boundaries findable and prevents cyclic service
+graphs.
 
-- The application-service interface is optional and the convention is recorded in the project
-  profile. Follow whichever it records. With none recorded and no answer yet, default to a single
-  concrete `<Capability>Service` annotated with `@Service`, and add an interface only for a concrete
-  reason: a boundary another module crosses, more than one implementation, a port with a
-  substitutable adapter, or a contract an external consumer implements. Wanting an `Impl` suffix,
-  somewhere to put Javadoc, or a mockable type are not reasons — Mockito mocks a concrete class.
-  Both shapes appear in [service and domain examples](references/service-domain-examples.md); do not
-  mix them within a scope.
-- When an interface exists, put caller-facing Javadoc and method-validation constraints on it, and
-  `@Service`, `@Validated`, transactions, dependencies, and logic on the concrete class without
-  duplicating the contract.
+### Aggregate services
+
+One `<Aggregate>Service` per aggregate root, in the `service` package.
+
+- Determine the aggregate by lifecycle ownership, not by table count and not by the reference graph. A row belongs to the aggregate when it cannot exist without the root and the root is what creates and deletes it. A row that has its own lifecycle, or that other features reference directly by its own identifier, is a separate aggregate.
+- The service holds every repository of its aggregate and that aggregate's domain mapper. It holds no repository of another aggregate and no other service.
+- It owns the invariants of its aggregate. Do not reduce it to a pass-through over the repository: a rule about the aggregate's own state belongs here, not in the caller.
+- It reads and writes only its own aggregate. It refers to another aggregate by identifier and receives any value it needs from that aggregate as an explicit parameter.
+- Annotate it `@Transactional` with the default propagation, so it joins the use case's transaction when one is open and opens its own when it is called without one. Its multi-repository writes are then atomic either way. Do not use `MANDATORY`: refusing to run without a caller-supplied transaction blocks legitimate direct use from a job or a migration task, and the layering rule below is what keeps the use-case boundary where it belongs.
+
+### Application services
+
+One `<Capability>ApplicationService` per coherent use case group, in the `applicationservice` package.
+
+- It owns the use case's transaction boundary. Because it is the outermost annotated method, its settings are the ones that take effect: propagation starts here, `readOnly` is honored here, and rollback is decided here.
+- It depends only on aggregate services, ports, and adapters — never on a repository, an entity, or another application service. A repository dependency here means the aggregate service was bypassed and the aggregate now has two write paths.
+- It coordinates: fetch from one aggregate service, pass explicit values to another, decide the order. Rules that belong to a single aggregate stay in that aggregate's service.
+- Controllers, listeners, and scheduled entry points call application services only, including for reads that merely delegate. One entry into the domain is worth the extra method.
+- Publish domain events through `ApplicationEventPublisher` and consume them with `@TransactionalEventListener(phase = AFTER_COMMIT)`. Never call a notification, message broker, or other external effect directly inside the transaction: a rollback after that call leaves the outside world believing something happened.
+- A read use case is annotated `@Transactional(readOnly = true)` at this level, where the attribute takes effect because this is where the transaction starts.
+
+### Both levels
+
+- The service interface is optional and the convention is recorded in the project profile. Follow whichever it records, at both levels. With none recorded and no answer yet, default to concrete classes annotated `@Service`, and add an interface only for a concrete reason: a boundary another module crosses, more than one implementation, a port with a substitutable adapter, or a contract an external consumer implements. Wanting an `Impl` suffix, somewhere to put Javadoc, or a mockable type are not reasons — Mockito mocks a concrete class. Both shapes appear in [service and domain examples](references/service-domain-examples.md); do not mix them within a scope.
+- When an interface exists, put caller-facing Javadoc and method-validation constraints on it, and `@Service`, `@Validated`, transactions, dependencies, and logic on the concrete class without duplicating the contract.
 - Use Lombok constructor generation only when the profile records Lombok and the generated constructor remains obvious; otherwise write the constructor explicitly.
 - Do not accept REST request/response TOs and do not return JPA entities.
 - Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
@@ -203,9 +222,9 @@ Services implement operations and own orchestration.
   `View` terminology by default.
 - Do not pass raw passwords, tokens, or secrets beyond the narrow boundary that hashes, encrypts, or exchanges them. Never persist or log their raw values.
 - Keep business rules out of controller, mapper, repository, and entity callback code.
-- Place `@Transactional` on public service methods invoked through the Spring proxy, never relying on self-invocation for it or for `@Async`, `@Cacheable`, or method validation. Do not add it mechanically to every service. When a separate boundary is genuinely required, move it to another bean rather than working around the proxy.
+- Never rely on self-invocation for `@Transactional`, `@Async`, `@Cacheable`, or method validation. When a separate boundary is genuinely required, move it to another bean rather than working around the proxy.
 - Keep transactions short. Do not make slow external calls while holding one unless the consistency design requires it.
-- `spring-data-jpa` owns what happens inside the boundary: `readOnly`, propagation, isolation, flush timing, and locking. Set none of them from here.
+- `spring-data-jpa` owns what happens inside the boundary: `readOnly` semantics, propagation, isolation, flush timing, and locking. Set none of them from here.
 
 Read the service, parameter-object, mapper, and repository-boundary examples in
 [service and domain examples](references/service-domain-examples.md).
@@ -219,8 +238,9 @@ resolve any question about them in that skill.
 
 This skill owns only where the boundary sits and what may cross it:
 
-- The repository is reached from the service, never from a controller, mapper, TO, domain model, or entity callback.
-- Entities and persistence projections stop at the service. Map them to domain objects before the service returns.
+- A repository is reached only from the aggregate service that owns it, never from an application service, controller, mapper, TO, domain model, or entity callback.
+- Entities and persistence projections stop at the aggregate service. Map them to domain objects before it returns.
+- A read that spans aggregates uses a dedicated projection or query type owned by one aggregate service, rather than a loop of calls across services. Reads may cross the boundary; writes may not.
 - Repository types live in `repository`, persistence projections in `repository.projection`, and reusable Specification types in `repository.specification`. Add either subpackage only with its first type.
 
 Read the repository-boundary example in [service and domain examples](references/service-domain-examples.md) only when a Spring Boot feature requires a repository change.
@@ -249,13 +269,13 @@ branch on the wrong one. `title` and `detail` are human-readable and may change.
 
 Declare every caller-visible failure once, as a constant in a single project-owned error catalog
 carrying the status, the `type` URI, the title, the detail, and the internal code used in logs,
-events, and metrics. One declaration is what keeps the public type and the internal code from
-drifting apart. Do not add a second holder for either.
+events, and metrics. One declaration keeps the public type and the internal code from drifting
+apart; do not add a second holder for either.
 
-`correlationId` is the one permitted extension member: it identifies the request, not the failure,
-and support workflows need it in the payload a caller pastes into a ticket. Keep `traceId`,
-`spanId`, stack traces, exception class names, provider messages, and internal hostnames out of the
-body entirely, along with SQL, internal endpoints, credentials, and personal data.
+`correlationId` is the one permitted extension member, because it identifies the request rather than
+the failure and support workflows need it in the payload a caller pastes into a ticket. Keep
+`traceId`, `spanId`, stack traces, exception class names, provider messages, internal hostnames,
+SQL, internal endpoints, credentials, and personal data out of the body entirely.
 
 - Map expected application failures explicitly, and let Spring's framework handler preserve standard REST error behavior where appropriate.
 - A catch-all handler returns a generic message and logs the cause once. Never copy `exception.getMessage()` into a response unless that type guarantees a stable, user-safe message, and never log an expected 4xx as a server error.
@@ -270,14 +290,8 @@ Read the `ProblemDetail` handler example in
 
 `application-security` owns the idempotency policy: when a key is required, how it is bound to the
 authenticated subject and request fingerprint, its format, retention, and abuse controls. This skill
-owns where that policy lives in the layers.
-
-- Accept the idempotency key at the REST boundary as an explicit, validated, bounded header or field. Do not read it from arbitrary request state.
-- Pass it into the service as an ordinary explicit parameter or as part of the focused service input. Never pass the request TO.
-- Claim the key, execute the effect, and record the outcome inside the service transaction that owns the operation, so the claim and the effect commit or roll back together.
-- Keep the claim store behind a repository or adapter like any other persistence concern. Do not put it in a controller, mapper, or entity callback.
-- Return the recorded original outcome for a repeated key through the same response mapping as the first call, so the public contract is identical.
-- Test simultaneous duplicates and retry-after-timeout at the integration boundary, per `spring-boot-testing`.
+owns where that policy lives in the layers, and
+[infrastructure examples](references/infrastructure-examples.md) carries those placement rules.
 
 ## Configuration properties
 
@@ -309,16 +323,12 @@ follow `spring-boot-testing` for which test levels include the security filter c
 
 ## Scheduled and asynchronous work
 
-- Keep each scheduled entry point thin and delegate business work to a service with an explicit
-  transaction and failure policy.
+- Keep each scheduled entry point thin and delegate business work to a service with an explicit transaction and failure policy.
 - Make scheduled jobs idempotent and safe when multiple application instances run.
-- Use a distributed lock or database claim pattern when a job must run once across the cluster.
-- Bound batches and memory usage; persist progress/checkpoints for large work.
-- Configure executors explicitly where concurrency matters.
-- Propagate context intentionally and handle failures; never fire-and-forget critical work silently.
-- Evaluate virtual threads only after confirming blocking model, pinning, connection pools, and operational behavior.
-- Apply the scheduler unit and integration rules from `spring-boot-testing` whenever scheduled work
-  or its configuration changes.
+- Apply the scheduler unit and integration rules from `spring-boot-testing` whenever scheduled work or its configuration changes.
+
+[Infrastructure examples](references/infrastructure-examples.md) carries the clustering, batching,
+executor, context-propagation, and virtual-thread rules.
 
 ## Tests required with every feature
 
@@ -332,9 +342,13 @@ Reject:
 
 **Boundary violations.** Fat controllers; entities in API contracts or returned from services; REST
 TOs passed into services; remote I/O inside long transactions; unbounded collection endpoints;
-generic `Map` responses.
+generic `Map` responses; a repository injected into an application service; a controller calling an
+aggregate service directly; one aggregate service depending on another; a JPA association crossing
+an aggregate boundary.
 
-**Structure.** Field injection; empty or responsibility-free service interfaces; parameter objects
+**Structure.** Field injection; an aggregate service that only forwards to its repository while its
+invariants live in callers; an application service holding a rule that belongs to one aggregate;
+empty or responsibility-free service interfaces; parameter objects
 that hide unrelated values or mechanically satisfy a numeric threshold; eight or more parameters
 with no grouping, redesign, or documented justification; generic `enums` packages; REST exception
 handlers in the custom-exception package; handwritten structural mappers where approved MapStruct
@@ -347,7 +361,8 @@ handles it; a project exception whose simple name collides with a framework type
 `ValidationException`; generic exception swallowing.
 
 **Process.** Implementing against a decision `docs/project-profile.md` does not record; hardcoded
-configuration or secrets; self-invocation assumptions for proxy annotations.
+configuration or secrets; self-invocation assumptions for proxy annotations; an external effect
+fired inside the transaction instead of after commit.
 
 Read the rejected code examples in [infrastructure examples](references/infrastructure-examples.md) when reviewing or replacing suspicious existing code.
 
@@ -355,7 +370,9 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 
 - [ ] `docs/project-profile.md` existed before implementation and records every decision the change relied on. Nothing was assumed, inferred, or guessed.
 - [ ] Controller/listener is a thin transport boundary.
-- [ ] Business rules are in service/domain code.
+- [ ] Business rules are in service/domain code, and each rule sits at the level that owns it.
+- [ ] The transaction boundary is the application service; no aggregate service overrides propagation or isolation to escape it.
+- [ ] No application service holds a repository, and no aggregate service holds another service.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
 - [ ] Service signatures use clear explicit parameters up to seven; signatures with eight or more were redesigned, cohesively grouped, or explicitly justified.
 - [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.

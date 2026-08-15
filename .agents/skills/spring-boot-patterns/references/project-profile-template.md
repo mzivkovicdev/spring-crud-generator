@@ -46,7 +46,8 @@ Last updated: YYYY-MM-DD
 
 | Decision | Value | Owner skill |
 | --- | --- | --- |
-| Application-service convention | interface + `*ServiceImpl` \| concrete service | `spring-boot-patterns` |
+| Service interface convention | interface + `*Impl` \| concrete classes | `spring-boot-patterns` |
+| Aggregate roots and their tables | list, e.g. `User (users, user_address)`, `Organization (organization)` | `spring-boot-patterns` |
 | API base path | /api/v1 | `spring-boot-patterns` |
 | Error catalog type | `com.example.myapp.exception.ApplicationError` | `spring-boot-patterns` |
 | Problem type base URI |  | `project-naming-conventions` |
@@ -115,7 +116,8 @@ Last updated: YYYY-MM-DD
 ## Notes on specific entries
 
 - **Token issuance profile** determines how integration tests obtain a credential. Until it is decided, `spring-boot-testing` permits a documented temporary test-only issuer; record that here as a deferred decision with its removal condition.
-- **Entity accessor style** and **application-service convention** both change generated code shape, so a project that leaves them unrecorded will produce a different shape per feature.
+- **Entity accessor style** and **service interface convention** both change generated code shape, so a project that leaves them unrecorded will produce a different shape per feature.
+- **Aggregate roots** decide which service owns which table. Recording them once prevents two features from splitting the same aggregate differently; add a root the first time a feature introduces one.
 - **Caching has no owner skill yet.** No skill in this set decides whether the project uses a cache or which technology it uses; a caching skill will own that. Record the answer here when it is made, and leave both rows `UNDECIDED` until then. Do not introduce a cache to fill the row.
   - `application-security` owns what may be cached and under what conditions: classification of cached values, TTL, tenant scope, serialization, and eviction of sensitive data. It does not own the decision itself.
   - `project-naming-conventions` owns cache and cache-key names.

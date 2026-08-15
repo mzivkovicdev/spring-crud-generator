@@ -10,9 +10,8 @@ publicly observable outcomes, not framework internals or invented edge cases.
 
 ## Coordination with other skills
 
-Treat this skill as the owner of test scope, realistic-scenario filtering, test-level placement,
-test doubles, fixtures, isolation, and execution. Apply the specialized skills for the behavior
-being verified:
+This skill owns test scope, scenario filtering, test-level placement, doubles, fixtures, isolation,
+and execution. Apply the specialized skills for the behavior being verified:
 
 | Skill | Treat as owner of |
 | --- | --- |
@@ -26,8 +25,7 @@ being verified:
 | `observability-and-logging` | What about logging, metrics, tracing, and probes is worth asserting, and what is not |
 | `rest-api-contract` | What about the OpenAPI contract must be asserted, including the document drift gate |
 
-Do not redefine those standards here. Resolve a conflict through the owning skill and the
-repository-enforced build configuration.
+Resolve a conflict through the owning skill and the repository-enforced build configuration.
 
 ## Reference routing
 
@@ -68,7 +66,7 @@ Load only applicable references for the changed behavior.
 
 For every production-code change:
 
-1. Inspect service unit, controller MVC slice, and full application integration coverage for the affected behavior.
+1. Inspect aggregate-service unit, application-service unit, controller MVC slice, and full application integration coverage for the affected behavior.
 2. Update every assertion and fixture affected by the contract change.
 3. Add a test for every new reachable success, failure, boundary, or regression case.
 4. Create any missing required service unit, controller MVC slice, and full application integration coverage.
@@ -111,10 +109,15 @@ Use the project's supported JUnit Jupiter version, JUnit 5 or newer. A unit test
 - avoid testing getters, setters, records, framework behavior, generated mapper code without custom
   logic, or private methods directly.
 
-Every application service containing behavior requires direct unit tests covering its business
-decisions, returned state, declared exceptions, repository writes, and prohibited interactions. A
-test proving only that a collaborator was invoked is insufficient, and integration coverage does not
-replace this.
+Both service levels `spring-boot-patterns` defines require direct unit tests, and they prove
+different things:
+
+- An **aggregate service** test proves the aggregate's invariants: rejected state transitions, derived values recomputed after a change, and the writes that must and must not reach its repositories. Mock its repositories and its domain mapper.
+- An **application service** test proves coordination: the order of calls across aggregate services, what is passed between them, and that a failure from one prevents the effects of the other. Mock every aggregate service; do not reach for a repository here, because the unit under test does not have one.
+
+Proving only that a collaborator was invoked is insufficient at either level, and integration
+coverage does not replace either. A rule tested at both levels is a signal that it sits at the wrong
+one.
 
 ### What is deliberately not unit tested
 
@@ -128,25 +131,20 @@ their absence is correct rather than a gap:
 | Request and response TOs, domain records, entities | Through the boundaries that serialize, validate, and persist them |
 | Getters, setters, `equals`, `hashCode`, `toString` | Entity equality is proven where it matters, in a persistence test that puts instances in a collection across states |
 | Spring configuration classes, `@ConfigurationProperties`, `SecurityConfig` | Full application integration, including startup failure on invalid configuration |
+| An application service method that only delegates to one aggregate service | The aggregate service unit test plus integration; a test asserting one forwarded call proves nothing |
 | Framework behavior itself | Not tested at all |
 
-A mapper method with hand-written logic — a `default` method, custom expression, qualifier, or
-decorator — is behavior and does get a unit test, as does any static utility containing a real
-decision. Everything else with a decision in it needs one: do not skip a service, domain rule,
-validator, policy, or job because an integration test happens to exercise it.
-
-Plain unit tests have no Spring context or security filter chain. Test a security policy as a unit
-only when that policy is the subject; runtime authentication and authorization are proven in
-integration tests.
-
-Use Mockito's JUnit Jupiter extension when it is the established project library, and construct the
-subject explicitly when that clarifies setup. Do not use lenient stubbing or broad `any()` matching
-to hide an inaccurate fixture.
+A mapper method with hand-written logic — `default` method, custom expression, qualifier, or
+decorator — is behavior and gets a unit test, as does any static utility with a real decision.
+Everything with a decision in it needs one: do not skip a service, domain rule, validator, policy,
+or job because an integration test happens to exercise it. Test a security policy as a unit only
+when the policy is the subject; runtime authentication and authorization are proven in integration
+tests. Use Mockito's JUnit Jupiter extension when it is the established project library. Do not use
+lenient stubbing or broad `any()` matching to hide an inaccurate fixture.
 
 Framework-assigned fixture fields — `@Mock`, `@Spy`, `@Captor`, `@InjectMocks`, `@MockitoBean`,
-`@MockitoSpyBean`, and a subject rebuilt in `@BeforeEach` — are declared `private` and non-`final`.
-`modern-java-21` names this an explicit exception to its `final`-field and field-injection rules,
-because the framework assigns them after construction and the compiler would otherwise reject them.
+`@MockitoSpyBean`, and a subject rebuilt in `@BeforeEach` — are `private` and non-`final`;
+`modern-java-21` names this an explicit exception to its `final`-field and field-injection rules.
 Every other test collaborator, including `MockMvc`, `ObjectMapper`, repositories, and project-owned
 test clients, stays `final` and constructor-injected.
 
@@ -181,10 +179,9 @@ test already provides sufficient evidence for a simple path.
 
 ## Write application integration tests
 
-Use `@SpringBootTest` only when the scenario needs the application context and real Spring wiring.
-For a REST feature, prefer an application integration test that sends a request through the
-controller and exercises the real service, mapper, repository, transaction, serialization, error
-handling, and applicable security filter chain.
+Use `@SpringBootTest` only when the scenario needs real Spring wiring. For a REST feature, send a
+request through the controller and exercise the real service, mapper, repository, transaction,
+serialization, error handling, and security filter chain.
 
 Choose the web mode deliberately:
 
@@ -212,75 +209,47 @@ Integration tests must:
 - verify the response or other public result and the committed database state after success;
 - verify the public error contract and prove that invalid or rejected data was not persisted after
   every negative write scenario;
-- verify absence of messages, cache entries, files, or external calls when failure must prevent them;
+- verify absence of messages, cache entries, files, or external calls when failure must prevent them, including effects deferred to `AFTER_COMMIT`, which must not fire when the use case rolls back;
 - avoid test-managed `@Transactional` on HTTP write tests when rollback would hide commit behavior;
 - use the project's explicit database reset or cleanup strategy so tests remain isolated.
 
-When the project publishes an OpenAPI document, the contract drift test is a required application
-integration test. It follows every rule in this section, including the credential rules: the document
-endpoint sits behind the same filter chain as everything else, so the test either authenticates or
-the endpoint is explicitly permitted in the profile the test runs under. `rest-api-contract` owns
-what it asserts and why.
+When the project publishes an OpenAPI document, the contract drift test is a required integration
+test under every rule in this section, credentials included: the document endpoint sits behind the
+same filter chain. `rest-api-contract` owns what it asserts.
 
-Choose one cleanup strategy for the whole project and record it in `docs/project-profile.md`. In
-preference order:
+Record one project-wide cleanup strategy in `docs/project-profile.md`. Prefer truncating all tables
+after each test method through one project-owned JUnit extension or shared `@AfterEach`, reading
+table names from JDBC metadata or the migration schema, restoring referential integrity, and
+resetting sequences; it is deterministic and order-independent. Use a per-class container only when
+a suite genuinely needs an isolated database.
 
-1. **Truncate all tables after each test method**, through one project-owned JUnit extension or
-   `@AfterEach` in a shared base class. It reads table names from the JDBC metadata or the migration
-   schema, disables and restores referential integrity for the operation, and resets sequences.
-   Preferred because it is deterministic, independent of test order, and does not depend on any
-   test knowing which rows a request created.
-2. **A per-class container** when a suite genuinely needs an isolated database, accepting the
-   startup cost.
-
-Do not use `@Transactional` rollback on HTTP write tests, do not delete only the rows a test
-believes it created, and do not rely on one test's inserts as another's fixture. Seed reference data
-that every test needs through migrations or a documented seeding step that runs after cleanup, not
-from an arbitrary earlier test.
-
-Full application integration coverage must prove applicable affected real wiring, transactions,
-persistence, migrations, concurrency behavior, and committed database state. Cover each item only
-when the feature can exercise it; do not invent concurrency cases for a path with no concurrency
-contract. Important scenarios may overlap with service unit or MVC slice tests when the integration
-test proves a different boundary. Integration coverage never replaces either required lower level.
-
-Do not access live production or shared staging services. Do not mock the business path in a test
-whose purpose is to prove that the complete application path works.
+- Do not delete only the rows a test believes it created, and do not use one test's inserts as another's fixture.
+- Seed shared reference data through migrations or a documented seeding step that runs after cleanup.
+- Cover wiring, transactions, persistence, migrations, concurrency, and committed state only where the feature can exercise them; do not invent concurrency cases for a path with no concurrency contract.
+- Overlap with unit or slice tests is fine when the integration test proves a different boundary, but never replaces either level.
+- Do not access production or shared staging, and do not mock the business path the test exists to prove.
 
 ## Test scheduled jobs at both levels
 
 Every scheduled job must have:
 
-- a unit test that invokes the job directly, without Spring, and proves its delegation,
-  orchestration, and applicable failure behavior;
-- a scheduler-specific integration test that loads the required Spring context, enables the real
-  trigger with test-only timing, and proves an observable application effect.
+- a unit test that invokes the job directly, without Spring, and proves its delegation, orchestration, and applicable failure behavior;
+- a scheduler-specific integration test that loads the required Spring context, enables the real trigger with test-only timing, and proves an observable application effect.
 
-Keep scheduling disabled in unrelated tests through the project's explicit test configuration when
-background execution could interfere with their state. In scheduler integration tests, use the real
-scheduler and a generous bounded wait; do not call the scheduled method manually, sleep for an exact
-interval, or assert an exact invocation count for a repeating trigger. Test disabled scheduling,
-overlap protection, distributed locking, time zones, and retry behavior only when they are part of
-the actual job contract.
+[Scheduler test examples](references/scheduler-test-examples.md) carries the execution rules for
+both levels.
 
 ## Generate and control test data
 
-Use the project's established Instancio, Podam, factory, builder, fixture, or equivalent test-data
-solution. Do not introduce a second generator or a new dependency without a clear project need.
-When no solution exists, create a focused factory in test sources rather than scattering object
+Use the project's established test-data solution. Do not add a second generator without a clear
+need; when none exists, create a focused factory in test sources rather than scattering object
 construction across test classes.
 
-Test-data factories must provide valid defaults and scenario-specific overrides. Generate complete
-objects through the factory, then vary only the field relevant to the case. Use deterministic seeds
-when generation is random, fixed `Clock` values for time, and unique generated natural keys for
-database tests. Keep generated failure output reproducible. Leave generated identifiers and version
-fields unset when a persistence fixture represents a new entity.
-
-Do not hardcode complete object graphs, credentials, personal data, secrets, or repeated arbitrary
-business values in test methods. Explicit contract values remain appropriate when they are the
-subject of the assertion, including boundary numbers, enum states, route constants, error codes,
-HTTP statuses, and malformed inputs. Name fixtures by scenario under
-`project-naming-conventions`.
+- Factories provide valid defaults and scenario overrides: build the complete object, then vary only the field the case is about.
+- Keep generation reproducible: deterministic seeds, fixed `Clock` values, unique generated natural keys for database tests.
+- Leave generated identifiers and version fields unset when a persistence fixture represents a new entity.
+- Do not hardcode complete object graphs, credentials, personal data, secrets, or repeated arbitrary business values in test methods.
+- Explicit values stay when they are the subject of the assertion: boundary numbers, enum states, route constants, error codes, HTTP statuses, malformed inputs.
 
 ## Assert observable behavior
 
@@ -322,36 +291,28 @@ data, live identity providers, or production endpoints.
 
 ### Obtain a valid token per issuance profile
 
-`application-security` records the service's issuance profile in `docs/project-profile.md`. It
-determines only how the test gets a token; everything after that is identical, because the filter
-chain is the same in both.
+`application-security` records the issuance profile in `docs/project-profile.md`. It determines only
+how the test gets a token; everything after that is identical, because the filter chain is the same
+in both profiles. [Integration test examples](references/integration-test-examples.md) carries the
+procedure for Profile A, Profile B, and the temporary case where neither exists yet.
 
-- **Profile A, application-issued.** Seed a synthetic identity directly through the repository, a migration, or a SQL fixture, then call the service's real token endpoint. Seeding breaks the bootstrap circle, because the endpoint that creates identities is itself protected. Never relax a protected endpoint or add a test-only production endpoint to avoid seeding.
-- **Profile B, externally issued.** Run an approved provider container or isolated in-test authorization server, point the issuer configuration at it, and obtain the token through its real protocol endpoint.
-- **Before either exists.** Do not block, skip, or mock. Use a documented temporary test-only issuer: an in-test signing key registered as the configured issuer, minting the claim set the real issuer will produce. Only the key source is temporary; the token still traverses the real decoder, validators, and authorization rules. Record it as a known gap and replace it when the profile is implemented.
-
-None of this permits `@WithMockUser`, a security request post-processor, a mocked `JwtDecoder`, or a
+Never substitute `@WithMockUser`, a security request post-processor, a mocked `JwtDecoder`, or a
 forged `Authentication`; those bypass the chain the test exists to prove. Controlled invalid-token
-fixtures are allowed only for validation failures valid issuance cannot produce, and must exercise
-the real configured decoder. [Integration test examples](references/integration-test-examples.md)
-shows each profile.
+fixtures are allowed only for validation failures that valid issuance cannot produce, and must
+exercise the real configured decoder.
 
 ## Configure test selection to match the naming convention
 
-`project-naming-conventions` names full application and persistence tests `*IntegrationTest`. That
-suffix matches no default in either build tool, so without explicit configuration those tests run in
-the wrong phase — or not at all, which looks identical to a green build.
-
-Three requirements, whichever tool the project uses:
+`*IntegrationTest` matches no default in either build tool, so without explicit configuration those
+tests run in the wrong phase — or not at all, which looks identical to a green build. Three
+requirements, whichever tool the project uses:
 
 - unit and slice tests run in the fast phase, integration tests in a separate later phase or task;
 - the verification lifecycle fails when an integration test fails, so a separate phase is not one nobody runs;
 - `docs/project-profile.md` records the resulting commands, so "run the relevant suites" is unambiguous.
 
-`build-and-dependencies` owns the build files and carries the worked Maven and Gradle configuration,
-including the Surefire exclusion that is mandatory because `*IntegrationTest` also matches its
-default pattern. Verify the configuration before relying on a green build, and fix it as part of the
-change when it is missing.
+`build-and-dependencies` carries the worked Maven and Gradle configuration. Verify it before relying
+on a green build, and fix it as part of the change when it is missing.
 
 ## Execute and report verification
 

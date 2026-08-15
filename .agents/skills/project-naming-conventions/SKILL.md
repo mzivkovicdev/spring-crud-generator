@@ -90,7 +90,7 @@ Do not convert subjective readability advice into a blocking rule when multiple 
 
 Before naming:
 
-1. Inspect `docs/project-profile.md`, the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code. The profile records decisions that change names, such as the JPA accessor style, the application-service interface convention, and whether a cache exists.
+1. Inspect `docs/project-profile.md`, the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code. The profile records decisions that change names, such as the JPA accessor style, the service interface convention, and whether a cache exists.
 2. Identify the business concept, its owner, lifecycle, scope, and whether the name is internal, public, persisted, externally provisioned, or operationally queried.
 3. Reuse the approved domain term for the same concept across layers. Use different names only when the concepts or contracts genuinely differ.
 4. Resolve synonyms and overloaded words with the domain owner. Do not guess between materially different business meanings.
@@ -162,8 +162,8 @@ needs a different status, problem type, or recovery from every other missing res
 [Name exceptions](references/java-spring-and-test-names.md#name-exceptions).
 | `ResourceNotFoundException` | `OrderException` |
 
-Follow the application-service naming decision owned by `spring-boot-patterns`. Use
-`<Capability>ServiceImpl` when the user selected that convention or the repository already applies it
+Follow the service-interface decision owned by `spring-boot-patterns`. Use
+`<Name>Impl` when the user selected that convention or the repository already applies it
 coherently; otherwise, `Impl` is not required. Do not create an interface only to produce an `Impl`
 class. When multiple implementations differ by stable behavior or mechanism, prefer names such as
 `HttpCatalogClient` and `InMemoryCatalogClient`.

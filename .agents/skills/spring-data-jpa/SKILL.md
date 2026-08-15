@@ -114,6 +114,11 @@ Rules for this strategy:
 
 ## Association ownership
 
+`spring-boot-patterns` decides which entities form one aggregate. That decision constrains the
+mappings below: an association may only exist inside an aggregate.
+
+- Reference another aggregate root by its identifier, as a plain column, never as a JPA association. A `@ManyToOne` across the boundary hands every caller a writable path into the other aggregate, and no service-layer rule can close it again.
+- Copy a value that must not change retroactively — a price at order time, a rate at signing — onto the referencing entity instead of reading it through an association. This is a business rule about history, not a performance choice.
 - Set to-one associations to `LAZY` explicitly unless a measured access path proves another choice.
 - Treat fetching as a query/use-case decision, not an entity-wide default.
 - Cascade only lifecycle operations owned by the aggregate; never default to `CascadeType.ALL`.
@@ -209,6 +214,7 @@ Choose the smallest suitable fetch mechanism:
 semantics, and how long a transaction may stay open. This section owns what happens inside it.
 
 - Use `readOnly = true` for read operations as an optimization hint, not as an authorization guarantee.
+- `readOnly` takes effect only where the transaction actually starts. On a method that joins an existing write transaction the attribute is ignored, so declaring it there proves nothing and reads as a guarantee the code does not have.
 - Use `REQUIRES_NEW` only for a documented consistency reason and account for extra connection demand.
 - Follow the complete explicit update-and-save structure owned by `spring-boot-patterns`; do not
   replace it with a dirty-checking-only implementation.

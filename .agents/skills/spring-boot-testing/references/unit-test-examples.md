@@ -7,11 +7,12 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 
 ## Contents
 
-- [Service unit test excerpt](#service-unit-test-excerpt)
+- [Aggregate service unit test excerpt](#aggregate-service-unit-test-excerpt)
+- [Application service unit test excerpt](#application-service-unit-test-excerpt)
 - [Test-data factory](#test-data-factory)
 - [Rejected unit tests](#rejected-unit-tests)
 
-## Service unit test excerpt
+## Aggregate service unit test excerpt
 
 This excerpt is not the complete required `UserService` suite. Keep the happy path first in source
 order, followed by exception cases. The tests remain independent; the order is for readability only.
@@ -133,9 +134,84 @@ class UserServiceTest {
 
 Use the project assertion style consistently. Verify exact persistence fields only when those fields
 are the service's responsibility. Do not assert MapStruct internals or repeat the complete mapping in
-the test. Every behavioral application service needs direct unit coverage for its decisions, returned
-state, exceptions, repository writes, and prohibited interactions where applicable; full integration
-coverage does not replace these tests.
+the test. Every behavioral service needs direct unit coverage at its own level: an aggregate service for its
+decisions, returned state, exceptions, repository writes, and prohibited interactions; an
+application service for ordering across aggregates and the effects a failure must prevent. Full
+integration coverage replaces neither.
+
+## Application service unit test excerpt
+
+The subject coordinates two aggregates, so the collaborators are aggregate services and there is no
+repository in sight. Style, assertion library, and method naming match the aggregate-level excerpt
+above; only the level under test differs. `UserManagementApplicationService`, `UserService`,
+`OrganizationService`, and `UserRegisteredEvent` are the types in `spring-boot-patterns` → service
+and domain examples. `UserTestData` is the factory shown below, extended here with
+`persistedUserDomain`, and `OrganizationTestData` is its counterpart for the organization aggregate
+with `joinableOrganization` and `organizationId`. A factory belongs to one aggregate; do not build a
+shared factory that knows every type in the application.
+
+```java
+@ExtendWith(MockitoExtension.class)
+class UserManagementApplicationServiceTest {
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private OrganizationService organizationService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    private UserManagementApplicationService userManagement;
+
+    @BeforeEach
+    void setUp() {
+        this.userManagement = new UserManagementApplicationService(
+                this.userService,
+                this.organizationService,
+                this.eventPublisher);
+    }
+
+    @Test
+    void register_whenOrganizationIsJoinable_recordsMembershipAndPublishesEvent() {
+        final OrganizationDomain organization = OrganizationTestData.joinableOrganization();
+        final UserCreateTestData input = UserTestData.validUserCreateData();
+        final UserDomain createdUser = UserTestData.persistedUserDomain(input);
+        when(this.organizationService.getJoinable(organization.id())).thenReturn(organization);
+        when(this.userService.create(input.username(), input.email(), input.rawPassword()))
+                .thenReturn(createdUser);
+
+        final UserDomain result = this.userManagement.register(
+                organization.id(), input.username(), input.email(), input.rawPassword());
+
+        assertThat(result.id()).isEqualTo(createdUser.id());
+        verify(this.organizationService).addMember(organization.id(), createdUser.id());
+        verify(this.eventPublisher).publishEvent(
+                new UserRegisteredEvent(createdUser.id(), organization.id()));
+    }
+
+    @Test
+    void register_whenOrganizationIsNotJoinable_publishesNothingAndCreatesNoUser() {
+        final Long organizationId = OrganizationTestData.organizationId();
+        final UserCreateTestData input = UserTestData.validUserCreateData();
+        when(this.organizationService.getJoinable(organizationId))
+                .thenThrow(new BusinessValidationException(ApplicationError.ORGANIZATION_CLOSED));
+
+        assertThrows(
+                BusinessValidationException.class,
+                () -> this.userManagement.register(
+                        organizationId, input.username(), input.email(), input.rawPassword()));
+
+        verifyNoInteractions(this.userService);
+        verifyNoInteractions(this.eventPublisher);
+    }
+}
+```
+
+The second test is the one that justifies this level: that no user is created when the organization
+refuses the membership is a property of the use case, and neither aggregate service can prove it. Rollback itself is not asserted here, because
+that is Spring behavior and belongs to an application integration test.
 
 ## Test-data factory
 

@@ -13,17 +13,20 @@ Treat this skill as the owner of review scope, investigation, evidence, prioriti
 
 Apply the normative skills as follows:
 
-| Skill | Apply when | Treat as owner of |
+| Skill | Apply when | Route findings about |
 | --- | --- | --- |
-| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exception mechanics, and source structure |
-| `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, where the transaction boundary sits, and feature structure |
-| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and database-specific test scenarios |
-| `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
-| `spring-boot-testing` | Production behavior or tests are changed or reviewed | Realistic scenario selection, unit and integration scope, fixtures, doubles, isolation, negative persistence verification, and test execution |
-| `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
-| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test-selection, or quality-gate configuration is affected | Dependency justification, version management, compiler and processor configuration, test phase separation, quality-gate configuration, and the dependency audit and removal workflow |
-| `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected | Log levels and placement, correlation propagation, meter selection and tag cardinality, trace propagation, endpoint exposure, and probe composition |
-| `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed | Contract completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, and document drift |
+| `modern-java-21` | Every review containing Java source | Java usage, type inference, imports, Javadoc, exception mechanics, source structure |
+| `spring-boot-patterns` | Every Spring Boot change | Layer boundaries, service levels, mappers, validation, error contract, configuration, transaction placement |
+| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | Mappings, aggregate associations, fetch plans, query behavior, flush and persistence-context semantics, locking |
+| `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Authentication, authorization, confidentiality, abuse prevention, secrets, supply chain |
+| `spring-boot-testing` | Production behavior or tests are changed or reviewed | Scenario selection, test level, fixtures, doubles, isolation, execution |
+| `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary name consistency, rename migrations |
+| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test-selection, or quality-gate configuration is affected | Dependency justification, versions, compiler and processor setup, phase separation, quality gates |
+| `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected | Log level and placement, correlation propagation, meter and tag choice, endpoint exposure, probes |
+| `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed | Contract completeness, nullability, breaking-change judgement, versioning, document drift |
+
+The third column routes a finding to its owner; it is not the owner's rule set. Read the rule in the
+owning skill before writing the finding, and never resolve a disagreement from this table.
 
 Resolve every applicable owner skill before evaluating compliance:
 

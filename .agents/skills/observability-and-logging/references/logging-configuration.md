@@ -285,6 +285,8 @@ LOGGER.error("Request failed errorCode={}", error.code(), exception);
 
 ```java
 // Wrong: the same stack trace is emitted at every layer that rethrows.
+try {
+    return this.userRepository.findById(userId);
 } catch (final DataAccessException exception) {
     LOGGER.error("Failed to load user", exception);
     throw exception;
