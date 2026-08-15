@@ -147,7 +147,7 @@ mappings below: an association may only exist inside an aggregate.
 ## Read projections
 
 - Use projections for bounded read paths that need only selected columns.
-- A persistence projection is neither a TO nor a domain result; map it before leaving the service.
+- A persistence projection is neither a TO nor a domain result; map it before leaving the aggregate service that loaded it.
 - Keep interface projections closed and top-level. Nested properties can materialize joins and more data than expected.
 - Avoid `Object[]`, raw `Tuple`, and `Map<String, Object>` as cross-layer contracts.
 - Cover native projections with integration tests against the supported database.

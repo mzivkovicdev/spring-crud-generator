@@ -38,6 +38,16 @@ public record PageDomain<T>(
 }
 ```
 
+```java
+public record UserProfileDomain(
+        UserDomain user,
+        String organizationName) {
+}
+```
+
+`UserProfileDomain` is the result of a use case that reads from two aggregates; it belongs to the
+application service layer, not to either aggregate.
+
 `PageDomain` prevents Spring Data's `Page` from becoming a service or REST contract. A project may use a differently named framework-independent page result, but it must keep pagination semantics explicit and stable.
 
 ## Domain mapper
@@ -176,9 +186,12 @@ Use this shape when `docs/project-profile.md` records the `*ServiceImpl` convent
 boundary exists: another module implements the contract, more than one implementation is deployed,
 or the type is a port with substitutable adapters.
 
+Only the difference from Shape A is shown. The interface carries the contract; `getAll`,
+`updateById`, and `deleteById` follow the same form and are omitted.
+
 ```java
 /**
- * Defines user application operations used by inbound adapters.
+ * Defines user operations for the user aggregate.
  */
 public interface UserService {
 
@@ -205,45 +218,12 @@ public interface UserService {
             @NotBlank @Size(max = 120) final String username,
             @NotBlank @Email @Size(max = 254) final String email,
             @NotBlank @Size(max = 128) final String rawPassword);
-
-    /**
-     * Returns one bounded page of users.
-     *
-     * @param pageNumber zero-based page number; must not be {@code null}
-     * @param pageSize   page size from 1 through {@link PaginationConstraints#MAXIMUM_PAGE_SIZE};
-     *                   must not be {@code null}
-     * @return           a framework-independent page result; never {@code null}
-     * @throws ConstraintViolationException when an argument violates a structural constraint
-     */
-    PageDomain<UserDomain> getAll(
-            @NotNull @PositiveOrZero final Integer pageNumber,
-            @NotNull @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final Integer pageSize);
-
-    /**
-     * Updates the editable user profile fields.
-     *
-     * @param userId   user identifier; must not be {@code null}
-     * @param username new username
-     * @param email    new email address
-     * @return         the updated user state; never {@code null}
-     * @throws ConstraintViolationException when an argument violates a structural constraint
-     * @throws ResourceNotFoundException    when no user exists for the supplied identifier
-     */
-    UserDomain updateById(
-            @NotNull final Long userId,
-            @NotBlank @Size(max = 120) final String username,
-            @NotBlank @Email @Size(max = 254) final String email);
-
-    /**
-     * Deletes a user by identifier.
-     *
-     * @param userId user identifier; must not be {@code null}
-     * @throws ConstraintViolationException when the identifier violates a structural constraint
-     * @throws ResourceNotFoundException    when no user exists for the supplied identifier
-     */
-    void deleteById(@NotNull final Long userId);
 }
 ```
+
+The implementation carries the annotations, the dependencies, and the bodies from Shape A, with no
+Javadoc and no validation constraints repeated. One method shows the pattern; the rest are identical
+to Shape A apart from `@Override`:
 
 ```java
 @Service
@@ -251,92 +231,15 @@ public interface UserService {
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private final Clock clock;
-    private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
-    public UserServiceImpl(
-            final Clock clock,
-            final PasswordEncoder passwordEncoder,
-            final UserRepository userRepository) {
-
-        this.clock = clock;
-        this.passwordEncoder = passwordEncoder;
-        this.userRepository = userRepository;
-    }
+    // Remaining fields, constructor, and methods are those of Shape A.
 
     @Override
     public UserDomain getById(final Long userId) {
         return this.userRepository.findById(userId)
-            .map(UserDomainMapper.INSTANCE::mapUserEntityToUserDomain)
-            .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-    }
-
-    @Override
-    @Transactional
-    public UserDomain create(
-            final String username,
-            final String email,
-            final String rawPassword) {
-
-        final String passwordHash = this.passwordEncoder.encode(rawPassword);
-        final UserEntity newUser = UserDomainMapper.INSTANCE.mapToNewUserEntity(
-                username,
-                email,
-                passwordHash,
-                UserStatus.PENDING_VERIFICATION,
-                Instant.now(this.clock));
-        final UserEntity savedUser = this.userRepository.save(newUser);
-
-        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(savedUser);
-    }
-
-    @Override
-    public PageDomain<UserDomain> getAll(final Integer pageNumber, final Integer pageSize) {
-        final Pageable pageable = PageRequest.of(
-                pageNumber,
-                pageSize,
-                Sort.by(Sort.Order.asc("id"))
-        );
-        final Page<UserEntity> users = this.userRepository.findAll(pageable);
-        final List<UserDomain> items = UserDomainMapper.INSTANCE.mapUserEntitiesToUserDomains(
-                users.getContent()
-        );
-
-        return new PageDomain<>(
-                items,
-                users.getNumber(),
-                users.getSize(),
-                users.getTotalElements(),
-                users.getTotalPages()
-        );
-    }
-
-    @Override
-    @Transactional
-    public UserDomain updateById(
-            final Long userId,
-            final String username,
-            final String email) {
-
-        final UserEntity existingUser = this.getEntityById(userId);
-        existingUser.setUsername(username)
-                .setEmail(email);
-        final UserEntity savedUser = this.userRepository.save(existingUser);
-
-        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(savedUser);
-    }
-
-    @Override
-    @Transactional
-    public void deleteById(final Long userId) {
-        final UserEntity existingUser = this.getEntityById(userId);
-        this.userRepository.delete(existingUser);
-    }
-
-    private UserEntity getEntityById(final Long userId) {
-        return this.userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+                .map(UserDomainMapper.INSTANCE::mapUserEntityToUserDomain)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
     }
 }
 ```
@@ -500,9 +403,30 @@ repeated by every caller that creates a user.
 rather than by a direct call to a notification component, so a rollback cannot leave a message
 already sent.
 
-`getProfile` composes one read from each aggregate, which makes it a use case rather than a
-pass-through, and `readOnly` takes effect because this is the outermost transactional method. A
-method that only forwards a single call to one aggregate service does not earn a place here.
+`getProfile` composes one read from each aggregate, and `readOnly` takes effect because this is the
+outermost transactional method.
+
+The remaining user operations touch one aggregate each, so their use-case methods are one line. They
+belong here anyway, because the controller has exactly one dependency and every request enters the
+domain through it. Their contract is the aggregate service's contract, so it is not restated:
+
+```java
+    public PageDomain<UserDomain> getAll(final Integer pageNumber, final Integer pageSize) {
+        return this.userService.getAll(pageNumber, pageSize);
+    }
+
+    public UserDomain updateById(final Long userId, final String username, final String email) {
+        return this.userService.updateById(userId, username, email);
+    }
+
+    public void deleteById(final Long userId) {
+        this.userService.deleteById(userId);
+    }
+```
+
+A one-line use case is expected and carries no unit test of its own; `spring-boot-testing` says so
+explicitly. What is rejected is a second method that exposes an existing use case under a different
+name, or one that exists only to re-declare `readOnly`.
 
 Both examples follow the `get` and `find` distinction in `project-naming-conventions`: `getById`,
 `getJoinable`, and `getByMemberId` return a value or throw, while a method that may legitimately

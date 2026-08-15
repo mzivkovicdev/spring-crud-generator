@@ -28,19 +28,16 @@ public class UserController {
     public static final String USERS_PATH = ApiPaths.API_V1 + "/users";
 
     private final UserManagementApplicationService userManagement;
-    private final UserService userService;
 
-    public UserController(final UserManagementApplicationService userManagement,
-                          final UserService userService) {
+    public UserController(final UserManagementApplicationService userManagement) {
         this.userManagement = userManagement;
-        this.userService = userService;
     }
 
     @PostMapping
     public ResponseEntity<UserTO> usersPost(@RequestBody @Valid final UserCreateTO body) {
 
-        final UserDomain createdUser = this.userService.create(
-                body.username(), body.email(), body.password()
+        final UserDomain createdUser = this.userManagement.register(
+                body.organizationId(), body.username(), body.email(), body.password()
         );
         final UserTO response = UserRestMapper.INSTANCE.mapUserDomainToUserTO(createdUser);
         final URI location = URI.create("%s/%d".formatted(USERS_PATH, response.id()));
@@ -49,10 +46,10 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<UserTO> usersUserIdGet(@PathVariable final Long userId) {
+    public ResponseEntity<UserProfileTO> usersUserIdGet(@PathVariable final Long userId) {
 
         return ResponseEntity.ok(
-                UserRestMapper.INSTANCE.mapUserDomainToUserTO(
+                UserRestMapper.INSTANCE.mapUserProfileDomainToUserProfileTO(
                     this.userManagement.getProfile(userId)
                 )
         );
@@ -65,7 +62,7 @@ public class UserController {
             @RequestParam(defaultValue = PaginationConstraints.DEFAULT_PAGE_SIZE)
             @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final Integer pageSize) {
 
-        final PageDomain<UserDomain> users = this.userService.getAll(pageNumber, pageSize);
+        final PageDomain<UserDomain> users = this.userManagement.getAll(pageNumber, pageSize);
         return ResponseEntity.ok(
                 UserRestMapper.INSTANCE.mapUserPageToUserPageTO(users)
         );
@@ -77,7 +74,7 @@ public class UserController {
 
         return ResponseEntity.ok(
                 UserRestMapper.INSTANCE.mapUserDomainToUserTO(
-                    this.userService.updateById(userId, body.username(), body.email())
+                    this.userManagement.updateById(userId, body.username(), body.email())
                 )
         );
     }
@@ -85,7 +82,7 @@ public class UserController {
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> usersUserIdDelete(@PathVariable final Long userId) {
 
-        this.userService.deleteById(userId);
+        this.userManagement.deleteById(userId);
         return ResponseEntity.noContent().build();
     }
 }
@@ -121,6 +118,7 @@ The example intentionally relies on Spring Framework 6.1+ built-in controller me
 
 ```java
 public record UserCreateTO(
+        @NotNull Long organizationId,
         @NotBlank @Size(max = 120) String username,
         @NotBlank @Email @Size(max = 254) String email,
         @NotBlank @Size(max = 128) String password) {
@@ -139,6 +137,15 @@ public record UserTO(
         Long id,
         String username,
         String email) {
+}
+```
+
+```java
+public record UserProfileTO(
+        Long id,
+        String username,
+        String email,
+        String organizationName) {
 }
 ```
 
@@ -167,6 +174,11 @@ public interface UserRestMapper {
     UserRestMapper INSTANCE = Mappers.getMapper(UserRestMapper.class);
 
     UserTO mapUserDomainToUserTO(final UserDomain domain);
+
+    @Mapping(target = "id", source = "user.id")
+    @Mapping(target = "username", source = "user.username")
+    @Mapping(target = "email", source = "user.email")
+    UserProfileTO mapUserProfileDomainToUserProfileTO(final UserProfileDomain profile);
 
     List<UserTO> mapUserDomainsToUserTOs(final List<UserDomain> domains);
 

@@ -288,8 +288,8 @@ class CustomerServiceImpl implements CustomerService {
 ## Idempotency placement
 
 - Accept the idempotency key at the REST boundary as an explicit, validated, bounded header or field. Do not read it from arbitrary request state.
-- Pass it into the service as an ordinary explicit parameter or as part of the focused service input. Never pass the request TO.
-- Claim the key, execute the effect, and record the outcome inside the service transaction that owns the operation, so the claim and the effect commit or roll back together.
+- Pass it into the application service as an ordinary explicit parameter or as part of the focused service input. Never pass the request TO.
+- Claim the key, execute the effect, and record the outcome inside the use case's transaction, so the claim and the effect commit or roll back together.
 - Keep the claim store behind a repository or adapter like any other persistence concern. Do not put it in a controller, mapper, or entity callback.
 - Return the recorded original outcome for a repeated key through the same response mapping as the first call, so the public contract is identical.
 - Test simultaneous duplicates and retry-after-timeout at the integration boundary, per `spring-boot-testing`.

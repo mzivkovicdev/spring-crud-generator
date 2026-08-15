@@ -151,8 +151,10 @@ test clients, stays `final` and constructor-injected.
 ## Test every REST controller with an MVC slice
 
 A Spring slice test is neither a pure unit test nor a substitute for full integration coverage.
-Every REST controller requires focused `@WebMvcTest` coverage with its services and other downstream
-collaborators mocked through the mechanism supported by the project version. Prove every handler's
+Every REST controller requires focused `@WebMvcTest` coverage with its collaborators mocked through
+the mechanism supported by the project version. Under the layering `spring-boot-patterns` defines,
+that collaborator is the application service; mocking an aggregate service here would mock a type
+the controller does not depend on. Prove every handler's
 routing and delegation plus applicable validation, request and response serialization, status,
 headers, and public error contract.
 

@@ -28,7 +28,7 @@ class UserControllerTest {
     private final ObjectMapper objectMapper;
 
     @MockitoBean
-    private UserService userService;
+    private UserManagementApplicationService userManagement;
 
     UserControllerTest(
             @Autowired final MockMvc mockMvc,
@@ -42,8 +42,8 @@ class UserControllerTest {
     void usersPost_whenRequestIsValid_returnsCreatedUser() throws Exception {
         final UserCreateTO request = UserTestData.validUserCreateTO();
         final UserDomain createdUser = UserTestData.createdUserDomain(request);
-        when(this.userService.create(
-                request.username(), request.email(), request.password()))
+        when(this.userManagement.register(
+                request.organizationId(), request.username(), request.email(), request.password()))
                 .thenReturn(createdUser);
 
         this.mockMvc.perform(post(UserController.USERS_PATH)
@@ -58,8 +58,8 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.username").value(createdUser.username()))
                 .andExpect(jsonPath("$.email").value(createdUser.email()));
 
-        verify(this.userService).create(
-                request.username(), request.email(), request.password());
+        verify(this.userManagement).register(
+                request.organizationId(), request.username(), request.email(), request.password());
     }
 
     @Test
@@ -75,13 +75,13 @@ class UserControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value(ApplicationError.VALIDATION_FAILED.type().toString()));
 
-        verifyNoInteractions(this.userService);
+        verifyNoInteractions(this.userManagement);
     }
 
     @Test
     void usersUserIdGet_whenUserDoesNotExist_returnsNotFoundProblem() throws Exception {
         final Long userId = UserTestData.userId();
-        when(this.userService.getById(userId))
+        when(this.userManagement.getProfile(userId))
                 .thenThrow(new ResourceNotFoundException("User", userId));
 
         this.mockMvc.perform(get("%s/{userId}".formatted(UserController.USERS_PATH), userId))
@@ -89,7 +89,7 @@ class UserControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value(ApplicationError.RESOURCE_NOT_FOUND.type().toString()));
 
-        verify(this.userService).getById(userId);
+        verify(this.userManagement).getProfile(userId);
     }
 }
 ```

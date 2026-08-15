@@ -193,12 +193,12 @@ One `<Aggregate>Service` per aggregate root, in the `service` package.
 
 One `<Capability>ApplicationService` per coherent use case group, in the `applicationservice` package.
 
-- It owns the use case's transaction boundary. Because it is the outermost annotated method, its settings are the ones that take effect: propagation starts here, `readOnly` is honored here, and rollback is decided here.
+- It owns the use case's transaction boundary: the transaction starts and ends with this method, and rollback is decided here.
 - It depends only on aggregate services, ports, and adapters — never on a repository, an entity, or another application service. A repository dependency here means the aggregate service was bypassed and the aggregate now has two write paths.
 - It coordinates: fetch from one aggregate service, pass explicit values to another, decide the order. Rules that belong to a single aggregate stay in that aggregate's service.
-- Controllers, listeners, and scheduled entry points call application services only, including for reads that merely delegate. One entry into the domain is worth the extra method.
+- Controllers, listeners, and scheduled entry points call application services only. A use case that touches one aggregate produces a one-line method here, and that is correct: one entry into the domain is worth the extra method, and `spring-boot-testing` gives such a method no test of its own. What is rejected is a second method exposing an existing use case under another name, or one that exists only to re-declare `readOnly`.
 - Publish domain events through `ApplicationEventPublisher` and consume them with `@TransactionalEventListener(phase = AFTER_COMMIT)`. Never call a notification, message broker, or other external effect directly inside the transaction: a rollback after that call leaves the outside world believing something happened.
-- A read use case is annotated `@Transactional(readOnly = true)` at this level, where the attribute takes effect because this is where the transaction starts.
+- Annotate a read use case `@Transactional(readOnly = true)`. `spring-data-jpa` explains why the attribute only has an effect at this level.
 
 ### Both levels
 
@@ -224,7 +224,7 @@ One `<Capability>ApplicationService` per coherent use case group, in the `applic
 - Keep business rules out of controller, mapper, repository, and entity callback code.
 - Never rely on self-invocation for `@Transactional`, `@Async`, `@Cacheable`, or method validation. When a separate boundary is genuinely required, move it to another bean rather than working around the proxy.
 - Keep transactions short. Do not make slow external calls while holding one unless the consistency design requires it.
-- `spring-data-jpa` owns what happens inside the boundary: `readOnly` semantics, propagation, isolation, flush timing, and locking. Set none of them from here.
+- This skill decides only which method is transactional and which use cases are reads. `spring-data-jpa` owns what those settings mean and when they apply: `readOnly` semantics, propagation, isolation, flush timing, and locking. Read them there before overriding a default anywhere.
 
 Read the service, parameter-object, mapper, and repository-boundary examples in
 [service and domain examples](references/service-domain-examples.md).

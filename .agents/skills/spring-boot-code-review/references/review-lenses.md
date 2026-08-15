@@ -57,7 +57,7 @@ Apply `spring-boot-patterns` for the normative TO–Domain–Entity architecture
 - Verify that the use case's transaction boundary is the application service, and that no aggregate service widens or escapes it with `REQUIRES_NEW`, `NOT_SUPPORTED`, or a custom isolation level without a recorded reason. An aggregate service that writes several repositories and carries no `@Transactional` at all is a blocking finding: called without a caller-supplied transaction, each write commits separately.
 - Verify that an aggregate's own rule is enforced in that aggregate's service rather than in its callers, and that the same rule is not enforced at both levels.
 - Verify that the service accepts explicit parameters by default and uses a focused parameter object only when justified by the service signature policy.
-- Verify that the service returns a domain result such as `UserDomain`, not a REST TO, JPA entity, persistence projection, SDK response, or generic map.
+- Verify that a service at either level returns a domain result such as `UserDomain`, not a REST TO, JPA entity, persistence projection, SDK response, or generic map.
 - Verify that the domain object remains independent of REST, serialization, JPA, repositories, and Spring infrastructure.
 - Check whether `UserDomainMapper`-style mapping runs while all required persistence state is valid and available.
 - Check every mapper for omitted fields, wrong direction, privilege-bearing fields, mutable collection leakage, accidental lazy loading, and silent normalization.
