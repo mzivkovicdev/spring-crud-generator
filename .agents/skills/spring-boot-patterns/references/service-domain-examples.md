@@ -176,6 +176,12 @@ public class UserService {
 }
 ```
 
+`getById` is shown in full. The same class also declares `create`, `getAll`, `updateById`, and
+`deleteById` — the operations the `users` aggregate owns and the ones the controller example calls
+directly. They follow the same shape: `@Transactional` on the writes, entities mapped to domain
+objects before returning, and `ResourceNotFoundException` for a missing identifier. `create` appears
+in full under [Shape B](#shape-b-interface-plus-implementation).
+
 Do not introduce `UserService` plus an empty `UserServiceImpl` in order to reach Shape B. An
 interface with one implementation, no external implementor, and no substitution requirement adds a
 file and a jump without adding a contract.
@@ -406,27 +412,10 @@ already sent.
 `getProfile` composes one read from each aggregate, and `readOnly` takes effect because this is the
 outermost transactional method.
 
-The remaining user operations touch one aggregate each, so their use-case methods are one line. They
-belong here anyway, because the controller has exactly one dependency and every request enters the
-domain through it. Their contract is the aggregate service's contract, so it is not restated:
-
-```java
-    public PageDomain<UserDomain> getAll(final Integer pageNumber, final Integer pageSize) {
-        return this.userService.getAll(pageNumber, pageSize);
-    }
-
-    public UserDomain updateById(final Long userId, final String username, final String email) {
-        return this.userService.updateById(userId, username, email);
-    }
-
-    public void deleteById(final Long userId) {
-        this.userService.deleteById(userId);
-    }
-```
-
-A one-line use case is expected and carries no unit test of its own; `spring-boot-testing` says so
-explicitly. What is rejected is a second method that exposes an existing use case under a different
-name, or one that exists only to re-declare `readOnly`.
+Note what this class does **not** contain. Listing, updating, and deleting a user stay inside the
+`users` aggregate, so they have no method here — the controller calls `UserService` for those. A
+forwarding method would add a second name for one operation and a second place to keep in sync, and
+repeated across a few features it turns this class into a facade over the whole application.
 
 Both examples follow the `get` and `find` distinction in `project-naming-conventions`: `getById`,
 `getJoinable`, and `getByMemberId` return a value or throw, while a method that may legitimately

@@ -131,7 +131,7 @@ their absence is correct rather than a gap:
 | Request and response TOs, domain records, entities | Through the boundaries that serialize, validate, and persist them |
 | Getters, setters, `equals`, `hashCode`, `toString` | Entity equality is proven where it matters, in a persistence test that puts instances in a collection across states |
 | Spring configuration classes, `@ConfigurationProperties`, `SecurityConfig` | Full application integration, including startup failure on invalid configuration |
-| An application service method that only delegates to one aggregate service | The aggregate service unit test plus integration; a test asserting one forwarded call proves nothing |
+| An application service that coordinates nothing, or a handler that forwards a single call | Nothing at this level. `spring-boot-patterns` rejects the pass-through itself; test the aggregate service and the endpoint |
 | Framework behavior itself | Not tested at all |
 
 A mapper method with hand-written logic — `default` method, custom expression, qualifier, or
@@ -152,9 +152,9 @@ test clients, stays `final` and constructor-injected.
 
 A Spring slice test is neither a pure unit test nor a substitute for full integration coverage.
 Every REST controller requires focused `@WebMvcTest` coverage with its collaborators mocked through
-the mechanism supported by the project version. Under the layering `spring-boot-patterns` defines,
-that collaborator is the application service; mocking an aggregate service here would mock a type
-the controller does not depend on. Prove every handler's
+the mechanism supported by the project version. Mock the services the controller actually injects:
+under the layering `spring-boot-patterns` defines, a controller may hold both an application service
+and an aggregate service, and each handler calls one of them. Prove every handler's
 routing and delegation plus applicable validation, request and response serialization, status,
 headers, and public error contract.
 

@@ -16,9 +16,11 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 
 ## REST controller
 
-The controller depends on `UserManagementApplicationService`, the use-case level declared in
-[service and domain examples](service-domain-examples.md). It never injects an aggregate service or
-a repository, so every request enters the domain through one place.
+The controller injects both service levels declared in
+[service and domain examples](service-domain-examples.md), and each handler calls exactly one of
+them. `usersPost` and `usersUserIdGet` touch the user and organization aggregates together, so they
+go through `UserManagementApplicationService`. Listing, updating, and deleting stay inside the
+`users` aggregate, so they call `UserService` directly rather than through a forwarding method.
 
 ```java
 @RestController
@@ -28,9 +30,14 @@ public class UserController {
     public static final String USERS_PATH = ApiPaths.API_V1 + "/users";
 
     private final UserManagementApplicationService userManagement;
+    private final UserService userService;
 
-    public UserController(final UserManagementApplicationService userManagement) {
+    public UserController(
+            final UserManagementApplicationService userManagement,
+            final UserService userService) {
+
         this.userManagement = userManagement;
+        this.userService = userService;
     }
 
     @PostMapping
@@ -62,7 +69,7 @@ public class UserController {
             @RequestParam(defaultValue = PaginationConstraints.DEFAULT_PAGE_SIZE)
             @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final Integer pageSize) {
 
-        final PageDomain<UserDomain> users = this.userManagement.getAll(pageNumber, pageSize);
+        final PageDomain<UserDomain> users = this.userService.getAll(pageNumber, pageSize);
         return ResponseEntity.ok(
                 UserRestMapper.INSTANCE.mapUserPageToUserPageTO(users)
         );
@@ -74,7 +81,7 @@ public class UserController {
 
         return ResponseEntity.ok(
                 UserRestMapper.INSTANCE.mapUserDomainToUserTO(
-                    this.userManagement.updateById(userId, body.username(), body.email())
+                    this.userService.updateById(userId, body.username(), body.email())
                 )
         );
     }
@@ -82,7 +89,7 @@ public class UserController {
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> usersUserIdDelete(@PathVariable final Long userId) {
 
-        this.userManagement.deleteById(userId);
+        this.userService.deleteById(userId);
         return ResponseEntity.noContent().build();
     }
 }

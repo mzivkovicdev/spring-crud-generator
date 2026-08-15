@@ -97,7 +97,7 @@ Use the repository's existing sound structure instead of performing a broad pack
 | --- | --- |
 | REST controller/listener | Parse and validate transport input, delegate, and map domain output to a TO |
 | REST mapper | Map domain results to response TOs and, only for a justified focused input, map a request TO to a domain/service input |
-| Application service | Own the use case: the transaction boundary, coordination across aggregates, and the only entry point the controller calls |
+| Application service | Own a use case that spans more than one aggregate: its transaction boundary and the order of the calls |
 | Aggregate service | Own one aggregate: its repositories, its invariants, and every write to it |
 | Domain | Represent business state, invariants, and decisions without REST or persistence dependencies |
 | Domain mapper | Translate between persistence entities/projections and domain objects; map explicit creation values to a new entity when required |
@@ -145,7 +145,8 @@ Read the controller example in [REST API examples](references/rest-api-examples.
 TO means transport object in this skill. Use records for immutable request and response TOs when compatible with the serializer and project conventions.
 
 - Never accept or return a JPA entity as an HTTP/message TO.
-- Delegate to an application service, never to an aggregate service or a repository.
+- Delegate to exactly one service per handler, never to a repository. Which level that is follows from the operation: an operation confined to one aggregate calls that aggregate service directly; an operation that reads or writes more than one aggregate, publishes an event, or must order effects calls the application service that owns that use case.
+- A handler that calls two services is doing coordination in the wrong place. Move that coordination into an application service and call it instead. The controller may inject both levels; a single handler may not mix them.
 - Do not pass request or response TOs into the service layer.
 - Map service results from `UserDomain` to `UserTO` in the REST mapper.
 - Map a request TO to a focused domain input only when the service parameter-object rule justifies that input.
@@ -191,12 +192,14 @@ One `<Aggregate>Service` per aggregate root, in the `service` package.
 
 ### Application services
 
-One `<Capability>ApplicationService` per coherent use case group, in the `applicationservice` package.
+One `<Capability>ApplicationService` per coherent use case group, in the `applicationservice`
+package. It exists only where coordination exists. A feature whose every operation stays inside one
+aggregate needs no application service at all, and adding an empty one is scaffolding.
 
 - It owns the use case's transaction boundary: the transaction starts and ends with this method, and rollback is decided here.
 - It depends only on aggregate services, ports, and adapters — never on a repository, an entity, or another application service. A repository dependency here means the aggregate service was bypassed and the aggregate now has two write paths.
 - It coordinates: fetch from one aggregate service, pass explicit values to another, decide the order. Rules that belong to a single aggregate stay in that aggregate's service.
-- Controllers, listeners, and scheduled entry points call application services only. A use case that touches one aggregate produces a one-line method here, and that is correct: one entry into the domain is worth the extra method, and `spring-boot-testing` gives such a method no test of its own. What is rejected is a second method exposing an existing use case under another name, or one that exists only to re-declare `readOnly`.
+- Never add a method that only forwards to one aggregate service. A pass-through adds a second name for one operation and a second place to keep in sync, and it is the mechanism by which this class turns into a facade over the whole application. An entry point that needs a single-aggregate operation calls that aggregate service directly.
 - Publish domain events through `ApplicationEventPublisher` and consume them with `@TransactionalEventListener(phase = AFTER_COMMIT)`. Never call a notification, message broker, or other external effect directly inside the transaction: a rollback after that call leaves the outside world believing something happened.
 - Annotate a read use case `@Transactional(readOnly = true)`. `spring-data-jpa` explains why the attribute only has an effect at this level.
 
@@ -342,9 +345,9 @@ Reject:
 
 **Boundary violations.** Fat controllers; entities in API contracts or returned from services; REST
 TOs passed into services; remote I/O inside long transactions; unbounded collection endpoints;
-generic `Map` responses; a repository injected into an application service; a controller calling an
-aggregate service directly; one aggregate service depending on another; a JPA association crossing
-an aggregate boundary.
+generic `Map` responses; a repository injected into an application service; a controller handler
+calling two services; an application service method that only forwards to one aggregate service; one
+aggregate service depending on another; a JPA association crossing an aggregate boundary.
 
 **Structure.** Field injection; an aggregate service that only forwards to its repository while its
 invariants live in callers; an application service holding a rule that belongs to one aggregate;
@@ -372,7 +375,8 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] Controller/listener is a thin transport boundary.
 - [ ] Business rules are in service/domain code, and each rule sits at the level that owns it.
 - [ ] The transaction boundary is the application service; no aggregate service overrides propagation or isolation to escape it.
-- [ ] No application service holds a repository, and no aggregate service holds another service.
+- [ ] No application service holds a repository or a pass-through method, and no aggregate service holds another service.
+- [ ] Every controller handler calls one service, at the level the operation belongs to.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
 - [ ] Service signatures use clear explicit parameters up to seven; signatures with eight or more were redesigned, cohesively grouped, or explicitly justified.
 - [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.

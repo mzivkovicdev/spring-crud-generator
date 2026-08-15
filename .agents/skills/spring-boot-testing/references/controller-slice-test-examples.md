@@ -18,6 +18,11 @@ Use the mock-bean mechanism supported by the inspected Spring version. This exam
 changing framework versions solely for the test. It is an excerpt, not the complete required test
 set for `UserController`.
 
+Every constructor dependency of the controller needs a mock bean, including one no shown test
+exercises: without it the slice context fails to start. The two handlers below both go through the
+application service, so `userService` is declared and left unstubbed; the handlers that call it
+directly are covered by tests not shown here.
+
 ```java
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -29,6 +34,9 @@ class UserControllerTest {
 
     @MockitoBean
     private UserManagementApplicationService userManagement;
+
+    @MockitoBean
+    private UserService userService;
 
     UserControllerTest(
             @Autowired final MockMvc mockMvc,
