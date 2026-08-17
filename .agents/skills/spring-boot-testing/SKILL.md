@@ -212,6 +212,7 @@ Integration tests must:
 - verify the public error contract and prove that invalid or rejected data was not persisted after
   every negative write scenario;
 - verify absence of messages, cache entries, files, or external calls when failure must prevent them, including effects deferred to `AFTER_COMMIT`, which must not fire when the use case rolls back;
+- where the project records an outbox, verify that the outbox row is committed by the same transaction as the business change and that a rolled-back use case leaves none;
 - avoid test-managed `@Transactional` on HTTP write tests when rollback would hide commit behavior;
 - use the project's explicit database reset or cleanup strategy so tests remain isolated.
 

@@ -76,7 +76,8 @@ references name Redis, read it as "the selected cache or key-value store"; Redis
 choice if one is adopted, but the rules on classification, key format, TTL, tenant scope,
 serialization, and sensitive values apply to any cache. When no cache has been selected, do not
 introduce one to satisfy a rule.
-- Read [Spring Security for REST](references/spring-security-rest.md) for authentication, authorization, sessions, JWT or opaque tokens, API keys, OAuth2/OIDC, cookies, CSRF, CORS, headers, Actuator, or Spring Security configuration.
+- Read [Spring Security for REST](references/spring-security-rest.md) for the security model, authentication, JWT or opaque tokens, API keys, OAuth2/OIDC, sessions, cookies, CSRF, CORS, headers, and trusted proxies.
+- Read [Spring Security authorization](references/spring-security-authorization.md) for filter-chain construction, endpoint and method authorization, object and tenant scoping, and the management-endpoint chain.
 - Read [API security and abuse prevention](references/api-security-and-abuse-prevention.md) for endpoints, callbacks, webhooks, OpenAPI, versioning, API inventory, object-property authorization, rate limits, quotas, batch operations, idempotency, expensive operations, sensitive business flows, or HTTP caching.
 - Read [untrusted input and dangerous sinks](references/untrusted-input-and-dangerous-sinks.md) for SQL, commands, expressions, reflection, HTML, URLs, WebClient, redirects, files, archives, XML, deserialization, regexes, headers, or resource exhaustion.
 - Read [cloud, messaging, and jobs](references/cloud-messaging-and-jobs.md) for AWS or another cloud provider, object storage, IAM, KMS, queues, topics, events, consumers, scheduled tasks, workers, serverless functions, or cross-account access.

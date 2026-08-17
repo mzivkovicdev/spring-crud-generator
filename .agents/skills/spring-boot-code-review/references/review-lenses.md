@@ -93,6 +93,7 @@ Apply `spring-boot-patterns` and `spring-data-jpa`.
 - Check idempotency across retries, duplicate HTTP requests, redelivered messages, scheduled overlaps, and process restarts.
 - Verify that retry scope includes the complete safe operation and does not repeat a non-idempotent side effect.
 - Check commit-time failures, rollback rules, after-commit actions, outbox or equivalent consistency mechanisms when applicable.
+- Verify that every external effect uses the delivery mechanism `docs/project-profile.md` records for it. An effect the business cannot afford to lose, delivered only from an after-commit listener, is a blocking finding: the commit has already succeeded, so the loss leaves no trace and no retry.
 - Require pessimistic locking, stronger isolation, or a new consistency mechanism only when a concrete invariant and concurrency scenario justify it.
 
 ## Persistence and database behavior

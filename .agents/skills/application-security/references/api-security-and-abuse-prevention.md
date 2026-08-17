@@ -68,7 +68,7 @@ Evaluate authorization at four dimensions:
 
 - Derive subject and tenant from verified authentication context.
 - Do not trust request-supplied user, tenant, role, permission, ownership, status, price, discount, approval, or administrative fields.
-- Scope repository lookups and mutations as [Spring Security for REST](spring-security-rest.md) requires; authorization rules are not repeated here.
+- Scope repository lookups and mutations as [Spring Security authorization](spring-security-authorization.md) requires; authorization rules are not repeated here.
 - Use explicit input allowlists. Do not reflectively copy request properties onto domain or entity objects.
 - Construct response TOs from an explicit field contract; successful object authorization does not grant every property.
 - Apply the same checks to bulk operations, exports, nested resources, file downloads, search, count, existence, history, and metadata endpoints.
@@ -130,7 +130,7 @@ Use idempotency when duplicate execution can create additional state, cost, mess
 - Return the original compatible outcome for the same key and payload.
 - Reject reuse of the same key with a different payload or operation.
 - Do not use a caller-controlled key as a cache key without canonicalization, hashing where appropriate, length limits, and tenant scoping.
-- Coordinate database state and external side effects with an explicit consistency design; use outbox, provider idempotency, or compensating behavior when applicable.
+- `spring-boot-patterns` owns which delivery mechanism an external effect uses. This skill's concern is what an attacker can do with it: a replayed or duplicated delivery must not produce a second charge, a second grant, or a second notification, so require provider idempotency keys or compensating behavior for effects a caller can trigger repeatedly.
 - Distinguish transport retries from replay attacks. Signatures, timestamps, nonces, sequence numbers, or event IDs may be required at external boundaries.
 - Test simultaneous duplicates, retry after timeout, partial failure, expired keys, and mismatched payloads.
 
