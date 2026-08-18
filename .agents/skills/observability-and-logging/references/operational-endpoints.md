@@ -34,6 +34,11 @@ management:
         enabled: true
 ```
 
+`prometheus` belongs in the list only when the platform scrapes metrics and the project declares a
+Prometheus registry. With a push export over OTLP the endpoint does not exist, and listing it
+publishes nothing while implying a scrape target that is not there. Expose what the chosen export
+model actually needs and nothing else.
+
 Rules:
 
 - Never expose `*`. It publishes environment, configprops, beans, mappings, heapdump, and threaddump, several of which leak secrets or allow a denial of service.

@@ -28,7 +28,7 @@ resource filtering are configured consistently.
 </parent>
 
 <properties>
-    <java.version>21</java.version>
+    <java.version>CHOOSE</java.version>
     <checkstyle.version>CHOOSE</checkstyle.version>
     <mapstruct.version>CHOOSE</mapstruct.version>
     <spotless.version>CHOOSE</spotless.version>
@@ -48,6 +48,7 @@ projects for years. Respect these minimums when choosing:
 
 | Property | Minimum | Reason |
 | --- | --- | --- |
+| `java.version` | 21 | The floor this skill set is written against; `../SKILL.md` governs choosing the release |
 | `maven-compiler-plugin` (from the parent) | 3.12.0 | Below it, `annotationProcessorPaths` ignores `dependencyManagement`, so every processor entry needs an explicit version |
 | `checkstyle.version` | 10.12.x | Earlier versions handle `record` constructs inconsistently |
 | `spotless.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
@@ -72,9 +73,9 @@ not listed does not run, even if it is a normal dependency. Order inside the lis
 order.
 
 Since `maven-compiler-plugin` 3.12.0, entries in `annotationProcessorPaths` resolve their versions
-from `dependencyManagement`, so a BOM-managed processor needs no `<version>`. Spring Boot 3.x ships
-a newer plugin than that through the parent, so the default form below omits versions for managed
-artifacts and declares a property only for artifacts the BOM does not manage. Verify the effective
+from `dependencyManagement`, so a BOM-managed processor needs no `<version>`. Every supported Spring
+Boot generation ships a newer plugin than that through the parent, so the default form below omits
+versions for managed artifacts and declares a property only for artifacts the BOM does not manage. Verify the effective
 plugin version with `./mvnw help:effective-pom`; on an older plugin, every entry needs an explicit
 version, and `${project.parent.version}` is the correct value for Spring Boot's own artifacts when
 the project inherits the Spring Boot parent.

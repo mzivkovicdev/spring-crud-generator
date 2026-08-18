@@ -38,6 +38,26 @@ uses Lombok.
 - If the repository contains neither — an empty repository, or a skeleton with nothing generated yet — **ask the user which build tool the project will use** along with the Java release and Spring Boot version. Do not pick one.
 - Never introduce a second build tool, and never convert an existing project from one to the other unless conversion is the explicit task.
 
+## Choose versions that are still supported
+
+This skill owns version selection for the whole skill set. No other skill picks a version, and none
+restates these rules.
+
+- Look up the current release before choosing, rather than reusing a number from documentation, from a tutorial, or from memory. Any number written down is stale within months; the lookup is cheap and the answer is authoritative.
+- Verify that the branch is still receiving updates, and record both the version and the date its support ends in `docs/project-profile.md`. **Never start a new project on a branch that has reached end of life.** An unsupported branch takes no security patches, which is a defect on day one rather than a future upgrade task.
+- **Java.** Java 21 is the floor this skill set is written against, and everything here works on it. Prefer the current LTS release when nothing constrains the project — a supported framework version, a platform image, or a customer requirement — and record the chosen release in the profile. Do not exceed what the chosen Spring Boot generation supports.
+- **Spring Boot.** Prefer the current stable release of a supported generation. When an existing project sits on an older supported branch, stay there and raise the upgrade separately; do not change the generation as a side effect of an unrelated task.
+- When the project already records versions, use them. This section governs the choice, not a re-litigation of a choice already made.
+
+## Both Spring Boot generations are supported
+
+The skill set is written for Spring Boot 3.x and 4.x. The profile records which one the project uses,
+and that is the single answer for every skill.
+
+- Where a rule genuinely differs between generations, the skill that owns the topic states both cases and names which applies where. Nothing in this set assumes a generation silently.
+- Spring Boot 4 builds on Spring Framework 7 and changes the baselines: the minimum Java release, several managed dependency majors, and some starter coordinates. Inspect the effective versions from the build rather than assuming them, and treat a generation change as its own task with its own verification.
+- A snippet in these references is written against the generation it names. When it names none, it holds for both; verify it against the project's effective versions before relying on it.
+
 ## Reference routing
 
 Read only what the change requires:

@@ -118,7 +118,7 @@ contract references the same constant, so the REST boundary and the service cont
 
 The mapper is stateless and dependency-free, so the controller uses its static MapStruct instance rather than DI. This POST creates an addressable resource, so `201 Created` and its server-owned `Location` URI are intentional; other POST semantics may use a different documented status.
 
-The example intentionally relies on Spring Framework 6.1+ built-in controller method validation. Do not place `@Validated` on individual handler methods. If the supported framework version requires proxy-based controller method validation, place `@Validated` at type level only.
+The example relies on built-in controller method validation, available on every framework version the supported Spring Boot generations use. Do not place `@Validated` on individual handler methods; on a legacy branch that requires proxy-based controller method validation, place it at type level only.
 
 ## Request and response TOs
 

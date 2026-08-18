@@ -21,11 +21,23 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 
 Application code depends on `MeterRegistry` only. The backend is a dependency and a property.
 
+Micrometer is the instrumentation API on every supported Spring Boot generation. What changes with
+the generation is the export wiring, not a single rule about meters, tags, or spans.
+
+**On Spring Boot 3**, add the registry artifact for the backend:
+
 | Backend | Registry artifact | Model |
 | --- | --- | --- |
 | Prometheus, including a Grafana stack | `micrometer-registry-prometheus` | Scraped from an actuator endpoint |
 | OpenTelemetry collector, vendor-neutral | `micrometer-registry-otlp` | Pushed to the collector |
 | Elastic-based stack | `micrometer-registry-elastic`, or OTLP through a collector | Pushed |
+
+**On Spring Boot 4**, prefer the OpenTelemetry starter, which carries metrics, traces, and logs over
+OTLP from one dependency instead of a registry artifact per signal and per backend. A
+Prometheus scrape endpoint remains a valid choice when the platform pulls rather than receives; that
+is a deployment decision, recorded in the profile. Reporting metrics through Micrometer stays the
+recommendation either way — do not move application code onto the OpenTelemetry metrics API because
+the starter is present, or those meters stop behaving like the rest.
 
 Rules:
 
@@ -182,7 +194,7 @@ degradation with no counter is invisible until it becomes an outage.
 
 Tracing is optional and recorded in the project profile. When enabled:
 
-- Use Micrometer Tracing with an OpenTelemetry bridge and an OTLP exporter unless the platform requires otherwise. The exporter is a dependency and a property; the instrumentation is unchanged either way.
+- On Spring Boot 3, use Micrometer Tracing with an OpenTelemetry bridge and an OTLP exporter unless the platform requires otherwise. On Spring Boot 4, the OpenTelemetry starter covers the same path with one dependency. The exporter is a dependency and a property; the instrumentation is identical either way.
 - Propagation is W3C `traceparent` by default. Do not invent a custom propagation header.
 - Auto-instrumentation covers inbound HTTP, outbound `RestClient` and `WebClient`, and scheduled tasks. Add manual spans only for a meaningful internal operation that auto-instrumentation cannot see.
 - Sampling is a deployed configuration decision. Do not hardcode a sampling probability in application code.

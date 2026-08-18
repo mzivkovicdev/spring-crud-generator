@@ -27,8 +27,8 @@ Last updated: YYYY-MM-DD
 
 | Decision | Value | Owner skill |
 | --- | --- | --- |
-| Java release | 21 | `build-and-dependencies` |
-| Spring Boot version |  | `build-and-dependencies` |
+| Java release | CHOOSE, 21 minimum | `build-and-dependencies` |
+| Spring Boot version | CHOOSE, with the date its branch loses support | `build-and-dependencies` |
 | Build tool | Maven \| Gradle | `build-and-dependencies` |
 | Uses Lombok | yes \| no | `build-and-dependencies` |
 | Base package | com.example.myapp | `project-naming-conventions` |
@@ -62,6 +62,7 @@ Last updated: YYYY-MM-DD
 | Contract document | OpenAPI \| none | `rest-api-contract` |
 | Authoring direction | code-first \| contract-first \| n/a | `rest-api-contract` |
 | OpenAPI version | 3.0 \| 3.1 \| n/a | `rest-api-contract` |
+| API versioning strategy | URI path \| header \| query parameter \| media type | `rest-api-contract` |
 | Known consumers |  | `rest-api-contract` |
 | Committed document path | src/main/resources/openapi/openapi.json | `rest-api-contract` |
 | Document regeneration command |  | `rest-api-contract` |

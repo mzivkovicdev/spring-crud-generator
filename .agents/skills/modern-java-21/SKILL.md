@@ -103,7 +103,7 @@ Do not reorganize imports across untouched files as part of an unrelated feature
 
 ## Modernity and compatibility
 
-- Inspect the configured Java release before coding. Java 21 is the minimum expected baseline, but use only stable features supported by the project.
+- Inspect the configured Java release before coding, and use only features that are stable in it. Java 21 is the floor every rule here is written against; a higher release adds options but removes none. `build-and-dependencies` owns which release the project uses — do not raise it to reach a feature.
 - When the repository does not yet declare what the task needs — an empty repository, or a bare Spring Initializr skeleton with no decisions recorded — ask the user for the missing settings instead of assuming a default. Ask at minimum for the Java release, the Spring Boot version, and the build tool, plus anything else the task depends on. Record the answers in the project profile described by `spring-boot-patterns` so later tasks do not ask again.
 - Do not enable preview features or change the Java version unless the task explicitly requires it.
 - Prefer a modern construct when it makes the code clearer, safer, or more exhaustive; do not modernize merely to make syntax shorter.

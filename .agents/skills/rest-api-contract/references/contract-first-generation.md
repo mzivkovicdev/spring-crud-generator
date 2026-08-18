@@ -91,7 +91,7 @@ What each option is doing, because several are load-bearing:
 - `useTags` groups operations by tag, so one interface per resource rather than one per path. This is why every operation must carry exactly one tag.
 - `documentationProvider=none` stops the generator from adding a springdoc or Swagger dependency. The committed document is the documentation; a generated one would be a second source.
 - `openApiNullable=false` avoids the `JsonNullable` wrapper types, which leak an extra library into every signature. Turn it on only if the project deliberately adopts that library.
-- `useJakartaEe` is required on Spring Boot 3.
+- `useJakartaEe` is required on every supported Spring Boot generation: both 3.x and 4.x are on the `jakarta` namespace, and the generator still defaults to the old one.
 
 Bind generation to the phase that runs before compilation so the interfaces exist when the
 controllers compile, and confirm the generated sources are on the compile source root.
