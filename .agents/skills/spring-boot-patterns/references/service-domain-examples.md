@@ -407,7 +407,9 @@ repeated by every caller that creates a user.
 
 `UserRegisteredEvent` is consumed by a `@TransactionalEventListener(phase = AFTER_COMMIT)` listener
 rather than by a direct call to a notification component, so a rollback cannot leave a message
-already sent.
+already sent. That is the whole of what after-commit delivery guarantees here. This example assumes
+a profile that records the listener alone as sufficient for this effect; if a lost registration
+notice were unacceptable, `../SKILL.md` requires an outbox row written by this same transaction.
 
 `getProfile` composes one read from each aggregate, and `readOnly` takes effect because this is the
 outermost transactional method.

@@ -48,6 +48,9 @@ Last updated: YYYY-MM-DD
 | --- | --- | --- |
 | Service interface convention | interface + `*Impl` \| concrete classes | `spring-boot-patterns` |
 | Aggregate roots and their tables | list, e.g. `User (users, user_address)`, `Organization (organization)` | `spring-boot-patterns` |
+| Reliable-delivery mechanism for external effects | after-commit listener only \| outbox table \| broker-native transaction | `spring-boot-patterns` |
+| Resilience library | none \| Resilience4j \| other | `spring-boot-patterns` |
+| Outbound timeout budget | e.g. connect 2s, read 5s, request budget 10s | `spring-boot-patterns` |
 | API base path | /api/v1 | `spring-boot-patterns` |
 | Error catalog type | `com.example.myapp.exception.ApplicationError` | `spring-boot-patterns` |
 | Problem type base URI |  | `project-naming-conventions` |
