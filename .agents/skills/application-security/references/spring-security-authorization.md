@@ -135,7 +135,7 @@ SecurityFilterChain managementSecurityFilterChain(final HttpSecurity http) throw
                     .requestMatchers(EndpointRequest.to(
                             HealthEndpoint.class, InfoEndpoint.class)).permitAll()
                     .anyRequest().hasAuthority(MANAGEMENT_AUTHORITY))
-            .csrf(CsrfConfigurer::disable)
+            .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .httpBasic(Customizer.withDefaults())

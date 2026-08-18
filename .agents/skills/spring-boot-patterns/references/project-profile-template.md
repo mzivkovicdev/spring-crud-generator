@@ -88,8 +88,8 @@ Last updated: YYYY-MM-DD
 | Log JSON format | ecs \| logstash \| gelf | `observability-and-logging` |
 | Correlation header name | Correlation-Id | `observability-and-logging` |
 | Tracing enabled | yes \| no \| UNDECIDED | `observability-and-logging` |
-| Tracing bridge and exporter |  | `observability-and-logging` |
-| Metrics registry | prometheus \| otlp \| elastic \| UNDECIDED | `observability-and-logging` |
+| Telemetry export model | Prometheus scrape \| OTLP push \| other \| UNDECIDED | `observability-and-logging` |
+| Telemetry wiring | Boot 3 registry artifacts \| Boot 4 OpenTelemetry starter | `observability-and-logging` |
 | Exposed actuator endpoints | health,info | `observability-and-logging` |
 
 ## Caching

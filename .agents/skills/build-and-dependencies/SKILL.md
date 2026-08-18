@@ -35,7 +35,7 @@ entry. It records the build tool, the Java release, the Spring Boot version, and
 uses Lombok.
 
 - If the repository already contains `pom.xml` or `build.gradle`/`build.gradle.kts`, that is the answer. Record it in the profile if it is missing there.
-- If the repository contains neither — an empty repository, or a skeleton with nothing generated yet — **ask the user which build tool the project will use** along with the Java release and Spring Boot version. Do not pick one.
+- If the repository contains neither — an empty repository, or a skeleton with nothing generated yet — **ask the user which build tool the project will use**. Maven and Gradle are both correct answers, and nothing in the repository decides between them, so do not pick one. Versions are a different matter: the next section decides them.
 - Never introduce a second build tool, and never convert an existing project from one to the other unless conversion is the explicit task.
 
 ## Choose versions that are still supported
@@ -48,6 +48,7 @@ restates these rules.
 - **Java.** Java 21 is the floor this skill set is written against, and everything here works on it. Prefer the current LTS release when nothing constrains the project — a supported framework version, a platform image, or a customer requirement — and record the chosen release in the profile. Do not exceed what the chosen Spring Boot generation supports.
 - **Spring Boot.** Prefer the current stable release of a supported generation. When an existing project sits on an older supported branch, stay there and raise the upgrade separately; do not change the generation as a side effect of an unrelated task.
 - When the project already records versions, use them. This section governs the choice, not a re-litigation of a choice already made.
+- Unlike the build tool, a missing Java or Spring Boot version does not block the task. There is a defensible default — the current stable release of a supported branch — so resolve it, record it, and state in the response which versions were chosen and why, so the user can override once instead of being asked every time.
 
 ## Both Spring Boot generations are supported
 
@@ -190,7 +191,8 @@ Reject:
 
 ## Completion checklist
 
-- [ ] The build tool, Java release, and Spring Boot version come from the project profile, or were asked for and recorded.
+- [ ] The build tool came from the repository or from the user, never from a guess.
+- [ ] The Java release and Spring Boot version come from the profile, or were resolved to a supported release and recorded there with the date that branch loses support.
 - [ ] Every added dependency passed the justification gate and duplicates no existing capability.
 - [ ] Managed artifacts carry no version; unmanaged ones are pinned with a recorded reason.
 - [ ] Every plugin version is pinned.

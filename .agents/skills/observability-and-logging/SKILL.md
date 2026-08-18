@@ -20,7 +20,7 @@ Only two declarations touch the backend, and both are single lines recorded in t
 | Decision | What changes |
 | --- | --- |
 | Log JSON format | One property selecting ECS, Logstash, or GELF. No code changes. |
-| Metrics and trace export | The Micrometer registry artifact and the exporter, per `build-and-dependencies`. |
+| Metrics and trace export | A dependency and a property: registry artifacts on Spring Boot 3, the OpenTelemetry starter on Spring Boot 4. No code changes either way. |
 
 Do not couple application code to a backend. No vendor SDK in a service, no appender that ships logs
 over the network from inside the application, no log format assembled by hand for one collector.
