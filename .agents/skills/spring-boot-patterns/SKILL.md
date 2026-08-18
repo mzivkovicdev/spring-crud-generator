@@ -31,7 +31,8 @@ second standard.
 
 Read only the references relevant to the task:
 
-- Read [REST API examples](references/rest-api-examples.md) when creating or changing a REST controller, request/response TO, REST mapper, validation response, or `ProblemDetail` handler.
+- Read [REST API examples](references/rest-api-examples.md) when creating or changing a REST controller, request/response TO, or REST mapper.
+- Read [error handling examples](references/error-handling-examples.md) when adding or changing a caller-visible failure: an error catalog constant, a custom exception, a handler method, or a validation response shape.
 - Read [service and domain examples](references/service-domain-examples.md) when creating or changing a service, domain model, domain mapper, service parameter object, or repository boundary.
 - Read [project profile template](references/project-profile-template.md) when creating the profile or filling a missing decision.
 - Read [infrastructure examples](references/infrastructure-examples.md) when deciding package placement or changing method validation, custom exceptions, configuration properties, infrastructure beans, or code that resembles a listed anti-pattern.
@@ -201,6 +202,9 @@ aggregate needs no application service at all, and adding an empty one is scaffo
 - It coordinates: fetch from one aggregate service, pass explicit values to another, decide the order. Rules that belong to a single aggregate stay in that aggregate's service.
 - Never add a method that only forwards to one aggregate service. A pass-through adds a second name for one operation and a second place to keep in sync, and it is the mechanism by which this class turns into a facade over the whole application. An entry point that needs a single-aggregate operation calls that aggregate service directly.
 - Publish domain events through `ApplicationEventPublisher` and consume them with `@TransactionalEventListener(phase = AFTER_COMMIT)`. Never call a notification, message broker, or other external effect directly inside the transaction: a rollback after that call leaves the outside world believing something happened.
+- Know what that buys and what it does not. After-commit delivery guarantees the effect never fires for work that rolled back. It does **not** guarantee the effect happens at all: the commit has already succeeded, so a crash, a redeploy, or a failure inside the listener loses the effect permanently, with no retry and no record that anything was owed. Spring also does not propagate an exception thrown in an after-commit listener back to the caller, so a silent loss looks identical to success from the outside.
+- Decide per effect, and record the mechanism in `docs/project-profile.md`. Losing the effect is acceptable for a cache refresh or a best-effort metric, and the listener alone is then the right answer. Where losing it is not acceptable — payment, provisioning, a notification a person acts on, a message another system consumes — write the intent to an outbox table inside the same transaction as the business change, and deliver it from a separate process that retries until acknowledged. The after-commit listener may still trigger the first attempt; it is an optimization, not the guarantee.
+- Whatever the mechanism, make failed delivery visible. Log the failure inside the listener and expose it through `observability-and-logging`, because a listener that throws produces no HTTP error, no rollback, and no caller-side signal.
 - Annotate a read use case `@Transactional(readOnly = true)`. `spring-data-jpa` explains why the attribute only has an effect at this level.
 
 ### Both levels
@@ -285,9 +289,25 @@ SQL, internal endpoints, credentials, and personal data out of the body entirely
 - Name a project-owned validation exception unambiguously, for example `BusinessValidationException`. Never give a project exception the simple name of a framework type such as `jakarta.validation.ValidationException`, and never handle that framework type as if it were the project's category.
 - Place custom exceptions in `exception` and MVC handler classes in `exception.handler`. Spring Security response handling belongs to the security configuration boundary, not this package.
 
-Read the `ProblemDetail` handler example in
-[REST API examples](references/rest-api-examples.md) and the custom exception examples in
+Read the error catalog and `ProblemDetail` handler examples in
+[error handling examples](references/error-handling-examples.md) and the custom exception examples in
 [infrastructure examples](references/infrastructure-examples.md).
+
+## Outbound calls
+
+An adapter that calls another system is where a remote failure becomes an application failure. These
+rules apply to every HTTP client, message producer, and provider SDK the application uses.
+
+- Configure connection and read timeouts explicitly on every client. Several widely used clients default to no read timeout at all, so an unconfigured client turns one unresponsive dependency into exhausted threads and a dead application. There is no acceptable outbound call without a bounded wait.
+- Keep the timeouts inside the caller's budget. The sum of an operation's outbound waits, plus its own work, must stay below the request timeout the deployment enforces; otherwise the client gives up on a request the application still believes is running.
+- Retry only an operation that is safe to repeat. A read may be retried; a write may not, unless the provider accepts an idempotency key or the operation is naturally idempotent. Bound the attempts, apply backoff with jitter, and record the policy where the client is configured.
+- Keep retry in one layer. A client library, the adapter, a gateway, and a scheduler each retrying three times is twenty-seven calls to a system that is already failing. Choose the layer that owns the policy and disable retry in the others.
+- Never hold a database transaction open across an outbound call unless the consistency design requires it, and never retry inside one: the transaction stays open for the whole backoff.
+- Translate failure at the adapter boundary. A timeout, a connection reset, a 4xx, a 5xx, and a malformed body each become a project exception the caller can act on. Never let a client library's exception type, status object, or SDK response reach a service or a controller.
+- Add circuit breaking, bulkheads, or rate limiting only when `docs/project-profile.md` records a resilience library. Do not hand-roll a breaker.
+
+`observability-and-logging` owns what an outbound call must emit. `application-security` owns
+credentials, destination validation, and response-size limits.
 
 ## Idempotency
 
@@ -344,7 +364,8 @@ test level, fixtures, isolation, and execution. Behavior-specific cases come fro
 Reject:
 
 **Boundary violations.** Fat controllers; entities in API contracts or returned from services; REST
-TOs passed into services; remote I/O inside long transactions; unbounded collection endpoints;
+TOs passed into services; an outbound client with no read timeout; a provider exception or SDK
+response type reaching a service or controller; remote I/O inside long transactions; unbounded collection endpoints;
 generic `Map` responses; a repository injected into an application service; a controller handler
 calling two services; an application service method that only forwards to one aggregate service; one
 aggregate service depending on another; a JPA association crossing an aggregate boundary.
@@ -377,6 +398,8 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] The transaction boundary is the application service; no aggregate service overrides propagation or isolation to escape it.
 - [ ] No application service holds a repository or a pass-through method, and no aggregate service holds another service.
 - [ ] Every controller handler calls one service, at the level the operation belongs to.
+- [ ] Each external effect uses the delivery mechanism the profile records for it, and a failed delivery is logged rather than silently dropped.
+- [ ] Every outbound client sets connection and read timeouts, and any retry policy exists in exactly one layer.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
 - [ ] Service signatures use clear explicit parameters up to seven; signatures with eight or more were redesigned, cohesively grouped, or explicitly justified.
 - [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.
