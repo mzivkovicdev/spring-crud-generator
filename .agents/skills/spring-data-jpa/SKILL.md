@@ -1,6 +1,6 @@
 ---
 name: spring-data-jpa
-description: Spring Data JPA and Hibernate patterns for Java 21+ applications on any supported relational database. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, schema migrations, database reads or writes, or transactional behavior. Covers mapping, associations, fetch plans, queries, transactions, pagination, locking, migrations, and persistence tests.
+description: Spring Data JPA and Hibernate patterns for Java 21+ applications on any supported relational database. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, database reads or writes, or transactional behavior. Covers mapping, associations, fetch plans, queries, transaction behavior, pagination, locking, and persistence tests. Schema migration files belong to sql-database-migration.
 ---
 
 # Spring Data JPA Skill
@@ -21,6 +21,7 @@ restate an owner's rules here:
 | `application-security` | Confidential data, tenant and object ownership, encryption, audit, backups, dangerous query input |
 | `observability-and-logging` | Log levels and placement, including that the service records the operation, not the repository |
 | `build-and-dependencies` | Driver, migration-tool, and annotation-processor declarations |
+| `sql-database-migration` | Migration files, ordering, expand-and-contract, backfills, seed data, and clean-install verification |
 | `project-naming-conventions` | Entity, repository, table, column, constraint, index, and migration names |
 
 This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier strategies.
@@ -35,13 +36,12 @@ Read only the examples required by the change:
 ## Before changing persistence
 
 Read `docs/project-profile.md` first, whose template `spring-boot-patterns` owns. It records the
-relational database engine and major version, the migration tool, the entity accessor style, and the
-identifier strategy. When it does not, or when the repository contains no database dependency,
-no datasource configuration, and no migration directory, **ask the user which database engine and
-version and which migration tool the project uses, and record the answer in the profile before
-writing persistence code**. Do not pick a database, a dialect, an identifier strategy, or a
-migration tool by default, and do not infer the production database from a test dependency such as
-H2.
+relational database engine and major version, the entity accessor style, and the identifier
+strategy. When it does not, or when the repository contains no database dependency and no datasource
+configuration, **ask the user which database engine and version the project uses, and record the
+answer in the profile before writing persistence code**. Do not pick a database, a dialect, or an
+identifier strategy by default, and do not infer the production database from a test dependency such
+as H2. `sql-database-migration` settles which migration tool the project uses.
 
 Apply `build-and-dependencies` for the driver, migration-tool, and annotation-processor declarations
 that this skill depends on; it owns the build files, and this skill owns the persistence behavior
@@ -251,16 +251,12 @@ semantics, and how long a transaction may stay open. This section owns what happ
 
 ## Schema migrations
 
-- Use the project's Flyway or Liquibase convention as schema source of truth.
-- Do not use Hibernate auto-DDL to create or update production schemas.
-- Give constraints and indexes stable, explicit names.
-- Keep migrations compatible with rolling deployments.
-- Use expand-and-contract for incompatible changes.
-- Do not run massive blocking backfills in application-startup migrations without lock, duration, recovery, and rollout analysis.
-- Separate large data backfills from schema changes when operational control is required.
-- Evaluate vendor-specific online/concurrent index features for large production tables.
-- Verify clean installation from an empty isolated production-engine database and the affected
-  application mappings. Migration checksum or syntax validation supplements runtime verification.
+`sql-database-migration` owns migration files, ordering, expand-and-contract, backfills, seed data,
+and verification. This skill owns only what the schema has to look like for the mappings to work.
+
+- Every mapping change this skill produces requires a migration in the same commit. Do not treat schema generation as a substitute.
+- `sql-database-migration` sets the Hibernate schema-generation mode. What matters here is the consequence: with validation on, a mapping that has outrun its migration fails at startup rather than at the first query, so treat that failure as a missing migration.
+- Give constraints and indexes explicit names in the mapping and in the migration, and keep them equal. `project-naming-conventions` owns the form.
 
 ## Persistence tests and observability
 
@@ -297,8 +293,8 @@ ineffective, redundant, or speculative indexes.
 unnecessary early flushes and `saveAndFlush` inside per-row loops; bulk DML followed by use of stale
 managed entities; pessimistic locks without bounded scope and timeout consideration.
 
-**Schema and verification.** Production schema mutation through Hibernate auto-DDL; destructive
-one-step migrations and uncontrolled startup backfills; H2-only persistence verification for another
+**Schema and verification.** A mapping change merged without its migration; a mapping whose
+constraint or index names differ from the migration's; H2-only persistence verification for another
 production database.
 
 ## Completion checklist

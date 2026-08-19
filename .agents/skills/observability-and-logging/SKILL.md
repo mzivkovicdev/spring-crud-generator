@@ -34,6 +34,7 @@ Write to standard output and let the platform collect it.
 | `project-naming-conventions` | The names of meters, tags, spans, log fields, and internal error codes |
 | `spring-boot-patterns` | Layer responsibilities and the error contract this skill records |
 | `build-and-dependencies` | Registry, exporter, and encoder declarations |
+| `sql-database-migration` | Whether the application has a startup migration gate; this skill owns whether it appears in readiness |
 | `spring-boot-testing` | Test levels; this skill owns what about observability is worth asserting |
 | `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
 

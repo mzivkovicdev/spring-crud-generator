@@ -17,7 +17,8 @@ Apply the normative skills as follows:
 | --- | --- | --- |
 | `modern-java-21` | Every review containing Java source | Java usage, type inference, imports, Javadoc, exception mechanics, source structure |
 | `spring-boot-patterns` | Every Spring Boot change | Layer boundaries, service levels, mappers, validation, error contract, configuration, transaction placement |
-| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | Mappings, aggregate associations, fetch plans, query behavior, flush and persistence-context semantics, locking |
+| `spring-data-jpa` | Persistence, entities, repositories, queries, locking, or database performance is affected | Mappings, aggregate associations, fetch plans, query behavior, flush and persistence-context semantics, locking |
+| `sql-database-migration` | A schema object is added, altered, or removed, or a migration file is created or edited | Migration presence and ordering, expand-and-contract phasing, backfills, seed data, wiring by Spring Boot generation |
 | `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Authentication, authorization, confidentiality, abuse prevention, secrets, supply chain |
 | `spring-boot-testing` | Production behavior or tests are changed or reviewed | Scenario selection, test level, fixtures, doubles, isolation, execution |
 | `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary name consistency, rename migrations |

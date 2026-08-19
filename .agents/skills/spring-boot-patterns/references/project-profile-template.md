@@ -38,7 +38,9 @@ Last updated: YYYY-MM-DD
 | Decision | Value | Owner skill |
 | --- | --- | --- |
 | Database engine and major version |  | `spring-data-jpa` |
-| Migration tool | Flyway \| Liquibase | `spring-data-jpa` |
+| Migration tool | Flyway \| Liquibase | `sql-database-migration` |
+| Migration identifier scheme | UTC timestamp \| sequential counter | `sql-database-migration` |
+| Migration user separate from application user | yes \| no | `sql-database-migration` |
 | Entity accessor style | fluent \| void | `spring-data-jpa` |
 | Identifier strategy |  | `spring-data-jpa` |
 

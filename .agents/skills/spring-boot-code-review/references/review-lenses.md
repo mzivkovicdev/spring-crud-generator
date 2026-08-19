@@ -109,7 +109,8 @@ Apply `spring-data-jpa`; do not substitute database-specific folklore for its da
 - Check sargability and index fit only against a credible high-volume access path. Account for equality, range, join, and sort order rather than requesting indexes by intuition.
 - For performance claims, capture the expected data volume, generated SQL, query count, and representative plan when the environment permits.
 - Check flush timing, stale managed entities after bulk DML, batch size, persistence-context growth, lock waits, and connection-pool demand.
-- Verify rolling-deployment compatibility and migration recovery for schema changes.
+- Verify rolling-deployment compatibility for schema changes against `sql-database-migration`: a mapping change with no migration, an edited applied migration, or a breaking change not split into expand, migrate, and contract phases is a blocking finding.
+- On Spring Boot 4, verify that the migration tool arrives through its Spring Boot starter. The raw library alone leaves the build green and no migration executed, so this failure is invisible in every other check.
 
 Treat absent representative plans as a verification gap unless the code itself proves an unbounded query, per-row query, invalid mapping, or other deterministic defect.
 

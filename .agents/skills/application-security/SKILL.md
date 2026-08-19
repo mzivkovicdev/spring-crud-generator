@@ -21,7 +21,8 @@ rules:
 | --- | --- |
 | `modern-java-21` | Java language rules, imports, Javadoc, exceptions, source structure |
 | `spring-boot-patterns` | Controllers, TO–Domain–Entity boundaries, mappers, services, where the transaction boundary sits, errors, configuration |
-| `spring-data-jpa` | Entities, repositories, queries, locking, migrations, database performance |
+| `spring-data-jpa` | Entities, repositories, queries, locking, database performance |
+| `sql-database-migration` | Relational schema migration files, ordering, expand-and-contract, backfills, seed data, and clean-install verification |
 | `spring-boot-testing` | Test scope, fixtures, isolation, execution |
 | `observability-and-logging` | How logs, metrics, traces, and operational endpoints are produced; this skill owns what must never appear in them and who may reach them |
 | `rest-api-contract` | Compatibility, versioning, deprecation; this skill owns exposure, inventory, and authorization |

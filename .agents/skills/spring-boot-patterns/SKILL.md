@@ -16,7 +16,8 @@ structure, and the error contract. Everything else has an owner, and that owner 
 | --- | --- |
 | `modern-java-21` | Java language use, imports, Javadoc, nullability, exception mechanics, source structure |
 | `spring-boot-testing` | Test scope, scenario selection, fixtures, isolation, execution |
-| `spring-data-jpa` | Entities, repositories, queries, transaction behavior inside the boundary, locking, migrations, database performance; this skill owns where that boundary sits |
+| `spring-data-jpa` | Entities, repositories, queries, transaction behavior inside the boundary, locking, database performance; this skill owns where that boundary sits |
+| `sql-database-migration` | Relational schema migration files, ordering, expand-and-contract, backfills, seed data, and clean-install verification |
 | `application-security` | Trust boundaries, identity, authorization, confidential data, dangerous input, external systems |
 | `rest-api-contract` | The public contract, its document, and whether a change is breaking |
 | `observability-and-logging` | Logging, correlation context, metrics, tracing, actuator endpoints |
