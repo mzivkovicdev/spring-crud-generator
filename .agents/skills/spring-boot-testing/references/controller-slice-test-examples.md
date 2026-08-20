@@ -3,7 +3,7 @@
 Use these examples for focused Spring MVC controller tests. Apply every rule from `../SKILL.md`,
 `spring-boot-patterns`, `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -13,10 +13,15 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 
 ## Controller MVC slice excerpt
 
-Use the mock-bean mechanism supported by the inspected Spring version. This example uses
-`@MockitoBean`; preserve the established equivalent on an older supported project instead of
-changing framework versions solely for the test. It is an excerpt, not the complete required test
-set for `UserController`.
+This example uses `@MockitoBean`, which is correct on both supported generations: it is available
+from Spring Boot 3.4 onward and is the only option on Spring Boot 4, where `@MockBean` is removed.
+On a Spring Boot 3 branch below 3.4 the established equivalent is `@MockBean`; preserve what the
+project already uses rather than changing framework versions solely for a test. It is an excerpt,
+not the complete required test set for `UserController`.
+
+The slice annotations themselves are unchanged between generations. What changes around them is the
+test dependency: on Spring Boot 4 the MVC slice arrives through `spring-boot-starter-webmvc-test`
+rather than the single core test starter.
 
 Every constructor dependency of the controller needs a mock bean, including one no shown test
 exercises: without it the slice context fails to start. The two handlers below both go through the

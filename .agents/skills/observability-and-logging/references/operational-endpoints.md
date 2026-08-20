@@ -4,7 +4,7 @@ Use this reference when exposing actuator endpoints, writing a health indicator,
 liveness and readiness probes. Apply every rule from `../SKILL.md` and `application-security`;
 imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -50,6 +50,18 @@ Rules:
 - The Prometheus endpoint is exposed only when the project uses a scraped registry. With a pushed registry, it is unnecessary.
 
 ## Health groups and probes
+
+`probes.enabled: true` above is explicit on purpose, but its effect differs by generation: on
+Spring Boot 3 the probes are opt-in, while **on Spring Boot 4 they are enabled by default**, so the
+health endpoint publishes the `liveness` and `readiness` groups whether or not the property appears.
+Keep the property written down anyway — it documents the intent and it makes the behavior identical
+across both generations. Where the probes are genuinely unwanted, set
+`management.endpoint.health.probes.enabled: false` deliberately rather than relying on a Boot 3
+default that no longer holds.
+
+Because Spring Boot 4 exposes a set the project may not have chosen, an upgrade changes the reachable
+management surface without any configuration change. `application-security` owns confirming that the
+management filter chain still authorizes the resulting set.
 
 The single most consequential rule here: **an external dependency belongs in readiness, never in
 liveness.**

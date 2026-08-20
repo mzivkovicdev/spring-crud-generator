@@ -4,8 +4,7 @@ Read this only when `docs/project-profile.md` records an OpenAPI contract docume
 every rule from `../SKILL.md`, `project-naming-conventions` for every name, and `spring-boot-patterns`
 for the shapes being described.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is
-declared in that snippet or attributed to the example that declares it.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -181,5 +180,5 @@ Notes:
 
 - The document endpoint and any interactive UI are exposed deliberately, never by default. Decide per environment and record it.
 - Swagger UI in production is an `application-security` decision. Absent an explicit decision, it is off.
-- Publish the committed document where consumers can reach it, and record that location in the project profile.
+- Publication follows `../SKILL.md`; what follows is the document itself.
 - The document describes only what the service actually serves. Do not publish internal, management, or debug endpoints in a consumer-facing contract.

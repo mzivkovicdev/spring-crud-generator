@@ -11,11 +11,12 @@ release notes, direct notification of known consumers, and tests.
 ## Contents
 
 1. [The asymmetry that catches people](#the-asymmetry-that-catches-people)
-2. [Breaking change reference](#breaking-change-reference)
-3. [Avoiding a breaking change](#avoiding-a-breaking-change)
-4. [Versioning](#versioning)
-5. [Deprecation and sunset](#deprecation-and-sunset)
-6. [Reviewing a contract change](#reviewing-a-contract-change)
+2. [A platform upgrade is a contract event](#a-platform-upgrade-is-a-contract-event)
+3. [Breaking change reference](#breaking-change-reference)
+4. [Avoiding a breaking change](#avoiding-a-breaking-change)
+5. [Versioning](#versioning)
+6. [Deprecation and sunset](#deprecation-and-sunset)
+7. [Reviewing a contract change](#reviewing-a-contract-change)
 
 ## The asymmetry that catches people
 
@@ -23,6 +24,25 @@ The same edit is safe in one direction and breaking in the other, because the ro
 
 - In a **request**, the consumer produces and the service consumes. Loosening what the service accepts is safe; tightening it breaks callers.
 - In a **response**, the service produces and the consumer consumes. Adding is usually safe; removing or narrowing breaks callers.
+
+## A platform upgrade is a contract event
+
+A breaking change does not require an edit to a controller or a TO. The serializer decides the wire
+format, so changing the serializer can change the contract while every source file stays untouched.
+The clearest case is the Spring Boot 3 to 4 move, which brings Jackson 3 and, by default, registers
+every Jackson module found on the classpath rather than only well-known ones. A date, an optional, or
+a domain type can begin serializing differently because a transitive dependency arrived, and nothing
+in the diff shows it.
+
+Treat any framework, serializer, or Spring Boot generation upgrade as a change requiring contract
+verification:
+
+- Regenerate or re-derive the contract document and diff it against the committed one. An upgrade that changes the document is a contract change, and the breaking-change rules below apply to it exactly as they would to a hand-written edit.
+- Where the project records `none` for the contract document, compare serialized responses before and after against the tests that assert the wire shape. Without a document these tests are the only artefact that can show the drift.
+- Report the result to known consumers even when the diff is empty. "We upgraded and the contract is unchanged" is information they need; silence is indistinguishable from not having checked.
+
+`spring-boot-patterns` owns how serialization is configured, and `build-and-dependencies` owns the
+upgrade itself. This rule owns only the judgement that the upgrade has to be checked here at all.
 
 So adding an optional request field is safe, adding a required one is breaking. Adding a response
 field is safe, removing one is breaking. Accepting a new enum value in a request is safe, returning

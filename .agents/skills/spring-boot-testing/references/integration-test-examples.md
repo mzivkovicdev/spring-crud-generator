@@ -4,7 +4,7 @@ Use these examples for application and database-backed integration tests. Apply 
 `../SKILL.md`, `spring-boot-patterns`, `spring-data-jpa`, `application-security`,
 `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 These tests complement, and never replace, direct unit tests for behavioral application services or
 the required `@WebMvcTest` for each REST controller.
@@ -29,6 +29,12 @@ Routes and problem identifiers come from the project's route constant and the `A
 catalog, never from repeated literals. `UserController.USERS_PATH` is the code-first form; under
 contract-first the same tests reference the corresponding `ApiPaths` constant. Error assertions use the `type` URI; the body has no `code`
 member.
+
+The example carries `@AutoConfigureMockMvc` explicitly. On Spring Boot 3 that is good practice; on
+Spring Boot 4 it is mandatory, because `@SpringBootTest` no longer contributes `MockMvc` on its own.
+The injected JSON mapper is `ObjectMapper` here; on Spring Boot 4 that type comes from Jackson 3, so
+verify the import resolves to the mapper the application actually configures rather than to a
+Jackson 2 type left on the classpath by a transitive dependency.
 
 ```java
 @SpringBootTest

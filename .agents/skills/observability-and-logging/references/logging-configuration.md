@@ -4,7 +4,7 @@ Use this reference when configuring log output, building correlation context, pr
 threads and HTTP clients, or deciding what to log at a given layer. Apply every rule from
 `../SKILL.md`, `modern-java-21`, and `application-security`; imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -38,6 +38,7 @@ Rules:
 - Do not build JSON by hand inside log messages.
 - Set levels per package, never per class in committed configuration, and never `DEBUG` at root in a deployed profile.
 - Add durable structured fields through MDC, not by appending them to the message.
+- `logging.structured.format` exists on both supported generations, so this configuration is generation-neutral. One default is not: on Spring Boot 4 Logback writes files as UTF-8 and takes the console charset from the console when one is available, whereas Spring Boot 3 followed the platform default. On an upgrade, confirm the collector reads the encoding it now receives; a non-ASCII field silently mangled in the pipeline is easy to miss and impossible to reconstruct later.
 
 Declare loggers consistently:
 
@@ -133,7 +134,7 @@ FilterRegistrationBean<CorrelationIdFilter> correlationIdFilterRegistration() {
 Why each part is there:
 
 - The supplied header is untrusted input that will appear in every log line, in the response, and in the error body. Bounding its length and character set prevents log injection and unbounded field values. A value that fails validation is replaced, not rejected: a malformed header is not worth failing a request over.
-- `finally` is mandatory. Servlet threads are pooled, so a key left in MDC reappears in an unrelated request and attributes one user's activity to another.
+- The `finally` block in the filter above is what `../SKILL.md` requires; it is shown because omitting it is the most common way this filter is written wrong.
 - Setting the response header lets a user quote the identifier in a support ticket. The REST exception advice additionally copies it from MDC into the `correlationId` member of an error body, because a caller pasting a failed response into a ticket rarely includes the headers. `spring-boot-patterns` owns that decision; `traceId` and `spanId` never go into a response body.
 - The filter is registered with explicit order rather than annotated as a component, so the ordering relative to the security chain is visible and reviewable.
 

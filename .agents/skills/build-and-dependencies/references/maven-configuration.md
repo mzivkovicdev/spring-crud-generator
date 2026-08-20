@@ -3,7 +3,7 @@
 Use this reference when the project profile records Maven. Apply every rule from `../SKILL.md`.
 The snippets are excerpts of a `pom.xml`, not a complete file.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -23,28 +23,33 @@ resource filtering are configured consistently.
 <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>CHOOSE</version>
+    <version>RESOLVE</version>
     <relativePath/>
 </parent>
 
 <properties>
-    <java.version>CHOOSE</java.version>
-    <checkstyle.version>CHOOSE</checkstyle.version>
-    <mapstruct.version>CHOOSE</mapstruct.version>
-    <spotless.version>CHOOSE</spotless.version>
+    <java.version>RESOLVE</java.version>
+    <checkstyle.version>RESOLVE</checkstyle.version>
+    <mapstruct.version>RESOLVE</mapstruct.version>
+    <spotless.version>RESOLVE</spotless.version>
     <!-- Only when docs/project-profile.md records contract-first. -->
-    <openapi-generator.version>CHOOSE</openapi-generator.version>
+    <openapi-generator.version>RESOLVE</openapi-generator.version>
     <!-- Only when docs/project-profile.md records that the project uses Lombok. -->
-    <lombok-mapstruct-binding.version>CHOOSE</lombok-mapstruct-binding.version>
+    <lombok-mapstruct-binding.version>RESOLVE</lombok-mapstruct-binding.version>
 </properties>
+```
 
 Every version property referenced anywhere in this skill's references is declared here. The Spring
 Boot BOM manages none of these tools, so each is pinned explicitly.
 
-`CHOOSE` means exactly that: resolve the current release at setup time and record it in
-`docs/project-profile.md`. This reference deliberately does not carry a pinned number, because a
-number written into documentation is stale the month after it is written and is then copied into
-projects for years. Respect these minimums when choosing:
+`RESOLVE` is the decision token defined in `spring-boot-patterns`: look the current release up at
+setup time, write it into the build file, and record it with its resolution date in the
+resolved-versions table of `docs/project-profile.md`. This reference deliberately carries no pinned
+number, because a number written into documentation is stale the month after it is written and is
+then copied into projects for years. If the lookup is impossible, record `UNDECIDED` with the reason
+rather than a remembered number, and say so in the handoff.
+
+Respect these minimums when resolving:
 
 | Property | Minimum | Reason |
 | --- | --- | --- |
@@ -53,12 +58,9 @@ projects for years. Respect these minimums when choosing:
 | `checkstyle.version` | 10.12.x | Earlier versions handle `record` constructs inconsistently |
 | `spotless.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
 | `mapstruct.version` | 1.5.x | Constructor-based mapping and `unmappedTargetPolicy` behave as this skill set assumes |
-| `lombok-mapstruct-binding.version` | 0.2.0 | Required for Java 17+ toolchains |
+| `lombok-mapstruct-binding.version` | 0.2.0 | Required alongside Lombok on the toolchains this skill set supports |
 
 Verify the choice by running the build once, not by trusting the table.
-```
-
-Resolve each `CHOOSE` at setup time and record the result in `docs/project-profile.md`.
 
 Rules:
 
@@ -243,7 +245,7 @@ weakening the build.
 ## Packaging and wrapper
 
 - Keep `spring-boot-maven-plugin` for repackaging, and configure layers when the artifact is containerized.
-- Commit `mvnw`, `mvnw.cmd`, and `.mvn/wrapper/`, including the distribution URL and checksum. Review any change to them as executable code.
+- The wrapper is `mvnw`, `mvnw.cmd`, and `.mvn/wrapper/`, including the distribution URL and checksum.
 - Declare repositories only when an artifact genuinely is not on the default one, and only over authenticated TLS.
 - Keep credentials in `settings.xml` supplied by the platform, never in `pom.xml`.
 

@@ -32,7 +32,7 @@ not declare dependencies, and does not define test levels.
 `docs/project-profile.md` records Flyway or Liquibase. Both are correct choices and nothing in this
 skill prefers one.
 
-- Read the profile first. When it records neither and the repository contains no migration directory and no migration dependency, **ask the user which tool the project will use.** Nothing in the repository decides it, so do not pick one, and do not infer a tool from an unrelated dependency.
+- Read the profile first. When it records neither and the repository contains no migration directory and no migration dependency, **ask the user which tool the project will use.** This is an `ASK` decision in the token vocabulary `spring-boot-patterns` defines, so it blocks: nothing in the repository decides it, so do not pick one, and do not infer a tool from an unrelated dependency.
 - When the repository already contains a migration directory or an applied history table, that is the answer, whatever the profile says. Correct the profile rather than the repository.
 - Never run two migration tools against one schema. Each keeps its own history table and neither describes the full schema, so a clean install reproduces something no environment has. Converting from one tool to the other is a project of its own, never a side effect of a feature.
 
@@ -116,7 +116,7 @@ and getting it wrong fails silently.
 - **On Spring Boot 3**, the third-party library on the classpath is enough. Auto-configuration for both tools lives in `spring-boot-autoconfigure`, which every application already has.
 - **On Spring Boot 4**, it is not. Auto-configuration was split into per-technology modules, so the raw library gives you a working library with nothing wiring it: the application starts, the build is green, the tests pass, and no migration ever runs. Depend on `spring-boot-starter-flyway` or `spring-boot-starter-liquibase`, which bring both the library and its auto-configuration module.
 - Flyway additionally requires a database module for the target engine on current versions, such as `flyway-database-postgresql`, alongside the starter. Missing it fails loudly rather than silently.
-- `build-and-dependencies` owns how these are declared and which versions are chosen. State the requirement to it; do not edit the build file from a rule here.
+- `build-and-dependencies` owns how these are declared and which versions are chosen, and its [generation differences](../build-and-dependencies/references/generation-differences.md) reference carries the coordinates for both generations. State the requirement to it; do not edit the build file from a rule here.
 - Whichever generation, prove wiring rather than assuming it: a clean start against an empty database must apply every migration and record them in the history table.
 
 ## Migrations run the same way everywhere

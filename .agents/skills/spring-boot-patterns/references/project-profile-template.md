@@ -1,126 +1,34 @@
-# Project profile template
+# Filling the project profile
 
 Use this reference when creating `docs/project-profile.md`, when a required decision is missing from
 it, or when a change makes one of its entries obsolete.
 
-The profile is the single record of the decisions every other skill reads instead of guessing.
-`spring-boot-patterns` owns the file; each skill named below owns the meaning of its own entries.
-Copy the template, fill what the repository already proves, ask the user once for the rest, and
-commit it before implementing.
+The template itself is a file, not a snippet: copy
+[`../assets/project-profile-template.md`](../assets/project-profile-template.md) to
+`docs/project-profile.md` and fill it in. Do not retype it, and do not drop rows that look
+irrelevant today — an empty `ASK` row is a visible question, while a missing row is a decision
+nobody knows was skipped.
+
+`spring-boot-patterns` owns the file and the decision tokens defined in `../SKILL.md`; each skill
+named in the template owns the meaning of its own entries.
 
 ## How to fill it
 
 1. **Take what the repository proves.** A declared dependency, an applied migration, an existing package layout, or a configured datasource is an answer. Record it and move on.
-2. **Ask once for the remainder.** One message listing every unresolved decision the task depends on, not one question per skill. Present the options this template lists so the user can answer in a word.
-3. **Leave `UNDECIDED` for anything genuinely deferred**, and add a sentence saying what will force the decision. `UNDECIDED` is a legitimate value; a guessed value is not.
-4. **Never infer a decision from a test dependency or an example.** An H2 dependency does not make H2 the database, and an example showing Lombok does not make Lombok a project choice.
-5. **Update the entry in the same change that changes the decision.** A profile that disagrees with the code is worse than no profile.
+2. **Complete every `RESOLVE` yourself.** Look the answer up, record it with the date, and state it in the handoff. Do not ask the user for something that has a correct answer.
+3. **Ask once for every `ASK`.** One message listing every unresolved decision the task depends on, not one question per skill. Present the options the template lists so the user can answer in a word.
+4. **Leave `UNDECIDED` for anything genuinely deferred**, and add a sentence saying what will force the decision. `UNDECIDED` is a legitimate value; a guessed value is not.
+5. **Never infer a decision from a test dependency or an example.** An H2 dependency does not make H2 the database, and an example showing Lombok does not make Lombok a project choice.
+6. **Update the entry in the same change that changes the decision.** A profile that disagrees with the code is worse than no profile.
 
-## Template
-
-````markdown
-# Project profile
-
-Last updated: YYYY-MM-DD
-
-## Platform
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Java release | CHOOSE, 21 minimum | `build-and-dependencies` |
-| Spring Boot version | CHOOSE, with the date its branch loses support | `build-and-dependencies` |
-| Build tool | Maven \| Gradle | `build-and-dependencies` |
-| Uses Lombok | yes \| no | `build-and-dependencies` |
-| Base package | com.example.myapp | `project-naming-conventions` |
-
-## Persistence
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Database engine and major version |  | `spring-data-jpa` |
-| Migration tool | Flyway \| Liquibase | `sql-database-migration` |
-| Migration identifier scheme | UTC timestamp \| sequential counter | `sql-database-migration` |
-| Migration user separate from application user | yes \| no | `sql-database-migration` |
-| Entity accessor style | fluent \| void | `spring-data-jpa` |
-| Identifier strategy |  | `spring-data-jpa` |
-
-## Application design
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Service interface convention | interface + `*Impl` \| concrete classes | `spring-boot-patterns` |
-| Aggregate roots and their tables | list, e.g. `User (users, user_address)`, `Organization (organization)` | `spring-boot-patterns` |
-| Reliable-delivery mechanism for external effects | after-commit listener only \| outbox table \| broker-native transaction | `spring-boot-patterns` |
-| Resilience library | none \| Resilience4j \| other | `spring-boot-patterns` |
-| Outbound timeout budget | e.g. connect 2s, read 5s, request budget 10s | `spring-boot-patterns` |
-| API base path | /api/v1 | `spring-boot-patterns` |
-| Error catalog type | `com.example.myapp.exception.ApplicationError` | `spring-boot-patterns` |
-| Problem type base URI |  | `project-naming-conventions` |
-
-## API contract
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Contract document | OpenAPI \| none | `rest-api-contract` |
-| Authoring direction | code-first \| contract-first \| n/a | `rest-api-contract` |
-| OpenAPI version | 3.0 \| 3.1 \| n/a | `rest-api-contract` |
-| API versioning strategy | URI path \| header \| query parameter \| media type | `rest-api-contract` |
-| Known consumers |  | `rest-api-contract` |
-| Committed document path | src/main/resources/openapi/openapi.json | `rest-api-contract` |
-| Document regeneration command |  | `rest-api-contract` |
-| Published document location |  | `rest-api-contract` |
-| Live API versions and retirement dates |  | `rest-api-contract` |
-| Interactive UI exposed | never \| non-production only | `rest-api-contract` |
-| Generated-type naming resolution | suffix \| interfaces only \| n/a | `rest-api-contract` |
-
-## Security
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Token issuance profile | A: application-issued \| B: external IdP | `application-security` |
-| Token issuer identifier |  | `application-security` |
-| Self-registration exists | yes \| no | `application-security` |
-| Management port |  | `application-security` |
-| Management authority |  | `application-security` |
-
-## Observability
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Log JSON format | ecs \| logstash \| gelf | `observability-and-logging` |
-| Correlation header name | Correlation-Id | `observability-and-logging` |
-| Tracing enabled | yes \| no \| UNDECIDED | `observability-and-logging` |
-| Telemetry export model | Prometheus scrape \| OTLP push \| other \| UNDECIDED | `observability-and-logging` |
-| Telemetry wiring | Boot 3 registry artifacts \| Boot 4 OpenTelemetry starter | `observability-and-logging` |
-| Exposed actuator endpoints | health,info | `observability-and-logging` |
-
-## Caching
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Cache used | yes \| no \| UNDECIDED | none yet |
-| Cache technology |  | none yet |
-
-## Testing and build commands
-
-| Decision | Value | Owner skill |
-| --- | --- | --- |
-| Integration test naming and phase | `*IntegrationTest`, Failsafe \| Gradle suite | `spring-boot-testing` |
-| Database cleanup strategy | truncate after each method \| per-class container | `spring-boot-testing` |
-| Unit and slice tests | `./mvnw test` | `spring-boot-testing` |
-| Full verification | `./mvnw verify` | `spring-boot-testing` |
-| Quality gate check | `./mvnw validate` | `build-and-dependencies` |
-| Quality gate auto-fix | `./mvnw spotless:apply` | `build-and-dependencies` |
-
-## Deferred decisions
-
-| Decision | Deferred because | What will force it |
-| --- | --- | --- |
-|  |  |  |
-````
+Check the filled profile against the template before relying on it: no row may still hold a bare
+token, no row may hold a value outside the ones the template lists, and no row from the template may
+be missing. A missing row is the dangerous case, because an absent decision looks like a settled one
+while an empty `ASK` row is a visible question.
 
 ## Notes on specific entries
 
+- **Spring Boot generation** is recorded separately from the version because rules branch on the generation, not on the patch level. Every skill in this set reads this one row to decide which of its two documented cases applies. `build-and-dependencies` owns the choice; a project on an existing build has it already, and a new project is asked.
 - **Token issuance profile** determines how integration tests obtain a credential. Until it is decided, `spring-boot-testing` permits a documented temporary test-only issuer; record that here as a deferred decision with its removal condition.
 - **Entity accessor style** and **service interface convention** both change generated code shape, so a project that leaves them unrecorded will produce a different shape per feature.
 - **Aggregate roots** decide which service owns which table. Recording them once prevents two features from splitting the same aggregate differently; add a root the first time a feature introduces one.
@@ -133,3 +41,4 @@ Last updated: YYYY-MM-DD
 - **Contract document** is decided before the authoring direction, and `none` is a legitimate answer. Without a document there is no drift gate and no generated client, so breaking-change judgement rests entirely on review. Do not record `OpenAPI` because springdoc is on the classpath.
 - **Authoring direction** applies only when the contract document is OpenAPI, and must be decided before the first endpoint. It cannot be switched later without a dedicated project, and under contract-first it also forces the generated-type naming resolution. `rest-api-contract` presents the trade-off; the user chooses.
 - **Known consumers** is the list a breaking change must be confirmed against. It carries the most weight when there is no document, because nothing else surfaces a contract change to the people it affects.
+- **Resolved tool versions** is the audit trail for every `RESOLVE`. A row without a date is a version nobody can justify later; a row holding a number with no resolution date is the exact failure the token mechanism exists to prevent.

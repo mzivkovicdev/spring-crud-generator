@@ -4,7 +4,7 @@ Use this reference when the project profile records Gradle. Apply every rule fro
 The snippets are Kotlin DSL excerpts of `build.gradle.kts`, not a complete file. Translate to Groovy
 only if the repository already uses it; do not migrate an existing project between the two DSLs.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -21,27 +21,28 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 ```kotlin
 plugins {
     java
-    id("org.springframework.boot") version "CHOOSE"
-    id("io.spring.dependency-management") version "CHOOSE"
+    id("org.springframework.boot") version "RESOLVE"
+    id("io.spring.dependency-management") version "RESOLVE"
 }
 
-extra["mapstructVersion"] = "CHOOSE"
+extra["mapstructVersion"] = "RESOLVE"
 // Only when docs/project-profile.md records that the project uses Lombok.
-extra["lombokMapstructBindingVersion"] = "CHOOSE"
+extra["lombokMapstructBindingVersion"] = "RESOLVE"
 ```
 
-`CHOOSE` means resolve the current release at setup time and record it in
-`docs/project-profile.md`. This reference deliberately carries no pinned number, because a number in
-documentation goes stale and then propagates. The minimum versions and their reasons are listed in
+`RESOLVE` is the decision token defined in `spring-boot-patterns`: look the current release up at
+setup time, write it into the build file, and record it with its resolution date in the
+resolved-versions table of `docs/project-profile.md`. This reference deliberately carries no pinned
+number, because a number in documentation goes stale and then propagates. If the lookup is
+impossible, record `UNDECIDED` with the reason rather than a remembered number. The minimum versions
+and their reasons are listed in
 [Maven configuration](maven-configuration.md#project-skeleton-and-version-management); they apply to
 Gradle identically.
-
-Resolve each `CHOOSE` at setup time and record the result in `docs/project-profile.md`.
 
 Rules:
 
 - The `io.spring.dependency-management` plugin, or the Spring Boot plugin's own BOM application, is what lets dependencies be declared without versions. Keep it.
-- Pin every plugin version in the `plugins` block. An unpinned or dynamic version makes the build non-reproducible.
+- Plugin versions belong in the `plugins` block, resolved as `../SKILL.md` requires.
 - Never use dynamic versions such as `1.+` or `latest.release` for any dependency.
 - To change a managed version, set the BOM property, for example `extra["hibernate.version"]`, rather than pinning the dependency. Record the reason and a removal condition beside it.
 
@@ -52,6 +53,7 @@ Use a toolchain so the build does not depend on the developer's or the CI agent'
 ```kotlin
 java {
     toolchain {
+        // The release recorded in docs/project-profile.md; 21 is the floor.
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
@@ -127,12 +129,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation(platform("org.testcontainers:testcontainers-bom:CHOOSE"))
     testImplementation("org.testcontainers:junit-jupiter")
 }
 ```
 
-- No version appears for a BOM-managed artifact.
+- No version appears for a BOM-managed artifact. The Spring Boot BOM manages the Testcontainers modules, so importing `testcontainers-bom` on top of it is a second source of truth for the same versions. Import it only to deliberately move Testcontainers off the managed version, and record the reason and a removal condition beside it.
 - Use `implementation` by default. Use `api` only in a library module that deliberately exposes a type in its own public API; in an application module it is almost always wrong and it slows down compilation for everything downstream.
 - The JDBC driver is `runtimeOnly`. It is loaded by name and never imported, so every analyzer calls it unused.
 - `spring-boot-starter-test` already provides JUnit Jupiter, AssertJ, Hamcrest, Mockito, JSONassert, JsonPath, and the Spring test module. Declaring any of those separately duplicates a managed capability.

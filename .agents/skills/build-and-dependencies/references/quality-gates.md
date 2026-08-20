@@ -4,7 +4,7 @@ Use this reference when setting up or changing the automated enforcement of proj
 every rule from `../SKILL.md`. The owner of each *rule* is the skill that defines it; this reference
 owns only the configuration that makes the rule fail a build.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -57,69 +57,24 @@ Checkstyle reports a violated import order. It does not stop an IDE from reintro
 "Optimize Imports". Commit the editor configuration, or the standard is undone faster than it is
 enforced.
 
-### `.editorconfig`
+### Copy the editor configuration, do not retype it
 
-```ini
-root = true
+Three files, all committed, all project-scoped, none containing personal settings:
 
-[*]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
+| Asset | Copy to | What it does |
+| --- | --- | --- |
+| [`editorconfig`](../assets/editorconfig) | `.editorconfig` | Charset, line endings, indentation, trailing whitespace |
+| [`idea-codeStyleConfig.xml`](../assets/idea-codeStyleConfig.xml) | `.idea/codeStyles/codeStyleConfig.xml` | Turns on per-project code style |
+| [`idea-Project.xml`](../assets/idea-Project.xml) | `.idea/codeStyles/Project.xml` | The seven-group import layout and the on-demand thresholds |
 
-[*.java]
-indent_style = space
-indent_size = 4
-max_line_length = 120
+Copy them verbatim. Retyping or regenerating them produces a configuration that is *nearly* the
+one this skill set enforces, and a near-miss here is worse than nothing: the build fails on files the
+IDE just "fixed", and the first response is usually to weaken the gate rather than to correct the
+editor.
 
-[*.{xml,yml,yaml,json}]
-indent_style = space
-indent_size = 2
-```
-
-### `.idea/codeStyles/codeStyleConfig.xml`
-
-```xml
-<component name="ProjectCodeStyleConfiguration">
-  <state>
-    <option name="USE_PER_PROJECT_SETTINGS" value="true" />
-  </state>
-</component>
-```
-
-### `.idea/codeStyles/Project.xml`
-
-```xml
-<component name="ProjectCodeStyleConfiguration">
-  <code_scheme name="Project" version="173">
-    <JavaCodeStyleSettings>
-      <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
-      <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
-      <option name="IMPORT_LAYOUT_TABLE">
-        <value>
-          <package name="" withSubpackages="true" static="true" />
-          <emptyLine />
-          <package name="java" withSubpackages="true" static="false" />
-          <emptyLine />
-          <package name="jakarta" withSubpackages="true" static="false" />
-          <emptyLine />
-          <package name="javax" withSubpackages="true" static="false" />
-          <emptyLine />
-          <package name="com" withSubpackages="true" static="false" />
-          <emptyLine />
-          <package name="org" withSubpackages="true" static="false" />
-          <emptyLine />
-          <package name="" withSubpackages="true" static="false" />
-        </value>
-      </option>
-    </JavaCodeStyleSettings>
-  </code_scheme>
-</component>
-```
-
-The two on-demand thresholds set to 999 are what prevent the IDE from collapsing imports into
-`java.util.*`. Commit both files. Both are project-scoped and contain no personal settings.
+The two on-demand thresholds set to 999 in `idea-Project.xml` are what prevent the IDE from
+collapsing imports into `java.util.*`. That single setting is the most common reason a project's
+import order silently degrades, so verify it survived the copy.
 
 ### Spotless
 
@@ -171,151 +126,24 @@ Notes:
 
 ## Layer 2: Checkstyle
 
-Save as `config/checkstyle/checkstyle.xml`. Severity is `error` everywhere: a warning nobody has to
-fix is not a gate.
+Copy [`checkstyle.xml`](../assets/checkstyle.xml) to `config/checkstyle/checkstyle.xml`. Severity is
+`error` everywhere: a warning nobody has to fix is not a gate.
 
-```xml
-<?xml version="1.0"?>
-<!DOCTYPE module PUBLIC
-        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
-        "https://checkstyle.org/dtds/configuration_1_3.dtd">
-<module name="Checker">
-    <property name="severity" value="error"/>
-    <property name="charset" value="UTF-8"/>
-    <property name="fileExtensions" value="java"/>
+The file is the gate for the rules other skills define, and it is annotated with which skill owns
+each block. Do not regenerate it from memory and do not trim it to make an existing codebase pass —
+if a rule does not fit the project, change the rule in its owning skill and say so, per `../SKILL.md`.
 
-    <module name="NewlineAtEndOfFile"/>
-    <module name="FileTabCharacter">
-        <property name="eachLine" value="true"/>
-    </module>
+The modules it enables, and who owns each rule:
 
-    <!-- modern-java-21: class size -->
-    <module name="FileLength">
-        <property name="max" value="1000"/>
-    </module>
-
-    <!-- Line length is not defined by the skill set. Record the chosen value in the profile. -->
-    <module name="LineLength">
-        <property name="max" value="120"/>
-        <property name="ignorePattern" value="^package .*|^import .*|https?://"/>
-    </module>
-
-    <module name="TreeWalker">
-
-        <!-- ===== modern-java-21: imports ===== -->
-        <module name="AvoidStarImport"/>
-        <module name="RedundantImport"/>
-        <module name="UnusedImports">
-            <property name="processJavadoc" value="true"/>
-        </module>
-        <module name="ImportOrder">
-            <property name="groups" value="java,jakarta,javax,com,org,*"/>
-            <property name="option" value="top"/>
-            <property name="ordered" value="true"/>
-            <property name="separated" value="true"/>
-            <property name="sortStaticImportsAlphabetically" value="true"/>
-        </module>
-
-        <!-- ===== modern-java-21: explicitness ===== -->
-        <module name="RequireThis">
-            <property name="checkFields" value="true"/>
-            <property name="checkMethods" value="true"/>
-            <property name="validateOnlyOverlapping" value="false"/>
-        </module>
-        <module name="FinalParameters">
-            <property name="tokens" value="METHOD_DEF,CTOR_DEF"/>
-        </module>
-        <module name="FinalLocalVariable">
-            <property name="validateEnhancedForLoopVariable" value="true"/>
-        </module>
-        <module name="ExplicitInitialization"/>
-
-        <!-- No var. Two patterns: declaration with assignment, and enhanced for. -->
-        <module name="RegexpSinglelineJava">
-            <property name="format" value="(^|[^\w.])var\s+\w+\s*="/>
-            <property name="ignoreComments" value="true"/>
-            <property name="message" value="Do not use var; declare the explicit type."/>
-        </module>
-        <module name="RegexpSinglelineJava">
-            <property name="format" value="for\s*\(\s*(final\s+)?var\s"/>
-            <property name="ignoreComments" value="true"/>
-            <property name="message" value="Do not use var; declare the explicit type."/>
-        </module>
-
-        <!-- ===== modern-java-21: size and shape ===== -->
-        <module name="MethodLength">
-            <property name="max" value="100"/>
-            <property name="countEmpty" value="false"/>
-        </module>
-        <module name="ParameterNumber">
-            <property name="max" value="7"/>
-            <property name="tokens" value="METHOD_DEF,CTOR_DEF"/>
-            <property name="ignoreOverriddenMethods" value="true"/>
-        </module>
-        <module name="OuterTypeFilename"/>
-        <module name="OneTopLevelClass"/>
-        <!-- HideUtilityClassConstructor and VisibilityModifier are deliberately absent.
-             See "Modules to verify before relying on them". -->
-
-        <!-- ===== modern-java-21: exceptions ===== -->
-        <module name="IllegalCatch">
-            <property name="illegalClassNames" value="java.lang.Error,java.lang.Throwable"/>
-        </module>
-        <module name="IllegalThrows"/>
-        <module name="EmptyCatchBlock">
-            <property name="exceptionVariableName" value="ignored|expected"/>
-        </module>
-        <module name="EqualsHashCode"/>
-        <module name="MissingOverride"/>
-        <module name="StringLiteralEquality"/>
-        <module name="SimplifyBooleanExpression"/>
-        <module name="SimplifyBooleanReturn"/>
-        <module name="NeedBraces"/>
-
-        <!-- ===== project-naming-conventions: identifier form ===== -->
-        <module name="PackageName">
-            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
-        </module>
-        <module name="TypeName"/>
-        <module name="MethodName"/>
-        <module name="MemberName"/>
-        <module name="ParameterName"/>
-        <module name="LocalVariableName"/>
-        <module name="LocalFinalVariableName"/>
-        <module name="ConstantName"/>
-        <module name="AbbreviationAsWordInName">
-            <property name="allowedAbbreviationLength" value="1"/>
-            <property name="ignoreStaticFinal" value="true"/>
-        </module>
-
-        <!-- ===== observability-and-logging ===== -->
-        <module name="RegexpSinglelineJava">
-            <property name="format" value="System\.(out|err)\."/>
-            <property name="ignoreComments" value="true"/>
-            <property name="message" value="Use the SLF4J logger, not System.out or System.err."/>
-        </module>
-        <module name="RegexpSinglelineJava">
-            <property name="format" value="\.printStackTrace\s*\("/>
-            <property name="ignoreComments" value="true"/>
-            <property name="message" value="Log the exception through SLF4J instead."/>
-        </module>
-        <module name="RegexpSinglelineJava">
-            <property name="format" value="LOGGER\.(trace|debug|info|warn|error)\s*\([^;]*&quot;\s*\+"/>
-            <property name="ignoreComments" value="true"/>
-            <property name="message"
-                      value="Do not concatenate in a log call; use fields or {} placeholders."/>
-        </module>
-
-        <!-- ===== Javadoc correctness, not presence ===== -->
-        <module name="JavadocMethod">
-            <property name="accessModifiers" value="public"/>
-        </module>
-        <module name="SummaryJavadoc"/>
-        <module name="NonEmptyAtclauseDescription"/>
-
-    </module>
-</module>
-```
+| Block | Owning skill | Enforces |
+| --- | --- | --- |
+| Imports | `modern-java-21` | No star imports, no unused or redundant imports, the seven-group order |
+| Explicitness | `modern-java-21` | `this.` qualification, `final` parameters and single-assignment locals, no `var` |
+| Size and shape | `modern-java-21` | Method length, parameter count, one top-level class per file |
+| Exceptions | `modern-java-21` | No catching `Error` or `Throwable`, no empty catch, `equals`/`hashCode` pairing |
+| Identifier form | `project-naming-conventions` | Package, type, method, member, parameter, constant naming and abbreviation length |
+| Log hygiene | `observability-and-logging` | No `System.out`, `System.err`, `printStackTrace`, or concatenation in a log call |
+| Javadoc correctness | `modern-java-21` | Well-formed Javadoc where it exists; presence is deliberately not gated |
 
 Configuration decisions worth knowing before someone "fixes" them:
 

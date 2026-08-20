@@ -4,8 +4,7 @@ Read this only when `docs/project-profile.md` records contract-first. Apply ever
 `../SKILL.md`, `build-and-dependencies` for the plugin declaration, and `project-naming-conventions`
 for every generated name.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property
-a snippet uses is declared in that snippet or attributed to the file that declares it.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 

@@ -222,3 +222,30 @@ the two contracts consistent so the same condition does not produce two differen
 Handle listener, job, messaging, and asynchronous failures at their owning boundary because they do
 not pass through this advice, and log them there under the same one-record rule. Test each status,
 problem type, content type, required header, and information-disclosure rule.
+
+## The error contract in full
+
+Use the project's existing error contract. For a new API on a supported Spring version, use RFC 9457
+`ProblemDetail`.
+
+The RFC 9457 `type` URI is the only machine-readable error identifier in the body. Never add a
+parallel `code`, `errorCode`, or `errorId`: two identifiers for one condition guarantee that clients
+branch on the wrong one. `title` and `detail` are human-readable and may change.
+`project-naming-conventions` owns the URI form.
+
+Declare every caller-visible failure once, as a constant in a single project-owned error catalog
+carrying the status, the `type` URI, the title, the detail, and the internal code used in logs,
+events, and metrics. One declaration keeps the public type and the internal code from drifting
+apart; do not add a second holder for either.
+
+`correlationId` is the one permitted extension member, because it identifies the request rather than
+the failure and support workflows need it in the payload a caller pastes into a ticket. Keep
+`traceId`, `spanId`, stack traces, exception class names, provider messages, internal hostnames,
+SQL, internal endpoints, credentials, and personal data out of the body entirely.
+
+- Map expected application failures explicitly, and let Spring's framework handler preserve standard REST error behavior where appropriate.
+- A catch-all handler returns a generic message and logs the cause once. Never copy `exception.getMessage()` into a response unless that type guarantees a stable, user-safe message, and never log an expected 4xx as a server error.
+- Name a project-owned validation exception unambiguously, for example `BusinessValidationException`. Never give a project exception the simple name of a framework type such as `jakarta.validation.ValidationException`, and never handle that framework type as if it were the project's category.
+- Place custom exceptions in `exception` and MVC handler classes in `exception.handler`. Spring Security response handling belongs to the security configuration boundary, not this package.
+
+The custom exception examples are in [infrastructure examples](infrastructure-examples.md).

@@ -40,7 +40,8 @@ machine-readable contract document at all.
 | Contract document | none | Compatibility, versioning, deprecation, and ownership only |
 
 **Record it in `docs/project-profile.md`. When it is not recorded, ask the user before writing the
-first endpoint.** Do not assume a document exists because springdoc is on the classpath, and do not
+first endpoint.** This and the authoring direction below are `ASK` decisions in the token vocabulary
+`spring-boot-patterns` defines, so both block until answered. Do not assume a document exists because springdoc is on the classpath, and do not
 add one because an example shows it.
 
 The rules that hold in both cases are the majority of this skill: what makes a change breaking, the

@@ -4,17 +4,33 @@ Use these lenses to trace the changed behavior. Apply only the sections relevant
 
 ## Contents
 
-1. [Change design and blast radius](#change-design-and-blast-radius)
-2. [REST contract and boundary](#rest-contract-and-boundary)
-3. [Service, domain, and mapping](#service-domain-and-mapping)
-4. [Spring proxies and advice](#spring-proxies-and-advice)
-5. [Transactions and concurrency](#transactions-and-concurrency)
-6. [Persistence and database behavior](#persistence-and-database-behavior)
-7. [Security and confidentiality](#security-and-confidentiality)
-8. [External systems, Redis, messaging, and jobs](#external-systems-redis-messaging-and-jobs)
-9. [Configuration, observability, and operations](#configuration-observability-and-operations)
-10. [Build, dependencies, and delivery](#build-dependencies-and-delivery)
-11. [Tests and review completeness](#tests-and-review-completeness)
+1. [Generation mismatch](#generation-mismatch)
+2. [Change design and blast radius](#change-design-and-blast-radius)
+3. [REST contract and boundary](#rest-contract-and-boundary)
+4. [Service, domain, and mapping](#service-domain-and-mapping)
+5. [Spring proxies and advice](#spring-proxies-and-advice)
+6. [Transactions and concurrency](#transactions-and-concurrency)
+7. [Persistence and database behavior](#persistence-and-database-behavior)
+8. [Security and confidentiality](#security-and-confidentiality)
+9. [External systems, Redis, messaging, and jobs](#external-systems-redis-messaging-and-jobs)
+10. [Configuration, observability, and operations](#configuration-observability-and-operations)
+11. [Build, dependencies, and delivery](#build-dependencies-and-delivery)
+12. [Tests and review completeness](#tests-and-review-completeness)
+
+## Generation mismatch
+
+Read the Spring Boot generation from `docs/project-profile.md` before applying any other lens, and
+carry it through the whole review. Most generation defects compile, start, and pass the build, so
+they are invisible to everything except a reviewer who knows which generation applies.
+
+The owning skill states the rule; this lens only says where to look. Route each finding to that
+owner rather than restating the rule in the review.
+
+- Code written against the wrong generation's API: `@MockBean` on Spring Boot 4, `.and()` chaining or a removed request matcher under Spring Security 7, `@JsonComponent` where Jackson 3 expects `@JacksonComponent`.
+- A third-party library declared without its Spring Boot module on Spring Boot 4. The feature is silently inert. Treat any Boot 4 change that adds a technology as requiring proof that the technology actually ran, not proof that it resolved.
+- A configuration property that was renamed between generations, still present under its old name. It binds to nothing and reports nothing.
+- A generation upgrade mixed into a feature change. That is two changes with different risk profiles in one diff; ask for the split rather than reviewing them together.
+- A `spring-boot-starter-classic` dependency with no recorded removal condition.
 
 ## Change design and blast radius
 
