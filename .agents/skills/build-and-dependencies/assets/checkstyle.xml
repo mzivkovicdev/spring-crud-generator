@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+    <property name="severity" value="error"/>
+    <property name="charset" value="UTF-8"/>
+    <property name="fileExtensions" value="java"/>
+
+    <module name="NewlineAtEndOfFile"/>
+    <module name="FileTabCharacter">
+        <property name="eachLine" value="true"/>
+    </module>
+
+    <!-- modern-java-21: class size -->
+    <module name="FileLength">
+        <property name="max" value="1000"/>
+    </module>
+
+    <!-- Line length is not defined by the skill set. Record the chosen value in the profile. -->
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package .*|^import .*|https?://"/>
+    </module>
+
+    <module name="TreeWalker">
+
+        <!-- ===== modern-java-21: imports ===== -->
+        <module name="AvoidStarImport"/>
+        <module name="RedundantImport"/>
+        <module name="UnusedImports">
+            <property name="processJavadoc" value="true"/>
+        </module>
+        <module name="ImportOrder">
+            <property name="groups" value="java,jakarta,javax,com,org,*"/>
+            <property name="option" value="top"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
+        </module>
+
+        <!-- ===== modern-java-21: explicitness ===== -->
+        <module name="RequireThis">
+            <property name="checkFields" value="true"/>
+            <property name="checkMethods" value="true"/>
+            <property name="validateOnlyOverlapping" value="false"/>
+        </module>
+        <module name="FinalParameters">
+            <property name="tokens" value="METHOD_DEF,CTOR_DEF"/>
+        </module>
+        <module name="FinalLocalVariable">
+            <property name="validateEnhancedForLoopVariable" value="true"/>
+        </module>
+        <module name="ExplicitInitialization"/>
+
+        <!-- No var. Two patterns: declaration with assignment, and enhanced for. -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="(^|[^\w.])var\s+\w+\s*="/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Do not use var; declare the explicit type."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="for\s*\(\s*(final\s+)?var\s"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Do not use var; declare the explicit type."/>
+        </module>
+
+        <!-- ===== modern-java-21: size and shape ===== -->
+        <module name="MethodLength">
+            <property name="max" value="100"/>
+            <property name="countEmpty" value="false"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="7"/>
+            <property name="tokens" value="METHOD_DEF,CTOR_DEF"/>
+            <property name="ignoreOverriddenMethods" value="true"/>
+        </module>
+        <module name="OuterTypeFilename"/>
+        <module name="OneTopLevelClass"/>
+        <!-- HideUtilityClassConstructor and VisibilityModifier are deliberately absent.
+             See "Modules to verify before relying on them". -->
+
+        <!-- ===== modern-java-21: exceptions ===== -->
+        <module name="IllegalCatch">
+            <property name="illegalClassNames" value="java.lang.Error,java.lang.Throwable"/>
+        </module>
+        <module name="IllegalThrows"/>
+        <module name="EmptyCatchBlock">
+            <property name="exceptionVariableName" value="ignored|expected"/>
+        </module>
+        <module name="EqualsHashCode"/>
+        <module name="MissingOverride"/>
+        <module name="StringLiteralEquality"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="NeedBraces"/>
+
+        <!-- ===== project-naming-conventions: identifier form ===== -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <module name="TypeName"/>
+        <module name="MethodName"/>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+        <module name="LocalVariableName"/>
+        <module name="LocalFinalVariableName"/>
+        <module name="ConstantName"/>
+        <module name="AbbreviationAsWordInName">
+            <property name="allowedAbbreviationLength" value="1"/>
+            <property name="ignoreStaticFinal" value="true"/>
+        </module>
+
+        <!-- ===== observability-and-logging ===== -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="System\.(out|err)\."/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Use the SLF4J logger, not System.out or System.err."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="\.printStackTrace\s*\("/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Log the exception through SLF4J instead."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="LOGGER\.(trace|debug|info|warn|error)\s*\([^;]*&quot;\s*\+"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message"
+                      value="Do not concatenate in a log call; use fields or {} placeholders."/>
+        </module>
+
+        <!-- ===== Javadoc correctness, not presence ===== -->
+        <module name="JavadocMethod">
+            <property name="accessModifiers" value="public"/>
+        </module>
+        <module name="SummaryJavadoc"/>
+        <module name="NonEmptyAtclauseDescription"/>
+
+    </module>
+</module>
