@@ -29,14 +29,29 @@ applies to whichever one the project uses.
 Do not restate those rules here. When the user asks for a review rather than a change, produce
 findings under `spring-boot-code-review` and do not edit build files.
 
+## Which build decisions block, and which do not
+
+`spring-boot-patterns` owns `docs/project-profile.md` and defines the decision tokens `ASK`,
+`RESOLVE`, and `UNDECIDED`. This skill owns the classification of every build and version decision
+into those tokens, and no other skill reclassifies one.
+
+| Decision | Token | Why |
+| --- | --- | --- |
+| Build tool | `ASK` | Maven and Gradle are both correct, and nothing in an empty repository decides between them |
+| Spring Boot generation | `ASK` | 3 and 4 are both supported; the choice follows the platform, the team, and the upgrade appetite, not a lookup |
+| Uses Lombok | `ASK` | A project-wide style commitment, not a technical necessity |
+| Java release | `RESOLVE` | A supported LTS at or above the floor is a correct answer that only needs looking up |
+| Spring Boot version within the chosen generation | `RESOLVE` | The current stable release of that branch |
+| Every plugin and tool version | `RESOLVE` | Checkstyle, Spotless, MapStruct, the OpenAPI generator, the Lombok binding |
+
+An `ASK` blocks the task until the user answers. A `RESOLVE` never blocks: look it up, record it with
+the date in the profile's resolved-versions table, and state in the response what was chosen and why,
+so the user overrides once instead of being asked every time.
+
 ## Determine the build tool before editing
 
-Read `docs/project-profile.md`, which `spring-boot-patterns` owns and whose template lists every
-entry. It records the build tool, the Java release, the Spring Boot version, and whether the project
-uses Lombok.
-
 - If the repository already contains `pom.xml` or `build.gradle`/`build.gradle.kts`, that is the answer. Record it in the profile if it is missing there.
-- If the repository contains neither — an empty repository, or a skeleton with nothing generated yet — **ask the user which build tool the project will use**. Maven and Gradle are both correct answers, and nothing in the repository decides between them, so do not pick one. Versions are a different matter: the next section decides them.
+- If the repository contains neither — an empty repository, or a skeleton with nothing generated yet — ask, per the `ASK` rule above. Do not pick one.
 - Never introduce a second build tool, and never convert an existing project from one to the other unless conversion is the explicit task.
 
 ## Choose versions that are still supported
@@ -45,11 +60,11 @@ This skill owns version selection for the whole skill set. No other skill picks 
 restates these rules.
 
 - Look up the current release before choosing, rather than reusing a number from documentation, from a tutorial, or from memory. Any number written down is stale within months; the lookup is cheap and the answer is authoritative.
+- **When the lookup is impossible** — no network, no registry, or a result you cannot confirm — record `UNDECIDED` with the reason and say so in the handoff. Do not write a remembered number into a build file or the profile. A guessed version is worse than a missing one: it looks resolved, so nobody checks it again, and it can silently name an end-of-life branch.
 - Verify that the branch is still receiving updates, and record both the version and the date its support ends in `docs/project-profile.md`. **Never start a new project on a branch that has reached end of life.** An unsupported branch takes no security patches, which is a defect on day one rather than a future upgrade task.
 - **Java.** Java 21 is the floor this skill set is written against, and everything here works on it. Prefer the current LTS release when nothing constrains the project — a supported framework version, a platform image, or a customer requirement — and record the chosen release in the profile. Do not exceed what the chosen Spring Boot generation supports.
-- **Spring Boot.** Prefer the current stable release of a supported generation. When an existing project sits on an older supported branch, stay there and raise the upgrade separately; do not change the generation as a side effect of an unrelated task.
+- **Spring Boot.** The generation is the user's answer; the version within it is a lookup. When an existing project sits on an older supported branch, stay there and raise the upgrade separately; do not change the generation as a side effect of an unrelated task.
 - When the project already records versions, use them. This section governs the choice, not a re-litigation of a choice already made.
-- Unlike the build tool, a missing Java or Spring Boot version does not block the task. There is a defensible default — the current stable release of a supported branch — so resolve it, record it, and state in the response which versions were chosen and why, so the user can override once instead of being asked every time.
 
 ## Both Spring Boot generations are supported
 
@@ -57,7 +72,9 @@ The skill set is written for Spring Boot 3.x and 4.x. The profile records which 
 and that is the single answer for every skill.
 
 - Where a rule genuinely differs between generations, the skill that owns the topic states both cases and names which applies where. Nothing in this set assumes a generation silently.
-- Spring Boot 4 builds on Spring Framework 7 and changes the baselines: the minimum Java release, several managed dependency majors, and some starter coordinates. Inspect the effective versions from the build rather than assuming them, and treat a generation change as its own task with its own verification.
+- Spring Boot 4 builds on Spring Framework 7, Jakarta EE 11, and a Servlet 6.1 baseline, and carries major versions of Spring Security, Spring Data, and Jackson. Inspect the effective versions from the build rather than assuming them, and treat a generation change as its own task with its own verification.
+- **This skill owns the catalogue of what each thing is called in each generation.** Read [generation differences](references/generation-differences.md) for starter and module coordinates, relocated annotations, and renamed properties. Other skills state the behavior they own and link there for the coordinate; none of them repeats the table.
+- The single most expensive Spring Boot 4 trap belongs here: because auto-configuration is modularized, a third-party library without its Spring Boot module is inert. The application starts, the build stays green, the tests pass, and the feature never runs. Verify wiring by observing the behavior, never by observing that the dependency resolves.
 - A snippet in these references is written against the generation it names. When it names none, it holds for both; verify it against the project's effective versions before relying on it.
 
 ## Reference routing
@@ -68,6 +85,7 @@ Read only what the change requires:
 - Read [Gradle configuration](references/gradle-configuration.md) when the project uses Gradle.
 - Read [dependency audit and removal](references/dependency-audit.md) when adding, replacing, or removing a dependency, and whenever the user asks which dependencies do not belong.
 - Read [quality gates](references/quality-gates.md) when setting up or changing Checkstyle, Spotless, editor configuration, dependency enforcement, or any other automated check.
+- Read [generation differences](references/generation-differences.md) when the project is on Spring Boot 4, when a declaration or property does not resolve as a Boot 3 example suggests, or when an upgrade between generations is the task.
 
 ## The dependency justification gate
 
@@ -143,9 +161,25 @@ A rule a tool can check must fail the build; a rule a tool cannot check belongs 
 - Use no baseline file and no suppressions. This project rejects legacy code, so there is nothing to grandfather, and a suppression file is where a standard goes to die. If a rule does not fit, change the rule and say so in review.
 - Label which rules are gated and which are review-only, so nobody mistakes a green build for compliance.
 
-[Quality gates](references/quality-gates.md) contains the full Checkstyle configuration, the Spotless
-and editor setup, the dependency enforcement rules, and the mapping from each project rule to the
-tool that enforces it.
+[Quality gates](references/quality-gates.md) explains the mapping from each project rule to the tool
+that enforces it, the dependency enforcement rules, and the Spotless setup. The configurations
+themselves are files, not snippets: copy [`assets/checkstyle.xml`](assets/checkstyle.xml),
+[`assets/editorconfig`](assets/editorconfig), and the two IDE code-style assets rather than
+regenerating them. A regenerated near-copy is the usual reason a gate has to be weakened later.
+
+## Verify a Spring Boot 4 project deliberately
+
+Most generation defects compile, start, and pass the build, so a green build is not evidence. When
+the project is on Spring Boot 4, check these explicitly rather than assuming the build would have
+caught them:
+
+- A removed annotation still in the source: `@MockBean`, `@SpyBean`, `@JsonComponent`, `@JsonMixin`, a Spring Security matcher that no longer exists.
+- A renamed starter still declared under its Spring Boot 3 name.
+- A configuration property still written under its Boot 3 key, where it now binds to nothing and reports nothing.
+- A third-party library declared without its Spring Boot module, which is the silent-wiring case.
+
+[Generation differences](references/generation-differences.md) lists what each is called in each
+generation. Route every finding to the skill that owns the topic rather than fixing it from here.
 
 ## Build integrity and packaging
 
