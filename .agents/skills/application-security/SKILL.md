@@ -59,30 +59,62 @@ Before applying a generic standard, inspect the repository for a security profil
 - Treat the current OWASP Top 10 and API Security Top 10 as awareness inputs, not complete checklists.
 - Apply project-specific GDPR, PCI DSS, health-data, contractual, or regional requirements only when they are actually applicable.
 
+## Two scope notes that apply throughout
+
+**Exposed artifacts versus protected artifacts.** Interactive API documentation, such as Swagger UI,
+and the raw document endpoint are exposed only by an explicit decision recorded in the project
+profile, which `rest-api-contract` owns and where the default is not exposed at all. This skill owns
+how they are protected wherever they are exposed: which filter chain matches them, what credential
+they require, and the rule that they never carry real data, internal hostnames, or administrative
+operations. That is the same split this skill applies to actuator endpoints, whose exposure
+`observability-and-logging` owns.
+
+**Reading "Redis" in these references.** Caching technology is a project decision recorded in
+`docs/project-profile.md`. Where these references name Redis, read it as "the selected cache or
+key-value store"; Redis is the expected choice if one is adopted, but the rules on classification,
+key format, TTL, tenant scope, serialization, and sensitive values apply to any cache. When no cache
+has been selected, do not introduce one to satisfy a rule.
+
 ## Reference routing
 
 Read only the references required by the change:
 
 - Read [data protection and confidentiality](references/data-protection-and-confidentiality.md) for sensitive data, secrets, logs, telemetry, caching, test data, retention, deletion, external transfers, or AI/tool use.
-
-Interactive API documentation, such as Swagger UI, and the raw document endpoint are exposed only by
-an explicit decision recorded in the project profile, which `rest-api-contract` owns and where the
-default is not exposed at all. This skill owns how they are protected wherever they are exposed:
-which filter chain matches them, what credential they require, and the rule that they never carry
-real data, internal hostnames, or administrative operations. That is the same split this skill
-applies to actuator endpoints.
-
-Caching technology is a project decision recorded in `docs/project-profile.md`. Where these
-references name Redis, read it as "the selected cache or key-value store"; Redis is the expected
-choice if one is adopted, but the rules on classification, key format, TTL, tenant scope,
-serialization, and sensitive values apply to any cache. When no cache has been selected, do not
-introduce one to satisfy a rule.
 - Read [Spring Security for REST](references/spring-security-rest.md) for the security model, authentication, JWT or opaque tokens, API keys, OAuth2/OIDC, sessions, cookies, CSRF, CORS, headers, and trusted proxies.
 - Read [Spring Security authorization](references/spring-security-authorization.md) for filter-chain construction, endpoint and method authorization, object and tenant scoping, and the management-endpoint chain.
 - Read [API security and abuse prevention](references/api-security-and-abuse-prevention.md) for endpoints, callbacks, webhooks, OpenAPI, versioning, API inventory, object-property authorization, rate limits, quotas, batch operations, idempotency, expensive operations, sensitive business flows, or HTTP caching.
 - Read [untrusted input and dangerous sinks](references/untrusted-input-and-dangerous-sinks.md) for SQL, commands, expressions, reflection, HTML, URLs, WebClient, redirects, files, archives, XML, deserialization, regexes, headers, or resource exhaustion.
 - Read [cloud, messaging, and jobs](references/cloud-messaging-and-jobs.md) for AWS or another cloud provider, object storage, IAM, KMS, queues, topics, events, consumers, scheduled tasks, workers, serverless functions, or cross-account access.
 - Read [supply chain and security testing](references/supply-chain-and-security-testing.md) for dependencies, build plugins, CI/CD, containers, infrastructure as code, SBOMs, releases, security tests, findings, or accepted risk.
+
+## Spring Boot 3 and 4
+
+Both generations are supported, and `docs/project-profile.md` records which one applies. Every
+control in this skill is required on both. What differs is the API that expresses the control, and
+two of the differences can silently change what is actually enforced.
+
+| Concern | Spring Boot 3 (Spring Security 6) | Spring Boot 4 (Spring Security 7) |
+| --- | --- | --- |
+| Configuration style | lambda DSL preferred, `.and()` chaining deprecated | lambda DSL only; `.and()` and `authorizeRequests()` are **removed** |
+| Path matching | `AntPathRequestMatcher` and `MvcRequestMatcher` available, Ant-style default | both removed; `PathPatternRequestMatcher`, and `PathPattern` semantics are the default |
+| OAuth2 password grant | available | removed from the client library |
+| CSRF for a browser SPA | hand-rolled token repository and handler | `csrf(csrf -> csrf.spa())` |
+| Authorization Server version | tracked separately | versioned with Spring Security |
+| Starter coordinates | `spring-boot-starter-oauth2-*` | `spring-boot-starter-security-oauth2-*` |
+
+Two changes need explicit verification rather than a compile check:
+
+- **Matcher semantics.** Moving from Ant-style matching to `PathPattern` can change which requests a rule matches, particularly around trailing slashes, encoded segments, and multi-segment wildcards. A rule that still compiles can now match a wider or narrower set than it did. Re-run the authorization tests for every rule after the change and confirm each protected path is still denied to an unauthorized caller; a compiling filter chain is not evidence.
+- **Static resource locations.** Spring Boot 4 adds `/fonts/**` to the common static-resource locations, so a chain built with `PathRequest.toStaticResources().atCommonLocations()` now permits one more path prefix. Confirm that nothing sensitive is served from it, or exclude the location explicitly.
+
+A failing security test on Spring Boot 4 is very often a missing test dependency rather than a
+broken control — `@WithMockUser` needs `spring-boot-starter-security-test`. **Never relax a control
+to make a test pass.** Establish why the test fails first; `spring-boot-testing` owns the test
+mechanics and `build-and-dependencies` owns the declaration.
+
+Actuator health probes are enabled by default on Spring Boot 4, which changes the set of exposed
+management endpoints. `observability-and-logging` owns what is exposed; this skill owns confirming
+that the management chain still authorizes the resulting set.
 
 ## Security workflow
 
