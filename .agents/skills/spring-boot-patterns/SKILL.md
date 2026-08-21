@@ -30,17 +30,26 @@ second standard.
 
 ## Reference routing
 
-Read only the references relevant to the task:
+This skill's body carries the decisions and the rules that decide most reviews. The detail sits in
+references, split into two kinds: **rule references**, which are normative and complete, and
+**example references**, which show the rules applied. Read only what the task needs.
 
-- Read [REST API examples](references/rest-api-examples.md) when creating or changing a REST controller, request/response TO, or REST mapper.
-- Read [error handling examples](references/error-handling-examples.md) when adding or changing a caller-visible failure: an error catalog constant, a custom exception, a handler method, or a validation response shape.
-- Read [service and domain examples](references/service-domain-examples.md) when creating or changing a service, domain model, domain mapper, service parameter object, or repository boundary.
-- Read [project profile template](references/project-profile-template.md) when creating the profile or filling a missing decision.
-- Read [infrastructure examples](references/infrastructure-examples.md) when deciding package placement or changing method validation, custom exceptions, configuration properties, infrastructure beans, or code that resembles a listed anti-pattern.
+Rule references:
 
-The references contain focused examples. Treat the illustrated decisions and accompanying rules as
-normative, but do not assume omitted members or configuration are complete. Do not load a reference
-for unrelated work.
+- Read [REST boundary rules](references/rest-boundary-rules.md) when creating or changing a controller, a request/response TO, or a REST mapper.
+- Read [service layer rules](references/service-layer-rules.md) when creating or changing a service, deciding which service level an operation belongs to, or producing an effect outside a transaction.
+- Read [outbound call rules](references/outbound-call-rules.md) when adding or changing any call to another system: an HTTP client, a message producer, or a provider SDK.
+- Read [filling the project profile](references/project-profile-template.md) when creating the profile or filling a missing decision. The template itself is [an asset](assets/project-profile-template.md) to be copied, not retyped.
+
+Example references:
+
+- Read [REST API examples](references/rest-api-examples.md) for controller, TO, and REST mapper code.
+- Read [service and domain examples](references/service-domain-examples.md) for service, domain model, domain mapper, parameter object, and repository-boundary code.
+- Read [error handling examples](references/error-handling-examples.md) when adding or changing a caller-visible failure: an error catalog constant, a custom exception, a handler method, or a validation response shape. It also carries the full error contract.
+- Read [infrastructure examples](references/infrastructure-examples.md) when deciding package placement or changing method validation, custom exceptions, configuration properties, infrastructure beans, idempotency placement, scheduled execution, or code that resembles a listed anti-pattern.
+
+Treat the illustrated decisions and accompanying rules as normative, but do not assume omitted
+members or configuration are complete. Do not load a reference for unrelated work.
 
 ## REST-only scope
 
@@ -57,21 +66,51 @@ not authorize generating a server-rendered presentation layer.
 ## The project profile is a precondition
 
 `docs/project-profile.md` is the record of the decisions every skill in this set reads instead of
-guessing. This skill owns it, and [the template](references/project-profile-template.md) lists every
-entry, its allowed values, and the skill that owns it.
+guessing. This skill owns it. [The template asset](assets/project-profile-template.md) lists every
+entry, its allowed values, its decision token, and the skill that owns it; copy it rather than
+retyping it, and read [filling the project profile](references/project-profile-template.md) for how
+each entry is settled.
 
 **Do not write production code until the profile exists and records every decision the task
 depends on.** This is a gate, not a preference. Without it each feature silently picks its own
 database, service shape, accessor style, or contract direction, and the result is a codebase that
 disagrees with itself in ways no review catches until much later.
 
-Follow this order on every task:
+### Decision tokens
+
+Not every unrecorded decision blocks the same way, and treating them alike either stalls trivial
+work or invents architecture. This skill owns the vocabulary; every skill and every template in this
+set uses exactly these three tokens and no synonym.
+
+| Token | Who settles it | Does it block? |
+| --- | --- | --- |
+| `ASK` | The user, and only the user | **Yes.** Stop and ask. There is no defensible default, and a wrong answer is expensive to reverse. |
+| `RESOLVE` | The agent, by looking the answer up and recording it | **No.** Resolve it, record it, and state in the handoff what was chosen and why, so the user overrides once instead of being asked every time. |
+| `UNDECIDED` | Deferred on purpose | **No**, unless the current task touches it. Record what will force the decision. |
+
+A decision is `ASK` when nothing in the repository or the ecosystem points to one answer over
+another: the build tool, the database engine, the migration tool, whether a contract document
+exists, the authoring direction, the service interface convention, the entity accessor style. A
+decision is `RESOLVE` when a correct answer exists and only needs looking up: the current supported
+release of a framework, a plugin, or a tool.
+
+**When a `RESOLVE` cannot be completed** — no network access, no registry, an ambiguous result —
+record `UNDECIDED` with the reason and say so in the handoff. Never write a version number, a
+coordinate, or any other value from memory into the profile or a build file. A remembered version is
+a guess wearing a specific-looking number, and it is the one failure mode this whole mechanism
+exists to prevent.
+
+The template marks every row with its token. `build-and-dependencies` owns which build and version
+decisions carry which token; do not reclassify one here.
+
+### Order of work on every task
 
 1. Read `docs/project-profile.md`. If every decision the task needs is recorded, implement.
-2. If the file is missing, create it from the template. If entries are missing, identify exactly which.
+2. If the file is missing, create it from [the template asset](assets/project-profile-template.md). If entries are missing, identify exactly which.
 3. Fill what the repository already proves — a declared dependency, an applied migration, an existing package layout, a configured datasource.
-4. **Ask the user, in one message, for everything still unresolved**, offering the template's allowed values so each answer is one word. Do not ask one question per skill, and do not ask again for something already recorded.
-5. Write the answers into the profile, then implement.
+4. Complete every `RESOLVE` the task touches, without asking.
+5. **Ask the user, in one message, for every `ASK` still unresolved**, offering the template's allowed values so each answer is one word. Do not ask one question per skill, and do not ask again for something already recorded.
+6. Write the answers into the profile, then implement.
 
 Exceptions are narrow: documentation, comment, or formatting changes need no profile, and a task may
 proceed on a partial profile as long as every decision *that task* touches is recorded. Never assume
@@ -86,6 +125,34 @@ a value, infer one from a test dependency or an example, or record a guess to un
 4. Define acceptance cases, invalid input, missing data, conflicts, authorization, dependency failures, and transaction effects.
 5. Design the smallest cohesive change. Do not perform unrelated modernization.
 6. Implement production code and tests together.
+
+## Spring Boot 3 and 4
+
+Both generations are supported, and `docs/project-profile.md` records which one applies. The
+architecture in this skill is identical on both: controllers, TOs, services, domain models, mappers,
+the transaction boundary, and the error contract do not change. Four things around them do.
+
+| Concern | Spring Boot 3 | Spring Boot 4 |
+| --- | --- | --- |
+| JSON library | Jackson 2 (`com.fasterxml.jackson`) | Jackson 3 (`tools.jackson`), except `jackson-annotations` |
+| Replacing the mapper bean | define an `ObjectMapper` bean | define a `JsonMapper` bean; an `ObjectMapper` bean no longer replaces it |
+| Custom serializer registration | `@JsonComponent` | `@JacksonComponent` |
+| Customizing HTTP message converters | a `HttpMessageConverters` bean or contributed converter beans | `ServerHttpMessageConvertersCustomizer`; the Boot type is deprecated and contributed converter beans are no longer picked up |
+| Declarative retry | Spring Retry | `org.springframework.core.retry` in the framework |
+
+`build-and-dependencies` owns the coordinates in
+[generation differences](../build-and-dependencies/references/generation-differences.md); do not
+restate them here.
+
+One Spring Boot 4 default deserves attention because it can change the public contract without a code
+change: **every Jackson module on the classpath is registered automatically**, where Spring Boot 3
+registered only well-known ones. A module arriving transitively can alter how a date, an optional, or
+a domain type serializes, which is a contract change under `rest-api-contract` even though no
+controller was touched. Assert the serialized shape of every response TO in tests, and set
+`spring.jackson.find-and-add-modules=false` when the project wants registration to be explicit.
+
+`ProblemDetail`, Bean Validation, method validation, and `@RestController` behave the same on both
+generations. Nullability annotations in signatures follow `modern-java-21`.
 
 ## Java source rules
 
@@ -121,47 +188,22 @@ Use the established terminology consistently:
 
 Read the package layout in [infrastructure examples](references/infrastructure-examples.md) when placing new types.
 
-## REST controllers
+## REST controllers and transport objects
 
-Keep REST controllers thin. They must not query repositories, mutate entities, implement business rules, manage transactions, catch generic exceptions, or prepare server-rendered views.
+Keep REST controllers thin. A controller must not query a repository, mutate an entity, implement a
+business rule, manage a transaction, catch a generic exception, or prepare a server-rendered view.
 
-- Use `@RestController`; do not use a view-oriented `@Controller` for REST endpoints.
-- `rest-api-contract` owns API versioning, deprecation, and the judgement of whether a change is breaking. Do not introduce, raise, or retire a version here.
-- Declare the API base path exactly once in Java, as a constant such as `ApiPaths.API_V1`. The name carries a version only when `rest-api-contract` records path-based versioning; with a header, query-parameter, or media-type strategy the constant is the unversioned base and the version never appears in a route literal. Where each controller's own route constant lives depends on the authoring direction recorded in the project profile:
-  - **Code-first:** declare it as a `public static final String` on the controller, so tests, security matchers, and `Location` construction reuse it instead of repeating the literal.
-  - **Contract-first:** routes come from the generated API interface, so a controller has no route constant to expose. Declare the route constants in `ApiPaths` beside the base path, keep them equal to the document's Path Items, and have tests and security matchers reference those. Never repeat a literal, and never add a second `@RequestMapping` on the implementation.
-- When the project publishes an OpenAPI document, the same prefix appears there only as `servers.url`, and Path Items stay resource-relative, such as `/users/{userId}`, so the version never reaches `operationId` or the handler method name. `project-naming-conventions` owns that derivation, and it applies to handler method names whether or not a document exists.
-- Use nouns in resource paths and correct HTTP methods and status codes. Define or preserve supported media types, and return serialized bodies rather than view names.
-- Validate path, query, header, and body input at the boundary, including collection bounds, string lengths, numeric bounds, and pagination limits for untrusted input.
-- Declare each shared numeric bound once as a compile-time constant, for example `PaginationConstraints.MAXIMUM_PAGE_SIZE`, and reference it from every annotation that enforces it at the REST boundary and on the service contract. Never repeat the literal in a second annotation or in Javadoc.
-- Use built-in REST handler method validation and do not place `@Validated` on the controller. Every Spring Boot generation this skill set supports runs on Spring Framework 6.1 or later, where this is the default path. Only on a legacy branch below that does proxy-based controller method validation apply, and then `@Validated` goes at type level. Never place it on an individual handler method.
-- When controller parameters can trigger both object and method validation, preserve Spring's standard handling or map both validation exception types into the same public error contract.
-- For a synchronous operation creating an addressable resource, return `201 Created` with a server-owned `Location` URI. Do not force that combination on a POST without resource-creation semantics.
-- Return typed response models, not entities, `Map<String, Object>`, or `ResponseEntity<?>`.
-- A change to a public endpoint is not complete until the project's contract record reflects it, and compatibility in field names, enum values, requiredness, null behavior, statuses, and error shapes is `rest-api-contract`'s judgement, not this skill's.
+The rules that decide most reviews:
 
-Read the controller example in [REST API examples](references/rest-api-examples.md).
+- **One service per handler, at the level the operation belongs to.** An operation confined to one aggregate calls that aggregate service directly; one that reads or writes more than one aggregate, publishes an event, or must order effects calls the application service that owns the use case. A handler calling two services is doing coordination in the wrong place. The controller may inject both levels; a single handler may not mix them.
+- **No entity crosses the HTTP boundary**, in either direction, and no request or response TO enters the service layer.
+- **The base path is declared once**, as a constant. Where each route constant lives depends on the authoring direction the profile records: on the controller under code-first, in `ApiPaths` under contract-first, because generated interfaces already carry the mapping.
+- **Each shared numeric bound is one compile-time constant**, referenced by every annotation that enforces it. Never a repeated literal.
+- **One mapper per concept, both directions.** `UserRestMapper` owns request-side and response-side mapping; splitting it into `UserRequestMapper` and `UserResponseMapper` buys nothing. Use MapStruct with `unmappedTargetPolicy = ReportingPolicy.ERROR`.
+- **`rest-api-contract` judges whether a change is breaking**, and owns versioning and deprecation. Do not introduce, raise, or retire a version here.
 
-## Request and response TOs
-
-TO means transport object in this skill. Use records for immutable request and response TOs when compatible with the serializer and project conventions.
-
-- Never accept or return a JPA entity as an HTTP/message TO.
-- Delegate to exactly one service per handler, never to a repository. Which level that is follows from the operation: an operation confined to one aggregate calls that aggregate service directly; an operation that reads or writes more than one aggregate, publishes an event, or must order effects calls the application service that owns that use case.
-- A handler that calls two services is doing coordination in the wrong place. Move that coordination into an application service and call it instead. The controller may inject both levels; a single handler may not mix them.
-- Do not pass request or response TOs into the service layer.
-- Map service results from `UserDomain` to `UserTO` in the REST mapper.
-- Map a request TO to a focused domain input only when the service parameter-object rule justifies that input.
-- Keep both mapping directions for one concept in that concept's single `<Concept>RestMapper`. Request-side and response-side mapping are two methods on one type, never two types: `UserRestMapper` owns both, and `UserRequestMapper` beside `UserResponseMapper` is a split with no benefit. The same applies to `<Concept>DomainMapper`.
-- Split a concept's mapper only for a reason recorded in the change, such as a generated mapper the project does not own or a mapping that genuinely requires different collaborators. Volume alone is not a reason; a mapper that has grown large is usually a signal that a mapping carries logic that belongs in domain or service code.
-- Keep transport validation on request TOs and business invariants in domain/service code.
-- Do not put repositories or services in TOs or mappers.
-- Normalize only when the contract permits it; do not silently change user data.
-- Model PATCH semantics explicitly so absent, clear, and set are not confused.
-- Use MapStruct for all structural REST and domain mapping with `unmappedTargetPolicy = ReportingPolicy.ERROR`. When part of a mapping is non-trivial, keep MapStruct for the structural portion and implement the rest through focused default methods or collaborators; replace the whole mapper by hand only when MapStruct is genuinely unsuitable, with the reason documented.
-- Obtain a stateless, dependency-free mapper through its static `INSTANCE = Mappers.getMapper(...)` member. Do not register or inject it as a Spring bean unless it needs a documented container-managed capability.
-
-Read the TO and REST mapper examples in [REST API examples](references/rest-api-examples.md).
+Read [REST boundary rules](references/rest-boundary-rules.md) before changing a controller, a TO, or
+a mapper, and [REST API examples](references/rest-api-examples.md) for the code.
 
 ## Domain models
 
@@ -178,64 +220,31 @@ Read the domain and domain mapper examples in [service and domain examples](refe
 
 ## Services
 
-The service layer has two levels. The split exists so that no service depends on another service at
-the same level, which is what keeps transaction boundaries findable and prevents cyclic service
+The service layer has two levels, and the split exists so that no service depends on another service
+at the same level. That is what keeps transaction boundaries findable and prevents cyclic service
 graphs.
 
-### Aggregate services
+| Level | Package | Owns | Never holds |
+| --- | --- | --- | --- |
+| `<Aggregate>Service` | `service` | One aggregate root: its repositories, its invariants, every write to it | A repository of another aggregate, or any other service |
+| `<Capability>ApplicationService` | `applicationservice` | One coherent use case group: the transaction boundary and the order of calls | A repository, an entity, or another application service |
 
-One `<Aggregate>Service` per aggregate root, in the `service` package.
+Determine the aggregate by **lifecycle ownership**, not by table count and not by the reference
+graph: a row belongs to the aggregate when it cannot exist without the root and the root is what
+creates and deletes it.
 
-- Determine the aggregate by lifecycle ownership, not by table count and not by the reference graph. A row belongs to the aggregate when it cannot exist without the root and the root is what creates and deletes it. A row that has its own lifecycle, or that other features reference directly by its own identifier, is a separate aggregate.
-- The service holds every repository of its aggregate and that aggregate's domain mapper. It holds no repository of another aggregate and no other service.
-- It owns the invariants of its aggregate. Do not reduce it to a pass-through over the repository: a rule about the aggregate's own state belongs here, not in the caller.
-- It reads and writes only its own aggregate. It refers to another aggregate by identifier and receives any value it needs from that aggregate as an explicit parameter.
-- Annotate it `@Transactional` with the default propagation, so it joins the use case's transaction when one is open and opens its own when it is called without one. Its multi-repository writes are then atomic either way. Do not use `MANDATORY`: refusing to run without a caller-supplied transaction blocks legitimate direct use from a job or a migration task, and the layering rule below is what keeps the use-case boundary where it belongs.
+An application service exists only where coordination exists. A feature whose every operation stays
+inside one aggregate needs none, and adding an empty one is scaffolding. A method that only forwards
+to one aggregate service is how this class turns into a facade over the whole application.
 
-### Application services
+The rule most often got wrong: **an external effect published after commit is not guaranteed to
+happen.** After-commit delivery guarantees the effect never fires for rolled-back work, and nothing
+more. Where losing it is unacceptable, the profile must record an outbox or a broker-native
+transaction instead.
 
-One `<Capability>ApplicationService` per coherent use case group, in the `applicationservice`
-package. It exists only where coordination exists. A feature whose every operation stays inside one
-aggregate needs no application service at all, and adding an empty one is scaffolding.
-
-- It owns the use case's transaction boundary: the transaction starts and ends with this method, and rollback is decided here.
-- It depends only on aggregate services, ports, and adapters — never on a repository, an entity, or another application service. A repository dependency here means the aggregate service was bypassed and the aggregate now has two write paths.
-- It coordinates: fetch from one aggregate service, pass explicit values to another, decide the order. Rules that belong to a single aggregate stay in that aggregate's service.
-- Never add a method that only forwards to one aggregate service. A pass-through adds a second name for one operation and a second place to keep in sync, and it is the mechanism by which this class turns into a facade over the whole application. An entry point that needs a single-aggregate operation calls that aggregate service directly.
-- Publish domain events through `ApplicationEventPublisher` and consume them with `@TransactionalEventListener(phase = AFTER_COMMIT)`. Never call a notification, message broker, or other external effect directly inside the transaction: a rollback after that call leaves the outside world believing something happened.
-- Know what that buys and what it does not. After-commit delivery guarantees the effect never fires for work that rolled back. It does **not** guarantee the effect happens at all: the commit has already succeeded, so a crash, a redeploy, or a failure inside the listener loses the effect permanently, with no retry and no record that anything was owed. Spring also does not propagate an exception thrown in an after-commit listener back to the caller, so a silent loss looks identical to success from the outside.
-- Decide per effect, and record the mechanism in `docs/project-profile.md`. Losing the effect is acceptable for a cache refresh or a best-effort metric, and the listener alone is then the right answer. Where losing it is not acceptable — payment, provisioning, a notification a person acts on, a message another system consumes — write the intent to an outbox table inside the same transaction as the business change, and deliver it from a separate process that retries until acknowledged. The after-commit listener may still trigger the first attempt; it is an optimization, not the guarantee.
-- Whatever the mechanism, make failed delivery visible. Log the failure inside the listener and expose it through `observability-and-logging`, because a listener that throws produces no HTTP error, no rollback, and no caller-side signal.
-- Annotate a read use case `@Transactional(readOnly = true)`. `spring-data-jpa` explains why the attribute only has an effect at this level.
-
-### Both levels
-
-- The service interface is optional and the convention is recorded in the project profile. Follow whichever it records, at both levels. With none recorded and no answer yet, default to concrete classes annotated `@Service`, and add an interface only for a concrete reason: a boundary another module crosses, more than one implementation, a port with a substitutable adapter, or a contract an external consumer implements. Wanting an `Impl` suffix, somewhere to put Javadoc, or a mockable type are not reasons — Mockito mocks a concrete class. Both shapes appear in [service and domain examples](references/service-domain-examples.md); do not mix them within a scope.
-- When an interface exists, put caller-facing Javadoc and method-validation constraints on it, and `@Service`, `@Validated`, transactions, dependencies, and logic on the concrete class without duplicating the contract.
-- Use Lombok constructor generation only when the profile records Lombok and the generated constructor remains obvious; otherwise write the constructor explicitly.
-- Do not accept REST request/response TOs and do not return JPA entities.
-- Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
-- Apply entity mutations through the accessor style recorded in `docs/project-profile.md`. The examples use fluent setters that return the entity; plain `void` setters are equally acceptable when the profile records that choice. Use one style across the project.
-- For update operations, load the entity inside the write transaction, apply explicit business or persistence mutations, call repository `save` exactly once, and map the returned saved entity to a domain object. This project requires the explicit repository write even when JPA dirty checking would persist a managed entity. Use `saveAndFlush` only when subsequent logic must observe immediate database synchronization for a documented reason. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity.
-- Prefer explicit separate parameters up to seven, while the signature stays clear. Treat eight or
-  more as a design warning: group only values forming a cohesive domain concept or invariant into a
-  focused parameter object, otherwise redesign the operation or document why the signature must
-  remain. Never create a catch-all input class to conceal unrelated values or satisfy the threshold,
-  and never split a naturally cohesive value object into scalars to satisfy it either.
-- A parameter or value object is legitimate below the threshold when it already represents a stable
-  domain concept or enforces an invariant. Keep the target resource's identifier a separate
-  parameter and group the rest.
-- Place a service parameter object at the domain/service boundary, name it for the operation or
-  values it represents, and keep it independent of REST and JPA. Do not introduce `Command` or
-  `View` terminology by default.
-- Do not pass raw passwords, tokens, or secrets beyond the narrow boundary that hashes, encrypts, or exchanges them. Never persist or log their raw values.
-- Keep business rules out of controller, mapper, repository, and entity callback code.
-- Never rely on self-invocation for `@Transactional`, `@Async`, `@Cacheable`, or method validation. When a separate boundary is genuinely required, move it to another bean rather than working around the proxy.
-- Keep transactions short. Do not make slow external calls while holding one unless the consistency design requires it.
-- This skill decides only which method is transactional and which use cases are reads. `spring-data-jpa` owns what those settings mean and when they apply: `readOnly` semantics, propagation, isolation, flush timing, and locking. Read them there before overriding a default anywhere.
-
-Read the service, parameter-object, mapper, and repository-boundary examples in
-[service and domain examples](references/service-domain-examples.md).
+Read [service layer rules](references/service-layer-rules.md) before creating or changing a service,
+and [service and domain examples](references/service-domain-examples.md) for the code. This skill
+decides only which method is transactional; `spring-data-jpa` owns what those settings mean.
 
 ## Repository boundary
 
@@ -270,44 +279,26 @@ Read the method-validation example in [infrastructure examples](references/infra
 Use the project's existing error contract. For a new API on a supported Spring version, use RFC 9457
 `ProblemDetail`.
 
-The RFC 9457 `type` URI is the only machine-readable error identifier in the body. Never add a
-parallel `code`, `errorCode`, or `errorId`: two identifiers for one condition guarantee that clients
-branch on the wrong one. `title` and `detail` are human-readable and may change.
-`project-naming-conventions` owns the URI form.
+Three rules carry the weight:
 
-Declare every caller-visible failure once, as a constant in a single project-owned error catalog
-carrying the status, the `type` URI, the title, the detail, and the internal code used in logs,
-events, and metrics. One declaration keeps the public type and the internal code from drifting
-apart; do not add a second holder for either.
+- **The `type` URI is the only machine-readable error identifier in the body.** Never add a parallel `code`, `errorCode`, or `errorId`; two identifiers for one condition guarantee that clients branch on the wrong one. `project-naming-conventions` owns the URI form.
+- **Every caller-visible failure is declared once**, in a single project-owned error catalog carrying the status, the `type` URI, the title, the detail, and the internal code used in logs, events, and metrics. One declaration is what stops the public type and the internal code from drifting apart.
+- **`correlationId` is the one permitted extension member.** Keep `traceId`, `spanId`, stack traces, exception class names, provider messages, internal hostnames, SQL, internal endpoints, credentials, and personal data out of the body entirely.
 
-`correlationId` is the one permitted extension member, because it identifies the request rather than
-the failure and support workflows need it in the payload a caller pastes into a ticket. Keep
-`traceId`, `spanId`, stack traces, exception class names, provider messages, internal hostnames,
-SQL, internal endpoints, credentials, and personal data out of the body entirely.
-
-- Map expected application failures explicitly, and let Spring's framework handler preserve standard REST error behavior where appropriate.
-- A catch-all handler returns a generic message and logs the cause once. Never copy `exception.getMessage()` into a response unless that type guarantees a stable, user-safe message, and never log an expected 4xx as a server error.
-- Name a project-owned validation exception unambiguously, for example `BusinessValidationException`. Never give a project exception the simple name of a framework type such as `jakarta.validation.ValidationException`, and never handle that framework type as if it were the project's category.
-- Place custom exceptions in `exception` and MVC handler classes in `exception.handler`. Spring Security response handling belongs to the security configuration boundary, not this package.
-
-Read the error catalog and `ProblemDetail` handler examples in
-[error handling examples](references/error-handling-examples.md) and the custom exception examples in
-[infrastructure examples](references/infrastructure-examples.md).
+Read [error handling examples](references/error-handling-examples.md) for the catalog, the
+`ProblemDetail` handler, the catch-all rules, and exception naming and placement.
 
 ## Outbound calls
 
-An adapter that calls another system is where a remote failure becomes an application failure. These
-rules apply to every HTTP client, message producer, and provider SDK the application uses.
+Every call to another system is bounded, translated, and retried in exactly one layer. The three
+rules that matter most, because their defaults are unsafe:
 
-- Configure connection and read timeouts explicitly on every client. Several widely used clients default to no read timeout at all, so an unconfigured client turns one unresponsive dependency into exhausted threads and a dead application. There is no acceptable outbound call without a bounded wait.
-- Keep the timeouts inside the caller's budget. The sum of an operation's outbound waits, plus its own work, must stay below the request timeout the deployment enforces; otherwise the client gives up on a request the application still believes is running.
-- Retry only an operation that is safe to repeat. A read may be retried; a write may not, unless the provider accepts an idempotency key or the operation is naturally idempotent. Bound the attempts, apply backoff with jitter, and record the policy where the client is configured.
-- Keep retry in one layer. A client library, the adapter, a gateway, and a scheduler each retrying three times is twenty-seven calls to a system that is already failing. Choose the layer that owns the policy and disable retry in the others.
-- Never hold a database transaction open across an outbound call unless the consistency design requires it, and never retry inside one: the transaction stays open for the whole backoff.
-- Translate failure at the adapter boundary. A timeout, a connection reset, a 4xx, a 5xx, and a malformed body each become a project exception the caller can act on. Never let a client library's exception type, status object, or SDK response reach a service or a controller.
-- Add circuit breaking, bulkheads, or rate limiting only when `docs/project-profile.md` records a resilience library. Do not hand-roll a breaker.
+- **No outbound call without an explicit connection and read timeout.** Several widely used clients default to no read timeout at all, so one unresponsive dependency exhausts the thread pool and kills the application.
+- **Retry lives in one layer only.** A client library, an adapter, a gateway, and a scheduler each retrying three times is twenty-seven calls to a system that is already failing.
+- **Failure is translated at the adapter boundary.** No client library exception type, status object, or SDK response reaches a service or a controller.
 
-`observability-and-logging` owns what an outbound call must emit. `application-security` owns
+Read [outbound call rules](references/outbound-call-rules.md) before adding or changing any client.
+`observability-and-logging` owns what an outbound call must emit, and `application-security` owns
 credentials, destination validation, and response-size limits.
 
 ## Idempotency
@@ -339,11 +330,11 @@ follow `spring-boot-testing` for which test levels include the security filter c
 
 ## Observability
 
-- Log significant boundaries and outcomes with correlation identifiers.
-- Add metrics/traces around slow or failure-prone external boundaries and important business outcomes.
-- Avoid high-cardinality metric tags such as raw user ID, order ID, URL, exception message, or email.
-- Do not log every method entry/exit.
-- Health indicators must reflect actionable dependency state and must not expose secrets.
+`observability-and-logging` owns every logging, metric, tracing, and health rule, including levels,
+placement, correlation context, and tag cardinality. This skill owns only where instrumentation sits
+in the layers: a service records the operation, an adapter records the outbound call, and a
+controller records nothing beyond what the framework already emits. Do not infer a level, a meter
+name, or a cardinality limit from this skill.
 
 ## Scheduled and asynchronous work
 
