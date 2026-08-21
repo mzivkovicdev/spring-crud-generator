@@ -26,6 +26,20 @@ This skill states no logging rule of its own. When a touched file logs, read
 `observability-and-logging`; when it handles data that might be confidential, read
 `application-security`. Do not infer a level, a placement, or a redaction rule from this skill.
 
+## Reference routing
+
+Read only what the change requires:
+
+- Read [import order examples](references/import-order-examples.md) when an import block is ambiguous or a tool disagrees with the required order.
+- Read [Javadoc and comments](references/javadoc-and-comments.md) when a touched declaration may need Javadoc, or when deciding deliberately not to write it.
+- Read [worked example rules](references/worked-example-rules.md) before reproducing or adapting a snippet from any skill in this set.
+
+The mechanical rules in this skill — import order, no wildcards, no duplicates, `this.`
+qualification, `final`, no `var` — are enforced by the project's quality gates, which
+`build-and-dependencies` owns. Before those gates exist on a new project, they are checked by reading
+the touched files against the rule, not by trusting that a later build will catch them. A rule that
+only holds once the gate is configured is a rule the first commits will violate.
+
 ## Non-negotiable rule for every touched Java file
 
 Whenever a `.java` file is created or modified, even for a one-line change:
@@ -56,48 +70,9 @@ Use this group order:
 
 Group imports by their leading namespace. Do not separate the project's `com.*` imports from third-party `com.*` imports, and do not separate Spring imports from other `org.*` imports.
 
-Correct default ordering:
-
-```java
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import jakarta.persistence.Entity;
-import jakarta.validation.Valid;
-
-import javax.crypto.Cipher;
-import javax.sql.DataSource;
-
-import com.acme.customer.Customer;
-import com.acme.customer.CustomerRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import io.micrometer.core.instrument.MeterRegistry;
-import reactor.core.publisher.Mono;
-import software.amazon.awssdk.services.s3.S3Client;
-
-```
-
-Incorrect:
-
-```java
-import java.util.*;                     // wildcard
-import org.junit.jupiter.api.Test;
-import java.time.Instant;               // not sorted
-import com.acme.customer.Customer;
-import java.util.Optional;              // duplicate java.util group
-import static org.mockito.Mockito.*;    // wildcard static import
-import java.time.Clock;                 // unused import
-```
+[Import order examples](references/import-order-examples.md) shows a correct block and an annotated
+incorrect one. Check the import block of every touched file against it: wildcards, duplicates, group
+placement, ordering within a group, and exactly one blank line between non-empty groups.
 
 Do not reorganize imports across untouched files as part of an unrelated feature. The rule applies to every file actually touched by the change.
 
@@ -305,83 +280,24 @@ try {
 
 ## Javadoc and comments
 
-Javadoc is contract documentation, not a coverage metric. Do not add it based only on `public` or `protected`; a declaration can be publicly accessible for framework, proxy, serialization, code-generation, or testing reasons without being a published Java API.
+Javadoc is contract documentation, not a coverage metric. Do not add it based only on `public` or
+`protected`; a declaration can be publicly accessible for framework, proxy, serialization,
+code-generation, or testing reasons without being a published Java API. Presence is deliberately not
+gated by a build check, because the policy is conditional and a tool cannot express the condition
+without producing noise that trains people to ignore it.
 
-Add complete Javadoc to:
-
-- published or externally consumed Java API contracts;
-- intentional extension points and interfaces implemented outside the package;
-- non-obvious invariants, preconditions, side effects, blocking behavior, concurrency guarantees, transaction requirements, retry behavior, and failure modes;
-- methods whose contract cannot be understood from their signature and type names.
-
-Do not add Javadoc by default to:
-
-- self-explanatory TOs, records, enum constants, exceptions, constructors, getters, setters, and accessors;
-- routine framework adapters, generated-code contracts, mappers, repositories, dependency-injection configuration, and wiring classes whose behavior is clear from types and annotations;
-- overriding methods when the inherited contract is accurate;
-- private methods and tests whose purpose is clear from names, types, and structure.
-
-Javadoc explains the contract and the reason, not the implementation. When a declaration requires
-it, include every applicable tag:
-
-- `@param parameterName` for every method or constructor parameter, including semantic meaning, accepted range/format, nullability, units, and ownership when relevant;
-- `@param <T>` for every generic type parameter;
-- `@return` for every non-`void` method, describing the returned value/type, nullability, mutability/ownership, and important state guarantees;
-- `@throws ExceptionType` for every checked exception and every runtime exception that is part of the public contract, with the exact condition that causes it;
-- `@deprecated` with the replacement and migration direction whenever `@Deprecated` is used.
-
-Do not add `@return` to constructors or `void` methods. Do not document internal implementation exceptions that cannot escape the API. Keep tags in the order: type parameters, value parameters in signature order, return value, exceptions, then optional `@since`, `@see`, or `@deprecated` metadata.
-
-```java
-/**
- * Reserves inventory for the supplied order.
- *
- * <p>The operation is idempotent for the same order identifier. A successful return guarantees
- * that the reservation is visible to subsequent inventory reads.
- *
- * @param orderId the unique identifier of the order requesting inventory; must not be {@code null}
- * @param lines   the non-empty immutable list of order lines to reserve; must not be {@code null}
- *                and must not contain {@code null} elements
- * @return        a {@link ReservationDomain} containing the reserved quantities and reservation
- *                identifier; never {@code null}
- * @throws InsufficientInventoryException when any requested item cannot be reserved
- * @throws InventoryUnavailableException when the inventory provider cannot be reached
- */
-ReservationDomain reserve(
-        final OrderIdDomain orderId,
-        final List<OrderLineDomain> lines);
-```
-
-A generic method adds `@param <T>` first, describing the element type, before the value parameters.
-
-A record documents every component with `@param`. A public class or interface documents
-responsibility, invariants, thread-safety, and lifecycle where relevant. An overriding method
-inherits missing Javadoc automatically: omit it when the inherited contract is complete, never write
-a comment containing only `{@inheritDoc}`, and use `{@inheritDoc}` only to extend an inherited
-contract that remains accurate.
-
-Do not write Javadoc such as "Gets the name" on a self-explanatory accessor, and remove stale
-comments when the implementation changes.
+Read [Javadoc and comments](references/javadoc-and-comments.md) when a touched declaration might need
+it, for the full rule: what requires Javadoc, what must not have it by default, which tags are
+required, their order, and how records, generics, and overrides are handled.
 
 ## Worked examples in these skills
 
 Every code, configuration, and build snippet in this skill set is a **pattern to adapt, not a file to
 copy**. An agent asked for a product service writes `ProductService` from scratch; it does not rename
-`UserService` and keep the rest.
+`UserService` and keep the rest. This skill owns that rule for the whole set.
 
-**Self-containment.** A snippet declares every identifier it uses, or names where it comes from:
-
-- Every constant referenced in a snippet is declared in that same snippet, unless the snippet states which example or type declares it.
-- Every build property referenced as `${...}` is declared in the same file, or the file says where it is declared.
-- Every type referenced across skills is named with the reference that defines it, so the reader can find it.
-- Omit imports, and omit members that are irrelevant to the decision being shown — but never omit something the snippet itself refers to.
-
-**Excerpts.** An excerpt shows one decision, not a complete type. Generate the members it omits
-rather than copying it verbatim. When an omitted member is required for the code to work at all — an
-accessible constructor for a mapper, a bean registration for a filter — the example says so.
-
-**Verification.** Check a snippet against the versions the project profile records. When part of it
-cannot be verified, say which part rather than presenting it with equal confidence.
+Read [worked example rules](references/worked-example-rules.md) before reproducing or adapting a
+snippet from any skill, for the self-containment, excerpt, and verification requirements.
 
 ## Tests are part of the code change
 

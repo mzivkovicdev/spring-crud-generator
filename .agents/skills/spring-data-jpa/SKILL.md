@@ -39,7 +39,8 @@ Read `docs/project-profile.md` first, whose template `spring-boot-patterns` owns
 relational database engine and major version, the entity accessor style, and the identifier
 strategy. When it does not, or when the repository contains no database dependency and no datasource
 configuration, **ask the user which database engine and version the project uses, and record the
-answer in the profile before writing persistence code**. Do not pick a database, a dialect, or an
+answer in the profile before writing persistence code**. These are `ASK` decisions in the token
+vocabulary `spring-boot-patterns` defines: they block. Do not pick a database, a dialect, or an
 identifier strategy by default, and do not infer the production database from a test dependency such
 as H2. `sql-database-migration` settles which migration tool the project uses.
 
@@ -58,6 +59,31 @@ Then inspect:
 7. repository, migration, locking, query-count, and database integration tests.
 
 Do not copy a nearby persistence pattern before understanding its generated SQL and lifecycle behavior.
+
+## Spring Boot 3 and 4
+
+Both generations are supported, and `docs/project-profile.md` records which one applies. Nothing in
+the mapping, association, query, transaction, or locking rules below changes between them: JPA
+semantics are the same, and a correct entity stays correct. What changes is where a few types live
+and which provider version enforces the specification.
+
+| Concern | Spring Boot 3 | Spring Boot 4 |
+| --- | --- | --- |
+| Specification and provider | Jakarta Persistence 3.1 with Hibernate 6.x | Jakarta Persistence 3.2 with Hibernate 7.x |
+| `@EntityScan` | `org.springframework.boot.autoconfigure.domain` | `org.springframework.boot.persistence.autoconfigure` |
+| Exception translation property | `spring.dao.exceptiontranslation.enabled` | `spring.persistence.exceptiontranslation.enabled` |
+| Static metamodel processor | `hibernate-jpamodelgen` | `hibernate-processor` |
+| Spring Data JPA | the 3.x line | the 2025.1 line |
+
+Read the effective versions from the build rather than trusting this table, per
+`build-and-dependencies`, which owns the coordinates in
+[generation differences](../build-and-dependencies/references/generation-differences.md).
+
+A provider major version is not a formatting change. Hibernate 7 tightens specification conformance
+in places where Hibernate 6 was lenient, so a mapping, an HQL query, or a lifecycle assumption that
+worked before can now be rejected or produce different SQL. On an upgrade, verify the generated SQL
+and the execution plans for the important access paths again rather than assuming the previous
+verification still holds. On a new project, this is simply the behavior you are designing against.
 
 ## Entity mapping
 
@@ -247,7 +273,13 @@ semantics, and how long a transaction may stay open. This section owns what happ
 - Configure lock timeouts where supported and lock multiple rows in a consistent order.
 - Keep locked transactions especially short.
 - Enforce uniqueness with a database constraint and handle the race after an application existence check.
-- Remember that bulk DML bypasses normal optimistic version checks.
+- Remember that bulk DML bypasses normal optimistic version checks, so it can overwrite a concurrent edit with no exception anywhere.
+
+[Write and locking examples](references/write-and-locking-examples.md) carries the strategy-selection
+table, the `@Version` mapping, boundary translation, retry placement, lock timeouts, lock ordering,
+and the rejected forms. Read it before adding any lock: the two mistakes it exists to prevent — a
+`catch` that never fires because the version check happens at commit, and a retry that reuses the
+failed transaction — both compile and both pass a single-threaded test.
 
 ## Schema migrations
 

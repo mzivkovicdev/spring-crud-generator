@@ -44,6 +44,34 @@ Resolve a conflict through the owning skill and the repository-enforced build co
 
 Load only applicable references for the changed behavior.
 
+## Spring Boot 3 and 4 differ more in tests than anywhere else
+
+Both generations are supported. `docs/project-profile.md` records which one the project uses; read
+that row before writing a test, because the test infrastructure changed far more than the production
+API did. `build-and-dependencies` owns the coordinates in
+[generation differences](../build-and-dependencies/references/generation-differences.md); this
+section owns what it means for a test.
+
+| Concern | Spring Boot 3 | Spring Boot 4 |
+| --- | --- | --- |
+| Replacing a bean with a mock | `@MockBean` / `@SpyBean`, or `@MockitoBean` / `@MockitoSpyBean` from 3.4 onward | `@MockitoBean` / `@MockitoSpyBean` only; the old pair is **removed** |
+| Shared mocks for several tests | `@MockBean` fields on a `@TestConfiguration` | not possible on a configuration class; declare `@MockitoBean(types = {...})` on the test class or a custom composed annotation |
+| `@Mock` and `@Captor` | worked through Spring Boot's listener | need Mockito's own `MockitoExtension`; the listener is removed |
+| `MockMvc` under `@SpringBootTest` | auto-configured | **not** provided; `@AutoConfigureMockMvc` is required |
+| `TestRestTemplate` under `@SpringBootTest` | auto-configured | not provided; prefer `RestTestClient` with `@AutoConfigureRestTestClient` |
+| `@WithMockUser`, `@WithUserDetails` | `spring-security-test` | need `spring-boot-starter-security-test` |
+| Test dependencies | one `spring-boot-starter-test` | a `-test` starter per technology under test, each bringing the core stack transitively |
+
+Two of these fail in ways that mislead. A missing `@AutoConfigureMockMvc` on Spring Boot 4 reads as a
+context-wiring defect rather than a missing annotation. A missing `spring-boot-starter-security-test`
+makes `@WithMockUser` behave as though the request were unauthenticated, which looks exactly like an
+authorization bug — and the tempting "fix" is to relax the very control the test exists to prove.
+When a security test fails on Spring Boot 4, verify the dependency before touching the security
+configuration.
+
+Everything else in this skill is generation-neutral. Scenario selection, test levels, fixtures,
+isolation, determinism, and what a test must assert do not change between 3 and 4.
+
 ## Inspect before writing tests
 
 1. Read `docs/project-profile.md` for the database engine and version, the authentication profile,
