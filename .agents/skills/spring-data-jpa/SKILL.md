@@ -267,8 +267,8 @@ semantics, and how long a transaction may stay open. This section owns what happ
 ## Concurrency and locking
 
 - Prefer optimistic locking with `@Version` for normal concurrent editing.
-- **The application absorbs contention; the caller does not.** Repeat the operation through the project's `@RetryOnOptimisticConflict` annotation at the use-case boundary, and surface `409 Conflict` only when the retry policy is exhausted. Never answer routine contention by asking the caller to send the request again.
-- Place that annotation so its advice runs outside the transaction advice, and never catch the optimistic failure below it. An aggregate service performs the write and lets the version check surface at commit.
+- **The application absorbs contention; the caller does not.** Repeat the operation through the project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, and surface `409 Conflict` only when the retry policy is exhausted. Never answer routine contention by asking the caller to send the request again, and never write a retry loop by hand.
+- That annotation composes `@Transactional` with the framework's declarative retry, so the retry advice wraps the transaction and each attempt gets a fresh one. Never catch the optimistic failure below it: an aggregate service performs the write and lets the version check surface at commit.
 - Retry only when the complete operation is safe to repeat: it recomputes from state it re-reads and has produced no external side effect.
 - Retry cannot prevent a stale-client overwrite, where a caller submits values computed from state it no longer has. That needs a version supplied by the caller — a read-only field in the update TO, or `ETag` with `If-Match` — and `docs/project-profile.md` records which, or records that every write is transformational and neither is needed. A caller-supplied version is verified, never assigned to `@Version`.
 - Use pessimistic locking only when measured contention and invariants justify blocking.
@@ -280,7 +280,7 @@ semantics, and how long a transaction may stay open. This section owns what happ
 
 [Write and locking examples](references/write-and-locking-examples.md) carries the strategy-selection
 table, the `@Version` mapping, the retry-versus-client-version decision, the
-`@RetryOnOptimisticConflict` annotation and its advice, lock timeouts, lock ordering, and the
+`@OptimisticLockingRetry` composed annotation, lock timeouts, lock ordering, and the
 rejected forms. Read it before adding any lock: the three mistakes it exists to prevent — a `catch`
 that never fires because the version check happens at commit, a retry that reuses the failed
 transaction, and a retry that silently overwrites a concurrent edit because the values never came
@@ -330,9 +330,10 @@ ineffective, redundant, or speculative indexes.
 unnecessary early flushes and `saveAndFlush` inside per-row loops; bulk DML followed by use of stale
 managed entities; pessimistic locks without bounded scope and timeout consideration.
 
-**Concurrency policy.** A hand-written retry loop where the project's retry annotation applies; the
-annotation on a method that also opens the transaction, or whose advice is ordered inside the
-transaction advice; an optimistic failure caught below the advice; a retry on an operation with an
+**Concurrency policy.** A hand-written retry loop where the project's composed annotation applies; a
+retry policy whose backoff has no jitter or no maximum delay; a transaction advice ordered ahead of
+the retry advice; an optimistic failure caught below the annotated method; an exhausted retry that
+leaks the framework exception instead of the conflict contract; a retry on an operation with an
 external side effect or one that overwrites rather than recomputes; `409` returned to the caller for
 contention the application never attempted to absorb; a `@Version` value assigned from a request.
 
@@ -346,6 +347,6 @@ production database.
 - [ ] Fetch plans are explicit and N+1 risk is tested.
 - [ ] Queries are bounded, deterministic, and verified with generated SQL and representative plans.
 - [ ] Pagination, projections, transactions, bulk DML, and locking match the access path.
-- [ ] Contention is absorbed by the retry annotation at the use-case boundary, its advice is proven to run outside the transaction, and `409` reaches the caller only on exhaustion.
+- [ ] Contention is absorbed by the composed retry annotation at the use-case boundary, a test proves the retry advice wraps the transaction, and `409` reaches the caller only on exhaustion.
 - [ ] Any operation that overwrites rather than recomputes uses the stale-write protection the profile records.
 - [ ] Tests run against the supported database and cover changed persistence behavior.

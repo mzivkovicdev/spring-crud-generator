@@ -83,8 +83,8 @@ covers; read the full map in [OWNERSHIP.md](OWNERSHIP.md).
 23. **Every read that can grow with production data is bounded**, deterministically sorted, and
     paginated with an enforced maximum. (`spring-data-jpa`)
 24. **Optimistic locking with `@Version` is the default**, and contention is absorbed by the
-    project's retry annotation at the use-case boundary, not by the caller. Pessimistic locking
-    requires a measurement. (`spring-data-jpa`)
+    project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, never by a
+    hand-written loop and never by the caller. Pessimistic locking requires a measurement. (`spring-data-jpa`)
 25. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
     never edited after it is applied anywhere. Hibernate `ddl-auto` is `validate` or `none`.
     (`sql-database-migration`)

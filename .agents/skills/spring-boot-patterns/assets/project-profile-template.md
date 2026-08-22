@@ -16,7 +16,7 @@ Last updated: YYYY-MM-DD
 
 | Decision | Token | Fallback | Value | Owner skill |
 | --- | --- | --- | --- | --- |
-| Skill set revision this project follows | `RESOLVE` |  | e.g. 1.0.0, from the set's `CHANGELOG.md` | all skills |
+| Skill set revision this project follows | `RESOLVE` |  | the tag or commit of the skill set this project was built against | all skills |
 | Java release | `RESOLVE` |  | 21 minimum | `build-and-dependencies` |
 | Spring Boot generation | `ASK` |  | 3 \| 4 | `build-and-dependencies` |
 | Spring Boot version | `RESOLVE` |  | with the date its branch loses support | `build-and-dependencies` |

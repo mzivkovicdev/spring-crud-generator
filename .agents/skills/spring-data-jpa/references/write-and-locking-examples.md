@@ -156,118 +156,113 @@ flush, which by default is at commit — after the method body has returned. A `
 Forcing the check earlier with `saveAndFlush` only to catch it locally is the wrong repair: it
 discards a round trip's worth of batching and it puts the conflict policy inside the aggregate, which
 has no idea whether the use case may be repeated. Let the exception surface from the transaction
-interceptor and handle it one layer out, where the retry advice runs.
+interceptor and handle it one layer out, where the retry interceptor runs.
 
 ## Retrying an optimistic failure
 
-Retry is expressed as one project-owned annotation, so the policy is uniform, visible in the method
-signature, and impossible to reimplement slightly differently in each use case.
+Retry is expressed as one project-owned composed annotation. It carries the transaction and the retry
+policy together, so every use case that absorbs contention does it identically, the policy is visible
+at the call site, and there is no hand-written advice to maintain.
+
+**Do not write a retry loop.** A `while` or `for` loop around a transactional call is the form this
+annotation replaces. It reimplements backoff, budget, and exception selection slightly differently in
+each use case, and it is the single most common place this pattern is got wrong.
 
 ### The annotation
 
 ```java
 /**
- * Repeats the annotated operation while it loses an optimistic version check.
+ * Runs the annotated operation in a transaction and repeats it while it loses an optimistic
+ * version check.
  *
- * <p>Each attempt runs in its own transaction, because the advice that implements this
- * annotation is ordered outside the transaction advice. Annotate only an operation that is
- * safe to repeat in full: it must recompute its result from state it re-reads, and it must
- * produce no external side effect before it commits.
+ * <p>The retry advice wraps the transaction advice, so every attempt commits or rolls back on
+ * its own. Annotate only an operation that is safe to repeat in full: it must recompute its
+ * result from state it re-reads, and it must produce no external side effect before it commits.
  *
- * <p>When the attempts or the budget run out, the last failure is translated into the
- * project's conflict exception, which the error catalog maps to {@code 409 Conflict}.
+ * <p>Requires {@code @EnableRetry} on a configuration class.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface RetryOnOptimisticConflict {
-
-    /** Total attempts including the first; must be at least one. */
-    int maximumAttempts() default 3;
-
-    /** Upper bound of the randomized pause before the second attempt. */
-    long initialBackoffMillis() default 50L;
-
-    /** Factor applied to the backoff bound after each failed attempt. */
-    double backoffMultiplier() default 2.0d;
-
-    /** Wall-clock ceiling for all attempts together; must stay inside the request budget. */
-    long budgetMillis() default 2000L;
+@Transactional
+@Retryable(
+        retryFor = {
+                OptimisticLockException.class,
+                ObjectOptimisticLockingFailureException.class
+        },
+        maxAttempts = 5,
+        backoff = @Backoff(
+                delay = 100L,
+                maxDelay = 1000L,
+                multiplier = 2.0d,
+                random = true
+        )
+)
+public @interface OptimisticLockingRetry {
 }
 ```
 
-### The advice
+Four details in that declaration are load-bearing:
+
+- **`random = true`.** Without it every loser of a collision wakes at exactly the same millisecond and
+  collides again, in waves. The randomized multiplier separates them. This is the one attribute most
+  often left off, and its absence is invisible until the system is under real load.
+- **`maxDelay`.** Bounds the exponential growth, so attempt five does not sit for eight seconds inside
+  a request the caller has already given up on.
+- **Both exception types.** Spring normally translates the provider failure into
+  `ObjectOptimisticLockingFailureException`, but `jakarta.persistence.OptimisticLockException` can
+  still surface on some paths. Listing only one leaves a gap that appears rarely and looks like a
+  random `500`.
+- **`ElementType.METHOD` only.** On a type the annotation would wrap every public method of the class
+  in a transaction and a retry, including reads and including operations that are not safe to repeat.
+  Apply it per operation, deliberately.
+
+### Why the ordering works without an explicit `@Order`
+
+`@EnableRetry` registers its interceptor at `Ordered.LOWEST_PRECEDENCE - 1`, and the transaction
+interceptor defaults to `Ordered.LOWEST_PRECEDENCE`. The retry therefore has higher precedence and
+wraps the transaction, which is exactly what this pattern needs: each attempt runs in a fresh
+transaction with a fresh persistence context.
+
+That default is what makes the composed annotation correct, so it is also what must not be disturbed:
+
+- Do not set an explicit order on `@EnableTransactionManagement` that would give the transaction
+  advice higher precedence than the retry.
+- Verify the composed form on the project's Spring Retry version. Both `@Transactional` and
+  `@Retryable` are resolved through merged annotations, so a meta-annotation works, but confirm it
+  rather than assume it.
+- **Prove the ordering with a test that counts committed attempts**, not by reading the annotations.
+  Get it inverted and every attempt rejoins a transaction already marked rollback-only: all of them
+  fail identically, while the configuration looks correct.
+
+### Exhaustion is part of the contract
+
+When the attempts run out, the last exception propagates. Left alone that is a framework exception
+reaching the caller as a `500`, which contradicts the error contract `spring-boot-patterns` owns.
+Close it in one of two ways, and use the same one throughout the project:
 
 ```java
-@Aspect
-@Component
-@Order(OptimisticConflictRetryAspect.ORDER)
-public class OptimisticConflictRetryAspect {
+@Recover
+public OrderDomain recover(
+        final ObjectOptimisticLockingFailureException failure,
+        final OrderPlacementDomain orderPlacementDomain) {
 
-    /**
-     * Higher precedence than the transaction advice, which defaults to
-     * {@link Ordered#LOWEST_PRECEDENCE}. The retry therefore wraps the transaction, so each
-     * attempt commits or rolls back on its own.
-     */
-    public static final int ORDER = Ordered.LOWEST_PRECEDENCE - 100;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(OptimisticConflictRetryAspect.class);
-
-    private final Clock clock;
-    private final MeterRegistry meterRegistry;
-
-    // Constructor omitted; both dependencies are required.
-
-    @Around("@annotation(retryPolicy)")
-    public Object retry(
-            final ProceedingJoinPoint joinPoint,
-            final RetryOnOptimisticConflict retryPolicy) throws Throwable {
-
-        final String operation = joinPoint.getSignature().toShortString();
-        final Instant deadline = this.clock.instant().plusMillis(retryPolicy.budgetMillis());
-        long backoffBound = retryPolicy.initialBackoffMillis();
-
-        for (int attempt = 1; ; attempt++) {
-            try {
-                final Object result = joinPoint.proceed();
-                if (attempt > 1) {
-                    this.meterRegistry.counter("optimistic.conflict.retry.succeeded").increment();
-                }
-                return result;
-            } catch (final OptimisticLockingFailureException failure) {
-                final boolean attemptsLeft = attempt < retryPolicy.maximumAttempts();
-                final boolean budgetLeft = this.clock.instant().isBefore(deadline);
-
-                if (!attemptsLeft || !budgetLeft) {
-                    this.meterRegistry.counter("optimistic.conflict.retry.exhausted").increment();
-                    LOGGER.warn("Optimistic conflict not resolved after {} attempts", attempt);
-                    throw new ConcurrentModificationConflictException(operation, failure);
-                }
-
-                this.meterRegistry.counter("optimistic.conflict.retry.attempted").increment();
-                OptimisticConflictRetryAspect.pause(backoffBound, failure);
-                backoffBound = (long) (backoffBound * retryPolicy.backoffMultiplier());
-            }
-        }
-    }
-
-    private static void pause(final long backoffBound, final OptimisticLockingFailureException failure) {
-
-        try {
-            Thread.sleep(ThreadLocalRandom.current().nextLong(1L, backoffBound + 1L));
-        } catch (final InterruptedException interruption) {
-            Thread.currentThread().interrupt();
-            throw new ConcurrentModificationConflictException("interrupted", failure);
-        }
-    }
+    throw new ConcurrentModificationConflictException(orderPlacementDomain.sku(), failure);
 }
 ```
+
+A `@Recover` method must sit in the same bean, return the same type, and accept the exception
+followed by the original parameters. The alternative is to map the optimistic failure to `409` once
+in the REST exception advice; that is less code, at the cost of the conflict policy no longer being
+visible beside the operation. Either way `ConcurrentModificationConflictException` is declared in the
+project error catalog and maps to `409 Conflict`, and the caller learns the resource is contended and
+nothing about JPA.
 
 ### Applying it
 
 The annotation goes on the use-case entry point — the application service method when one exists,
-otherwise the aggregate service method — and never on a method that is already running inside a
-caller's transaction.
+otherwise the aggregate service method — and never on a method already running inside a caller's
+transaction.
 
 ```java
 @Service
@@ -281,14 +276,11 @@ public class OrderPlacementApplicationService {
     /**
      * Places an order, absorbing inventory contention transparently.
      *
-     * <p>Not annotated {@code @Transactional}: the retry must be able to start a fresh
-     * transaction per attempt, and the aggregate services open their own.
-     *
      * @param command the validated placement values; must not be {@code null}
      * @return the placed order; never {@code null}
      * @throws ConcurrentModificationConflictException when contention outlives the retry policy
      */
-    @RetryOnOptimisticConflict(maximumAttempts = 4, budgetMillis = 1500L)
+    @OptimisticLockingRetry
     public OrderDomain place(final OrderPlacementDomain command) {
         final InventoryDomain reserved =
                 this.inventoryService.reserve(command.sku(), command.quantity());
@@ -297,47 +289,50 @@ public class OrderPlacementApplicationService {
 }
 ```
 
+The aggregate services it calls stay annotated `@Transactional` with the default propagation, so they
+join the transaction the composed annotation opened.
+
 ### Rules
 
-- **The advice must run outside the transaction, and its order is what guarantees that.** Transaction
-  advice defaults to `Ordered.LOWEST_PRECEDENCE`, so any smaller order value wraps it. If the project
-  sets an explicit order via `@EnableTransactionManagement(order = ...)`, keep the aspect's order
-  below it. Get this wrong and every retry reuses a persistence context already marked rollback-only,
-  which fails identically on every attempt while looking like a correctly configured policy. Prove
-  the ordering with an integration test that counts committed attempts, not by reading the
-  annotations.
 - **Only annotate an operation that is safe to repeat in full.** It must recompute from state it
   re-reads, and it must not have produced an external side effect. An effect published through
-  `@TransactionalEventListener(AFTER_COMMIT)` is safe, because a rolled-back attempt never fires it;
-  a direct call to a payment provider inside the method is not.
-- **Do not annotate a method that a caller already wrapped in a transaction**, and never rely on
-  self-invocation. Both bypass the proxy or defeat the fresh-transaction requirement.
-- **Do not combine the annotation with a `catch` for the same failure** in the annotated method or
-  below it. A swallowed `OptimisticLockingFailureException` never reaches the advice, and the retry
+  `@TransactionalEventListener(AFTER_COMMIT)` is safe, because a rolled-back attempt never fires it; a
+  direct call to a payment provider inside the method is not.
+- **Do not catch the optimistic failure below the annotated method.** A swallowed
+  `ObjectOptimisticLockingFailureException` never reaches the retry interceptor, and the annotation
   becomes decoration.
-- **Back off with a randomized pause.** An immediate retry recreates the exact concurrency that
-  caused the conflict; the random component stops several callers from waking together and colliding
-  in waves.
-- **Bound attempts and elapsed time separately.** Attempts alone are not a bound, because each one
-  carries a transaction and a round trip. Keep the budget inside the request budget
-  `spring-boot-patterns` records.
-- **Inject `Clock`.** The deadline is then testable, which is the only way the exhausted-budget path
-  gets covered at all.
-- **Restore the interrupt flag and stop.** An interrupted thread is being shut down.
-- **Meter attempts, successes after retry, and exhaustions**, per `observability-and-logging`. An
-  operation that always succeeds on the third attempt is a design problem reporting itself as
-  healthy. Log only the exhaustion; a routine retry is not a `WARN`.
-- **`ConcurrentModificationConflictException` is declared in the error catalog** that
-  `spring-boot-patterns` owns and maps to `409 Conflict`. The caller learns the resource is contended
-  and nothing about JPA.
-- **Where `docs/project-profile.md` records a resilience library, or on Spring Boot 4 where
-  `org.springframework.core.retry` is available, implement the annotation over that mechanism instead
-  of the hand-written loop.** The annotation and its policy stay project-owned either way, so call
-  sites never change; only the advice body does. `build-and-dependencies` owns the declaration.
+- **Do not annotate a method a caller already wrapped in a transaction**, and never rely on
+  self-invocation. Both defeat the fresh-transaction requirement or bypass the proxy entirely.
+- **Keep the worst case inside the request budget.** Five attempts with this backoff can spend roughly
+  two seconds in pauses alone, before the work itself. Spring Retry's annotation has no wall-clock
+  deadline, so the bound is the attempt count and `maxDelay` together — check them against the request
+  budget `spring-boot-patterns` records, and lower `maxAttempts` for an operation on a hot path.
+- **Meter attempts and exhaustions**, per `observability-and-logging`. An operation that routinely
+  succeeds on the fourth attempt is a design problem reporting itself as healthy. Log the exhaustion
+  only; a routine retry is not a `WARN`.
+- **Tune per operation by composing another annotation**, not by loosening this one. A hot path that
+  needs three attempts gets its own composed annotation with its own policy, so both policies stay
+  declarative and reviewable.
 - **Test it as concurrency, not as configuration.** A single-threaded test proves nothing here. Drive
   two transactions to the same row, assert one caller succeeds without an error, assert the attempt
-  counter moved, and assert the exhaustion path returns the conflict contract when the budget is
-  driven to zero.
+  counter moved, and assert the exhaustion path returns the conflict contract.
+
+### Which retry implementation, by generation
+
+`build-and-dependencies` owns the declaration and the version; state the requirement to it rather than
+editing a build file from here.
+
+| | Spring Boot 3 | Spring Boot 4 |
+| --- | --- | --- |
+| Implementation | Spring Retry (`spring-retry`), `@EnableRetry` | Spring Framework's own resilience support may remove the need for a separate library |
+| Consequence | declare the dependency and enable it | verify what the framework provides before adding `spring-retry` |
+
+Treat that second column as a lookup, not an answer: it names artifacts and annotations, which is the
+class of value this skill set refuses to trust from memory. Verify it against the project's effective
+dependency tree and the upstream documentation, exactly as
+[generation differences](../../build-and-dependencies/references/generation-differences.md) requires.
+Whichever implementation the project uses, the composed annotation is project-owned, so call sites
+never change when it does — only the annotation's own declaration does.
 
 ## Pessimistic locking
 
@@ -491,19 +486,23 @@ InventoryDomain reserve(final String sku, final int quantity) {
 ```
 
 ```java
-// Rejected: the retry annotation on a method that also opens the transaction, with the
-// aspect ordered after the transaction advice. Every attempt then rejoins a transaction
-// already marked rollback-only, so all of them fail identically while the policy looks
-// correctly configured.
-@Transactional
-@RetryOnOptimisticConflict
-public OrderDomain place(final OrderPlacementDomain command) { ... }
+// Rejected: a hand-written retry loop where the project's composed annotation applies. It
+// reimplements backoff, jitter, bounds, and exception selection, slightly differently each time.
+while (true) {
+    try {
+        return this.inventoryService.reserve(sku, quantity);
+    } catch (final ObjectOptimisticLockingFailureException failure) {
+        if (++attempt >= 3) {
+            throw failure;
+        }
+    }
+}
 ```
 
 ```java
-// Rejected: the failure swallowed below the advice. The annotation is decoration, because
-// the exception the retry exists to observe never leaves the aggregate service.
-@RetryOnOptimisticConflict
+// Rejected: the failure swallowed below the annotated method. The annotation is decoration,
+// because the exception the retry exists to observe never reaches the interceptor.
+@OptimisticLockingRetry
 public OrderDomain place(final OrderPlacementDomain command) {
     try {
         return this.orderService.create(command);
@@ -511,6 +510,12 @@ public OrderDomain place(final OrderPlacementDomain command) {
         throw new OrderPlacementFailedException(failure);
     }
 }
+```
+
+```java
+// Rejected: no backoff jitter. Every loser of a collision wakes in the same millisecond and
+// collides again, so the retries arrive in waves and make the contention worse.
+@Backoff(delay = 100L, maxDelay = 1000L, multiplier = 2.0d)
 ```
 
 ```java
