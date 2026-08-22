@@ -117,9 +117,10 @@ covers; read the full map in [OWNERSHIP.md](OWNERSHIP.md).
     unit tests, every controller gets a `@WebMvcTest` slice with filters disabled, and integration
     tests run against the real database engine with migrations applied and the real filter chain.
     (`spring-boot-testing`)
-33. **Integration tests must actually run.** `*IntegrationTest` matches no default in either build
-    tool; unrun suites look exactly like a green build. (`spring-boot-testing`,
-    `build-and-dependencies`)
+33. **Integration tests must actually run, once, in the right phase.** On Maven the suffix also
+    matches Surefire's default pattern, so an unexcluded suite runs twice; on Gradle nothing runs it
+    until a suite is registered, and an unrun suite looks exactly like a green build.
+    (`spring-boot-testing`, `build-and-dependencies`)
 
 ## Dependencies
 

@@ -336,9 +336,12 @@ exercise the real configured decoder.
 
 ## Configure test selection to match the naming convention
 
-`*IntegrationTest` matches no default in either build tool, so without explicit configuration those
-tests run in the wrong phase — or not at all, which looks identical to a green build. Three
-requirements, whichever tool the project uses:
+`*IntegrationTest` requires explicit lifecycle configuration in either build tool, and the two fail in
+opposite ways. Maven Surefire's default `**/*Test.java` pattern also matches the suffix, so without an
+exclusion those tests run in the `test` phase and then again in Failsafe: the suite executes twice,
+the first time in the wrong phase and without the container lifecycle around it. Gradle has no
+default integration task at all, so an unregistered suite simply never runs, which looks identical to
+a green build. Three requirements, whichever tool the project uses:
 
 - unit and slice tests run in the fast phase, integration tests in a separate later phase or task;
 - the verification lifecycle fails when an integration test fails, so a separate phase is not one nobody runs;

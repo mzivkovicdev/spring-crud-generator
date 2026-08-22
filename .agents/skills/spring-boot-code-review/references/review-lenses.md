@@ -113,7 +113,8 @@ Apply `spring-boot-patterns` and `spring-data-jpa`.
 - Report a routine conflict returned to the caller as `409` without any attempt to absorb it, and report a hand-written retry loop where the project's composed annotation applies.
 - Check commit-time failures, rollback rules, after-commit actions, outbox or equivalent consistency mechanisms when applicable.
 - Verify that every external effect uses the delivery mechanism `docs/project-profile.md` records for it. An effect the business cannot afford to lose, delivered only from an after-commit listener, is a blocking finding: the commit has already succeeded, so the loss leaves no trace and no retry.
-- Require pessimistic locking, stronger isolation, or a new consistency mechanism only when a concrete invariant and concurrency scenario justify it.
+- Require pessimistic locking, stronger isolation, or a new consistency mechanism only when a concrete invariant and concurrency scenario justify it. Conversely, report an allocation, claim, or cross-row invariant left optimistic: those are structurally pessimistic and do not need a measurement to justify the lock.
+- Report a pessimistic failure type added to the optimistic retry policy, and a lock taken without a timeout or without a consistent ordering when more than one row is locked.
 
 ## Persistence and database behavior
 

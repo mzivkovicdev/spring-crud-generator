@@ -17,25 +17,38 @@ exists because the naive version passes its tests and loses data in production.
 4. [Translating a lock failure at the service boundary](#translating-a-lock-failure-at-the-service-boundary)
 5. [Retrying an optimistic failure](#retrying-an-optimistic-failure)
 6. [Pessimistic locking](#pessimistic-locking)
-7. [Lock timeouts](#lock-timeouts)
-8. [Lock ordering and deadlocks](#lock-ordering-and-deadlocks)
-9. [Uniqueness is a constraint, not a check](#uniqueness-is-a-constraint-not-a-check)
-10. [Bulk DML](#bulk-dml)
-11. [Rejected code](#rejected-code)
+7. [When one aggregate uses both](#when-one-aggregate-uses-both)
+8. [Lock timeouts](#lock-timeouts)
+9. [Lock ordering and deadlocks](#lock-ordering-and-deadlocks)
+10. [Uniqueness is a constraint, not a check](#uniqueness-is-a-constraint-not-a-check)
+11. [Bulk DML](#bulk-dml)
+12. [Rejected code](#rejected-code)
 
 ## Choosing a strategy
+
+**The strategy is chosen per operation, not per entity.** Both appear in most real applications, and
+frequently on the same aggregate: editing a product's description is optimistic, while reserving its
+stock is pessimistic. Do not look for one project-wide answer, and do not assume an entity carrying
+`@Version` never takes a pessimistic lock.
 
 | Situation | Strategy | Why |
 | --- | --- | --- |
 | Normal concurrent editing of a row by different users | Optimistic, `@Version` | Conflicts are rare; blocking every reader to prevent a rare conflict costs more than resolving it |
-| A counter, balance, or quota that must never be lost | Optimistic with a retry, or one atomic UPDATE | Read-modify-write across two transactions loses one of them silently |
-| A measured hot row where optimistic retries keep failing | Pessimistic write lock | Only after measuring; contention is the justification, not the fear of it |
+| A counter, balance, or quota that must never be lost | Optimistic with the retry annotation, or one atomic UPDATE | Read-modify-write across two transactions loses one of them silently |
+| Allocating a limited resource: stock, seats, a licence pool, a numbered sequence | Pessimistic write lock | The invariant is "never oversell", and optimistic retry under real contention degrades into a retry storm rather than a queue |
+| Claiming a work item so exactly one worker processes it | Pessimistic write lock, or a conditional UPDATE that claims by status | Two workers must not both win; a version check tells them so only after both did the work |
 | An invariant spanning rows that must not be read mid-change | Pessimistic write lock, consistent order | Optimistic checks each row separately and cannot see the invariant |
+| A measured hot row where optimistic retries keep failing | Pessimistic write lock | Contention observed in production, not feared in review |
 | Uniqueness of a business key | A database unique constraint | An application check has a race window no lock closes |
 
-Start optimistic. Pessimistic locking is a decision backed by a measurement and recorded in the
-change, because it converts a concurrency problem into an availability problem: every blocked caller
-now holds a connection while it waits.
+Optimistic is the default because it costs nothing when nothing collides. But the last four rows are
+**structurally** pessimistic: the invariant itself decides, and they need no measurement to justify
+the choice. Only the hot-row case requires evidence, because there the invariant would have been
+satisfied either way and the lock is bought purely for throughput.
+
+What a pessimistic lock costs is worth stating plainly, since it is why optimistic wins by default:
+it converts a concurrency problem into an availability one. Every blocked caller holds a connection
+while it waits, so an unbounded lock wait exhausts the pool long before it corrupts anything.
 
 ## Optimistic locking
 
@@ -262,6 +275,19 @@ Mode selection:
 | `PESSIMISTIC_READ` | A shared lock: others may read, nobody may write. Rarely the right answer in an application. |
 | `PESSIMISTIC_WRITE` | An exclusive lock. This is the default choice when a pessimistic lock is justified. |
 | `PESSIMISTIC_FORCE_INCREMENT` | An exclusive lock that also bumps `@Version`, so optimistic readers elsewhere observe the change. |
+
+## When one aggregate uses both
+
+This is the common case, not an exotic one, and four things about it are easy to get wrong.
+
+- **`@Version` belongs to the entity, not to an operation.** It cannot be present for some methods and absent for others, so keep it whenever any path to that entity uses optimistic concurrency — including paths that also lock. Removing it because "this path locks anyway" silently unprotects every other path. The converse also holds: an entity reached exclusively under a pessimistic lock does not need `@Version`, and adding one there is a column and a check with no reader.
+- **A lock does not bump the version; a modification does.** Modifying a pessimistically locked entity increments it through the ordinary update, so a concurrent optimistic writer still sees the conflict. Locking and only reading leaves the version untouched, which is precisely what `PESSIMISTIC_FORCE_INCREMENT` in the mode table above is for: use it when the protected decision is a read, or when a change to a child must mark the aggregate as changed.
+- **Do not route a pessimistic failure through the optimistic retry annotation.** `PessimisticLockingFailureException` and `CannotAcquireLockException` are not in its `retryFor` and must not be added. A lock timeout means somebody else is holding the row; retrying immediately adds another waiter to a queue that is already too long, and a deadlock victim usually needs the whole use case reconsidered rather than repeated. Decide retry for a locked path deliberately and separately, with a smaller attempt count.
+- **Map the two failures to the same caller-visible contract, from different exceptions.** Both are contention and both are `409` under the error catalog, but they arrive as different types and only one of them is worth retrying first. Declaring them as one condition in the catalog while handling them separately keeps the public contract stable without merging two different operational signals.
+
+Test both paths, and test them as concurrency. An operation that takes a pessimistic lock needs a
+test with two real transactions where the second one blocks or times out; the optimistic path needs
+its own, as described above. Neither test substitutes for the other.
 
 ## Lock timeouts
 

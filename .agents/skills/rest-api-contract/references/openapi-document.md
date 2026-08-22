@@ -8,16 +8,16 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 
 ## Contents
 
-1. [Which OpenAPI version](#which-openapi-version)
+1. [Which OpenAPI version and serialization format](#which-openapi-version-and-serialization-format)
 2. [Document structure](#document-structure)
 3. [Describing an operation](#describing-an-operation)
 4. [Describing errors](#describing-errors)
 5. [Code-first production and the drift gate](#code-first-production-and-the-drift-gate)
 6. [Exposure](#exposure)
 
-## Which OpenAPI version
+## Which OpenAPI version and serialization format
 
-Record the version in `docs/project-profile.md` and keep one throughout the document.
+Record both in `docs/project-profile.md` and keep one of each throughout the document.
 
 | | OpenAPI 3.0 | OpenAPI 3.1 |
 | --- | --- | --- |
@@ -29,6 +29,16 @@ springdoc 2.x emits 3.0 by default and 3.1 on request. Choose 3.1 only after con
 consumer's tooling reads it; a document a consumer's generator cannot parse is worse than an older
 dialect. Whichever is chosen, express nullability that one way everywhere — a document mixing both
 styles will be read inconsistently.
+
+**The serialization format is JSON or YAML, and the extension of the committed document path in the
+profile is what selects it.** Both are valid OpenAPI and no rule here prefers one; what matters is
+that the repository holds exactly one document in exactly one format, because two copies drift and
+a reviewer cannot tell which one a consumer reads.
+
+- YAML diffs better in a pull request and is easier to hand-author, which usually makes it the fit for a contract-first document a person maintains.
+- JSON is what a generator emits without extra configuration, which usually makes it the fit for a code-first document nobody edits by hand.
+- The examples in this reference are YAML for readability and the drift gate below is JSON for brevity. **Neither choice is a recommendation.** Follow the extension recorded in the profile, and make the endpoint the gate reads match it: springdoc serves the document at `/v3/api-docs` as JSON and `/v3/api-docs.yaml` as YAML, so a YAML project reads the second and parses it with a YAML mapper.
+- Do not commit both formats, and do not convert between them as a side effect of another change. A format change is a change to the artifact every consumer diffs.
 
 ## Document structure
 
@@ -165,7 +175,8 @@ class OpenApiContractIntegrationTest {
 
 Notes:
 
-- Comparing parsed trees rather than text avoids failures from key ordering and formatting.
+- **The example uses a JSON path only to keep it short.** Replace the constant, the endpoint, and the parser with the `.json`, `.yaml`, or `.yml` document recorded in `docs/project-profile.md`; the example never selects the format for the repository.
+- Comparing parsed trees rather than text avoids failures from key ordering and formatting, and it is what makes the format substitution above a one-line change: a YAML mapper produces the same tree type, so only the mapper and the endpoint differ.
 - The failure message tells the reader what to do. A contract gate that fails with a wall of JSON teaches people to regenerate without looking, which defeats the gate.
 - Provide a documented command that rewrites the committed document, so updating it is deliberate and one step.
 - The test needs the application context, so it is an integration test and follows the naming and phase rules in `spring-boot-testing`.

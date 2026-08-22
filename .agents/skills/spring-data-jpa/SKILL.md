@@ -266,12 +266,15 @@ semantics, and how long a transaction may stay open. This section owns what happ
 
 ## Concurrency and locking
 
-- Prefer optimistic locking with `@Version` for normal concurrent editing.
+- **Choose the strategy per operation, not per entity.** Both appear in most applications and frequently on the same aggregate: editing a product is optimistic, reserving its stock is pessimistic. Optimistic is the default because it costs nothing when nothing collides.
 - **The application absorbs contention; the caller does not.** Repeat the operation through the project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, and surface `409 Conflict` only when the retry policy is exhausted. Never answer routine contention by asking the caller to send the request again, and never write a retry loop by hand.
 - That annotation composes `@Transactional` with the framework's declarative retry, so the retry advice wraps the transaction and each attempt gets a fresh one. Never catch the optimistic failure below it: an aggregate service performs the write and lets the version check surface at commit.
 - Retry only when the complete operation is safe to repeat: it recomputes from state it re-reads and has produced no external side effect.
 - Retry cannot prevent a stale-client overwrite, where a caller submits values computed from state it no longer has. That needs a version supplied by the caller — a read-only field in the update TO, or `ETag` with `If-Match` — and `docs/project-profile.md` records which, or records that every write is transformational and neither is needed. A caller-supplied version is verified, never assigned to `@Version`.
-- Use pessimistic locking only when measured contention and invariants justify blocking.
+- Use a pessimistic lock when the invariant requires blocking — allocating limited stock, seats, or a numbered sequence, claiming a work item, or protecting an invariant spanning rows. Those are structurally pessimistic and need no measurement. Only buying a lock purely for throughput on a hot row requires evidence from production.
+- `@Version` is a property of the entity, not of an operation, so it cannot exist for only some methods. Keep it whenever any path to that entity uses optimistic concurrency, including paths that also take a pessimistic lock. An entity reached exclusively under a pessimistic lock does not need it, and adding one there buys nothing.
+- Modifying a pessimistically locked entity increments the version through the ordinary update, so a concurrent optimistic **writer** still sees the conflict. Locking without modifying does not; `PESSIMISTIC_FORCE_INCREMENT` exists for that case.
+- Never add `PessimisticLockingFailureException` or `CannotAcquireLockException` to the optimistic retry annotation. A lock timeout means another caller holds the row, and retrying immediately lengthens the queue. Decide retry for a locked path separately, with a smaller attempt count.
 - Invoke pessimistic-lock repository methods only inside an active transaction and complete all locked work before that transaction ends.
 - Configure lock timeouts where supported and lock multiple rows in a consistent order.
 - Keep locked transactions especially short.

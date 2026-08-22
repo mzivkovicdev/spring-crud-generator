@@ -59,7 +59,7 @@ Last updated: YYYY-MM-DD
 | OpenAPI version | `ASK` | 3.1 | 3.0 \| 3.1 \| n/a | `rest-api-contract` |
 | API versioning strategy | `ASK` | URI path | URI path \| header \| query parameter \| media type | `rest-api-contract` |
 | Known consumers | `ASK` |  |  | `rest-api-contract` |
-| Committed document path | `ASK` | src/main/resources/openapi/openapi.json | src/main/resources/openapi/openapi.json | `rest-api-contract` |
+| Committed document path | `ASK` | src/main/resources/openapi/openapi.json | one path; its `.json` or `.yaml` extension selects the format | `rest-api-contract` |
 | Document regeneration command | `RESOLVE` |  |  | `rest-api-contract` |
 | Published document location | `ASK` |  |  | `rest-api-contract` |
 | Live API versions and retirement dates | `ASK` |  |  | `rest-api-contract` |
