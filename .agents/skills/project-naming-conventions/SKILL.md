@@ -9,22 +9,25 @@ Choose names that preserve business meaning, architectural boundaries, compatibi
 
 ## Coordination with other skills
 
-Treat this skill as the owner of naming vocabulary, identifier form, cross-boundary consistency, and rename safety. Let the specialized skills own behavior:
+This skill owns naming vocabulary, identifier form, cross-boundary consistency, and rename safety.
+Let the specialized skills own behavior.
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, and exception handling; this skill owns exception names |
-| `spring-boot-patterns` | REST-only architecture, TO–Domain–Entity boundaries, service contracts, mapper responsibilities, configuration design, and package responsibilities |
-| `spring-data-jpa` | Persistence semantics, mappings, queries, transaction behavior inside the boundary, indexes, constraints, and database behavior |
-| `sql-database-migration` | Relational schema migration files, ordering, expand-and-contract, backfills, seed data, and clean-install verification |
-| `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
-| `spring-boot-testing` | Test scope, scenarios, fixtures, doubles, isolation, and execution; this skill still owns test names |
-| `build-and-dependencies` | Build files, dependency and plugin declarations, and version management; this skill owns module and artifact names |
-| `rest-api-contract` | The OpenAPI document, compatibility judgement, versioning, and deprecation; this skill owns the names that appear in it and how they may be migrated |
-| `observability-and-logging` | What must be instrumented, log levels and placement, correlation propagation, and endpoint exposure; this skill owns meter, tag, span, and structured-log field names |
-| `spring-boot-code-review` | Review scope, evidence, severity, reporting, and merge-readiness decisions |
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
 
-Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric, feature flag, or infrastructure resource that the design does not require.
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Java types | the name | `modern-java-21` owns type design; `spring-boot-patterns` owns the architectural role |
+| Exceptions | the name | `spring-boot-patterns` owns the handling contract that decides which exception exists |
+| Database objects | the name | `spring-data-jpa` owns the mapping; `sql-database-migration` owns the migration |
+| Meters, spans, log fields | the name | `observability-and-logging` owns which must exist |
+| Contract names | the name and how it may be migrated | `rest-api-contract` owns compatibility, versioning, deprecation |
+| Tests | the test name | `spring-boot-testing` owns scope, scenarios, fixtures, execution |
+
+Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new
+architectural layer, CQRS terminology, interface, abstraction, database object, message type,
+metric, feature flag, or infrastructure resource that the design does not require.
 
 Preserve the established project terminology:
 
@@ -156,14 +159,14 @@ Use a role suffix only when the type performs that role. Prefer the specific res
 | `UserRestMapper` | `UserConverterUtil` |
 | `CatalogClient` | `CatalogHelper` |
 | `ExpiredReservationCleanupJob` | `ReservationProcessor` |
+| `ResourceNotFoundException` | `OrderException` |
 
 Exception names follow the handling contract, not the resource. An order is a resource, so a missing
 order is a `ResourceNotFoundException`; introduce `OrderNotFoundException` only when that condition
 needs a different status, problem type, or recovery from every other missing resource. See
 [Name exceptions](references/java-spring-and-test-names.md#name-exceptions).
-| `ResourceNotFoundException` | `OrderException` |
 
-Follow the service-interface decision owned by `spring-boot-patterns`. Use
+Follow the service-interface decision recorded in the project profile and owned by `spring-boot-patterns`. Use
 `<Name>Impl` when the user selected that convention or the repository already applies it
 coherently; otherwise, `Impl` is not required. Do not create an interface only to produce an `Impl`
 class. When multiple implementations differ by stable behavior or mechanism, prefer names such as

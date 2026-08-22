@@ -13,14 +13,15 @@ exists because the naive version passes its tests and loses data in production.
 
 1. [Choosing a strategy](#choosing-a-strategy)
 2. [Optimistic locking](#optimistic-locking)
-3. [Translating a lock failure at the service boundary](#translating-a-lock-failure-at-the-service-boundary)
-4. [Retrying an optimistic failure](#retrying-an-optimistic-failure)
-5. [Pessimistic locking](#pessimistic-locking)
-6. [Lock timeouts](#lock-timeouts)
-7. [Lock ordering and deadlocks](#lock-ordering-and-deadlocks)
-8. [Uniqueness is a constraint, not a check](#uniqueness-is-a-constraint-not-a-check)
-9. [Bulk DML](#bulk-dml)
-10. [Rejected code](#rejected-code)
+3. [Server-side retry versus a client-supplied version](#server-side-retry-versus-a-client-supplied-version)
+4. [Translating a lock failure at the service boundary](#translating-a-lock-failure-at-the-service-boundary)
+5. [Retrying an optimistic failure](#retrying-an-optimistic-failure)
+6. [Pessimistic locking](#pessimistic-locking)
+7. [Lock timeouts](#lock-timeouts)
+8. [Lock ordering and deadlocks](#lock-ordering-and-deadlocks)
+9. [Uniqueness is a constraint, not a check](#uniqueness-is-a-constraint-not-a-check)
+10. [Bulk DML](#bulk-dml)
+11. [Rejected code](#rejected-code)
 
 ## Choosing a strategy
 
@@ -72,10 +73,54 @@ Rules:
 - `@Version` protects the entity it is declared on. Changing a child row in a `@OneToMany` does not bump the parent's version unless the parent is also modified or `OPTIMISTIC_FORCE_INCREMENT` is requested.
 - Bulk DML bypasses the check entirely. See [bulk DML](#bulk-dml).
 
+## Server-side retry versus a client-supplied version
+
+Before writing any retry, decide which problem is being solved. They look identical and they are not.
+
+| Problem | What happens | What fixes it |
+| --- | --- | --- |
+| **Internal contention** — two concurrent operations recompute their result from state they re-read | The loser fails the version check at commit | Server-side retry. The second attempt re-reads and recomputes, so it produces a correct result without the caller ever knowing |
+| **Stale-client write** — a caller read at T1, a human edited, another caller changed the row at T2, the edit arrives at T3 | The stale values are applied on top of newer ones | Only a version supplied by the caller. Retry cannot help and makes it worse |
+
+**Server-side retry is the default, and it is the backend's job.** A caller should never be asked to
+repeat a request because two transactions collided inside the application; that is contention the
+application created and the application absorbs. Only after the retry policy is exhausted does a
+`409 Conflict` reach the caller, and by then it means genuine sustained contention, not a routine
+race.
+
+The limit is worth stating precisely, because it is the reason a retry cannot be the whole answer.
+Retry works when the operation **recomputes** its result from re-read state: decrement a quantity,
+advance a status, apply a delta. On the second attempt the entity is loaded again, the new state is
+observed, and the outcome is correct. Retry does **not** work when the operation **overwrites** with
+values a caller computed earlier from state it no longer has: a full-representation update where a
+person edited a stale form. Re-reading changes nothing, because the values being written did not come
+from the read. The retry succeeds, no exception is thrown anywhere, and one user's edit silently
+disappears.
+
+So the two mechanisms are not alternatives:
+
+- **Partial or transformational updates** — a delta, a state transition, a `PATCH` of named fields —
+  are covered by retry alone. Return `409` on exhaustion and require nothing of the caller.
+- **Full-representation updates where a human edited a form** need the version the caller actually
+  edited. Two shapes are acceptable, and `docs/project-profile.md` records which the project uses:
+  a read-only `version` field carried in the update TO, which is the simpler option and needs no
+  header handling; or `ETag` with `If-Match`, which is the standards-conformant option and lets
+  intermediaries participate. With the header, a mismatch is `412 Precondition Failed` and a missing
+  header is rejected as `428 Precondition Required`; with the TO field, the mismatch is `409`. Either
+  way the version is **verified, never applied** — `@Version` stays owned by the provider and is
+  never assigned from a request.
+
+`spring-boot-patterns` owns where the check sits in the layers and `rest-api-contract` owns
+documenting whatever the project chose. Neither is required when every write is transformational,
+which is common; recording `server retry only` is a legitimate answer.
+
 ## Translating a lock failure at the service boundary
 
 A lock failure is a normal, expected outcome under concurrency, not a server fault. It becomes a
-stable conflict contract at the service boundary, never a leaked framework exception.
+stable conflict contract at the use-case boundary, never a leaked framework exception.
+
+The aggregate service does not catch it. It performs the write and lets the version check happen at
+commit, where the retry advice can observe it:
 
 ```java
 @Service
@@ -89,73 +134,210 @@ public class InventoryService {
 
     @Transactional
     public InventoryDomain reserve(final String sku, final int quantity) {
-        
+
         final InventoryEntity inventory = this.inventoryRepository
                 .findById(sku)
                 .orElseThrow(() -> new InventoryNotFoundException(sku));
 
+        if (inventory.getAvailableQuantity() < quantity) {
+            throw new InsufficientInventoryException(sku, quantity);
+        }
         inventory.setAvailableQuantity(inventory.getAvailableQuantity() - quantity);
 
-        try {
-            return InventoryDomainMapper.INSTANCE.mapInventoryEntityToInventoryDomain(
-                    this.inventoryRepository.saveAndFlush(inventory));
-        } catch (final ObjectOptimisticLockingFailureException failure) {
-            throw new ConcurrentModificationConflictException(sku, failure);
-        }
+        return InventoryDomainMapper.INSTANCE.mapInventoryEntityToInventoryDomain(
+                this.inventoryRepository.save(inventory));
     }
 }
 ```
 
-`ConcurrentModificationConflictException` is a project exception declared in the error catalog that
-`spring-boot-patterns` owns, and it maps to `409 Conflict`. The caller learns that the resource
-changed underneath it and can retry with fresh state; it learns nothing about JPA.
-
-**`saveAndFlush` is deliberate here, and it is the whole point of the example.** The version check
-happens at flush, which by default is at commit — after the method body has returned. A `try` block
-wrapped around a plain `save` therefore catches nothing, and the framework exception escapes to the
-caller as a `500`. This is the most frequent mistake in the pattern. Either force the check to a
-point the `catch` can observe, as above, or place the translation in an exception handler and accept
-that the service method cannot react to the conflict itself.
+**Why there is no `try`/`catch` here, and why this is the whole point.** The version check happens at
+flush, which by default is at commit — after the method body has returned. A `catch` wrapped around
+`save` inside this method therefore catches nothing, and the framework exception escapes as a `500`.
+Forcing the check earlier with `saveAndFlush` only to catch it locally is the wrong repair: it
+discards a round trip's worth of batching and it puts the conflict policy inside the aggregate, which
+has no idea whether the use case may be repeated. Let the exception surface from the transaction
+interceptor and handle it one layer out, where the retry advice runs.
 
 ## Retrying an optimistic failure
 
-Retry only when repeating the **complete** operation is safe, and retry outside the failed
-transaction. A retry inside it reuses a persistence context that is already inconsistent.
+Retry is expressed as one project-owned annotation, so the policy is uniform, visible in the method
+signature, and impossible to reimplement slightly differently in each use case.
+
+### The annotation
 
 ```java
-@Service
-public class InventoryReservationApplicationService {
+/**
+ * Repeats the annotated operation while it loses an optimistic version check.
+ *
+ * <p>Each attempt runs in its own transaction, because the advice that implements this
+ * annotation is ordered outside the transaction advice. Annotate only an operation that is
+ * safe to repeat in full: it must recompute its result from state it re-reads, and it must
+ * produce no external side effect before it commits.
+ *
+ * <p>When the attempts or the budget run out, the last failure is translated into the
+ * project's conflict exception, which the error catalog maps to {@code 409 Conflict}.
+ */
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface RetryOnOptimisticConflict {
 
-    private static final int MAXIMUM_ATTEMPTS = 3;
+    /** Total attempts including the first; must be at least one. */
+    int maximumAttempts() default 3;
 
-    private final InventoryService inventoryService;
+    /** Upper bound of the randomized pause before the second attempt. */
+    long initialBackoffMillis() default 50L;
 
-    public InventoryReservationApplicationService(final InventoryService inventoryService) {
-        this.inventoryService = inventoryService;
-    }
+    /** Factor applied to the backoff bound after each failed attempt. */
+    double backoffMultiplier() default 2.0d;
 
-    InventoryDomain reserveWithRetry(final String sku, final int quantity) {
-        ConcurrentModificationConflictException lastConflict = null;
+    /** Wall-clock ceiling for all attempts together; must stay inside the request budget. */
+    long budgetMillis() default 2000L;
+}
+```
 
-        for (int attempt = 1; attempt <= MAXIMUM_ATTEMPTS; attempt++) {
+### The advice
+
+```java
+@Aspect
+@Component
+@Order(OptimisticConflictRetryAspect.ORDER)
+public class OptimisticConflictRetryAspect {
+
+    /**
+     * Higher precedence than the transaction advice, which defaults to
+     * {@link Ordered#LOWEST_PRECEDENCE}. The retry therefore wraps the transaction, so each
+     * attempt commits or rolls back on its own.
+     */
+    public static final int ORDER = Ordered.LOWEST_PRECEDENCE - 100;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OptimisticConflictRetryAspect.class);
+
+    private final Clock clock;
+    private final MeterRegistry meterRegistry;
+
+    // Constructor omitted; both dependencies are required.
+
+    @Around("@annotation(retryPolicy)")
+    public Object retry(
+            final ProceedingJoinPoint joinPoint,
+            final RetryOnOptimisticConflict retryPolicy) throws Throwable {
+
+        final String operation = joinPoint.getSignature().toShortString();
+        final Instant deadline = this.clock.instant().plusMillis(retryPolicy.budgetMillis());
+        long backoffBound = retryPolicy.initialBackoffMillis();
+
+        for (int attempt = 1; ; attempt++) {
             try {
-                return this.inventoryService.reserve(sku, quantity);
-            } catch (final ConcurrentModificationConflictException conflict) {
-                lastConflict = conflict;
+                final Object result = joinPoint.proceed();
+                if (attempt > 1) {
+                    this.meterRegistry.counter("optimistic.conflict.retry.succeeded").increment();
+                }
+                return result;
+            } catch (final OptimisticLockingFailureException failure) {
+                final boolean attemptsLeft = attempt < retryPolicy.maximumAttempts();
+                final boolean budgetLeft = this.clock.instant().isBefore(deadline);
+
+                if (!attemptsLeft || !budgetLeft) {
+                    this.meterRegistry.counter("optimistic.conflict.retry.exhausted").increment();
+                    LOGGER.warn("Optimistic conflict not resolved after {} attempts", attempt);
+                    throw new ConcurrentModificationConflictException(operation, failure);
+                }
+
+                this.meterRegistry.counter("optimistic.conflict.retry.attempted").increment();
+                OptimisticConflictRetryAspect.pause(backoffBound, failure);
+                backoffBound = (long) (backoffBound * retryPolicy.backoffMultiplier());
             }
         }
+    }
 
-        throw lastConflict;
+    private static void pause(final long backoffBound, final OptimisticLockingFailureException failure) {
+
+        try {
+            Thread.sleep(ThreadLocalRandom.current().nextLong(1L, backoffBound + 1L));
+        } catch (final InterruptedException interruption) {
+            Thread.currentThread().interrupt();
+            throw new ConcurrentModificationConflictException("interrupted", failure);
+        }
     }
 }
 ```
 
-Rules:
+### Applying it
 
-- The retry sits in a **different bean** from the transactional method. A retry loop inside the transactional method never starts a new transaction, because self-invocation bypasses the proxy — `spring-boot-patterns` owns that rule.
-- Bound the attempts and count the retries as a metric, per `observability-and-logging`. Unbounded retry against a permanently contended row is an outage that reports itself as healthy.
-- Do not retry an operation with an external side effect unless the effect is idempotent.
-- Where `docs/project-profile.md` records a resilience library, use its retry support instead of a hand-written loop. Do not introduce one merely to avoid writing this loop.
+The annotation goes on the use-case entry point — the application service method when one exists,
+otherwise the aggregate service method — and never on a method that is already running inside a
+caller's transaction.
+
+```java
+@Service
+public class OrderPlacementApplicationService {
+
+    private final InventoryService inventoryService;
+    private final OrderService orderService;
+
+    // Constructor omitted; both dependencies are required.
+
+    /**
+     * Places an order, absorbing inventory contention transparently.
+     *
+     * <p>Not annotated {@code @Transactional}: the retry must be able to start a fresh
+     * transaction per attempt, and the aggregate services open their own.
+     *
+     * @param command the validated placement values; must not be {@code null}
+     * @return the placed order; never {@code null}
+     * @throws ConcurrentModificationConflictException when contention outlives the retry policy
+     */
+    @RetryOnOptimisticConflict(maximumAttempts = 4, budgetMillis = 1500L)
+    public OrderDomain place(final OrderPlacementDomain command) {
+        final InventoryDomain reserved =
+                this.inventoryService.reserve(command.sku(), command.quantity());
+        return this.orderService.create(command, reserved.reservationId());
+    }
+}
+```
+
+### Rules
+
+- **The advice must run outside the transaction, and its order is what guarantees that.** Transaction
+  advice defaults to `Ordered.LOWEST_PRECEDENCE`, so any smaller order value wraps it. If the project
+  sets an explicit order via `@EnableTransactionManagement(order = ...)`, keep the aspect's order
+  below it. Get this wrong and every retry reuses a persistence context already marked rollback-only,
+  which fails identically on every attempt while looking like a correctly configured policy. Prove
+  the ordering with an integration test that counts committed attempts, not by reading the
+  annotations.
+- **Only annotate an operation that is safe to repeat in full.** It must recompute from state it
+  re-reads, and it must not have produced an external side effect. An effect published through
+  `@TransactionalEventListener(AFTER_COMMIT)` is safe, because a rolled-back attempt never fires it;
+  a direct call to a payment provider inside the method is not.
+- **Do not annotate a method that a caller already wrapped in a transaction**, and never rely on
+  self-invocation. Both bypass the proxy or defeat the fresh-transaction requirement.
+- **Do not combine the annotation with a `catch` for the same failure** in the annotated method or
+  below it. A swallowed `OptimisticLockingFailureException` never reaches the advice, and the retry
+  becomes decoration.
+- **Back off with a randomized pause.** An immediate retry recreates the exact concurrency that
+  caused the conflict; the random component stops several callers from waking together and colliding
+  in waves.
+- **Bound attempts and elapsed time separately.** Attempts alone are not a bound, because each one
+  carries a transaction and a round trip. Keep the budget inside the request budget
+  `spring-boot-patterns` records.
+- **Inject `Clock`.** The deadline is then testable, which is the only way the exhausted-budget path
+  gets covered at all.
+- **Restore the interrupt flag and stop.** An interrupted thread is being shut down.
+- **Meter attempts, successes after retry, and exhaustions**, per `observability-and-logging`. An
+  operation that always succeeds on the third attempt is a design problem reporting itself as
+  healthy. Log only the exhaustion; a routine retry is not a `WARN`.
+- **`ConcurrentModificationConflictException` is declared in the error catalog** that
+  `spring-boot-patterns` owns and maps to `409 Conflict`. The caller learns the resource is contended
+  and nothing about JPA.
+- **Where `docs/project-profile.md` records a resilience library, or on Spring Boot 4 where
+  `org.springframework.core.retry` is available, implement the annotation over that mechanism instead
+  of the hand-written loop.** The annotation and its policy stay project-owned either way, so call
+  sites never change; only the advice body does. `build-and-dependencies` owns the declaration.
+- **Test it as concurrency, not as configuration.** A single-threaded test proves nothing here. Drive
+  two transactions to the same row, assert one caller succeeds without an error, assert the attempt
+  counter moved, and assert the exhaustion path returns the conflict contract when the budget is
+  driven to zero.
 
 ## Pessimistic locking
 
@@ -299,7 +481,7 @@ try {
 // Rejected: self-invocation. The retry reuses the same failed transaction and the same
 // inconsistent persistence context, because the proxy is bypassed.
 @Transactional
-public InventoryDomain reserve(final String sku, final int quantity) {
+InventoryDomain reserve(final String sku, final int quantity) {
     try {
         return doReserve(sku, quantity);
     } catch (final ObjectOptimisticLockingFailureException failure) {
@@ -309,9 +491,32 @@ public InventoryDomain reserve(final String sku, final int quantity) {
 ```
 
 ```java
+// Rejected: the retry annotation on a method that also opens the transaction, with the
+// aspect ordered after the transaction advice. Every attempt then rejoins a transaction
+// already marked rollback-only, so all of them fail identically while the policy looks
+// correctly configured.
+@Transactional
+@RetryOnOptimisticConflict
+public OrderDomain place(final OrderPlacementDomain command) { ... }
+```
+
+```java
+// Rejected: the failure swallowed below the advice. The annotation is decoration, because
+// the exception the retry exists to observe never leaves the aggregate service.
+@RetryOnOptimisticConflict
+public OrderDomain place(final OrderPlacementDomain command) {
+    try {
+        return this.orderService.create(command);
+    } catch (final OptimisticLockingFailureException failure) {
+        throw new OrderPlacementFailedException(failure);
+    }
+}
+```
+
+```java
 // Rejected: a pessimistic lock with no transaction. The lock is released as the method
 // returns, so the caller operates on unprotected state while believing it is locked.
-public InventoryEntity load(final String sku) {
+InventoryEntity load(final String sku) {
     return this.inventoryRepository.findForUpdate(sku).orElseThrow();
 }
 ```

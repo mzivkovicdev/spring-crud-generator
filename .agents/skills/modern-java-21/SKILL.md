@@ -11,20 +11,22 @@ This skill is authoritative for Java source rules in every file, production and 
 
 ## Coordination with other skills
 
-| Owner | Owns |
-| --- | --- |
-| `project-naming-conventions` | Identifier forms and suffixes; this skill owns Java type design |
-| `spring-boot-testing` | Test scope, scenarios, fixtures, isolation, execution |
-| `build-and-dependencies` | The compiler and quality-gate configuration that enforces these rules |
-| `observability-and-logging` | Every logging rule: levels, placement, message and field structure, correlation context, and what a log call may cost |
-| `application-security` | What may never appear in a log, a message, or an exception, and data classification |
-| `spring-boot-patterns` | Layer responsibilities, service and mapper contracts, and the public error contract an exception ends up in |
-| `spring-data-jpa` | Persistence semantics behind the types this skill shapes |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
+This skill is authoritative for Java source rules in every file, production and test.
 
-This skill states no logging rule of its own. When a touched file logs, read
-`observability-and-logging`; when it handles data that might be confidential, read
-`application-security`. Do not infer a level, a placement, or a redaction rule from this skill.
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Naming | Java type and method design | `project-naming-conventions` owns identifier forms and suffixes |
+| Logging | nothing — this skill states no logging rule | `observability-and-logging` owns level, placement, and fields |
+| Exceptions | throw, catch, and translation mechanics | `spring-boot-patterns` owns the public error contract they land in |
+| Enforcement | the rule | `build-and-dependencies` owns the gate that checks it |
+
+When a touched file logs, read `observability-and-logging`; when it handles data that might be
+confidential, read `application-security`. Do not infer a level, a placement, or a redaction rule
+from this skill.
 
 ## Reference routing
 

@@ -9,24 +9,26 @@ Implement vertical, tested features using the project's supported Spring Boot ve
 
 ## Coordination with other skills
 
-This skill owns the Spring Boot boundaries: controllers, TOs, services, domain models, the layer
-structure, and the error contract. Everything else has an owner, and that owner is authoritative:
+This skill owns the Spring Boot boundaries: controllers, TOs, services and their two levels, domain
+models, mappers, validation, the error contract, configuration design, package responsibilities, and
+where the transaction boundary sits. It also owns `docs/project-profile.md` and the decision tokens
+every other skill reads.
 
-| Owner | Owns |
-| --- | --- |
-| `modern-java-21` | Java language use, imports, Javadoc, nullability, exception mechanics, source structure |
-| `spring-boot-testing` | Test scope, scenario selection, fixtures, isolation, execution |
-| `spring-data-jpa` | Entities, repositories, queries, transaction behavior inside the boundary, locking, database performance; this skill owns where that boundary sits |
-| `sql-database-migration` | Relational schema migration files, ordering, expand-and-contract, backfills, seed data, and clean-install verification |
-| `application-security` | Trust boundaries, identity, authorization, confidential data, dangerous input, external systems |
-| `rest-api-contract` | The public contract, its document, and whether a change is breaking |
-| `observability-and-logging` | Logging, correlation context, metrics, tracing, actuator endpoints |
-| `build-and-dependencies` | Build files, dependencies, plugins, compiler and processor configuration |
-| `project-naming-conventions` | Every developer-owned name, including exception names |
-| `spring-boot-code-review` | Review scope, evidence, severity, reporting |
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Transactions | which method carries the annotation, and where the boundary sits | `spring-data-jpa` owns what the settings mean |
+| Locking | which layer the retry annotation sits on | `spring-data-jpa` owns `@Version`, lock modes, and the retry mechanism |
+| Repositories | where the boundary sits and what may cross it | `spring-data-jpa` owns repository and query design |
+| The public contract | the TO, the `ProblemDetail`, the error catalog | `rest-api-contract` owns whether a change to them is breaking |
+| Instrumentation | where it sits in the layers | `observability-and-logging` owns what is emitted and at what level |
 
 Do not restate or fork an owner's rules here. Report an unresolved conflict instead of inventing a
-second standard.
+second standard; when it is genuine and cannot wait, apply the precedence order in
+[the ownership map](../_core/OWNERSHIP.md) and say in the handoff which rule was set aside.
 
 ## Reference routing
 
@@ -84,9 +86,21 @@ set uses exactly these three tokens and no synonym.
 
 | Token | Who settles it | Does it block? |
 | --- | --- | --- |
-| `ASK` | The user, and only the user | **Yes.** Stop and ask. There is no defensible default, and a wrong answer is expensive to reverse. |
+| `ASK` | The user, and only the user | **Yes**, unless the template row records a fallback. Stop and ask. There is no defensible default, and a wrong answer is expensive to reverse. |
 | `RESOLVE` | The agent, by looking the answer up and recording it | **No.** Resolve it, record it, and state in the handoff what was chosen and why, so the user overrides once instead of being asked every time. |
 | `UNDECIDED` | Deferred on purpose | **No**, unless the current task touches it. Record what will force the decision. |
+
+**Fallbacks live in one place: the `Fallback` column of the template.** Some `ASK` rows have a
+sanctioned safe answer — concrete service classes, no Lombok, Swagger UI never exposed, server-side
+retry only. For those, and only those, an unanswered decision does not block: apply the fallback,
+write it into the profile as the value, and **state in the handoff that a fallback was applied**, so
+the user overrides once instead of being asked every time. An `ASK` row with an empty fallback
+blocks, with no exception.
+
+No skill may introduce a fallback in its own prose. If a rule elsewhere in this set reads like a
+default for a profile decision, the template is authoritative and that prose is the defect to fix.
+This is what keeps three different agents from reaching three different answers on the same empty
+repository.
 
 A decision is `ASK` when nothing in the repository or the ecosystem points to one answer over
 another: the build tool, the database engine, the migration tool, whether a contract document
@@ -109,8 +123,9 @@ decisions carry which token; do not reclassify one here.
 2. If the file is missing, create it from [the template asset](assets/project-profile-template.md). If entries are missing, identify exactly which.
 3. Fill what the repository already proves — a declared dependency, an applied migration, an existing package layout, a configured datasource.
 4. Complete every `RESOLVE` the task touches, without asking.
-5. **Ask the user, in one message, for every `ASK` still unresolved**, offering the template's allowed values so each answer is one word. Do not ask one question per skill, and do not ask again for something already recorded.
-6. Write the answers into the profile, then implement.
+5. Apply the template's `Fallback` value for every unresolved `ASK` row that has one, record it, and note it in the handoff.
+6. **Ask the user, in one message, for every remaining `ASK` with no fallback**, offering the template's allowed values so each answer is one word. Do not ask one question per skill, and do not ask again for something already recorded.
+7. Write the answers into the profile, then implement.
 
 Exceptions are narrow: documentation, comment, or formatting changes need no profile, and a task may
 proceed on a partial profile as long as every decision *that task* touches is recorded. Never assume
@@ -228,6 +243,14 @@ graphs.
 | --- | --- | --- | --- |
 | `<Aggregate>Service` | `service` | One aggregate root: its repositories, its invariants, every write to it | A repository of another aggregate, or any other service |
 | `<Capability>ApplicationService` | `applicationservice` | One coherent use case group: the transaction boundary and the order of calls | A repository, an entity, or another application service |
+
+**The transaction boundary is the highest service the use case enters.** When an application service
+exists it opens the transaction and the aggregate services it calls join it, so the whole use case
+commits or rolls back together. When the operation stays inside one aggregate and no application
+service exists, that aggregate service is the boundary and opens its own transaction. Both levels
+are therefore annotated `@Transactional` with the default propagation, which is what makes either
+arrangement correct without changing a line. Do not create an application service purely to hold a
+transaction, and do not weaken an aggregate service to `SUPPORTS` or `MANDATORY` to force one.
 
 Determine the aggregate by **lifecycle ownership**, not by table count and not by the reference
 graph: a row belongs to the aggregate when it cannot exist without the root and the root is what
@@ -387,7 +410,7 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] `docs/project-profile.md` existed before implementation and records every decision the change relied on. Nothing was assumed, inferred, or guessed.
 - [ ] Controller/listener is a thin transport boundary.
 - [ ] Business rules are in service/domain code, and each rule sits at the level that owns it.
-- [ ] The transaction boundary is the application service; no aggregate service overrides propagation or isolation to escape it.
+- [ ] The transaction boundary is the highest service the use case enters: the application service when one exists, otherwise the aggregate service. No aggregate service overrides propagation or isolation to escape it.
 - [ ] No application service holds a repository or a pass-through method, and no aggregate service holds another service.
 - [ ] Every controller handler calls one service, at the level the operation belongs to.
 - [ ] Each external effect uses the delivery mechanism the profile records for it, and a failed delivery is logged rather than silently dropped.

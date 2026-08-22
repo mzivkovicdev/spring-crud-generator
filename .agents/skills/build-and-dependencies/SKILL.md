@@ -14,20 +14,22 @@ applies to whichever one the project uses.
 
 ## Coordination with other skills
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `spring-boot-patterns` | The project profile, architecture, and Spring feature design; this skill owns the build files that realize it |
-| `modern-java-21` | Java language level use and source rules; this skill owns the compiler configuration that enables them |
-| `spring-boot-testing` | Test levels, scenarios, and execution; this skill owns the plugin and source-set configuration that makes those suites actually run |
-| `rest-api-contract` | The OpenAPI document and the authoring direction; this skill owns the springdoc or generator declaration and the build wiring it needs |
-| `spring-data-jpa` | Persistence behavior; this skill owns the driver and annotation-processor declarations it depends on |
-| `sql-database-migration` | Migration content and execution; this skill owns declaring the migration tool, including the Spring Boot 4 starter it requires |
-| `application-security` | Supply-chain risk, provenance, SBOM, vulnerability triage, and CI/CD protection; this skill owns the declarations those rules evaluate |
-| `project-naming-conventions` | Module and artifact names |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting when the task is review-only |
+This skill owns the build files, every dependency and plugin declaration, **all version selection**,
+compiler and annotation-processor configuration, test-phase separation, and quality gates.
 
-Do not restate those rules here. When the user asks for a review rather than a change, produce
-findings under `spring-boot-code-review` and do not edit build files.
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Versions | every version choice in the project | no other skill selects a version |
+| Compiler settings | the configuration | `modern-java-21` owns the language rules it enables |
+| Test phases | the plugin and source-set configuration | `spring-boot-testing` owns which suites must exist |
+| Supply chain | the declarations | `application-security` owns provenance, SBOM, and vulnerability triage |
+
+When the user asks for a review rather than a change, produce findings under
+`spring-boot-code-review` and do not edit build files.
 
 ## Which build decisions block, and which do not
 
@@ -74,6 +76,7 @@ and that is the single answer for every skill.
 - Where a rule genuinely differs between generations, the skill that owns the topic states both cases and names which applies where. Nothing in this set assumes a generation silently.
 - Spring Boot 4 builds on Spring Framework 7, Jakarta EE 11, and a Servlet 6.1 baseline, and carries major versions of Spring Security, Spring Data, and Jackson. Inspect the effective versions from the build rather than assuming them, and treat a generation change as its own task with its own verification.
 - **This skill owns the catalogue of what each thing is called in each generation.** Read [generation differences](references/generation-differences.md) for starter and module coordinates, relocated annotations, and renamed properties. Other skills state the behavior they own and link there for the coordinate; none of them repeats the table.
+- **That catalogue is a written-down value, so it obeys the same rule as a version number.** Verify a row against the project's effective dependency tree and the upstream migration guide before relying on it for the first time in a project, and again before any generation upgrade. The catalogue carries a verification date; whoever verifies it updates that date and corrects what has moved. Never treat a row as current because a coordinate resolves — a renamed artifact can keep publishing under its old name for a whole release line.
 - The single most expensive Spring Boot 4 trap belongs here: because auto-configuration is modularized, a third-party library without its Spring Boot module is inert. The application starts, the build stays green, the tests pass, and the feature never runs. Verify wiring by observing the behavior, never by observing that the dependency resolves.
 - A snippet in these references is written against the generation it names. When it names none, it holds for both; verify it against the project's effective versions before relying on it.
 
@@ -130,7 +133,7 @@ The compiler settings are what make `modern-java-21` and the mapper architecture
 This is the single most common way to break this stack.
 
 - Declare every processor the project needs in one explicit processor path. For this skill set that is the MapStruct processor and the Spring Boot configuration processor.
-- **Lombok is optional.** Nothing here requires it, and the decision belongs in `docs/project-profile.md`. Do not introduce it because an example shows it, and do not remove it from a project that already uses it coherently. If the profile is silent and the repository has no Lombok dependency, the project does not use Lombok.
+- **Lombok is optional.** Nothing here requires it, and the decision belongs in `docs/project-profile.md`. Do not introduce it because an example shows it, and do not remove it from a project that already uses it coherently. If the profile is silent and the repository has no Lombok dependency, apply the template's fallback — no Lombok — and record it.
 - When the project does use Lombok alongside MapStruct, the processor order is **Lombok, then `lombok-mapstruct-binding`, then the MapStruct processor**. Without the binding, MapStruct runs before Lombok generates accessors, and it either fails or silently produces mappers that ignore fields.
 - Omit a version for any processor the Spring Boot BOM manages, and pin only the artifacts it does not, such as the MapStruct processor. Confirm the build tool actually resolves managed versions on the processor path before relying on it; the reference for each tool states the condition.
 - On Maven, declaring `annotationProcessorPaths` disables classpath processor discovery entirely, so every processor must appear in that list. A processor declared only as a dependency stops running.

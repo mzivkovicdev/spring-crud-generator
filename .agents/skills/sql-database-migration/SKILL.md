@@ -14,18 +14,19 @@ rules to cover one.
 
 ## Coordination with other skills
 
-| Owner | Owns |
-| --- | --- |
-| `spring-data-jpa` | Entity mappings, associations, queries, locking, and what the schema has to look like for them to work |
-| `project-naming-conventions` | The form of every name: migration identifiers, tables, columns, constraints, indexes, sequences |
-| `build-and-dependencies` | Declaring the dependency and the plugin in the build file, and the version chosen for each |
-| `spring-boot-testing` | Test levels, fixtures, isolation, and how suites execute |
-| `observability-and-logging` | Whether a startup gate appears in readiness, and what startup emits |
-| `application-security` | Credentials for the migration connection, and data classification of anything a migration touches |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
-
 This skill states what a migration must contain and when it must exist. It does not name files, does
 not declare dependencies, and does not define test levels.
+
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Schema shape | the migration that creates it | `spring-data-jpa` owns what the mapping needs |
+| Wiring | that migrations must actually run | `build-and-dependencies` owns the dependency that runs them |
+| Names | nothing | `project-naming-conventions` owns migration, table, column, constraint, and index names |
+| Startup gate | that a gate exists | `observability-and-logging` owns whether it appears in readiness |
 
 ## The migration tool is a recorded decision
 

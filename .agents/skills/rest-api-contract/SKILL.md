@@ -16,18 +16,20 @@ or verify against.
 
 ## Coordination with other skills
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `project-naming-conventions` | The names themselves: paths, fields, enum values, `operationId`, schema names, problem type URIs |
-| `spring-boot-patterns` | TO shape, thin controllers, `ProblemDetail`, validation, pagination, the error catalog |
-| `application-security` | The authentication and authorization model the contract describes |
-| `build-and-dependencies` | The springdoc or generator dependency, plugin, and build wiring |
-| `spring-boot-testing` | Test levels; this skill owns what about the contract must be asserted |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
+This skill owns the contract, its document, its quality, and its evolution. It does not rename
+anything, redesign a TO, or change an error contract; it decides how those appear in the contract and
+whether a change to them is safe to ship.
 
-This skill owns the document, its quality, and its evolution. It does not rename anything, redesign
-a TO, or change an error contract; it decides how those appear in the contract and whether a change
-to them is safe to ship.
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Payload shape | how a TO appears in the contract | `spring-boot-patterns` owns the TO itself and the error catalog |
+| Names in the document | nothing | `project-naming-conventions` owns paths, fields, `operationId`, schema and problem-type names |
+| Interactive documentation | whether it is exposed | `application-security` owns how it is protected |
+| Contract tests | what must be asserted | `spring-boot-testing` owns the level it runs at |
 
 ## Decide whether the contract has a document
 
@@ -159,7 +161,7 @@ the optional-looking fields are what make it usable:
 - A breaking change requires confirmation from known consumers before it merges, not after.
 - Maintain a list of known consumers in the project profile. With no document, that list is the only mechanism by which a breaking change reaches the people it affects.
 - With a document, publish it where consumers can reach it and record that location in the project profile.
-- Interactive documentation such as Swagger UI is a development and internal tool. Record in the project profile which environments expose it, if any; `never` is a valid answer and the safe default. Wherever it is exposed, `application-security` owns how it is protected, exactly as it does for actuator endpoints.
+- Interactive documentation such as Swagger UI is a development and internal tool. Record in the project profile which environments expose it, if any; the profile's fallback for that row is `never`. Wherever it is exposed, `application-security` owns how it is protected, exactly as it does for actuator endpoints.
 
 ## Anti-patterns
 

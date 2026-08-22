@@ -1,0 +1,60 @@
+# Ownership map
+
+This is the single canonical statement of which skill owns which topic. Every skill links here
+instead of restating the full map, so an ownership change is one edit rather than eleven.
+
+Each skill keeps a short table of the owners it defers to most often. That table is a convenience
+pointer, never a redefinition: when a skill's local table and this file disagree, **this file wins**
+and the skill's table is the defect to fix.
+
+## The map
+
+| Owner | Owns |
+| --- | --- |
+| `modern-java-21` | Java language use, imports, Javadoc, nullability, exception mechanics, type and method design, source structure. Applies to every touched `.java` file, production and test |
+| `spring-boot-patterns` | Controllers, TOs, services and their two levels, domain models, mappers, validation, the error contract, configuration design, package responsibilities, outbound-call structure, and **where the transaction boundary sits**. Owns `docs/project-profile.md` and the decision tokens |
+| `spring-data-jpa` | Entities, repositories, queries, projections, fetch plans, locking, database performance, and **transaction behavior inside the boundary**: propagation, isolation, `readOnly`, flush timing |
+| `sql-database-migration` | Migration files, ordering, immutability, expand-and-contract, backfills, seed data, clean-install verification |
+| `rest-api-contract` | The public contract and its document: completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, drift |
+| `application-security` | Trust boundaries, authentication, authorization, tenant and object ownership, confidentiality and data classification, secrets, cryptography, dangerous sinks, abuse prevention, supply chain, and security verification scenarios |
+| `spring-boot-testing` | Test levels and placement, scenario selection, fixtures, doubles, isolation, determinism, execution |
+| `observability-and-logging` | What must be instrumented and how: log levels and placement, correlation context, meters and tag cardinality, tracing, actuator endpoints, probes |
+| `build-and-dependencies` | Build files, dependency and plugin declarations, **all version selection**, compiler and annotation-processor configuration, test-phase separation, quality gates |
+| `project-naming-conventions` | Every developer-owned name and every rename migration: identifiers, packages, tests, REST paths and fields, database objects, configuration keys, meters, spans, log fields |
+| `spring-boot-code-review` | Review scope, evidence, severity, reporting, merge readiness. Never a second coding standard |
+
+## Split topics
+
+These are the boundaries that get misread. Each row is one topic with two owners and a clean seam.
+
+| Topic | Owner of the rule | Owner of the surrounding decision |
+| --- | --- | --- |
+| Transactions | `spring-data-jpa` owns what the settings mean | `spring-boot-patterns` owns which method carries them |
+| Locking | `spring-data-jpa` owns `@Version`, lock modes, and the retry mechanism | `spring-boot-patterns` owns which layer the retry annotation sits on |
+| Logging in a Java file | `observability-and-logging` owns level, placement, and fields | `application-security` owns what may never appear |
+| Actuator endpoints | `observability-and-logging` owns which are exposed | `application-security` owns how the exposed set is protected |
+| Interactive API documentation | `rest-api-contract` owns whether it is exposed | `application-security` owns how it is protected |
+| Meters, spans, log fields | `observability-and-logging` owns which must exist | `project-naming-conventions` owns what they are called |
+| Migration wiring | `sql-database-migration` owns that a migration must exist | `build-and-dependencies` owns the dependency that runs it |
+| Security test scenarios | `application-security` owns which scenarios are required | `spring-boot-testing` owns the level each runs at |
+| Contract assertions | `rest-api-contract` owns what must be asserted | `spring-boot-testing` owns the level it runs at |
+| Idempotency | `application-security` owns the policy | `spring-boot-patterns` owns where it lives in the layers |
+| Versions of anything | `build-and-dependencies` owns every version choice | no other skill selects a version |
+
+## Precedence when two skills genuinely conflict
+
+Report the conflict rather than inventing a third standard. When the work cannot wait for an answer,
+resolve it in this order and say in the handoff which rule was applied and which was set aside:
+
+1. **`application-security`.** A control is never weakened to satisfy another rule. Where two
+   readings are compatible, take the stricter one.
+2. **`sql-database-migration` and `rest-api-contract`.** These describe commitments already deployed
+   to somebody else — a schema in a running database, a payload a consumer parses. Breaking one is a
+   deployment of another team's software.
+3. **`spring-boot-patterns`.** The architecture the rest of the set assumes.
+4. **The topic owner from the map above.**
+5. **`project-naming-conventions` and `modern-java-21`.** Style and vocabulary yield to correctness,
+   never the reverse.
+
+`spring-boot-code-review` never wins a precedence contest, because it states no rule of its own. It
+reports the conflict.

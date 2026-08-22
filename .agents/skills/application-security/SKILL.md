@@ -12,22 +12,22 @@ Build security into every affected boundary. Protect confidentiality, integrity,
 This skill owns threat analysis, confidentiality, authentication, authorization, API abuse
 prevention, secrets, cryptography, dangerous trust boundaries, cloud and messaging security,
 security verification, and release risk. Follow the stricter compatible rule and never weaken an
-existing control merely to simplify a feature.
+existing control merely to simplify a feature. When two skills genuinely conflict, this skill takes
+precedence.
+
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Telemetry | what must never appear in it, and who may reach it | `observability-and-logging` owns how it is produced |
+| Exposed endpoints | how anything exposed is protected | `observability-and-logging` and `rest-api-contract` own whether it is exposed |
+| Security tests | which scenarios are required | `spring-boot-testing` owns the level each runs at |
+| Idempotency | the policy | `spring-boot-patterns` owns where it lives in the layers |
 
 Use the architecture and terminology from `spring-boot-patterns`, and do not redefine an owner's
-rules:
-
-| Owner | Owns |
-| --- | --- |
-| `modern-java-21` | Java language rules, imports, Javadoc, exceptions, source structure |
-| `spring-boot-patterns` | Controllers, TO–Domain–Entity boundaries, mappers, services, where the transaction boundary sits, errors, configuration |
-| `spring-data-jpa` | Entities, repositories, queries, locking, database performance |
-| `sql-database-migration` | Relational schema migration files, ordering, expand-and-contract, backfills, seed data, and clean-install verification |
-| `spring-boot-testing` | Test scope, fixtures, isolation, execution |
-| `observability-and-logging` | How logs, metrics, traces, and operational endpoints are produced; this skill owns what must never appear in them and who may reach them |
-| `rest-api-contract` | Compatibility, versioning, deprecation; this skill owns exposure, inventory, and authorization |
-| `build-and-dependencies` | The dependency, plugin, and version declarations these supply-chain rules evaluate |
-| `project-naming-conventions` | Security-sensitive and escaped names |
+rules.
 
 ## Always-on confidentiality rule
 

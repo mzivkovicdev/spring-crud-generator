@@ -16,10 +16,11 @@ named in the template owns the meaning of its own entries.
 
 1. **Take what the repository proves.** A declared dependency, an applied migration, an existing package layout, or a configured datasource is an answer. Record it and move on.
 2. **Complete every `RESOLVE` yourself.** Look the answer up, record it with the date, and state it in the handoff. Do not ask the user for something that has a correct answer.
-3. **Ask once for every `ASK`.** One message listing every unresolved decision the task depends on, not one question per skill. Present the options the template lists so the user can answer in a word.
-4. **Leave `UNDECIDED` for anything genuinely deferred**, and add a sentence saying what will force the decision. `UNDECIDED` is a legitimate value; a guessed value is not.
-5. **Never infer a decision from a test dependency or an example.** An H2 dependency does not make H2 the database, and an example showing Lombok does not make Lombok a project choice.
-6. **Update the entry in the same change that changes the decision.** A profile that disagrees with the code is worse than no profile.
+3. **Apply the `Fallback` where the template records one.** Those rows have a sanctioned safe answer, so an unanswered decision does not block: write the fallback into the `Value` column and say in the handoff that a fallback was applied. Never invent a fallback for a row whose `Fallback` cell is empty, and never carry a fallback from one row to another.
+4. **Ask once for every `ASK` with no fallback.** One message listing every unresolved decision the task depends on, not one question per skill. Present the options the template lists so the user can answer in a word.
+5. **Leave `UNDECIDED` for anything genuinely deferred**, and add a sentence saying what will force the decision. `UNDECIDED` is a legitimate value; a guessed value is not.
+6. **Never infer a decision from a test dependency or an example.** An H2 dependency does not make H2 the database, and an example showing Lombok does not make Lombok a project choice.
+7. **Update the entry in the same change that changes the decision.** A profile that disagrees with the code is worse than no profile.
 
 Check the filled profile against the template before relying on it: no row may still hold a bare
 token, no row may hold a value outside the ones the template lists, and no row from the template may
@@ -32,6 +33,7 @@ while an empty `ASK` row is a visible question.
 - **Token issuance profile** determines how integration tests obtain a credential. Until it is decided, `spring-boot-testing` permits a documented temporary test-only issuer; record that here as a deferred decision with its removal condition.
 - **Entity accessor style** and **service interface convention** both change generated code shape, so a project that leaves them unrecorded will produce a different shape per feature.
 - **Aggregate roots** decide which service owns which table. Recording them once prevents two features from splitting the same aggregate differently; add a root the first time a feature introduces one.
+- **Stale-write protection** decides what a caller must send to prove which version it edited. The fallback, `server retry only`, is correct whenever every write recomputes from state the server re-reads; it is wrong the moment a caller submits a full representation a human edited from a stale read. `spring-data-jpa` explains the distinction and owns the retry annotation; `rest-api-contract` documents whichever shape the project chose.
 - **Caching has no owner skill yet.** No skill in this set decides whether the project uses a cache or which technology it uses; a caching skill will own that. Record the answer here when it is made, and leave both rows `UNDECIDED` until then. Do not introduce a cache to fill the row.
   - `application-security` owns what may be cached and under what conditions: classification of cached values, TTL, tenant scope, serialization, and eviction of sensitive data. It does not own the decision itself.
   - `project-naming-conventions` owns cache and cache-key names.

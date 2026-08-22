@@ -28,15 +28,19 @@ Write to standard output and let the platform collect it.
 
 ## Coordination with other skills
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `application-security` | What must never be logged, data classification, masking, redaction, retention, and securing management endpoints |
-| `project-naming-conventions` | The names of meters, tags, spans, log fields, and internal error codes |
-| `spring-boot-patterns` | Layer responsibilities and the error contract this skill records |
-| `build-and-dependencies` | Registry, exporter, and encoder declarations |
-| `sql-database-migration` | Whether the application has a startup migration gate; this skill owns whether it appears in readiness |
-| `spring-boot-testing` | Test levels; this skill owns what about observability is worth asserting |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
+This skill owns what must be instrumented and how: log levels and placement, correlation context,
+meters and tag cardinality, tracing, actuator endpoints, and probes.
+
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Log content | level, placement, and field structure | `application-security` owns what may never appear |
+| Actuator endpoints | which are exposed | `application-security` owns how the exposed set is protected |
+| Meter and span names | which meters must exist | `project-naming-conventions` owns what they are called |
+| Assertions | what is worth asserting | `spring-boot-testing` owns the level it runs at |
 
 Out of scope: log shipping, retention infrastructure, dashboards, alert rules, and SLO definitions.
 Those follow the approved platform standard.

@@ -11,22 +11,22 @@ publicly observable outcomes, not framework internals or invented edge cases.
 ## Coordination with other skills
 
 This skill owns test scope, scenario filtering, test-level placement, doubles, fixtures, isolation,
-and execution. Apply the specialized skills for the behavior being verified:
+and execution. Apply the specialized skills for the behavior being verified.
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `modern-java-21` | Java version, explicit types, import order, source hygiene, and Javadoc |
-| `project-naming-conventions` | Test class, method, fixture, and test-data names |
-| `spring-boot-patterns` | REST, service, domain, mapper, validation, error, and configuration contracts |
-| `spring-data-jpa` | Database mappings, constraints, queries, transaction behavior inside the boundary, locking, and production-database semantics |
-| `sql-database-migration` | Relational schema migration files, ordering, expand-and-contract, backfills, seed data, and clean-install verification |
-| `application-security` | Required security scenarios, protected data, credentials, and trust-boundary controls |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
-| `build-and-dependencies` | Build files, test plugins, source sets, and the configuration that decides which suites run in which phase |
-| `observability-and-logging` | What about logging, metrics, tracing, and probes is worth asserting, and what is not |
-| `rest-api-contract` | What about the OpenAPI contract must be asserted, including the document drift gate |
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
 
-Resolve a conflict through the owning skill and the repository-enforced build configuration.
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Security scenarios | the level each runs at | `application-security` owns which are required |
+| Contract assertions | the level the drift gate runs at | `rest-api-contract` owns what it asserts |
+| Persistence scenarios | fixtures, isolation, execution | `spring-data-jpa` owns which JPA behavior needs proof |
+| Suite execution | which suites must exist and run | `build-and-dependencies` owns the plugin and source-set configuration |
+
+Resolve a conflict through the owning skill and the repository-enforced build configuration; when it
+is genuine and cannot wait, apply the precedence order in [the ownership map](../_core/OWNERSHIP.md)
+and say in the handoff which rule was set aside.
 
 ## Reference routing
 

@@ -28,6 +28,10 @@ Apply the normative skills as follows:
 
 The third column routes a finding to its owner; it is not the owner's rule set. Read the rule in the
 owning skill before writing the finding, and never resolve a disagreement from this table.
+[The ownership map](../_core/OWNERSHIP.md) carries the canonical statement of who owns what, the
+seams where two skills share a topic, and the precedence order for a genuine conflict. This skill
+never wins a precedence contest, because it states no rule of its own: report the conflict as a
+finding and name both rules.
 
 Resolve every applicable owner skill before evaluating compliance:
 

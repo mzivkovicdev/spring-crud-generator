@@ -33,10 +33,11 @@ One `<Capability>ApplicationService` per coherent use case group, in the `applic
 package. It exists only where coordination exists. A feature whose every operation stays inside one
 aggregate needs no application service at all, and adding an empty one is scaffolding.
 
-- It owns the use case's transaction boundary: the transaction starts and ends with this method, and rollback is decided here.
+- It owns the use case's transaction boundary **when it exists**: annotate it `@Transactional`, so the transaction starts and ends with this method, the aggregate services it calls join it, and rollback is decided here. When a use case has no application service because it never leaves one aggregate, the boundary is that aggregate service and nothing needs to change: both levels use the default propagation precisely so either arrangement is correct. Never introduce an application service only to relocate a transaction.
 - It depends only on aggregate services, ports, and adapters — never on a repository, an entity, or another application service. A repository dependency here means the aggregate service was bypassed and the aggregate now has two write paths.
 - It coordinates: fetch from one aggregate service, pass explicit values to another, decide the order. Rules that belong to a single aggregate stay in that aggregate's service.
 - Never add a method that only forwards to one aggregate service. A pass-through adds a second name for one operation and a second place to keep in sync, and it is the mechanism by which this class turns into a facade over the whole application. An entry point that needs a single-aggregate operation calls that aggregate service directly.
+- A method that adds a failure policy is not a pass-through. Deciding how often an operation is retried, how long it may take in total, and what a caller sees when it gives up is use-case behavior, and it belongs here even when only one aggregate is involved.
 
 ## External effects and what after-commit delivery does not buy
 
@@ -48,7 +49,7 @@ aggregate needs no application service at all, and adding an empty one is scaffo
 
 ## Rules for both levels
 
-- The service interface is optional and the convention is recorded in the project profile. Follow whichever it records, at both levels. With none recorded and no answer yet, default to concrete classes annotated `@Service`, and add an interface only for a concrete reason: a boundary another module crosses, more than one implementation, a port with a substitutable adapter, or a contract an external consumer implements. Wanting an `Impl` suffix, somewhere to put Javadoc, or a mockable type are not reasons — Mockito mocks a concrete class. Both shapes appear in [service and domain examples](service-domain-examples.md); do not mix them within a scope.
+- The service interface is optional and the convention is recorded in the project profile. Follow whichever it records, at both levels. With none recorded and no answer yet, apply the template's fallback — concrete classes annotated `@Service` — record it in the profile, and add an interface only for a concrete reason: a boundary another module crosses, more than one implementation, a port with a substitutable adapter, or a contract an external consumer implements. Wanting an `Impl` suffix, somewhere to put Javadoc, or a mockable type are not reasons — Mockito mocks a concrete class. Both shapes appear in [service and domain examples](service-domain-examples.md); do not mix them within a scope.
 - When an interface exists, put caller-facing Javadoc and method-validation constraints on it, and `@Service`, `@Validated`, transactions, dependencies, and logic on the concrete class without duplicating the contract.
 - Use Lombok constructor generation only when the profile records Lombok and the generated constructor remains obvious; otherwise write the constructor explicitly.
 - Do not accept REST request/response TOs and do not return JPA entities.
