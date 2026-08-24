@@ -87,24 +87,16 @@ meter. Put it in a log field instead: logs are searchable at high cardinality, m
 
 Prefer an observation, which produces a timer and a trace span from one instrumentation point.
 
-```java
-@Service
-@Transactional(readOnly = true)
-public class UserService {
+This is an excerpt of the `UserService` declared in
+[`spring-boot-patterns` → service and domain examples](../../spring-boot-patterns/references/service-domain-examples.md#service-contract-and-implementation).
+It adds one constructor dependency and wraps the existing `create` body, which moves unchanged into
+the private `createUser`; the class annotations and every other method stay as declared there.
 
+```java
     private static final String OUTCOME_KEY = "outcome";
     private static final String USER_CREATION_OBSERVATION = "user.creation";
 
     private final ObservationRegistry observationRegistry;
-    private final UserRepository userRepository;
-
-    public UserService(
-            final ObservationRegistry observationRegistry,
-            final UserRepository userRepository) {
-
-        this.observationRegistry = observationRegistry;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public UserDomain create(final String username, final String email, final String rawPassword) {
@@ -113,7 +105,7 @@ public class UserService {
                         .start();
 
         try (Observation.Scope ignoredScope = observation.openScope()) {
-            final UserDomain createdUser = this.doCreate(username, email, rawPassword);
+            final UserDomain createdUser = this.createUser(username, email, rawPassword);
 
             observation.lowCardinalityKeyValue(OUTCOME_KEY, "success");
 
@@ -127,7 +119,6 @@ public class UserService {
             observation.stop();
         }
     }
-}
 ```
 
 The outcome tag is set **after** the operation completes, in the branch that knows what happened.
@@ -148,6 +139,11 @@ correlation attach to it. Closing it in a try-with-resources and stopping in `fi
 an observation that is started and never stopped leaks and never records.
 
 For a simple duration where a span adds nothing, a timer is enough:
+
+The excerpt below is a method of an outbound adapter that holds `MeterRegistry` and the billing
+client as constructor-injected `final` fields — `this.meterRegistry` and `this.billingClient` — plus
+the constant shown with it. `OUTCOME_KEY` is the same constant declared in the observation example
+above.
 
 ```java
 private static final String BILLING_LOOKUP_TIMER = "billing.client.lookups";

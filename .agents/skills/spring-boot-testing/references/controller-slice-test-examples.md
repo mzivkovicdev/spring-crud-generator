@@ -31,7 +31,6 @@ directly are covered by tests not shown here.
 ```java
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(ApiExceptionHandler.class)
 class UserControllerTest {
 
     private final MockMvc mockMvc;
@@ -118,9 +117,16 @@ Focused MVC slice tests do not exercise or verify the Spring Security filter cha
 `addFilters = false` convention excludes every servlet filter from this `MockMvc` slice, so use it to
 prove the controller and MVC contract only. Do not use `@WithMockUser`, mock tokens, authority values,
 or CSRF here. Full application integration tests own security verification; test another filter
-separately when it owns a public contract. Ensure the project's `@RestControllerAdvice`, JSON
-customization, converters, and argument resolvers required by the public contract are included.
-Import only focused MVC configuration that the slice does not discover automatically.
+separately when it owns a public contract.
+
+**There is no `@Import(ApiExceptionHandler.class)`, and adding one is a mistake worth naming.**
+`@WebMvcTest` already includes `@ControllerAdvice` beans in the slice, along with JSON
+customization, converters, and argument resolvers — that is what makes the error-contract assertions
+above work. Importing the advice explicitly is not merely redundant: it teaches that the slice does
+not pick up the advice on its own, and the next person writes a test that imports it and passes for
+the wrong reason, or omits it from a slice where it was genuinely needed. Import only focused MVC
+configuration the slice does **not** discover automatically, and confirm that a given class is in
+that category before importing it.
 
 ## Coverage expectations
 

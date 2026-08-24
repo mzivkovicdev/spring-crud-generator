@@ -24,17 +24,21 @@ Actuator endpoints do not appear in this chain at all. They are served on a sepa
 and secured by their own chain, described below.
 
 ```java
-package com.acme.myapp.config;
+package com.example.myapp.config;
 
 import static org.springframework.security.oauth2.core.authorization.OAuth2AuthorizationManagers.hasScope;
 
 import jakarta.servlet.DispatcherType;
 
-import com.acme.myapp.controller.AuthController;
-import com.acme.myapp.controller.UserController;
+import com.example.myapp.controller.AuthController;
+import com.example.myapp.controller.UserController;
 
+// The EndpointRequest package differs by Spring Boot generation; the management chain below
+// uses it, and build-and-dependencies carries both coordinates.
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -132,8 +136,7 @@ SecurityFilterChain managementSecurityFilterChain(final HttpSecurity http) throw
     return http
             .securityMatcher(EndpointRequest.toAnyEndpoint())
             .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers(EndpointRequest.to(
-                            HealthEndpoint.class, InfoEndpoint.class)).permitAll()
+                    .requestMatchers(EndpointRequest.to("health", "info")).permitAll()
                     .anyRequest().hasAuthority(MANAGEMENT_AUTHORITY))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
@@ -146,6 +149,7 @@ SecurityFilterChain managementSecurityFilterChain(final HttpSecurity http) throw
 Rules for this chain:
 
 - Only the platform's probe and build-information endpoints are open. Everything else the project chooses to expose requires an authenticated operator identity.
+- The two open endpoints are matched by **endpoint id**, `EndpointRequest.to("health", "info")`, rather than by the `HealthEndpoint` and `InfoEndpoint` class literals. Both forms exist and behave identically; the id form is used here because those two classes changed package between generations while the ids did not, so this chain is written once and compiles on both. `EndpointRequest` itself did move — [generation differences](../../build-and-dependencies/references/generation-differences.md) carries both coordinates, and it is the one import in this file that has to be checked against the project's generation.
 - This chain leaves the probe endpoints reachable without a credential, so it only holds if the exposure and health-detail settings `observability-and-logging` defines are actually in place. Verify them rather than assuming them.
 - Both chains carry an explicit `@Order`. A chain without one falls back to the lowest precedence, so the ordering that makes this work would depend on a default nobody can see in the code. State it.
 - The management chain is ordered ahead of the API chain, and the API chain never matches an actuator path. Two chains matching the same request is a misconfiguration, not a defence in depth.

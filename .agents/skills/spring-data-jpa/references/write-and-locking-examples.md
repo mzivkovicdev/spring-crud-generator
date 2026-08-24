@@ -69,7 +69,7 @@ public class InventoryEntity {
 
     @Version
     @Column(name = "version", nullable = false)
-    private long version;
+    private Long version;
 
     // Accessors follow the style recorded in docs/project-profile.md.
 }
@@ -78,6 +78,11 @@ public class InventoryEntity {
 The column is created by a migration owned by `sql-database-migration`, `NOT NULL` with a default of
 `0`. Adding `@Version` to a mapping without the migration fails at startup under schema validation,
 which is the intended behavior.
+
+The field is the wrapper type `Long`, not `long`, in every entity in this skill set. A primitive is
+`0` before the provider assigns anything, so a transient instance is indistinguishable from a row at
+version zero; `null` says "never persisted" and lets the provider tell the two apart. Use one type
+across every entity so the distinction never depends on which entity you are looking at.
 
 Rules:
 
@@ -153,6 +158,18 @@ it one layer out.
 Retry is one project-owned composed annotation, so every use case absorbs contention identically and
 the policy is visible at the call site. **Never write a retry loop by hand.**
 
+**The annotation is project-owned on both Spring Boot generations, and its name and call sites are
+identical on both.** What differs is the retry engine it composes, because Spring Boot 4 brings
+declarative retry into the framework itself. Write the variant for the generation
+`docs/project-profile.md` records; never carry the other generation's attribute names across, because
+several of them exist in both and mean different things.
+
+The numbers below are the template's fallback policy — 3 attempts, 50 ms initial backoff, inside a
+2 s budget. When the profile records a different `Optimistic retry policy`, use that instead; the
+policy is a recorded decision, not a constant of this example.
+
+### Spring Boot 3: Spring Retry
+
 ```java
 /**
  * Runs the annotated operation in a transaction and repeats it while it loses an optimistic
@@ -170,8 +187,8 @@ the policy is visible at the call site. **Never write a retry loop by hand.**
                 OptimisticLockException.class,
                 ObjectOptimisticLockingFailureException.class
         },
-        maxAttempts = 5,
-        backoff = @Backoff(delay = 100L, maxDelay = 1000L, multiplier = 2.0d, random = true)
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 50L, maxDelay = 500L, multiplier = 2.0d, random = true)
 )
 public @interface OptimisticLockingRetry {
 }
@@ -184,21 +201,97 @@ Four details in it are load-bearing:
 - **Both exception types.** Spring normally translates to `ObjectOptimisticLockingFailureException`, but `jakarta.persistence.OptimisticLockException` can still surface on some paths.
 - **`METHOD` only.** On a type it would wrap every public method in a transaction and a retry, including reads and operations unsafe to repeat.
 
-### Ordering, and why no explicit `@Order`
+**`maxAttempts` counts total attempts**, so `3` means one call and two retries.
 
-`@EnableRetry` registers its interceptor at `Ordered.LOWEST_PRECEDENCE - 1` and the transaction
-interceptor defaults to `Ordered.LOWEST_PRECEDENCE`, so the retry wraps the transaction. That default
-is what makes the composed annotation correct, so do not set an order on
-`@EnableTransactionManagement` that inverts it, and verify meta-annotation support on the project's
-Spring Retry version rather than assuming it.
+### Spring Boot 4: the framework's own resilience support
 
-**Prove the ordering with a test that counts committed attempts.** Inverted, every attempt rejoins a
-transaction already marked rollback-only: all fail identically while the configuration looks correct.
+Spring Framework 7 carries declarative retry, so the project needs no retry library. The annotation is
+`org.springframework.resilience.annotation.Retryable`, enabled by `@EnableResilientMethods` — not
+`org.springframework.core.retry`, which holds the programmatic `RetryTemplate` and `RetryPolicy` and
+declares no annotation.
+
+```java
+/**
+ * Runs the annotated operation in a transaction and repeats it while it loses an optimistic
+ * version check. Each attempt gets a fresh transaction.
+ *
+ * <p>Annotate only an operation safe to repeat in full: it must recompute from state it
+ * re-reads and produce no external side effect before it commits. Requires
+ * {@code @EnableResilientMethods}.
+ */
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Transactional
+@Retryable(
+        includes = {
+                OptimisticLockException.class,
+                ObjectOptimisticLockingFailureException.class
+        },
+        maxRetries = 2L,
+        delay = 50L,
+        jitter = 25L,
+        multiplier = 2.0d,
+        maxDelay = 500L,
+        timeout = 2000L
+)
+public @interface OptimisticLockingRetry {
+}
+```
+
+Five differences decide whether this is the same policy or a different one:
+
+- **`maxRetries` counts retries, not attempts.** `maxRetries = 2` is three total calls, the same as `maxAttempts = 3` above. Copying the Spring Boot 3 number across silently adds an attempt.
+- **`includes` replaces `retryFor`.** `excludes` is its counterpart, and a `predicate` handles anything the type list cannot express.
+- **`jitter` is a value, not a flag.** There is no `random = true`; jitter is a span added to each computed delay, so `25` means up to 25 ms of spread. Omitting it leaves the retry storm the Spring Boot 3 note warns about, and here the omission is easier to miss because nothing looks switched off.
+- **Backoff attributes sit directly on the annotation**, with no nested `@Backoff`.
+- **`timeout` is a real wall-clock deadline**, and Spring Retry has no equivalent. Set it to the retry budget the profile records — `2000` here for a 2 s budget — so the worst case is bounded by a number someone decided rather than by whatever `maxRetries` and `maxDelay` happen to multiply out to. It is the single most useful thing this annotation gained.
+
+Every timing attribute is a `long` in the unit `timeUnit()` selects, milliseconds by default. Each also
+has a `…String` twin — `delayString`, `maxRetriesString`, `timeoutString` — that accepts a property
+placeholder, which is how the policy becomes deployment-configurable without a second annotation.
+
+The framework also publishes a `MethodRetryEvent` per failed attempt. Meter it rather than logging
+each one; a routine retry is not a `WARN`.
+
+### Ordering
+
+The retry advice has to wrap the transaction advice. Inverted, every attempt rejoins a transaction
+already marked rollback-only: all of them fail identically while the configuration looks correct.
+
+- **On Spring Boot 3** the default is correct without an explicit order: `@EnableRetry` registers its interceptor at `Ordered.LOWEST_PRECEDENCE - 1` and the transaction interceptor defaults to `Ordered.LOWEST_PRECEDENCE`. Do not set an order on `@EnableTransactionManagement` that inverts it, and verify meta-annotation support on the project's Spring Retry version rather than assuming it.
+- **On Spring Boot 4** the framework documents no ordering guarantee between the two, so the arrangement is not something to read off a default. Set the order explicitly if the project's Spring version exposes one.
+
+**On both generations, prove the ordering with a test that counts committed attempts.** On Spring
+Boot 4 that test is the only evidence you have.
 
 ### Exhaustion is part of the contract
 
 When attempts run out the last exception propagates, which is a framework exception reaching the
-caller as a `500`. Close it the same way throughout the project:
+caller as a `500`. `ConcurrentModificationConflictException` is declared in the project error catalog
+as `CONCURRENT_MODIFICATION` and maps to `409`; `spring-boot-patterns` owns both.
+
+**On Spring Boot 4, mapping it in the REST exception advice is the only option**, because the
+framework's retry support has no recovery callback. Declare the handler once, and the whole project
+is covered:
+
+```java
+@ExceptionHandler(ConcurrentModificationConflictException.class)
+public ProblemDetail handleConcurrentModification(
+        final ConcurrentModificationConflictException exception) {
+
+    return createProblem(ApplicationError.CONCURRENT_MODIFICATION, exception);
+}
+```
+
+That handler is the one already shown in
+[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md), so on
+Spring Boot 4 nothing extra is needed beyond making sure the advice also translates the framework's
+own exhaustion exception into it.
+
+**On Spring Boot 3** the advice works identically and is the recommended shape. Spring Retry
+additionally offers `@Recover`, which keeps the conflict policy beside the operation at the cost of a
+method per return type:
 
 ```java
 @Recover
@@ -211,9 +304,10 @@ public OrderDomain recover(
 ```
 
 A `@Recover` method sits in the same bean, returns the same type, and takes the exception followed by
-the original parameters. Mapping the failure to `409` once in the REST exception advice is the
-alternative: less code, at the cost of the conflict policy no longer sitting beside the operation.
-`ConcurrentModificationConflictException` is declared in the project error catalog and maps to `409`.
+the original parameters. **Choose one shape for the whole project and record it**, because a codebase
+where some use cases recover locally and others rely on the advice has two conflict policies and no
+way to tell which applied. Choosing the advice keeps the project portable across both generations,
+which is why it is the default here.
 
 ### Applying it
 
@@ -235,16 +329,18 @@ public OrderDomain place(final OrderPlacementDomain command) {
 - Repeat only what is safe to repeat in full. An effect published through `@TransactionalEventListener(AFTER_COMMIT)` is safe because a rolled-back attempt never fires it; a direct provider call inside the method is not.
 - Never catch the optimistic failure below the annotated method; the interceptor then never sees it and the annotation is decoration.
 - Never annotate a method already inside a caller's transaction, and never rely on self-invocation.
-- Keep the worst case inside the request budget. The annotation has no wall-clock deadline, so the bound is `maxAttempts` and `maxDelay` together; lower them on a hot path.
+- Keep the worst case inside the request budget the profile records. On Spring Boot 4 say so directly with `timeout`. On Spring Boot 3 there is no wall-clock deadline at all, so the bound is `maxAttempts` and `maxDelay` multiplied out by hand — do that arithmetic rather than assuming, and lower both on a hot path.
 - Meter attempts and exhaustions, per `observability-and-logging`. Log the exhaustion only — a routine retry is not a `WARN`.
 - Tune by composing a second annotation with its own policy, never by loosening this one.
 - Test it as concurrency: drive two transactions to the same row, assert one caller succeeds without an error and that the exhaustion path returns the conflict contract. A single-threaded test proves nothing.
 
-On Spring Boot 3 this is Spring Retry with `@EnableRetry`. On Spring Boot 4 the framework's own
-resilience support may remove the need for the library — verify against the effective dependency tree
-per [generation differences](../../build-and-dependencies/references/generation-differences.md), and
-let `build-and-dependencies` own the declaration. The annotation is project-owned either way, so call
-sites never change when the implementation does.
+`build-and-dependencies` owns the declaration on both generations, and
+[generation differences](../../build-and-dependencies/references/generation-differences.md) carries
+the coordinates: on Spring Boot 3 the project declares Spring Retry, on Spring Boot 4 the support is
+in the framework and Spring Retry is no longer version-managed. Verify against the effective
+dependency tree before writing either annotation. **The annotation is project-owned either way, so no
+call site changes when a project moves between generations** — that is the whole reason it exists
+instead of the engine's annotation being used directly.
 
 ## Pessimistic locking
 
@@ -440,9 +536,18 @@ public OrderDomain place(final OrderPlacementDomain command) {
 ```
 
 ```java
-// No jitter: every loser of a collision wakes in the same millisecond and collides again,
-// so retries arrive in waves.
-@Backoff(delay = 100L, maxDelay = 1000L, multiplier = 2.0d)
+// No jitter, Spring Boot 3 form: every loser of a collision wakes in the same millisecond and
+// collides again, so retries arrive in waves.
+@Backoff(delay = 50L, maxDelay = 500L, multiplier = 2.0d)
+
+// The same defect in the Spring Boot 4 form, and harder to spot because nothing looks
+// switched off — the jitter attribute is simply absent and defaults to none.
+@Retryable(includes = ObjectOptimisticLockingFailureException.class,
+        maxRetries = 2, delay = 50L, multiplier = 2.0d, maxDelay = 500L)
+
+// The Spring Boot 3 attempt count copied onto the Spring Boot 4 annotation: maxRetries counts
+// retries, so this is four calls where the policy says three.
+@Retryable(includes = ObjectOptimisticLockingFailureException.class, maxRetries = 3)
 
 // The version copied from a request, which lets the client decide whether the check passes.
 inventory.setVersion(request.version());

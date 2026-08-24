@@ -153,7 +153,7 @@ the transaction boundary, and the error contract do not change. Four things arou
 | Replacing the mapper bean | define an `ObjectMapper` bean | define a `JsonMapper` bean; an `ObjectMapper` bean no longer replaces it |
 | Custom serializer registration | `@JsonComponent` | `@JacksonComponent` |
 | Customizing HTTP message converters | a `HttpMessageConverters` bean or contributed converter beans | `ServerHttpMessageConvertersCustomizer`; the Boot type is deprecated and contributed converter beans are no longer picked up |
-| Declarative retry | Spring Retry | `org.springframework.core.retry` in the framework |
+| Declarative retry | Spring Retry, declared by the project | `org.springframework.resilience.annotation` in the framework, enabled by `@EnableResilientMethods` |
 
 `build-and-dependencies` owns the coordinates in
 [generation differences](../build-and-dependencies/references/generation-differences.md); do not
@@ -388,8 +388,8 @@ aggregate service depending on another; a JPA association crossing an aggregate 
 **Structure.** Field injection; an aggregate service that only forwards to its repository while its
 invariants live in callers; an application service holding a rule that belongs to one aggregate;
 empty or responsibility-free service interfaces; parameter objects
-that hide unrelated values or mechanically satisfy a numeric threshold; eight or more parameters
-with no grouping, redesign, or documented justification; generic `enums` packages; REST exception
+that hide unrelated values or mechanically satisfy the size rule `modern-java-21` owns; generic
+`enums` packages; REST exception
 handlers in the custom-exception package; handwritten structural mappers where approved MapStruct
 can express the mapping; a separate mapper per mapping direction for one concept.
 
@@ -416,7 +416,7 @@ Read the rejected code examples in [infrastructure examples](references/infrastr
 - [ ] Each external effect uses the delivery mechanism the profile records for it, and a failed delivery is logged rather than silently dropped.
 - [ ] Every outbound client sets connection and read timeouts, and any retry policy exists in exactly one layer.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
-- [ ] Service signatures use clear explicit parameters up to seven; signatures with eight or more were redesigned, cohesively grouped, or explicitly justified.
+- [ ] Service signatures satisfy the size rule `modern-java-21` owns, and any parameter object groups a real domain concept rather than unrelated values.
 - [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.
 - [ ] Approved MapStruct handles structural mapping with `ReportingPolicy.ERROR`; any handwritten mapper exception is documented.
 - [ ] Each concept has one REST mapper and one domain mapper; any split is documented in the change.

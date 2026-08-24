@@ -59,14 +59,10 @@ aggregate needs no application service at all, and adding an empty one is scaffo
 
 ## Service parameter objects
 
-- Prefer explicit separate parameters up to seven, while the signature stays clear. Treat eight or
-  more as a design warning: group only values forming a cohesive domain concept or invariant into a
-  focused parameter object, otherwise redesign the operation or document why the signature must
-  remain. Never create a catch-all input class to conceal unrelated values or satisfy the threshold,
-  and never split a naturally cohesive value object into scalars to satisfy it either.
-- A parameter or value object is legitimate below the threshold when it already represents a stable
-  domain concept or enforces an invariant. Keep the target resource's identifier a separate
-  parameter and group the rest.
+- **`modern-java-21` owns the signature-size rule** — how many declared parameters are acceptable, when the count becomes a design warning, and what a legitimate grouping is. Read it there; it is not repeated here, and a change to it must not have to be made twice.
+- What this skill adds is where the resulting object lives and what it may hold. Keep the target
+  resource's identifier a separate parameter and group the rest, so the operation still reads as
+  "act on this resource, with these values".
 - Place a service parameter object at the domain/service boundary, name it for the operation or
   values it represents, and keep it independent of REST and JPA. Do not introduce `Command` or
   `View` terminology by default.

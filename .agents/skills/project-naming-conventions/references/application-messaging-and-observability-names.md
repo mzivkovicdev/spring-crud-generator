@@ -68,7 +68,7 @@ Avoid `OrderEvent`, `OrderUpdatedEvent`, `EventData`, `MessagePayload`, and `Pro
 For a wire event type, follow the existing schema-registry or envelope convention. When the project uses CloudEvents, use its type convention and approved reverse-DNS namespace, for example:
 
 ```text
-com.acme.order.created.v1
+com.example.myapp.order.created.v1
 ```
 
 Do not invent a new wire-version scheme. Change an event type or version only according to the project's compatibility policy, and do not version every additive compatible field automatically.

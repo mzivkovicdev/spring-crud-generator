@@ -34,6 +34,12 @@ public class UserEntity {
     @Column(name = "version", nullable = false)
     private Long version;
 
+    @OneToMany(
+            mappedBy = "user",
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE},
+            orphanRemoval = true)
+    private List<UserAddressEntity> addresses = new ArrayList<>();
+
     @Column(name = "username", nullable = false, length = 120)
     private String username;
 
@@ -96,6 +102,23 @@ public class UserEntity {
         return this.createdAt;
     }
 
+    public List<UserAddressEntity> getAddresses() {
+        return Collections.unmodifiableList(this.addresses);
+    }
+
+    /**
+     * Adds an address and enforces the aggregate's single-primary-address invariant.
+     *
+     * @param address address to attach; must not be {@code null}
+     */
+    public void addAddress(final UserAddressEntity address) {
+        if (address.isPrimary()) {
+            this.addresses.forEach(existing -> existing.setPrimary(false));
+        }
+        this.addresses.add(address);
+        address.setUser(this);
+    }
+
     public UserEntity setUsername(final String username) {
         this.username = username;
         return this;
@@ -130,11 +153,16 @@ public class UserEntity {
 }
 ```
 
-This class is complete and compiles as written; copy its structure rather than a reduced version.
+This class is complete and compiles as written, and it is the **only** declaration of `UserEntity` in
+this skill set. Every other file that mentions it — the aggregate service in `spring-boot-patterns`,
+the mapper, the tests — refers to this one rather than declaring a variant. Copy its structure rather
+than a reduced version.
 
 Why each part is there:
 
 - The `protected` no-argument constructor belongs to the provider. The `public` constructor is the single creation path and is what `UserDomainMapper.mapToNewUserEntity` uses, so every mapped creation property is set exactly once.
+- `addresses` is the aggregate's child collection, and it carries the invariant rather than exposing it. `addAddress` clears any previous primary flag and keeps both sides of the association in step; `getAddresses` returns an unmodifiable view so no caller can bypass either. The collection is mapped inside the aggregate, which is the one place an association is allowed at all.
+- `orphanRemoval` is correct here precisely because an address cannot exist without its user. `CascadeType.ALL` is not used: removing a user is a decision for the aggregate service, not a side effect of a mapping.
 - MapStruct selects that constructor **because it is the only `public` one**. Widening the no-argument constructor to `public` would make MapStruct prefer it and silently produce an entity with every mapped property left null. Keep it `protected`, and treat a change to its visibility as a change to the mapping contract.
 - `id` and `version` are provider-owned. They have getters and no constructor parameter and no setter, so application code and MapStruct cannot write them.
 - Setters exist only for the fields a use case actually updates. Add another setter when a real operation needs it, not preemptively; a setter for `passwordHash` belongs to the credential-change operation that hashes the new value.
@@ -154,7 +182,7 @@ enum in the persistence boundary.
 ## Association mapping
 
 An association is mapped inside one aggregate. This excerpt is a field of `UserAddressEntity`, the
-child of the `users` root:
+child of the `users` root and the owning side of the collection declared on `UserEntity` above:
 
 ```java
 @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -165,29 +193,45 @@ child of the `users` root:
 private UserEntity user;
 ```
 
-Across aggregates, store the identifier instead. This excerpt is a field of `UserEntity`, whose
-organization is a separate root with its own service and lifecycle:
+`UserAddressEntity` follows the same shape as `UserEntity` above: a `protected` no-argument
+constructor, one `public` constructor taking the owning user and the address values, and setters only
+where a use case updates. The members the rest of this skill set refers to are `isPrimary()`,
+`setPrimary(boolean)`, and the package-visible `setUser(UserEntity)` that `UserEntity.addAddress`
+calls to keep both sides in step.
+
+Across aggregates, store the identifier instead. The excerpts below belong to `OrderEntity`, an
+illustrative root outside the `user` example, whose customer is a separate root with its own service
+and lifecycle:
 
 ```java
-@Column(name = "organization_id", nullable = false, updatable = false)
-private Long organizationId;
+@Column(name = "customer_id", nullable = false, updatable = false)
+private Long customerId;
 ```
 
 Rejected, on the same field:
 
 ```java
 @ManyToOne(fetch = FetchType.LAZY, optional = false)
-@JoinColumn(name = "organization_id", nullable = false)
-private OrganizationEntity organization;
+@JoinColumn(name = "customer_id", nullable = false)
+private CustomerEntity customer;
 ```
 
 The rejected form compiles and works, which is why it survives review unless the rule is explicit.
-It hands every holder of a `UserEntity` a writable path into the organization aggregate, and it
-invites a cascade or a fetch plan that loads one aggregate while saving another.
+It hands every holder of an `OrderEntity` a writable path into the customer aggregate, and it invites
+a cascade or a fetch plan that loads one aggregate while saving another.
+
+Note what this means for `UserEntity` above: it has a collection but no `@ManyToOne`. The user's
+organization membership is a row the `organization` aggregate owns, reached through
+`OrganizationService`, not a column or an association on `UserEntity`. That is the same rule seen
+from the other side.
 
 ## Repository and projection queries
 
 Bound every collection result and make ordering deterministic:
+
+This is the single declaration of `UserRepository` for the whole skill set. `spring-boot-patterns`
+shows how an aggregate service calls it and where the entity stops; it does not declare its own
+version.
 
 ```java
 public interface UserRepository extends JpaRepository<UserEntity, Long>,
@@ -197,14 +241,21 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>,
 
     Optional<UserEntity> findByEmail(final String email);
 
-    @EntityGraph(attributePaths = {"roles"})
-    Optional<UserEntity> findWithRolesById(final Long id);
+    @EntityGraph(attributePaths = {"addresses"})
+    Optional<UserEntity> findWithAddressesById(final Long id);
+
+    Page<UserEntity> findByStatus(final UserStatus status, final Pageable pageable);
 
     Slice<UserEntity> findByStatusOrderByCreatedAtDescIdDesc(
             final UserStatus status,
             final Pageable pageable);
 }
 ```
+
+`findByStatus` takes its ordering from the caller's `Pageable` and returns a `Page`, so the caller
+must supply a deterministic `Sort` with a unique tie-breaker; `findByStatusOrderByCreatedAtDescIdDesc`
+carries the ordering in the method name and returns a `Slice`, so it costs no count query. Both are
+here because the choice between them is a real one, and neither is a default.
 
 Reject an unbounded collection query:
 
@@ -225,7 +276,18 @@ public interface UserSummaryProjection {
 }
 ```
 
-Create `repository.projection` with this first projection; do not create the subpackage in advance.
+```java
+public interface UserAddressCountProjection {
+
+    Long getId();
+
+    long getAddressCount();
+}
+```
+
+`UserAddressCountProjection` is the one the fetch-plan section uses to avoid loading a collection for
+a page of roots. Both live in `repository.projection`; create that subpackage with the first
+projection and not in advance.
 
 ```java
 @Query("""
@@ -244,22 +306,35 @@ Slice<UserSummaryProjection> findSummariesByStatus(
 
 ## Fetch plans
 
-The following loop can trigger N+1 queries:
+The following loop can trigger N+1 queries: each `getAddresses()` call resolves a lazy collection with
+its own query.
 
 ```java
-final List<OrderEntity> orders = this.orderRepository.findAll();
+final Slice<UserEntity> users = this.userRepository.findByStatusOrderByCreatedAtDescIdDesc(
+        UserStatus.ACTIVE, pageable);
 
-for (final OrderEntity order : orders) {
-    LOGGER.debug("Customer: {}", order.getCustomer().getName());
+for (final UserEntity user : users) {
+    LOGGER.debug("Address count: {}", user.getAddresses().size());
 }
 ```
 
-For a bounded slice that needs one to-one or many-to-one state, use an explicit fetch plan:
+When a single aggregate genuinely needs its children loaded, use an explicit fetch plan on a
+single-result method — `findWithAddressesById` above does exactly that.
+
+For a page of roots, do **not** attach a collection entity graph to a paginated method: the provider
+either paginates in memory or multiplies rows. Page the identifiers first and load the graph in a
+bounded second query, or return a projection that already carries the derived value:
 
 ```java
-@EntityGraph(attributePaths = {"customer"})
-Slice<OrderEntity> findByStatusOrderByCreatedAtDescIdDesc(
-        final OrderStatus status,
+@Query("""
+        select user.id as id, count(address.id) as addressCount
+        from UserEntity user
+            left join user.addresses address
+        where user.status = :status
+        group by user.id
+        """)
+Slice<UserAddressCountProjection> findAddressCountsByStatus(
+        @Param("status") final UserStatus status,
         final Pageable pageable);
 ```
 
@@ -285,7 +360,8 @@ List<UserEntity> search(
         @Param("status") final UserStatus status);
 ```
 
-Build only the predicates required by the request:
+Build only the predicates required by the request, and address attributes through the generated static
+metamodel rather than by name:
 
 ```java
 public final class UserSpecifications {
@@ -301,10 +377,10 @@ public final class UserSpecifications {
             final List<Predicate> predicates = new ArrayList<>();
 
             if (email != null) {
-                predicates.add(criteriaBuilder.equal(root.get("email"), email));
+                predicates.add(criteriaBuilder.equal(root.get(UserEntity_.email), email));
             }
             if (status != null) {
-                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+                predicates.add(criteriaBuilder.equal(root.get(UserEntity_.status), status));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
@@ -312,6 +388,14 @@ public final class UserSpecifications {
     }
 }
 ```
+
+`UserEntity_` is generated from `UserEntity` by the JPA static metamodel processor, which
+`build-and-dependencies` declares on the annotation processor path — the artifact differs by Spring
+Boot generation and is listed in
+[generation differences](../../build-and-dependencies/references/generation-differences.md). This is
+why `../SKILL.md` prefers the metamodel over raw attribute strings: rename `email` on the entity and
+`root.get(UserEntity_.email)` stops compiling, while `root.get("email")` keeps compiling and starts
+failing at runtime, on whichever request first reaches that filter.
 
 Place reusable Specification types in `repository.specification`. Keep a one-off predicate with the
 repository implementation or query that owns it instead of creating a reusable-looking type.

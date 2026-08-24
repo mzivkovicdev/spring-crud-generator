@@ -29,9 +29,17 @@ resource filtering are configured consistently.
 
 <properties>
     <java.version>RESOLVE</java.version>
+
+    <!-- Build plugins the Spring Boot parent does not manage. -->
+    <checkstyle-plugin.version>RESOLVE</checkstyle-plugin.version>
+    <enforcer-plugin.version>RESOLVE</enforcer-plugin.version>
+    <spotless-plugin.version>RESOLVE</spotless-plugin.version>
+    <surefire-plugin.version>RESOLVE</surefire-plugin.version>
+
+    <!-- Tools and libraries the Spring Boot BOM does not manage. -->
     <checkstyle.version>RESOLVE</checkstyle.version>
     <mapstruct.version>RESOLVE</mapstruct.version>
-    <spotless.version>RESOLVE</spotless.version>
+
     <!-- Only when docs/project-profile.md records contract-first. -->
     <openapi-generator.version>RESOLVE</openapi-generator.version>
     <!-- Only when docs/project-profile.md records that the project uses Lombok. -->
@@ -39,8 +47,22 @@ resource filtering are configured consistently.
 </properties>
 ```
 
-Every version property referenced anywhere in this skill's references is declared here. The Spring
-Boot BOM manages none of these tools, so each is pinned explicitly.
+Every version property referenced anywhere in this skill's references is declared here.
+
+**Check what the parent actually manages before omitting a `<version>`.** The Spring Boot parent's
+`pluginManagement` is a short list, and several plugins this skill set uses are not on it — Surefire,
+Enforcer, Checkstyle, and Spotless among them. A plugin the parent does not manage and the project
+does not pin resolves to whatever Maven's own defaults supply, which is neither reproducible nor
+visible in the build file. That is why the four plugin properties above exist, and why
+`maven-failsafe-plugin` and `maven-compiler-plugin` have none: the parent manages those two.
+
+Confirm the current list with `./mvnw help:effective-pom` rather than trusting this paragraph — the
+set of managed plugins is a written-down value like any other and changes between generations.
+
+**`checkstyle.version` and `checkstyle-plugin.version` are two different things.** The first is the
+Checkstyle tool, the second is the Maven plugin that runs it. Pinning only the plugin leaves the tool
+version to the plugin's own default, which is usually well behind and is the usual reason a
+configuration that uses newer module behaviour fails on one machine and passes on another.
 
 `RESOLVE` is the decision token defined in `spring-boot-patterns`: look the current release up at
 setup time, write it into the build file, and record it with its resolution date in the
@@ -56,7 +78,7 @@ Respect these minimums when resolving:
 | `java.version` | 21 | The floor this skill set is written against; `../SKILL.md` governs choosing the release |
 | `maven-compiler-plugin` (from the parent) | 3.12.0 | Below it, `annotationProcessorPaths` ignores `dependencyManagement`, so every processor entry needs an explicit version |
 | `checkstyle.version` | 10.12.x | Earlier versions handle `record` constructs inconsistently |
-| `spotless.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
+| `spotless-plugin.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
 | `mapstruct.version` | 1.5.x | Constructor-based mapping and `unmappedTargetPolicy` behave as this skill set assumes |
 | `lombok-mapstruct-binding.version` | 0.2.0 | Required alongside Lombok on the toolchains this skill set supports |
 
@@ -112,6 +134,26 @@ the project inherits the Spring Boot parent.
 
 `mapstruct-processor` carries a version because the Spring Boot BOM does not manage MapStruct.
 `spring-boot-configuration-processor` does not, because the BOM manages it.
+
+### When the project uses the JPA static metamodel
+
+`spring-data-jpa` prefers the generated static metamodel over raw attribute-name strings in
+Specifications and Criteria queries. That metamodel comes from a processor, and **the artifact
+differs by Spring Boot generation** — [generation differences](generation-differences.md) carries
+both coordinates. Add it to the same path, after the MapStruct entry:
+
+```xml
+<path>
+    <groupId>org.hibernate.orm</groupId>
+    <artifactId>ARTIFACT-FROM-GENERATION-DIFFERENCES</artifactId>
+</path>
+```
+
+It carries no version because the Spring Boot BOM manages Hibernate. Add it only when the project
+actually uses the metamodel; a processor that generates classes nobody references is build time spent
+for nothing. Once it is on the path, verify that `<EntityName>_` classes appear under
+`target/generated-sources/annotations` — a missing metamodel fails compilation loudly, which is the
+good case, but a *stale* one compiles against an attribute the entity no longer has.
 
 ### When the project uses Lombok
 
@@ -172,6 +214,8 @@ container-backed test runs in the `test` phase.
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-surefire-plugin</artifactId>
+    <!-- Not managed by the Spring Boot parent; pin it. -->
+    <version>${surefire-plugin.version}</version>
     <configuration>
         <excludes>
             <exclude>**/*IntegrationTest.java</exclude>
@@ -182,6 +226,7 @@ container-backed test runs in the `test` phase.
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-failsafe-plugin</artifactId>
+    <!-- Managed by the Spring Boot parent; no version here. -->
     <configuration>
         <includes>
             <include>**/*IntegrationTest.java</include>

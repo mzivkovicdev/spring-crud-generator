@@ -21,14 +21,30 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 ```kotlin
 plugins {
     java
+    checkstyle
     id("org.springframework.boot") version "RESOLVE"
     id("io.spring.dependency-management") version "RESOLVE"
+    id("com.diffplug.spotless") version "RESOLVE"
+}
+
+checkstyle {
+    // The Checkstyle tool, which is a different version from any plugin.
+    toolVersion = "RESOLVE"
+    configDirectory = layout.projectDirectory.dir("config/checkstyle")
+    maxWarnings = 0
+    isIgnoreFailures = false
 }
 
 extra["mapstructVersion"] = "RESOLVE"
 // Only when docs/project-profile.md records that the project uses Lombok.
 extra["lombokMapstructBindingVersion"] = "RESOLVE"
 ```
+
+`checkstyle` and `java` are Gradle-distributed plugins and take no version — the Gradle version in
+the committed wrapper pins them, which is one of the reasons the wrapper is reviewed as executable
+code. Everything applied by identifier carries a version. `toolVersion` is separate and required:
+without it the plugin picks its own default Checkstyle, which is usually behind the version the
+committed configuration was written against.
 
 `RESOLVE` is the decision token defined in `spring-boot-patterns`: look the current release up at
 setup time, write it into the build file, and record it with its resolution date in the
@@ -115,6 +131,19 @@ Without it, generation order is undefined: the build either fails with missing p
 produces a mapper that quietly skips fields. It is meaningless without Lombok, so it appears only in
 this variant. Lombok also needs a separate `testAnnotationProcessor` declaration, or it silently
 stops working in test sources.
+
+### When the project uses the JPA static metamodel
+
+`spring-data-jpa` prefers the generated static metamodel over raw attribute-name strings. The
+processor artifact differs by Spring Boot generation — [generation differences](generation-differences.md)
+carries both coordinates — and needs no version, because the Spring Boot BOM manages Hibernate:
+
+```kotlin
+annotationProcessor("org.hibernate.orm:ARTIFACT-FROM-GENERATION-DIFFERENCES")
+```
+
+Add it only when the project actually uses the metamodel, and confirm that `<EntityName>_` classes
+appear under `build/generated/sources/annotationProcessor` afterwards.
 
 ### Rules that apply either way
 

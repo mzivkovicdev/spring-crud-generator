@@ -41,9 +41,11 @@ into those tokens, and no other skill reclassifies one.
 | --- | --- | --- |
 | Build tool | `ASK` | Maven and Gradle are both correct, and nothing in an empty repository decides between them |
 | Spring Boot generation | `ASK` | 3 and 4 are both supported; the choice follows the platform, the team, and the upgrade appetite, not a lookup |
+| Support model for the chosen branch | `ASK` | Whether the project relies on open-source updates or on a commercial subscription. This is a procurement fact, not a lookup, and it is what makes a branch past its OSS end date a decision rather than an accident |
 | Uses Lombok | `ASK` | A project-wide style commitment, not a technical necessity |
 | Java release | `RESOLVE` | A supported LTS at or above the floor is a correct answer that only needs looking up |
 | Spring Boot version within the chosen generation | `RESOLVE` | The current stable release of that branch |
+| Support end date of the chosen branch | `RESOLVE` | Published by the project; look it up rather than assuming the branch is current |
 | Every plugin and tool version | `RESOLVE` | Checkstyle, Spotless, MapStruct, the OpenAPI generator, the Lombok binding |
 
 An `ASK` blocks the task until the user answers. A `RESOLVE` never blocks: look it up, record it with
@@ -63,7 +65,10 @@ restates these rules.
 
 - Look up the current release before choosing, rather than reusing a number from documentation, from a tutorial, or from memory. Any number written down is stale within months; the lookup is cheap and the answer is authoritative.
 - **When the lookup is impossible** — no network, no registry, or a result you cannot confirm — record `UNDECIDED` with the reason and say so in the handoff. Do not write a remembered number into a build file or the profile. A guessed version is worse than a missing one: it looks resolved, so nobody checks it again, and it can silently name an end-of-life branch.
-- Verify that the branch is still receiving updates, and record both the version and the date its support ends in `docs/project-profile.md`. **Never start a new project on a branch that has reached end of life.** An unsupported branch takes no security patches, which is a defect on day one rather than a future upgrade task.
+- Verify that the branch is still receiving updates, and record the version, the date its support ends, and the support model in `docs/project-profile.md`.
+- **A branch past its open-source end date is a decision, never a default.** It takes no open-source security patches, so a project on one is relying on a commercial subscription — which is a real and common arrangement, and is fine when someone has actually bought it. Establish that before writing the version down: ask the user whether the project has commercial support for that branch, record the answer in the profile's support-model row, and say so in the handoff. Where nobody can confirm it, the branch is unsupported and the answer is a supported branch instead.
+- **Both generations of this skill set stay valid regardless.** Support status decides which branch a given project should sit on; it does not remove a generation from the set. A project on an older branch — because the platform pins it, because a subscription covers it, or because the upgrade is scheduled — is a first-class case here, and every rule with a per-generation form states both.
+- **Support dates are written-down values, so they go stale exactly like version numbers.** Look up the current support table at setup and again before any upgrade decision. Never repeat a support date from memory, from this skill, or from a project that was set up earlier.
 - **Java.** Java 21 is the floor this skill set is written against, and everything here works on it. Prefer the current LTS release when nothing constrains the project — a supported framework version, a platform image, or a customer requirement — and record the chosen release in the profile. Do not exceed what the chosen Spring Boot generation supports.
 - **Spring Boot.** The generation is the user's answer; the version within it is a lookup. When an existing project sits on an older supported branch, stay there and raise the upgrade separately; do not change the generation as a side effect of an unrelated task.
 - When the project already records versions, use them. This section governs the choice, not a re-litigation of a choice already made.
@@ -74,6 +79,7 @@ The skill set is written for Spring Boot 3.x and 4.x. The profile records which 
 and that is the single answer for every skill.
 
 - Where a rule genuinely differs between generations, the skill that owns the topic states both cases and names which applies where. Nothing in this set assumes a generation silently.
+- **The generation is not the whole answer.** Spring Boot 4's minor lines carry major versions of Spring Security, Spring Data, and the rest of the portfolio, so a coordinate or a property that holds on one 4.x line can differ on the next. Record the minor line in the profile alongside the generation, and read portfolio versions from the effective dependency tree. [Generation differences](references/generation-differences.md) carries the per-line notes that touch a rule in this set.
 - Spring Boot 4 builds on Spring Framework 7, Jakarta EE 11, and a Servlet 6.1 baseline, and carries major versions of Spring Security, Spring Data, and Jackson. Inspect the effective versions from the build rather than assuming them, and treat a generation change as its own task with its own verification.
 - **This skill owns the catalogue of what each thing is called in each generation.** Read [generation differences](references/generation-differences.md) for starter and module coordinates, relocated annotations, and renamed properties. Other skills state the behavior they own and link there for the coordinate; none of them repeats the table.
 - **That catalogue is a written-down value, so it obeys the same rule as a version number.** Verify a row against the project's effective dependency tree and the upstream migration guide before relying on it for the first time in a project, and again before any generation upgrade. Never treat a row as current because a coordinate resolves — a renamed artifact can keep publishing under its old name for a whole release line.

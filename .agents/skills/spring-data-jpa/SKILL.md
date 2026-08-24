@@ -74,7 +74,7 @@ and which provider version enforces the specification.
 | `@EntityScan` | `org.springframework.boot.autoconfigure.domain` | `org.springframework.boot.persistence.autoconfigure` |
 | Exception translation property | `spring.dao.exceptiontranslation.enabled` | `spring.persistence.exceptiontranslation.enabled` |
 | Static metamodel processor | `hibernate-jpamodelgen` | `hibernate-processor` |
-| Spring Data JPA | the 3.x line | the 2025.1 line |
+| Spring Data JPA | the 3.x line | a 4.x line, advancing with the Spring Boot 4 minor line — read it from the build, not from here |
 
 Read the effective versions from the build rather than trusting this table, per
 `build-and-dependencies`, which owns the coordinates in
@@ -201,7 +201,7 @@ Choose the smallest suitable fetch mechanism:
 ## Sargable and dynamic queries
 
 - Build only required predicates for optional filters.
-- Prefer the JPA static metamodel or Querydsl for non-trivial dynamic queries; raw attribute-name strings fail only at runtime after incompatible refactoring.
+- Prefer the JPA static metamodel or Querydsl for non-trivial dynamic queries; raw attribute-name strings fail only at runtime after incompatible refactoring. The metamodel comes from an annotation processor whose artifact differs by generation — state the requirement to `build-and-dependencies`, which owns the processor path, rather than adding it to the build from here.
 - Normalize values according to the business contract before querying; do not apply functions to indexed columns by habit.
 - Functions, casts, arithmetic, and implicit type conversion on indexed columns can prevent normal index access.
 - Avoid leading-wildcard searches on large tables unless a suitable search/index feature is deliberately used.
@@ -268,7 +268,7 @@ semantics, and how long a transaction may stay open. This section owns what happ
 
 - **Choose the strategy per operation, not per entity.** Both appear in most applications and frequently on the same aggregate: editing a product is optimistic, reserving its stock is pessimistic. Optimistic is the default because it costs nothing when nothing collides.
 - **The application absorbs contention; the caller does not.** Repeat the operation through the project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, and surface `409 Conflict` only when the retry policy is exhausted. Never answer routine contention by asking the caller to send the request again, and never write a retry loop by hand.
-- That annotation composes `@Transactional` with the framework's declarative retry, so the retry advice wraps the transaction and each attempt gets a fresh one. Never catch the optimistic failure below it: an aggregate service performs the write and lets the version check surface at commit.
+- That annotation composes `@Transactional` with the generation's declarative retry so that the retry advice wraps the transaction and each attempt gets a fresh one. On Spring Boot 3 the interceptor orders make that arrangement the default; on Spring Boot 4 it is not documented as a guarantee, so prove it with a test on either generation. Never catch the optimistic failure below the annotation: an aggregate service performs the write and lets the version check surface at commit.
 - Retry only when the complete operation is safe to repeat: it recomputes from state it re-reads and has produced no external side effect.
 - Retry cannot prevent a stale-client overwrite, where a caller submits values computed from state it no longer has. That needs a version supplied by the caller — a read-only field in the update TO, or `ETag` with `If-Match` — and `docs/project-profile.md` records which, or records that every write is transformational and neither is needed. A caller-supplied version is verified, never assigned to `@Version`.
 - Use a pessimistic lock when the invariant requires blocking — allocating limited stock, seats, or a numbered sequence, claiming a work item, or protecting an invariant spanning rows. Those are structurally pessimistic and need no measurement. Only buying a lock purely for throughput on a hot row requires evidence from production.

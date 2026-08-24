@@ -29,6 +29,8 @@ src/main/java/com/example/myapp/
 │   └── impl/                      # Implementations when the project uses this convention
 │       └── UserManagementApplicationServiceImpl.java
 ├── config/                        # Bean configuration classes
+│   ├── ApplicationTimeConfiguration.java  # The Clock bean
+│   ├── CatalogClientConfiguration.java    # Constructs the outbound client
 │   ├── SecurityConfig.java
 │   ├── WebConfig.java
 │   └── properties/                # @ConfigurationProperties types
@@ -141,10 +143,9 @@ public interface TransferService {
 }
 ```
 
-This example assumes that the project uses the service-interface and `*ServiceImpl` convention. Keep validation constraints on the interface and place `@Validated` on the concrete Spring bean. Do not repeat constraints on the overriding method.
-
-With the concrete-service convention, there is no second place to split: declare the constraints and
-the caller-facing Javadoc on the `@Service` class itself and annotate that class with `@Validated`.
+This example assumes the service-interface and `*ServiceImpl` convention, so the implementation below
+carries `@Validated`, the dependencies, and the bodies, while the interface above carries the
+constraints and the Javadoc. Do not repeat constraints on the overriding method.
 
 ```java
 @Service
@@ -183,6 +184,11 @@ public class TransferServiceImpl implements TransferService {
 }
 ```
 
+**With the concrete-service convention there is no second place to split**: the constraints, the
+caller-facing Javadoc, `@Validated`, `@Service`, the transaction, and the bodies all sit on one class,
+and nothing else about the example changes. Follow whichever convention
+`docs/project-profile.md` records, and do not mix the two within a scope.
+
 The explicit `save` calls are intentional; do not replace them with dirty-checking-only persistence. Apply `spring-data-jpa` and the project’s consistency rules for locking and concurrency. Invoke the service through the Spring proxy so validation and transaction advice are applied.
 
 ## Custom exceptions
@@ -211,14 +217,52 @@ security profile. It is safe when identifiers are opaque and non-enumerable, and
 identifier is itself personal data such as an email address. The message stays internal in either
 case; `ApiExceptionHandler` never copies it into the response body.
 
+`BusinessValidationException` is the **carrier** shape described in
+[error handling examples](error-handling-examples.md#two-exception-shapes-and-when-each-applies): it
+takes a catalog constant rather than a message, so one handler serves every business rule while each
+rule keeps its own status and problem type.
+
 ```java
 public class BusinessValidationException extends RuntimeException {
 
-    public BusinessValidationException(final String message) {
-        super(Objects.requireNonNull(message, "message must not be null"));
+    private final ApplicationError error;
+
+    public BusinessValidationException(final ApplicationError error) {
+        super(Objects.requireNonNull(error, "error must not be null").code());
+        this.error = error;
+    }
+
+    /**
+     * Returns the catalog entry that decides this failure's public contract.
+     *
+     * @return the error catalog constant; never {@code null}
+     */
+    public ApplicationError error() {
+        return this.error;
     }
 }
 ```
+
+The message is the internal code, not free text: it is what appears in a stack trace an operator
+reads, and it already matches the structured `errorCode` field the advice logs. Never add a
+constructor that takes a message, a status, or a URI — the constant is the only input, or the catalog
+stops being the single declaration.
+
+```java
+public class ConcurrentModificationConflictException extends RuntimeException {
+
+    public ConcurrentModificationConflictException(
+            final Object identifier, final Throwable cause) {
+
+        super("Concurrent modification of resource with identifier: %s".formatted(
+                Objects.requireNonNull(identifier, "identifier must not be null")), cause);
+    }
+}
+```
+
+This one is the **fixed-mapping** shape: it means exactly one thing, so the handler resolves
+`ApplicationError.CONCURRENT_MODIFICATION` itself. `spring-data-jpa` throws it when the optimistic
+retry policy is exhausted.
 
 Name the project's validation category `BusinessValidationException`. Do not name it
 `ValidationException`: that simple name collides with `jakarta.validation.ValidationException`, and
@@ -240,16 +284,45 @@ this file.
 public record CatalogClientProperties(
         @NotNull URI baseUrl,
         @NotNull @DurationMin(millis = 1) Duration connectTimeout,
-        @NotNull @DurationMin(millis = 1) Duration responseTimeout) {
+        @NotNull @DurationMin(millis = 1) Duration readTimeout) {
 }
 ```
 
-Validate required timeouts as strictly positive so invalid configuration fails during startup.
+Validate required timeouts as strictly positive so invalid configuration fails during startup. The
+two names match the outbound timeout budget the project profile records, so a configuration key, a
+property component, and a profile row all say the same word.
 
 ```java
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(CatalogClientProperties.class)
 class CatalogClientConfiguration {
+
+    @Bean
+    CatalogClient catalogClient(
+            final RestClient.Builder restClientBuilder,
+            final CatalogClientProperties properties) {
+
+        return new CatalogClient(restClientBuilder
+                .baseUrl(properties.baseUrl().toString())
+                .build());
+    }
+}
+```
+
+**This bean is incomplete as written, deliberately.** The connection and read timeouts are applied to
+the request factory the builder uses, and the type that carries them differs by Spring Boot
+generation; `build-and-dependencies` owns that coordinate in
+[generation differences](../../build-and-dependencies/references/generation-differences.md). Read it
+and configure both timeouts from `properties` before this client goes anywhere near a running system
+— [outbound call rules](outbound-call-rules.md) states why a client without a read timeout takes the
+application down rather than the dependency.
+
+A configuration class is named for what it constructs. Unrelated infrastructure beans get their own
+class rather than a spare `@Bean` method in the nearest existing one:
+
+```java
+@Configuration(proxyBeanMethods = false)
+class ApplicationTimeConfiguration {
 
     @Bean
     Clock applicationClock() {

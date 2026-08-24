@@ -19,10 +19,14 @@ Last updated: YYYY-MM-DD
 | Skill set revision this project follows | `RESOLVE` |  | the tag or commit of the skill set this project was built against | all skills |
 | Java release | `RESOLVE` |  | 21 minimum | `build-and-dependencies` |
 | Spring Boot generation | `ASK` |  | 3 \| 4 | `build-and-dependencies` |
-| Spring Boot version | `RESOLVE` |  | with the date its branch loses support | `build-and-dependencies` |
+| Spring Boot version | `RESOLVE` |  | the full version, including the minor line — rules branch on the generation, coordinates can differ per minor line | `build-and-dependencies` |
+| Support end date of that branch | `RESOLVE` |  | looked up at setup, never remembered | `build-and-dependencies` |
+| Support model | `ASK` |  | open source \| commercial subscription | `build-and-dependencies` |
+| Version support re-check date | `RESOLVE` |  | when the two rows above are looked up again | `build-and-dependencies` |
 | Build tool | `ASK` |  | Maven \| Gradle | `build-and-dependencies` |
 | Uses Lombok | `ASK` | no | yes \| no | `build-and-dependencies` |
 | Base package | `ASK` |  | com.example.myapp | `project-naming-conventions` |
+| Maximum line length | `ASK` | 120 | the value the committed Checkstyle configuration enforces | `build-and-dependencies` |
 
 ## Persistence
 
@@ -103,6 +107,8 @@ Last updated: YYYY-MM-DD
 | --- | --- | --- | --- | --- |
 | Integration test naming and phase | `ASK` | `*IntegrationTest` | `*IntegrationTest`, Failsafe \| Gradle suite | `spring-boot-testing` |
 | Database cleanup strategy | `ASK` | truncate after each method | truncate after each method \| per-class container | `spring-boot-testing` |
+| Assertion library | `ASK` | AssertJ | AssertJ \| JUnit assertions | `spring-boot-testing` |
+| Test-data generator | `ASK` | focused hand-written factories | focused hand-written factories \| Instancio \| other | `spring-boot-testing` |
 | Unit and slice tests | `RESOLVE` |  | e.g. `./mvnw test` | `spring-boot-testing` |
 | Full verification | `RESOLVE` |  | e.g. `./mvnw verify` | `spring-boot-testing` |
 | Quality gate check | `RESOLVE` |  | e.g. `./mvnw validate` | `build-and-dependencies` |
@@ -116,11 +122,21 @@ stays `UNDECIDED` with its reason, never a remembered number.
 | Artifact | Token | Version | Resolved on |
 | --- | --- | --- | --- |
 | Spring Boot | `RESOLVE` |  |  |
-| Checkstyle | `RESOLVE` |  |  |
+| Checkstyle, the tool | `RESOLVE` |  |  |
+| Checkstyle build plugin | `RESOLVE` |  |  |
 | Spotless | `RESOLVE` |  |  |
+| Surefire, on Maven | `RESOLVE` |  |  |
+| Failsafe, on Maven | `RESOLVE` |  |  |
+| Enforcer, on Maven | `RESOLVE` |  |  |
 | MapStruct | `RESOLVE` |  |  |
 | Lombok–MapStruct binding, if Lombok is used | `RESOLVE` |  |  |
+| JPA static metamodel processor, if Specifications or Criteria are used | `RESOLVE` |  |  |
+| Retry engine, if the project declares one | `RESOLVE` |  |  |
 | OpenAPI generator, if contract-first | `RESOLVE` |  |  |
+
+> The Spring Boot BOM manages some of these and not others, and which is which changes between
+> generations. A row is filled with the version the build actually resolves, not with the version
+> someone intended; `build-and-dependencies` states where each one comes from.
 
 ## Deferred decisions
 

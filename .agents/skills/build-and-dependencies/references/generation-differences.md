@@ -17,13 +17,16 @@ reads to decide which column applies.
 4. [Annotations and types that moved](#annotations-and-types-that-moved)
 5. [Configuration properties that were renamed](#configuration-properties-that-were-renamed)
 6. [Removed in Spring Boot 4](#removed-in-spring-boot-4)
-7. [The classic starters are a migration aid, not a target](#the-classic-starters-are-a-migration-aid-not-a-target)
+7. [Minor lines inside Spring Boot 4](#minor-lines-inside-spring-boot-4)
+8. [The classic starters are a migration aid, not a target](#the-classic-starters-are-a-migration-aid-not-a-target)
 
 ## What actually changed
 
 Spring Boot 4 is built on Spring Framework 7, Jakarta EE 11, and a Servlet 6.1 baseline, and it
-carries major versions of the rest of the portfolio: Spring Security 7, Spring Data 2025.1, and
-Jackson 3. Two changes account for most of the day-to-day difference:
+carries major versions of the rest of the portfolio: Spring Security 7 and Jackson 3, plus a Spring
+Data release train that advances with each minor line — see
+[minor lines inside Spring Boot 4](#minor-lines-inside-spring-boot-4). Two changes account for most
+of the day-to-day difference:
 
 1. **Modularization.** Auto-configuration was split into per-technology modules. Every module is `spring-boot-<technology>` with root package `org.springframework.boot.<technology>`, every starter is `spring-boot-starter-<technology>`, and every test starter is `spring-boot-starter-<technology>-test`. A third-party library on the classpath without its Spring Boot module is now inert: the application starts, the build is green, and the feature silently does nothing. This is the most dangerous failure mode in the whole generation change, because no check reports it.
 2. **Jackson 3.** The group and package moved from `com.fasterxml.jackson` to `tools.jackson`, except `jackson-annotations`, which keeps the `com.fasterxml.jackson.core` group and the `com.fasterxml.jackson.annotation` package.
@@ -40,6 +43,7 @@ that no longer wires anything.
 | Capability | Spring Boot 3 | Spring Boot 4 |
 | --- | --- | --- |
 | Spring MVC | `spring-boot-starter-web` | `spring-boot-starter-webmvc` (`-web` remains but is deprecated) |
+| SOAP web services | `spring-boot-starter-web-services` | `spring-boot-starter-webservices` |
 | Validation | `spring-boot-starter-validation` | unchanged |
 | Spring Data JPA | `spring-boot-starter-data-jpa` | unchanged |
 | JDBC | `spring-boot-starter-jdbc` | unchanged |
@@ -85,12 +89,17 @@ must prove; this skill owns the declaration that makes them run.
 | --- | --- | --- |
 | Mocking a bean in a test | `@MockBean`, `@SpyBean` | `@MockitoBean`, `@MockitoSpyBean` (the old pair is **removed**) |
 | Entity scanning | `org.springframework.boot.autoconfigure.domain.EntityScan` | `org.springframework.boot.persistence.autoconfigure.EntityScan` |
+| Actuator security matcher | `org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest` | `org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest` |
+| JPA static metamodel processor | `org.hibernate.orm:hibernate-jpamodelgen` (Hibernate 6) | `org.hibernate.orm:hibernate-processor` (Hibernate 7) |
+| `TestRestTemplate` | `org.springframework.boot.test.web.client`, auto-configured | `org.springframework.boot.resttestclient`, and `@AutoConfigureTestRestTemplate` is required |
 | Jackson component | `@JsonComponent` | `@JacksonComponent` |
 | Jackson mixin | `@JsonMixin` | `@JacksonMixin` |
 | Mapper builder customizer | `Jackson2ObjectMapperBuilderCustomizer` | `JsonMapperBuilderCustomizer` |
 | Replacing the mapper bean | define an `ObjectMapper` bean | define a `JsonMapper` (or `XmlMapper`) bean |
 | Nullability annotation | `org.springframework.lang.Nullable` | `org.jspecify.annotations.Nullable` |
-| Retry | Spring Retry, with its own dependency management | `org.springframework.core.retry` in the framework; Spring Retry needs an explicit version |
+| Declarative retry | Spring Retry's `@Retryable` plus `@EnableRetry`, version-managed by the BOM | `org.springframework.resilience.annotation.Retryable` plus `@EnableResilientMethods`, in the framework |
+| Programmatic retry | Spring Retry's `RetryTemplate` | `org.springframework.core.retry.RetryTemplate` and `RetryPolicy` — this package carries **no** annotation |
+| Spring Retry itself | version-managed by the BOM | still usable, but no longer version-managed; pin it explicitly if the project keeps it |
 | `EnvironmentPostProcessor` | `org.springframework.boot.env` | `org.springframework.boot` |
 | `BootstrapRegistry` | `org.springframework.boot` | `org.springframework.boot.bootstrap` |
 
@@ -99,7 +108,7 @@ must prove; this skill owns the declaration that makes them run.
 | Concern | Spring Boot 3 | Spring Boot 4 |
 | --- | --- | --- |
 | Persistence exception translation | `spring.dao.exceptiontranslation.enabled` | `spring.persistence.exceptiontranslation.enabled` |
-| Jackson read/write features | `spring.jackson.read.*`, `spring.jackson.write.*` | `spring.jackson.json.read.*`, `spring.jackson.json.write.*` |
+| Jackson read/write features | `spring.jackson.read.*`, `spring.jackson.write.*` | format-scoped as `spring.jackson.json.read.*` / `.write.*`; later 4.x lines also auto-configure the unscoped `spring.jackson.read.*` / `.write.*` again, so confirm which the project's line binds |
 | Jackson parser features | `spring.jackson.parser.*` | `spring.jackson.json.read.*` where an equivalent read feature exists |
 | Module registration | well-known modules only | all classpath modules, unless `spring.jackson.find-and-add-modules=false` |
 | Health probes | opt in | enabled by default; disable with `management.endpoint.health.probes.enabled=false` |
@@ -119,6 +128,37 @@ Do not carry these into a Spring Boot 4 project, and do not restore them:
 - The classic uber-jar loader configuration.
 - Optional dependencies in uber jars, unless `includeOptional` is set deliberately.
 - Dependency management for Spring Retry and for Spring Authorization Server, which is now versioned by Spring Security.
+- Spring Retry's `@Recover`, which has no equivalent in the framework's resilience support. An exhausted retry is translated in the REST exception advice instead; `spring-data-jpa` owns that decision.
+
+## Minor lines inside Spring Boot 4
+
+**The generation is not the whole answer.** `docs/project-profile.md` records the generation because
+the rules in this skill set branch on it, but Spring Boot 4's minor lines carry major versions of
+other projects, so a row that is true for one 4.x line can be wrong for the next. Two things follow
+from that, and both are rules rather than advice.
+
+- **Record the minor line, not only the generation.** The profile's Spring Boot version row is what tells a later task which 4.x line it is looking at. `4` on its own does not decide which Spring Security or Spring Data version is in the build.
+- **Read the portfolio versions from the effective dependency tree, never from this file.** The table below exists so a difference is expected rather than discovered; it is a written-down value and obeys the same rule as every other written-down value here.
+
+| Portfolio project | Where to read it |
+| --- | --- |
+| Spring Framework | `./mvnw dependency:tree` or `./gradlew dependencies`, then the project's release notes |
+| Spring Security | same; a major line brings API removals, so check its "What's New" before an upgrade |
+| Spring Data release train | same; the train version and the module version differ, and both matter |
+| Micrometer, Hibernate, Jackson | same |
+
+Changes that arrived in a 4.x minor line after 4.0 and that the skills in this set care about, each
+to be confirmed against the project's actual line:
+
+| Change | Owner skill | Why it matters here |
+| --- | --- | --- |
+| An HTTP client address filter that blocks outbound calls to configured address ranges | `application-security` | A platform SSRF control. Prefer it to a hand-written allowlist where the line provides it, and keep the network-layer control either way. |
+| `spring.security.oauth2.resourceserver.jwt.authorities-claim-expressions` | `application-security` | Replaces the claim-name and delimiter properties for deriving authorities. |
+| Automatic context propagation for `@Async` | `observability-and-logging` | May make a project-owned MDC task decorator redundant. Verify before writing one. |
+| `management.opentelemetry.enabled` and sampler configuration | `observability-and-logging` | Changes how tracing export is switched off in a deployment. |
+
+Do not treat this list as complete. It records the ones that touch a rule in this skill set; the
+release notes for the project's own line are the authority.
 
 ## The classic starters are a migration aid, not a target
 

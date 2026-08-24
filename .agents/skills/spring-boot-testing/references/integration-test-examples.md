@@ -50,16 +50,17 @@ class UserApiIntegrationTest {
     private final UserRepository userRepository;
 
     UserApiIntegrationTest(
+            @Autowired final AccessTokenTestClient accessTokenTestClient,
             @Autowired final MockMvc mockMvc,
             @Autowired final ObjectMapper objectMapper,
             @Autowired final PasswordEncoder passwordEncoder,
             @Autowired final UserRepository userRepository) {
 
+        this.accessTokenTestClient = accessTokenTestClient;
         this.mockMvc = mockMvc;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
-        this.accessTokenTestClient = new AccessTokenTestClient(mockMvc, objectMapper);
     }
 
     @Test
@@ -152,6 +153,12 @@ without it. Keep token fixtures expressed in the public scope vocabulary owned b
 
 `AccessTokenTestClient` hides the issuance profile from the test. Whichever profile the service
 uses, the test seeds the identity, asks for a token, and sends it; the assertions do not change.
+
+**It is injected, not constructed.** Its own collaborators differ per issuance profile — the Profile A
+version below needs a `TestIdentitySeeder`, the temporary-issuer version needs a token factory — so a
+test that builds it by hand has to be edited every time the profile changes, which is precisely what
+this indirection exists to prevent. Register it once as a test-scoped bean in a shared
+`@TestConfiguration`, and every test takes it as a constructor parameter like any other collaborator.
 
 Match status, `Location`, problem type URI, and schema to the actual API contract. Keep the real security
 filter chain enabled. The default bearer response may contain only the required status and challenge;

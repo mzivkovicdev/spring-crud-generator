@@ -25,8 +25,8 @@ import jakarta.validation.Valid;
 import javax.crypto.Cipher;
 import javax.sql.DataSource;
 
-import com.acme.customer.Customer;
-import com.acme.customer.CustomerRepository;
+import com.example.myapp.domain.UserDomain;
+import com.example.myapp.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ Every line below violates a different part of the rule; the trailing comment nam
 import java.util.*;                     // wildcard
 import org.junit.jupiter.api.Test;
 import java.time.Instant;               // not sorted
-import com.acme.customer.Customer;
+import com.example.myapp.domain.UserDomain;
 import java.util.Optional;              // duplicate java.util group
 import static org.mockito.Mockito.*;    // wildcard static import
 import java.time.Clock;                 // unused import

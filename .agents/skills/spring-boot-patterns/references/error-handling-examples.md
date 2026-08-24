@@ -17,18 +17,26 @@ public enum ApplicationError {
 
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access denied",
             "The authenticated caller is not allowed to perform this operation."),
+    CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "Concurrent modification",
+            "The resource was modified concurrently. Retry the operation."),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "Email already registered",
+            "An account already exists for the supplied email address."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
             "The server could not process the request."),
     INVALID_STATE(HttpStatus.CONFLICT, "Invalid resource state",
             "The operation is not allowed in the current resource state."),
+    ORGANIZATION_CLOSED(HttpStatus.CONFLICT, "Organization closed to new members",
+            "The organization does not accept new members."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found",
             "The requested resource does not exist."),
     RESPONSE_VALIDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Response validation failed",
             "The server could not produce a valid response."),
+    USER_NOT_MODIFIABLE(HttpStatus.CONFLICT, "User not modifiable",
+            "The user is not in a state that accepts this change."),
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation failed",
             "The request contains invalid values.");
 
-    private static final String PROBLEM_TYPE_BASE = "https://api.acme.example/problems/";
+    private static final String PROBLEM_TYPE_BASE = "https://api.example.com/problems/";
 
     private final String detail;
     private final HttpStatus status;
@@ -71,7 +79,7 @@ public enum ApplicationError {
 ```
 
 `VALIDATION_FAILED` therefore always produces the code `VALIDATION_FAILED` and the type
-`https://api.acme.example/problems/validation-failed`. Neither can drift from the other, and neither
+`https://api.example.com/problems/validation-failed`. Neither can drift from the other, and neither
 can acquire a second spelling somewhere else in the codebase.
 
 ```java
@@ -91,10 +99,18 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return createProblem(ApplicationError.INVALID_STATE, exception);
     }
 
-    // Project-owned category for caller-correctable validation failures.
+    // Carrier exception: the constant travels with the failure, so one handler serves
+    // every business-rule condition without a handler per rule.
     @ExceptionHandler(BusinessValidationException.class)
     public ProblemDetail handleBusinessValidation(final BusinessValidationException exception) {
-        return createProblem(ApplicationError.VALIDATION_FAILED, exception);
+        return createProblem(exception.error(), exception);
+    }
+
+    @ExceptionHandler(ConcurrentModificationConflictException.class)
+    public ProblemDetail handleConcurrentModification(
+            final ConcurrentModificationConflictException exception) {
+
+        return createProblem(ApplicationError.CONCURRENT_MODIFICATION, exception);
     }
 
     // Required: without it, the catch-all below would turn a method-security denial into a 500.
@@ -182,6 +198,22 @@ Two handlers exist for reasons that are easy to miss:
 - `AccessDeniedException` must be handled explicitly. Filter-level denials never reach an advice, but a method-security denial does, and the catch-all would otherwise report a `403` condition as a `500`.
 - `@ExceptionHandler(Exception.class)` is the catch-all that guarantees every unexpected failure still produces a `ProblemDetail` rather than the default error page. The specific handlers inherited from `ResponseEntityExceptionHandler` take precedence over it, so framework exceptions keep their intended status.
 
+### Two exception shapes, and when each applies
+
+The catalog is the single declaration, but exceptions reach it two ways. Choose per condition and keep
+both shapes in the project; neither replaces the other.
+
+| Shape | Example | Use when |
+| --- | --- | --- |
+| **Fixed mapping** — one exception type, one constant, resolved in the handler | `ResourceNotFoundException` → `RESOURCE_NOT_FOUND`, `ConcurrentModificationConflictException` → `CONCURRENT_MODIFICATION` | The condition is one thing. The exception carries only the context needed for the log line. |
+| **Carrier** — one exception type, several constants, the constant passed at throw site | `BusinessValidationException(ApplicationError.USER_NOT_MODIFIABLE)` | Several business rules share one handling contract but need distinct problem types. A handler per rule would be a handler per business rule, which is how an advice grows without bound. |
+
+A carrier exception is the reason `BusinessValidationException` is not hard-mapped to `400`: its
+status comes from the constant it carries, so `USER_NOT_MODIFIABLE` produces `409` and a
+caller-correctable input rule produces `400`, from the same type and the same handler. Never let a
+carrier accept a status, a title, or a URI directly — it accepts a catalog constant and nothing else,
+or the catalog stops being the single declaration.
+
 The response body carries exactly one machine-readable error identifier, the `type` URI, plus the
 `correlationId` extension member. `correlationId` is not a second error identifier: it identifies
 the request, not the failure, and support workflows need it in the payload a caller copies into a
@@ -206,7 +238,7 @@ second overlapping global handler.
 Place this advice in `<base-package>.exception.handler`. Keep the exceptions it handles in
 `<base-package>.exception`; do not place the advice directly beside them.
 
-Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to a constant in the error catalog. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a catalog constant only for a condition with a distinct status, type, or response contract. Map `BusinessValidationException` to `400` only when it represents caller-correctable input, and never register a handler for `jakarta.validation.ValidationException`. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
+Before adding handlers, inventory the exceptions that can cross each controller boundary and map every caller-visible category to a constant in the error catalog. Keep input-validation failures as `400`, but treat return-value validation as a server failure. Reuse shared exception categories when their public handling is identical, and add a catalog constant only for a condition with a distinct status, type, or response contract. Never register a handler for `jakarta.validation.ValidationException`. If `ConstraintViolationException` can cross the boundary, distinguish argument violations from return-value or internal violations before choosing a status.
 
 Normal REST TO responses use `application/json`; RFC 9457 error responses use
 `application/problem+json`.
@@ -223,25 +255,11 @@ Handle listener, job, messaging, and asynchronous failures at their owning bound
 not pass through this advice, and log them there under the same one-record rule. Test each status,
 problem type, content type, required header, and information-disclosure rule.
 
-## The error contract in full
+## Handler rules
 
-Use the project's existing error contract. For a new API on a supported Spring version, use RFC 9457
-`ProblemDetail`.
-
-The RFC 9457 `type` URI is the only machine-readable error identifier in the body. Never add a
-parallel `code`, `errorCode`, or `errorId`: two identifiers for one condition guarantee that clients
-branch on the wrong one. `title` and `detail` are human-readable and may change.
-`project-naming-conventions` owns the URI form.
-
-Declare every caller-visible failure once, as a constant in a single project-owned error catalog
-carrying the status, the `type` URI, the title, the detail, and the internal code used in logs,
-events, and metrics. One declaration keeps the public type and the internal code from drifting
-apart; do not add a second holder for either.
-
-`correlationId` is the one permitted extension member, because it identifies the request rather than
-the failure and support workflows need it in the payload a caller pastes into a ticket. Keep
-`traceId`, `spanId`, stack traces, exception class names, provider messages, internal hostnames,
-SQL, internal endpoints, credentials, and personal data out of the body entirely.
+`../SKILL.md` states the three rules that decide the contract — the `type` URI as the only
+machine-readable identifier, one declaration per caller-visible failure, and `correlationId` as the
+one permitted extension. They are not repeated here. What follows applies them.
 
 - Map expected application failures explicitly, and let Spring's framework handler preserve standard REST error behavior where appropriate.
 - A catch-all handler returns a generic message and logs the cause once. Never copy `exception.getMessage()` into a response unless that type guarantees a stable, user-safe message, and never log an expected 4xx as a server error.

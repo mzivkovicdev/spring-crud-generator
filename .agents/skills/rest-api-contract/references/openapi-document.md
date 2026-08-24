@@ -124,7 +124,7 @@ components:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
           example:
-            type: https://api.acme.example/problems/resource-not-found
+            type: https://api.example.com/problems/resource-not-found
             title: Resource not found
             status: 404
             detail: The requested resource does not exist.
@@ -147,23 +147,41 @@ visible in the pull request diff. The gate that keeps it honest is a test that r
 compares.
 
 ```java
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest
+@AutoConfigureMockMvc
 class OpenApiContractIntegrationTest {
 
     private static final Path COMMITTED_DOCUMENT = Path.of("src/main/resources/openapi/openapi.json");
 
-    private final TestRestTemplate testRestTemplate;
+    private final AccessTokenTestClient accessTokenTestClient;
+    private final MockMvc mockMvc;
+    private final ObjectMapper objectMapper;
 
-    OpenApiContractIntegrationTest(final TestRestTemplate testRestTemplate) {
-        this.testRestTemplate = testRestTemplate;
+    OpenApiContractIntegrationTest(
+            @Autowired final AccessTokenTestClient accessTokenTestClient,
+            @Autowired final MockMvc mockMvc,
+            @Autowired final ObjectMapper objectMapper) {
+
+        this.accessTokenTestClient = accessTokenTestClient;
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
     }
 
     @Test
     void apiDocs_whenGenerated_matchesCommittedDocument() throws Exception {
-        final String generated = this.testRestTemplate.getForObject("/v3/api-docs", String.class);
-        final ObjectMapper objectMapper = new ObjectMapper();
-        final JsonNode generatedTree = objectMapper.readTree(generated);
-        final JsonNode committedTree = objectMapper.readTree(Files.readString(COMMITTED_DOCUMENT));
+        final String accessToken = this.accessTokenTestClient.obtainAccessTokenFor(
+                AuthenticationTestData.identityWithUsersReadScope());
+
+        final String generated = this.mockMvc.perform(get("/v3/api-docs")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer %s".formatted(accessToken)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        final JsonNode generatedTree = this.objectMapper.readTree(generated);
+        final JsonNode committedTree = this.objectMapper.readTree(
+                Files.readString(COMMITTED_DOCUMENT));
 
         assertThat(generatedTree)
                 .as("The API contract changed. Review the diff, then update %s deliberately.",
@@ -176,6 +194,9 @@ class OpenApiContractIntegrationTest {
 Notes:
 
 - **The example uses a JSON path only to keep it short.** Replace the constant, the endpoint, and the parser with the `.json`, `.yaml`, or `.yml` document recorded in `docs/project-profile.md`; the example never selects the format for the repository.
+- **It uses `MockMvc`, not `TestRestTemplate`.** `spring-boot-testing` records that `@SpringBootTest` no longer contributes either client on Spring Boot 4, and `TestRestTemplate` also changed package there. `MockMvc` behind an explicit `@AutoConfigureMockMvc` is the one shape written identically on both generations, which is what a gate every project runs ought to be.
+- **The `ObjectMapper` is injected, not constructed.** A locally built mapper parses with different settings from the one that produced the document, so a difference in the tree can come from the parser instead of the contract. On Spring Boot 4 that injected type is Jackson 3's; the test does not change.
+- `AccessTokenTestClient` and `AuthenticationTestData` are the shared fixtures `spring-boot-testing` defines. This test uses a read-scoped identity because the document endpoint is a read.
 - Comparing parsed trees rather than text avoids failures from key ordering and formatting, and it is what makes the format substitution above a one-line change: a YAML mapper produces the same tree type, so only the mapper and the endpoint differ.
 - The failure message tells the reader what to do. A contract gate that fails with a wall of JSON teaches people to regenerate without looking, which defeats the gate.
 - Provide a documented command that rewrites the committed document, so updating it is deliberate and one step.

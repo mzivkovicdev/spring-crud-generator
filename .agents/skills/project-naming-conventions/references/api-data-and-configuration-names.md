@@ -161,19 +161,25 @@ Examples:
 | `GET /users/{userId}/permissions` | `usersUserIdPermissionsGet` |
 | `POST /orders/{orderId}/cancellation` | `ordersOrderIdCancellationPost` |
 
-The controller handler method name must exactly match the corresponding `operationId`:
+The controller handler method name must exactly match the corresponding `operationId`. What follows
+is an excerpt of the `UserController` declared in
+[`spring-boot-patterns` → REST API examples](../../spring-boot-patterns/references/rest-api-examples.md#rest-controller),
+with only the annotation that carries the name added:
 
 ```java
 @Operation(operationId = "usersUserIdGet")
 @GetMapping("/{userId}")
-public ResponseEntity<UserTO> usersUserIdGet(@PathVariable final Long userId) {
+public ResponseEntity<UserProfileTO> usersUserIdGet(@PathVariable final Long userId) {
     return ResponseEntity.ok(
-            UserRestMapper.INSTANCE.mapUserDomainToUserTO(
-                    this.userService.getById(userId)
+            UserRestMapper.INSTANCE.mapUserProfileDomainToUserProfileTO(
+                    this.userManagement.getProfile(userId)
             )
     );
 }
 ```
+
+The response type and the service the handler calls are `spring-boot-patterns`' decisions. What this
+skill owns is that the method is named `usersUserIdGet` rather than `getUserById`.
 
 Apply the same rule to every controller operation:
 
@@ -223,9 +229,9 @@ the `ProblemDetail` body. Clients branch on it. `title` and `detail` are human-r
 carry no contract.
 
 ```text
-https://api.acme.example/problems/resource-not-found
-https://api.acme.example/problems/duplicate-email
-https://api.acme.example/problems/invalid-order-transition
+https://api.example.com/problems/resource-not-found
+https://api.example.com/problems/duplicate-email
+https://api.example.com/problems/invalid-order-transition
 ```
 
 Rules for the type URI:

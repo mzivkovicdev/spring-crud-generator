@@ -62,8 +62,8 @@ them, and never treat them as review material.
             <configuration>
                 <inputSpec>${project.basedir}/src/main/resources/openapi/openapi.yaml</inputSpec>
                 <generatorName>spring</generatorName>
-                <apiPackage>com.acme.myapp.controller.api</apiPackage>
-                <modelPackage>com.acme.myapp.transferobject</modelPackage>
+                <apiPackage>com.example.myapp.controller.api</apiPackage>
+                <modelPackage>com.example.myapp.transferobject</modelPackage>
                 <configOptions>
                     <useSpringBoot3>true</useSpringBoot3>
                     <interfaceOnly>true</interfaceOnly>
@@ -98,23 +98,32 @@ controllers compile, and confirm the generated sources are on the compile source
 ## Working with generated interfaces
 
 The controller implements the generated interface and stays a thin transport boundary, exactly as
-`spring-boot-patterns` requires.
+`spring-boot-patterns` requires. This is the same `UserController` that
+[`spring-boot-patterns` → REST API examples](../../spring-boot-patterns/references/rest-api-examples.md#rest-controller)
+declares, with the two differences contract-first makes: it implements a generated interface, and it
+carries no mapping annotation and no route constant of its own.
 
 ```java
 @RestController
 public class UserController implements UsersApi {
 
+    private final UserManagementApplicationService userManagement;
     private final UserService userService;
 
-    public UserController(final UserService userService) {
+    public UserController(
+            final UserManagementApplicationService userManagement,
+            final UserService userService) {
+
+        this.userManagement = userManagement;
         this.userService = userService;
     }
 
     @Override
-    public ResponseEntity<UserTO> usersUserIdGet(final Long userId) {
-        final UserDomain user = this.userService.getById(userId);
+    public ResponseEntity<UserProfileTO> usersUserIdGet(final Long userId) {
+        final UserProfileDomain profile = this.userManagement.getProfile(userId);
 
-        return ResponseEntity.ok(UserRestMapper.INSTANCE.mapUserDomainToUserTO(user));
+        return ResponseEntity.ok(
+                UserRestMapper.INSTANCE.mapUserProfileDomainToUserProfileTO(profile));
     }
 }
 ```

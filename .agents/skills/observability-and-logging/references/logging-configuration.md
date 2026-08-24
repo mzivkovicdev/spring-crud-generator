@@ -27,7 +27,7 @@ logging:
       console: ecs
   level:
     root: INFO
-    com.acme.myapp: INFO
+    com.example.myapp: INFO
 ```
 
 Rules:

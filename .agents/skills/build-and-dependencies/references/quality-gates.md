@@ -84,8 +84,9 @@ Spotless applies import order and source hygiene automatically, so nobody argues
 <plugin>
     <groupId>com.diffplug.spotless</groupId>
     <artifactId>spotless-maven-plugin</artifactId>
-    <!-- spotless.version is declared in the properties block in maven-configuration.md -->
-    <version>${spotless.version}</version>
+    <!-- Declared in the properties block in maven-configuration.md. Not managed by the
+         Spring Boot parent, so this version is required. -->
+    <version>${spotless-plugin.version}</version>
     <configuration>
         <java>
             <importOrder>
@@ -128,6 +129,49 @@ Notes:
 
 Copy [`checkstyle.xml`](../assets/checkstyle.xml) to `config/checkstyle/checkstyle.xml`. Severity is
 `error` everywhere: a warning nobody has to fix is not a gate.
+
+Both versions are pinned, and they are two different artifacts:
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-checkstyle-plugin</artifactId>
+    <!-- Both properties are declared in maven-configuration.md. Neither the plugin nor the
+         tool is managed by the Spring Boot parent. -->
+    <version>${checkstyle-plugin.version}</version>
+    <dependencies>
+        <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.version}</version>
+        </dependency>
+    </dependencies>
+    <configuration>
+        <configLocation>config/checkstyle/checkstyle.xml</configLocation>
+        <includeTestSourceDirectory>true</includeTestSourceDirectory>
+        <violationSeverity>error</violationSeverity>
+        <failOnViolation>true</failOnViolation>
+    </configuration>
+    <executions>
+        <execution>
+            <id>checkstyle-validate</id>
+            <goals>
+                <goal>check</goal>
+            </goals>
+            <phase>validate</phase>
+        </execution>
+    </executions>
+</plugin>
+```
+
+Without the `<dependencies>` block the plugin runs whichever Checkstyle it was built against, which
+is usually well behind the version the configuration was written for. That is the usual reason a
+`record`-related module behaves differently on a developer machine and in CI while the configuration
+file is byte-identical.
+
+`includeTestSourceDirectory` is on because the rules in
+[`checkstyle.xml`](../assets/checkstyle.xml) apply to test sources too — `modern-java-21` says so
+explicitly, and a gate that skips `src/test/java` enforces the standard on half the codebase.
 
 The file is the gate for the rules other skills define, and it is annotated with which skill owns
 each block. Do not regenerate it from memory and do not trim it to make an existing codebase pass —
@@ -180,6 +224,9 @@ half-applied.
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-enforcer-plugin</artifactId>
+    <!-- Declared in maven-configuration.md. The Spring Boot parent does not manage this
+         plugin, so without a version the build is not reproducible. -->
+    <version>${enforcer-plugin.version}</version>
     <executions>
         <execution>
             <id>enforce-project-rules</id>
@@ -216,7 +263,9 @@ half-applied.
 </plugin>
 ```
 
-Four decisions in that block are deliberate:
+Five decisions in that block are deliberate:
+
+- **The `<version>`.** It is easy to assume the Spring Boot parent manages every Maven plugin. It manages a short list — the compiler and Failsafe among them — and Enforcer, Surefire, Checkstyle, and Spotless are not on it. Verify with `./mvnw help:effective-pom` rather than by whether the build happens to work.
 
 - **`${java.version}` rather than a literal.** The Java release is recorded in the project profile and declared once as a property, per [Maven configuration](maven-configuration.md). A literal here would be a second source of truth that silently disagrees with the compiler setting. Note that this rule checks the JDK **running Maven**, which is a different thing from `maven.compiler.release`; both matter, because a toolchain mismatch produces different bytecode with no visible failure.
 - **`${maven.multiModuleProjectDirectory}` rather than `${project.basedir}`.** The profile lives once at the repository root. `project.basedir` resolves per module, so in a multi-module build every submodule would look for its own copy and fail.

@@ -45,24 +45,24 @@ Prefer `id` and `userId` consistently. Do not alternate between `id`, `identifie
 Use lowercase package and Java module names. Use the organization's approved reverse-domain root and stable capability vocabulary:
 
 ```text
-com.acme.myapp.controller
-com.acme.myapp.mapper.rest
-com.acme.myapp.mapper.domain
-com.acme.myapp.applicationservice
-com.acme.myapp.applicationservice.impl
-com.acme.myapp.service
-com.acme.myapp.service.impl
-com.acme.myapp.domain
-com.acme.myapp.repository
-com.acme.myapp.repository.projection
-com.acme.myapp.repository.specification
-com.acme.myapp.entity
-com.acme.myapp.transferobject.request
-com.acme.myapp.transferobject.response
-com.acme.myapp.exception
-com.acme.myapp.exception.handler
-com.acme.myapp.config
-com.acme.myapp.config.properties
+com.example.myapp.controller
+com.example.myapp.mapper.rest
+com.example.myapp.mapper.domain
+com.example.myapp.applicationservice
+com.example.myapp.applicationservice.impl
+com.example.myapp.service
+com.example.myapp.service.impl
+com.example.myapp.domain
+com.example.myapp.repository
+com.example.myapp.repository.projection
+com.example.myapp.repository.specification
+com.example.myapp.entity
+com.example.myapp.transferobject.request
+com.example.myapp.transferobject.response
+com.example.myapp.exception
+com.example.myapp.exception.handler
+com.example.myapp.config
+com.example.myapp.config.properties
 ```
 
 This project uses a layered package layout. Keep controllers, services, domain models, repositories, JPA entities, mappers, transfer objects, exceptions, and configuration in their established layer packages. Introduce a deeper package only with its first type and only when it represents a distinct responsibility; never create empty package scaffolding. Follow `spring-boot-patterns` for exact package responsibilities.

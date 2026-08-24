@@ -84,7 +84,10 @@ covers; read the full map in [OWNERSHIP.md](OWNERSHIP.md).
     paginated with an enforced maximum. (`spring-data-jpa`)
 24. **Optimistic locking with `@Version` is the default**, and contention is absorbed by the
     project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, never by a
-    hand-written loop and never by the caller. Pessimistic locking requires a measurement. (`spring-data-jpa`)
+    hand-written loop and never by the caller. The annotation is project-owned on both Spring Boot
+    generations and its call sites are identical; only the retry engine it composes differs.
+    Structurally blocking invariants take a pessimistic lock without needing a measurement; only
+    buying a lock for throughput does. (`spring-data-jpa`)
 25. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
     never edited after it is applied anywhere. Hibernate `ddl-auto` is `validate` or `none`.
     (`sql-database-migration`)

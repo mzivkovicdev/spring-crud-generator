@@ -84,7 +84,9 @@ between mapper and entity fails the build rather than a request.
 
 ## Focused service parameter object
 
-Use separate parameters by default when a project-owned method has up to seven declared parameters and the signature remains clear. The following seven-parameter signature is acceptable; it does not need a custom input class solely because it is near the limit:
+`modern-java-21` owns the signature-size rule; this section only shows it applied at the service
+boundary. The signature below is within the limit and needs no custom input class merely because it
+is near it:
 
 ```java
 public interface UserProfileService {
@@ -100,7 +102,8 @@ public interface UserProfileService {
 }
 ```
 
-When an eighth project-owned parameter would be required, first group only values that already form a cohesive domain concept or enforce an invariant. Keep the target identifier separate:
+When the count crosses that limit, group only values that already form a cohesive domain concept or
+enforce an invariant, and keep the target identifier separate:
 
 ```java
 public record UserProfileDetailsDomain(
@@ -273,7 +276,8 @@ its own identifier, and "exactly one address is primary" is a rule about the use
 address row.
 
 This excerpt adds one method and one field to the `UserService` declared under Shape A; the class
-annotations, the existing constructor parameters, and the existing methods are unchanged.
+annotations, the existing constructor parameters, and the existing methods are unchanged. There is no
+`@Override` because Shape A declares no interface — under Shape B the same method carries one.
 `UserAddressRepository` is the second repository of the same aggregate, which is why this service
 holds both and no other service does. `UserEntity.addAddress` appends the address and clears any
 previous primary flag — that method is where the invariant is actually enforced.
@@ -300,7 +304,6 @@ owning `UserEntity` and the address values, following the entity creation rule i
      * @throws ResourceNotFoundException   when no user exists for the supplied identifier
      * @throws BusinessValidationException when the user is not in a state that accepts addresses
      */
-    @Override
     @Transactional
     public UserDomain addAddress(
             @NotNull final Long userId,
@@ -425,24 +428,43 @@ return nothing is named `find...` and returns `Optional`.
 
 ## Repository boundary
 
+`UserRepository` is declared once for this whole skill set, in
+[`spring-data-jpa` → entity and query examples](../../spring-data-jpa/references/entity-and-query-examples.md#repository-and-projection-queries).
+Do not restate it here or anywhere else: a second declaration is how two files end up disagreeing
+about which methods the aggregate's repository has.
+
+What this skill owns is only where the boundary sits and what may cross it:
+
 ```java
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
+@Transactional(readOnly = true)
+public PageDomain<UserDomain> getAll(final int pageNumber, final int pageSize) {
+    final Page<UserEntity> page = this.userRepository.findAll(
+            PageRequest.of(
+                    pageNumber,
+                    pageSize,
+                    Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))));
 
-    Optional<UserEntity> findByEmail(final String email);
-
-    @Query("""
-            select userEntity
-            from UserEntity userEntity
-            where userEntity.department.id = :departmentId
-            order by userEntity.id asc
-            """)
-    Slice<UserEntity> findByDepartmentId(
-            @Param("departmentId") final Long departmentId,
-            final Pageable pageable
-    );
-
-    boolean existsByEmail(final String email);
+    return new PageDomain<>(
+            UserDomainMapper.INSTANCE.mapUserEntitiesToUserDomains(page.getContent()),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages());
 }
 ```
 
-Every collection query is bounded and deterministically ordered. Apply `spring-data-jpa` before copying or extending a repository pattern; use an explicit projection when a read path does not need a complete entity.
+Three things are on show, and all three are boundary rules rather than query rules:
+
+- The entity never leaves the method. It is mapped to `UserDomain` before the aggregate service returns, so no caller can reach a managed instance.
+- The sort is server-owned and carries a unique tie-breaker, so two requests for the same page return the same rows. `pageNumber` and `pageSize` arrive from the caller; the sort does not.
+- `Page` is used because `PageDomain` promises a total. When the caller does not need one, `spring-data-jpa` prefers `Slice` and the domain result changes with it — that skill owns the choice and its cost.
+
+`findAll(Pageable)` is the inherited method, and it is correct here precisely because the operation
+is "every user, a page at a time": the `Pageable` bounds it and the name still describes what it
+returns. An operation that filters — active users only, one organization's users — is a **different
+method with a different name** calling a derived query such as `findByStatus`, not `getAll` with a
+predicate quietly added inside it. A method whose name outgrows its behaviour is how a caller ends up
+paginating a set it did not ask for.
+
+Apply `spring-data-jpa` before copying or extending any repository pattern, and use an explicit
+projection when a read path does not need a complete entity.

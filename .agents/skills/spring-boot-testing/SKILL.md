@@ -58,7 +58,7 @@ section owns what it means for a test.
 | Shared mocks for several tests | `@MockBean` fields on a `@TestConfiguration` | not possible on a configuration class; declare `@MockitoBean(types = {...})` on the test class or a custom composed annotation |
 | `@Mock` and `@Captor` | worked through Spring Boot's listener | need Mockito's own `MockitoExtension`; the listener is removed |
 | `MockMvc` under `@SpringBootTest` | auto-configured | **not** provided; `@AutoConfigureMockMvc` is required |
-| `TestRestTemplate` under `@SpringBootTest` | auto-configured | not provided; prefer `RestTestClient` with `@AutoConfigureRestTestClient` |
+| `TestRestTemplate` under `@SpringBootTest` | auto-configured | not provided, and it changed package; needs `@AutoConfigureTestRestTemplate`. Prefer `RestTestClient` with `@AutoConfigureRestTestClient` for new tests |
 | `@WithMockUser`, `@WithUserDetails` | `spring-security-test` | need `spring-boot-starter-security-test` |
 | Test dependencies | one `spring-boot-starter-test` | a `-test` starter per technology under test, each bringing the core stack transitively |
 
@@ -371,7 +371,8 @@ controlled dependencies is an integration test, not an end-to-end test.
 ## Completion checklist
 
 - [ ] Tests cover the happy path first, then every applicable reachable negative case.
-- [ ] Every affected behavioral application service has direct focused unit coverage without Spring.
+- [ ] Every affected aggregate service has direct focused unit coverage without Spring, proving its own invariants and the writes that must and must not reach its repositories.
+- [ ] Every affected application service has direct focused unit coverage without Spring, proving call order across aggregate services and the effects a failure must prevent.
 - [ ] Every affected REST controller has security-disabled `@WebMvcTest` coverage for its complete public MVC contract.
 - [ ] Full application integration tests prove applicable affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
 - [ ] Successful protected integration requests obtain and send a valid credential through the service's approved isolated authentication flow.
