@@ -48,6 +48,8 @@ Last updated: YYYY-MM-DD
 | Service interface convention | `ASK` | concrete classes | interface + `*Impl` \| concrete classes | `spring-boot-patterns` |
 | Aggregate roots and their tables | `ASK` |  | list, e.g. `User (users, user_address)`, `Organization (organization)` | `spring-boot-patterns` |
 | Reliable-delivery mechanism for external effects | `ASK` |  | after-commit listener only \| outbox table \| broker-native transaction | `spring-boot-patterns` |
+| Message broker | `ASK` | none | none \| UNDECIDED \| the broker and its major version | none yet |
+| Message ordering guarantee required | `ASK` | none | none \| per key \| global | none yet |
 | Resilience library | `ASK` | none | none \| Resilience4j \| other | `spring-boot-patterns` |
 | Outbound timeout budget | `ASK` | connect 2s, read 5s, request budget 10s | e.g. connect 2s, read 5s, request budget 10s | `spring-boot-patterns` |
 | API base path | `ASK` | /api/v1 | /api/v1 | `spring-boot-patterns` |
@@ -100,6 +102,12 @@ Last updated: YYYY-MM-DD
 
 > No skill owns caching design yet. While `Cache used` is `no` or `UNDECIDED`, do not introduce a
 > cache, a cache annotation, or a cache dependency into the project.
+
+> The two messaging rows under **Application design** carry the same guard for the same reason.
+> Security, naming, layering, and testing of messaging are owned; the delivery and consumer
+> *mechanism* is not. While `Message broker` is `none` or `UNDECIDED`, do not introduce a broker, a
+> listener, or a messaging dependency. `_core/README.md` lists exactly which parts are owned and by
+> whom, so an owned rule is not mistaken for a missing one.
 
 ## Testing and build commands
 

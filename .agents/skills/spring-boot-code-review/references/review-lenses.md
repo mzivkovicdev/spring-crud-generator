@@ -172,6 +172,7 @@ For AWS or another cloud provider:
 
 For messages and jobs:
 
+- Know which half you are reviewing. Security, layering, naming, and testing of messaging have owners, and a finding about them is routed normally. The delivery and consumer *mechanism* — the outbox relay, listener and dead-letter wiring, the deduplication store, partitioning — has **no owner skill**, so a defect there is reported as a coverage gap naming the missing standard, never as a violation of a rule invented during the review. [`_core/README.md`](../../_core/README.md) carries the exact split.
 - Trace schema compatibility, producer and consumer deployment order, duplicate and out-of-order delivery, poison messages, retry and dead-letter policy, acknowledgement timing, idempotency, and tenant context.
 - Verify scheduler overlap, distributed execution, clock behavior, bounded batches, progress checkpoints, cancellation, and restart safety.
 - Check executor ownership, concurrency and queue bounds, rejection policy, error handling, shutdown behavior, and saturation impact.

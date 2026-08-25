@@ -24,6 +24,8 @@ compliance.
 | Rule | Owner skill | Enforced by |
 | --- | --- | --- |
 | Import order, no wildcards, no unused imports | `modern-java-21` | Spotless + Checkstyle + IDE config |
+| Blank line between the static block and the first type group | `modern-java-21` | Spotless + IDE config only — Checkstyle's `ImportOrder` does not check this boundary |
+| Logger field named `LOGGER` | `observability-and-logging` | Checkstyle regex |
 | Qualify instance access with `this.` | `modern-java-21` | Checkstyle `RequireThis` |
 | No `var` | `modern-java-21` | Checkstyle regex |
 | `final` parameters and single-assignment locals | `modern-java-21` | Checkstyle `FinalParameters`, `FinalLocalVariable` |
@@ -181,17 +183,20 @@ The modules it enables, and who owns each rule:
 
 | Block | Owning skill | Enforces |
 | --- | --- | --- |
-| Imports | `modern-java-21` | No star imports, no unused or redundant imports, the seven-group order |
+| Imports | `modern-java-21` | No star imports, no unused or redundant imports, the seven-group order and the blank lines between type groups |
 | Explicitness | `modern-java-21` | `this.` qualification, `final` parameters and single-assignment locals, no `var` |
 | Size and shape | `modern-java-21` | Method length, parameter count, one top-level class per file |
 | Exceptions | `modern-java-21` | No catching `Error` or `Throwable`, no empty catch, `equals`/`hashCode` pairing |
 | Identifier form | `project-naming-conventions` | Package, type, method, member, parameter, constant naming and abbreviation length |
-| Log hygiene | `observability-and-logging` | No `System.out`, `System.err`, `printStackTrace`, or concatenation in a log call |
+| Log hygiene | `observability-and-logging` | No `System.out`, `System.err`, `printStackTrace`, or concatenation in a log call, and the logger field is named `LOGGER` |
 | Javadoc correctness | `modern-java-21` | Well-formed Javadoc where it exists; presence is deliberately not gated |
 
 Configuration decisions worth knowing before someone "fixes" them:
 
 - **`AbbreviationAsWordInName` is set to `1`** so that two consecutive capitals are permitted. That is what allows the project's `TO` suffix, `UserTO` and `UserCreateTO`, while still rejecting `HTTPClient`. `ignoreStaticFinal` keeps `UPPER_SNAKE_CASE` constants out of scope.
+- **`ImportOrder`'s `separated` covers type groups only.** Its own documentation scopes it to type import groups, so the blank line between the static block and the first type group is not checked. `separatedStaticGroups` is **not** the fix — it separates static groups from one another and does nothing while `staticGroups` is unset. That boundary is enforced by Spotless, which formats it, and preserved by the committed IDE configuration; the table above records that division so nobody reads a green Checkstyle run as proof of the whole rule.
+- **The `var` gates are anchored at the start of a statement**, which is why they read oddly. `ignoreComments` excludes comments but not string literals, so an unanchored pattern fires on a fixture whose *data* contains `var x = 1`. A gate that fails correct code is worse than one with a known blind spot, because the first response to it is to weaken it. The trade is deliberate: a `var` written mid-line, inside a single-line block, slips past the gate and is caught in review instead.
+- **The logger-name gate exists to keep the concatenation gate honest.** The concatenation pattern matches the literal identifier `LOGGER`, so a logger named `log` would be silently exempt from it. Enforcing the name is what makes the second gate mean something. It also matches the single logger declaration form `observability-and-logging` requires.
 - **`IllegalCatch` deliberately allows `RuntimeException`.** Catching it to tag an observation, increment a failure counter, or record an outcome and then rethrow is a required pattern in `observability-and-logging`. `Error` and `Throwable` stay banned.
 - **`MagicNumber` is not enabled.** In a Spring project it fires mostly on validation annotations and produces more noise than value; the real rule — shared bounds declared once — is covered by review and by the constants the skills already require.
 - **The log-concatenation regex is a heuristic.** It catches the common case and will not catch every one. It is a gate, not a proof.
@@ -207,6 +212,8 @@ each on the first real run, then adopt or discard it deliberately.
 | --- | --- | --- |
 | `VisibilityModifier` (omitted) | Its behaviour on `record` components and on Mockito fixture fields before adding it | Records declare implicitly private final fields, and older versions reported them. The rule it would enforce is already covered by `modern-java-21` in review. |
 | `HideUtilityClassConstructor` (omitted) | Whether it fires on `@Configuration` classes that declare only static `@Bean` methods | Such a class is not a utility class, but it matches the module's shape. `ApiPaths` and `PaginationConstraints` already declare private constructors by convention. |
+| `MatchXpath` for `var` (omitted) | Whether a query such as `//VARIABLE_DEF/TYPE/IDENT[@text='var']` matches every declaration form the project uses, including enhanced-for and try-with-resources | It reads the syntax tree, so it has none of the regexes' string-literal blind spot and is the better rule if it works. The risk is the opposite one: a query that matches nothing fails **open** and the gate quietly stops enforcing anything. Verify against real violations before replacing the regexes, not after. |
+| `FinalLocalVariable` (enabled) | Its behaviour on enhanced-for variables and try-with-resources on the project's Checkstyle version | `validateEnhancedForLoopVariable` is on, which is what `modern-java-21` wants, but the module's treatment of resource variables and of locals assigned in every branch of a conditional has moved between versions. It is enabled because the rule matters from the first commit; confirm it behaves as expected on the first real run rather than after the first argument about it. |
 
 Adopt a module by moving it into the main configuration and running a full build. Do not adopt one
 because it sounds useful; a gate that produces false positives teaches people to ignore the tool,
