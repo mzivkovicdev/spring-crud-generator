@@ -1,6 +1,11 @@
 # Entity and Query Examples
 
-Use these examples when implementing or reviewing entity mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths. Apply every rule from `../SKILL.md`; imports are omitted.
+Use this file when implementing or reviewing entity mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths. Apply every rule from `../SKILL.md`; imports are omitted.
+
+**This file carries rules, not only examples.** Association ownership, repository design, read
+projections, sargable and dynamic queries, pagination and scrolling, SQL and index performance, and
+the read-side anti-pattern catalogue are stated here in full and nowhere else, because they apply
+while writing exactly this code. The `Rules` blocks below are as binding as `../SKILL.md`.
 
 Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
@@ -13,6 +18,7 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 5. [Dynamic queries](#dynamic-queries)
 6. [Pagination](#pagination)
 7. [SQL and indexes](#sql-and-indexes)
+8. [Read-side anti-patterns](#read-side-anti-patterns)
 
 ## Entity mapping
 
@@ -181,7 +187,26 @@ enum in the persistence boundary.
 
 ## Association mapping
 
-An association is mapped inside one aggregate. This excerpt is a field of `UserAddressEntity`, the
+`spring-boot-patterns` decides which entities form one aggregate. That decision constrains every
+mapping here: an association may only exist inside an aggregate.
+
+Rules:
+
+- Reference another aggregate root by its identifier, as a plain column, never as a JPA association. A `@ManyToOne` across the boundary hands every caller a writable path into the other aggregate, and no service-layer rule can close it again.
+- Copy a value that must not change retroactively — a price at order time, a rate at signing — onto the referencing entity instead of reading it through an association. This is a business rule about history, not a performance choice.
+- Set to-one associations to `LAZY` explicitly unless a measured access path proves another choice.
+- Treat fetching as a query/use-case decision, not an entity-wide default.
+- Cascade only lifecycle operations owned by the aggregate; never default to `CascadeType.ALL`.
+- Never cascade remove from a child or shared reference to its parent.
+- Use `orphanRemoval` only when removing the child from the owning collection must delete it.
+- Use unidirectional associations by default.
+- Introduce a bidirectional association only when concrete use cases require navigation in both directions.
+- Keep both sides of every bidirectional association synchronized through explicit helper methods.
+- Choose `List`, `Set`, or `Map` from business and ordering semantics.
+- Query large child sets separately instead of exposing unbounded entity collections.
+- Model a many-to-many join table as an entity when it has attributes, ordering, audit data, identity, lifecycle, or independent constraints.
+
+The excerpt below is a field of `UserAddressEntity`, the
 child of the `users` root and the owning side of the collection declared on `UserEntity` above:
 
 ```java
@@ -226,6 +251,27 @@ organization membership is a row the `organization` aggregate owns, reached thro
 from the other side.
 
 ## Repository and projection queries
+
+Repository rules:
+
+- Use derived queries while their names remain short and their generated predicates are appropriate.
+- Use explicit JPQL when derivation becomes ambiguous or hides important joins.
+- JPQL uses entity and attribute names, not table and column names.
+- Bind values through parameters; never concatenate data into JPQL or SQL.
+- Use `Optional` for an optional single result and `existsBy...` when only presence is needed.
+- Bound every result that can grow with production data.
+- Do not invoke inherited destructive or unbounded methods on production-sized data without a bounded use case. When preventing those calls at the repository API is a project requirement, define and verify a tailored base repository instead of assuming `JpaRepository` hides them.
+- Use a custom repository for queries clearer with Specifications, Criteria, Querydsl, `EntityManager`, or native SQL.
+- Consume repository `Stream<T>` results inside the required transaction and close them with try-with-resources; never return an open stream across the service boundary.
+- Add Javadoc only when locking, timeout, fetch, ordering, native-SQL, or consistency semantics are non-obvious.
+
+Read-projection rules:
+
+- Use projections for bounded read paths that need only selected columns.
+- A persistence projection is neither a TO nor a domain result; map it before leaving the aggregate service that loaded it.
+- Keep interface projections closed and top-level. Nested properties can materialize joins and more data than expected.
+- Avoid `Object[]`, raw `Tuple`, and `Map<String, Object>` as cross-layer contracts.
+- Cover native projections with integration tests against the supported database.
 
 Bound every collection result and make ordering deterministic:
 
@@ -346,6 +392,17 @@ spring.jpa.open-in-view=false
 
 ## Dynamic queries
 
+Sargability and dynamic-query rules:
+
+- Build only required predicates for optional filters.
+- Prefer the JPA static metamodel or Querydsl for non-trivial dynamic queries; raw attribute-name strings fail only at runtime after incompatible refactoring. The metamodel comes from an annotation processor whose artifact differs by generation — state the requirement to `build-and-dependencies`, which owns the processor path, rather than adding it to the build from here.
+- Normalize values according to the business contract before querying; do not apply functions to indexed columns by habit.
+- Functions, casts, arithmetic, and implicit type conversion on indexed columns can prevent normal index access.
+- Avoid leading-wildcard searches on large tables unless a suitable search/index feature is deliberately used.
+- Bound `IN` collections; use chunking or a measured database-specific bulk strategy for very large sets.
+- Never issue a repository query inside a per-row loop when one set-based query can retrieve the data.
+- Allowlist sort fields and directions; never pass user input to `JpaSort.unsafe`.
+
 Reject optional-filter queries that force every predicate into one `OR` expression on a hot path:
 
 ```java
@@ -402,6 +459,17 @@ repository implementation or query that owns it instead of creating a reusable-l
 
 ## Pagination
 
+Pagination and scrolling rules:
+
+- Enforce maximum page size at the REST boundary.
+- Always sort deterministically with a unique tie-breaker.
+- Use `Page` only when the caller needs a total and the count query is acceptably cheap.
+- Use `Slice` when only next-page information is needed.
+- Prefer keyset scrolling for deep or high-volume traversal when the API can represent a cursor.
+- Keyset sort columns must be non-null, deterministic, and supported by an effective index.
+- Never paginate or sort database-sized results in memory.
+- Supply an explicit `countQuery` when a complex or native paged query cannot be derived correctly or efficiently.
+
 Reject a collection fetch join combined with pagination:
 
 ```java
@@ -418,6 +486,21 @@ Page root identifiers first and load the required graph with a bounded second qu
 
 ## SQL and indexes
 
+SQL and index-performance rules:
+
+- Inspect generated SQL for every complex or high-volume query.
+- Use the supported database's execution-plan tool with representative statistics and data volume.
+- Select only required columns for read-heavy paths; avoid loading full entities and LOBs for summaries.
+- Align composite index order with actual equality, range, join, and sort predicates.
+- Avoid redundant and speculative indexes because each index adds storage and write cost.
+- Index foreign-key and join columns when required by the database and access paths.
+- Prevent accidental cartesian products and duplicate rows from incorrect joins.
+- Use existence queries instead of counting all rows when only presence is required.
+- Apply tenant and soft-delete predicates to derived, JPQL, native, bulk, and count queries.
+- Include tenant keys in relevant unique constraints and indexes for tenant-scoped data.
+- Configure query or transaction timeouts for bounded operational work.
+- Use native SQL only for a concrete feature, portability, or measured performance reason.
+
 Avoid applying a function to an indexed column by habit:
 
 ```sql
@@ -433,3 +516,27 @@ SELECT id, username, status FROM users WHERE email = ?;
 ```sql
 CREATE UNIQUE INDEX uk_users_email ON users (email);
 ```
+
+## Read-side anti-patterns
+
+Reject. The write-behavior and concurrency-policy groups are in
+[write and locking examples](write-and-locking-examples.md).
+
+**Entity shape.** Records used as entities; Lombok `@Data` on entities; lazy or mutable associations
+in `equals`, `hashCode`, or `toString`; `CascadeType.ALL` without aggregate lifecycle ownership;
+cascade remove from a child or shared reference to its parent.
+
+**Fetch plans.** Blanket `FetchType.EAGER`; Open EntityManager in View and
+`hibernate.enable_lazy_load_no_trans`; N+1 queries hidden in mappers, serializers, logging, loops, or
+accessors; collection fetch joins combined with pagination; multiple collection fetch joins causing
+cartesian multiplication; `distinct` used to hide an incorrect join or fetch plan.
+
+**Query shape.** Unbounded repository reads, streams, association traversal, or `IN` predicates;
+full-entity loading where a bounded projection suffices; query-per-row loops; optional-filter `OR`
+queries and functions on indexed columns on hot paths without verified plans; leading-wildcard
+searches on large tables without a search index; unsafe user-controlled sorting; missing,
+ineffective, redundant, or speculative indexes.
+
+**Schema and verification.** A mapping change merged without its migration; a mapping whose
+constraint or index names differ from the migration's; H2-only persistence verification for another
+production database.

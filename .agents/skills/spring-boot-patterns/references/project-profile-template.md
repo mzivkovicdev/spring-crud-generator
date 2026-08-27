@@ -12,7 +12,25 @@ nobody knows was skipped.
 `spring-boot-patterns` owns the file and the decision tokens defined in `../SKILL.md`; each skill
 named in the template owns the meaning of its own entries.
 
+## Which token a decision carries
+
+A decision is **`ASK`** when nothing in the repository or the ecosystem points to one answer over
+another: the build tool, the database engine, the migration tool, whether a contract document exists,
+the authoring direction, the service interface convention, the entity accessor style, the message
+broker. Those have no defensible default and a wrong answer is expensive to reverse.
+
+A decision is **`RESOLVE`** when a correct answer exists and only needs looking up: the current
+supported release of a framework, a plugin, or a tool, and the date its branch loses support.
+
+`UNDECIDED` is neither — it is a deliberate deferral that names what will force the decision, and it
+is the correct entry for a `RESOLVE` that could not be completed.
+
 ## How to fill it
+
+Work through these in order on every task. Steps 1 and 2 come first because a missing profile and a
+partly filled one need different responses: create the file from
+[the template asset](../assets/project-profile-template.md), then identify exactly which entries the
+task needs.
 
 1. **Take what the repository proves.** A declared dependency, an applied migration, an existing package layout, or a configured datasource is an answer. Record it and move on.
 2. **Complete every `RESOLVE` yourself.** Look the answer up, record it with the date, and state it in the handoff. Do not ask the user for something that has a correct answer.

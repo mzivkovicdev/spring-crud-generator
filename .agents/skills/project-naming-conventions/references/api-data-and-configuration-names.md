@@ -425,6 +425,30 @@ Rules:
 
 ## Migrate escaped names
 
+`../SKILL.md` states the gate — a name that can escape its compilation unit is renamed as a
+migration, and consumers are assumed unable to upgrade atomically. This section carries the procedure
+it routes to.
+
+### The procedure
+
+1. Inventory definitions and consumers with exact searches, generated-code inspection, schema or infrastructure references, and runtime configuration.
+2. Classify the name as internal source, public API, serialized data, persisted schema, configuration, message contract, cache namespace, or observability contract.
+3. Determine whether consumers can upgrade atomically.
+4. Choose a direct rename only for a fully internal, atomically deployable name.
+5. For a contract, use an approved compatibility mechanism: additive alias, deprecation, expand-and-contract migration, dual read/write, versioned schema, or resource replacement plan.
+6. Define removal criteria and an owner for every temporary alias. Never leave a compatibility name indefinitely.
+7. Update code, tests, schemas, documentation, generated clients, migrations, dashboards, alerts, configuration, and consumers in the required order. Coordinate platform-owned changes rather than editing them implicitly.
+8. Verify old, mixed-version, rollback, and new-only states wherever rolling deployment is possible.
+
+### Never rename
+
+- a public field, endpoint, problem type URI, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
+- a table, column, constraint, or index outside a migration;
+- a physical infrastructure resource under this skill alone — use the approved platform standard and a replacement plan;
+- a security-sensitive identifier without applying `application-security`.
+
+### Mechanism by name type
+
 Use the appropriate migration:
 
 | Name type | Safe migration direction |

@@ -333,6 +333,35 @@ class ApplicationTimeConfiguration {
 
 ## Rejected code
 
+`../SKILL.md` names the six shapes that most often survive review. This is the full catalogue it
+points at. Every entry restates a rule stated there or in a rule reference; the value of the list is
+recognition, not novelty.
+
+**Boundary violations.** Fat controllers; entities in API contracts or returned from services; REST
+TOs passed into services; an outbound client with no read timeout; a provider exception or SDK
+response type reaching a service or controller; remote I/O inside long transactions; unbounded
+collection endpoints; generic `Map` responses; a repository injected into an application service; a
+controller handler calling two services; an application service method that only forwards to one
+aggregate service; one aggregate service depending on another; a JPA association crossing an
+aggregate boundary.
+
+**Structure.** Field injection; an aggregate service that only forwards to its repository while its
+invariants live in callers; an application service holding a rule that belongs to one aggregate;
+empty or responsibility-free service interfaces; parameter objects that hide unrelated values or
+mechanically satisfy the size rule `modern-java-21` owns; generic `enums` packages; REST exception
+handlers in the custom-exception package; handwritten structural mappers where approved MapStruct can
+express the mapping; a separate mapper per mapping direction for one concept.
+
+**Error contract.** A `code` or `errorCode` member beside the RFC 9457 `type`; a problem type URI or
+internal error code declared outside the error catalog; `traceId`, `spanId`, or a stack trace in a
+`ProblemDetail` body; the same failure logged by both the service that threw it and the advice that
+handles it; a project exception whose simple name collides with a framework type such as
+`ValidationException`; generic exception swallowing.
+
+**Process.** Implementing against a decision `docs/project-profile.md` does not record; hardcoded
+configuration or secrets; self-invocation assumptions for proxy annotations; an external effect fired
+inside the transaction instead of after commit.
+
 ```java
 // Wrong: entity exposure, repository access, business logic, and time in controller.
 @PostMapping

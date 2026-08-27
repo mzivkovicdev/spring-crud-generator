@@ -83,6 +83,18 @@ Protect runtime deployment:
 Apply `spring-boot-testing` for test structure, fixtures, isolation, and execution. This reference
 defines the security controls and scenarios that those tests must prove.
 
+Every security-relevant feature requires tests at the boundary capable of proving the control, over
+these scenarios:
+
+- unauthenticated, insufficiently privileged, cross-user, and cross-tenant access;
+- object-property manipulation, mass assignment, and server-owned fields;
+- malformed, oversized, boundary, injection-oriented, batched, replayed, and duplicate input;
+- token, session, API-key, webhook, CSRF, CORS, and callback behavior applicable to the actual client model;
+- safe errors, response caching, audit events, and absence of sensitive values in logs;
+- URL, redirect, file, archive, parser, deserialization, message, job, and outbound restrictions;
+- rate, quota, cost, concurrency, timeout, retry, idempotency, and dependency-failure behavior;
+- regression coverage for every confirmed vulnerability.
+
 `spring-boot-testing` owns test-level placement and mechanics; this table identifies the security
 evidence required for each control:
 

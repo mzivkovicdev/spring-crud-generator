@@ -15,10 +15,13 @@ reads to decide which column applies.
 2. [Starter and module coordinates](#starter-and-module-coordinates)
 3. [Test starters](#test-starters)
 4. [Annotations and types that moved](#annotations-and-types-that-moved)
-5. [Configuration properties that were renamed](#configuration-properties-that-were-renamed)
-6. [Removed in Spring Boot 4](#removed-in-spring-boot-4)
-7. [Minor lines inside Spring Boot 4](#minor-lines-inside-spring-boot-4)
-8. [The classic starters are a migration aid, not a target](#the-classic-starters-are-a-migration-aid-not-a-target)
+5. [Persistence](#persistence)
+6. [Spring Security](#spring-security)
+7. [Testing](#testing)
+8. [Configuration properties that were renamed](#configuration-properties-that-were-renamed)
+9. [Removed in Spring Boot 4](#removed-in-spring-boot-4)
+10. [Minor lines inside Spring Boot 4](#minor-lines-inside-spring-boot-4)
+11. [The classic starters are a migration aid, not a target](#the-classic-starters-are-a-migration-aid-not-a-target)
 
 ## What actually changed
 
@@ -95,6 +98,7 @@ must prove; this skill owns the declaration that makes them run.
 | Jackson component | `@JsonComponent` | `@JacksonComponent` |
 | Jackson mixin | `@JsonMixin` | `@JacksonMixin` |
 | Mapper builder customizer | `Jackson2ObjectMapperBuilderCustomizer` | `JsonMapperBuilderCustomizer` |
+| Customizing HTTP message converters | a `HttpMessageConverters` bean, or contributed converter beans | `ServerHttpMessageConvertersCustomizer`; the Boot type is deprecated and contributed converter beans are no longer picked up |
 | Replacing the mapper bean | define an `ObjectMapper` bean | define a `JsonMapper` (or `XmlMapper`) bean |
 | Nullability annotation | `org.springframework.lang.Nullable` | `org.jspecify.annotations.Nullable` |
 | Declarative retry | Spring Retry's `@Retryable` plus `@EnableRetry`, version-managed by the BOM | `org.springframework.resilience.annotation.Retryable` plus `@EnableResilientMethods`, in the framework |
@@ -102,6 +106,38 @@ must prove; this skill owns the declaration that makes them run.
 | Spring Retry itself | version-managed by the BOM | still usable, but no longer version-managed; pin it explicitly if the project keeps it |
 | `EnvironmentPostProcessor` | `org.springframework.boot.env` | `org.springframework.boot` |
 | `BootstrapRegistry` | `org.springframework.boot` | `org.springframework.boot.bootstrap` |
+
+## Persistence
+
+| Concern | Spring Boot 3 | Spring Boot 4 |
+| --- | --- | --- |
+| Specification and provider | Jakarta Persistence 3.1 with Hibernate 6.x | Jakarta Persistence 3.2 with Hibernate 7.x |
+| Spring Data JPA | the 3.x line | a 4.x line, advancing with the Spring Boot 4 minor line |
+
+`spring-data-jpa` owns what a provider major version means for a mapping or a query; this table owns
+only which one the generation carries.
+
+## Spring Security
+
+| Concern | Spring Boot 3 (Spring Security 6) | Spring Boot 4 (Spring Security 7) |
+| --- | --- | --- |
+| Configuration style | lambda DSL preferred, `.and()` chaining deprecated | lambda DSL only; `.and()` and `authorizeRequests()` are **removed** |
+| Path matching | `AntPathRequestMatcher` and `MvcRequestMatcher` available, Ant-style default | both removed; `PathPatternRequestMatcher`, with `PathPattern` semantics as the default |
+| CSRF for a browser SPA | hand-rolled token repository and handler | `csrf(csrf -> csrf.spa())` |
+| OAuth2 password grant | available | removed from the client library |
+| Authorization Server version | tracked separately | versioned with Spring Security |
+
+`application-security` owns what these mean for an enforced control — in particular that a matcher
+change alters which requests a rule matches without breaking the compile.
+
+## Testing
+
+| Concern | Spring Boot 3 | Spring Boot 4 |
+| --- | --- | --- |
+| Shared mocks for several tests | `@MockBean` fields on a `@TestConfiguration` | not possible on a configuration class; declare `@MockitoBean(types = {...})` on the test class or a composed annotation |
+| `MockMvc` under `@SpringBootTest` | auto-configured | not provided; `@AutoConfigureMockMvc` is required |
+
+`spring-boot-testing` owns what each of these does to a failing test, which is where the cost is.
 
 ## Configuration properties that were renamed
 

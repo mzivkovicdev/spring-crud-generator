@@ -13,7 +13,9 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 3. [Describing an operation](#describing-an-operation)
 4. [Describing errors](#describing-errors)
 5. [Code-first production and the drift gate](#code-first-production-and-the-drift-gate)
-6. [Exposure](#exposure)
+6. [Drift, and why the gate exists](#drift-and-why-the-gate-exists)
+7. [Document quality](#document-quality)
+8. [Exposure](#exposure)
 
 ## Which OpenAPI version and serialization format
 
@@ -207,6 +209,28 @@ Notes:
 
   Do not disable the filter chain for this test. A drift gate that runs outside the real configuration proves less than it appears to, and it hides the case where the document endpoint is unintentionally public.
 - Annotate controllers and TOs enough that the generated document is useful. Summaries, descriptions, and examples come from annotations in code-first; without them the generated document is a type dump.
+
+## Drift, and why the gate exists
+
+A document that has drifted from the implementation is worse than no document, because consumers
+trust it. This section applies when the profile records a document; with `none`, the equivalent
+protection is the test suite and the review, and there is no automated gate.
+
+- **Code-first:** generate the document in the build, compare it against the committed copy, and fail the build on an unexplained difference. A regenerated document that differs is either an intended contract change to be reviewed, or a bug.
+- **Contract-first:** validate that the implementation satisfies the committed document, and never hand-edit generated code.
+- Commit the document either way. A document that exists only at runtime cannot be diffed in a pull request, and a contract change that cannot be seen in review will not be reviewed.
+- Treat a diff in the document as the most important diff in the change. It is the only part a consumer sees.
+
+## Document quality
+
+With a document, consumers read it and not the controller, and the optional-looking fields are what
+make it usable. Every operation carries a `summary` written for a caller rather than restating the
+method name; every non-obvious field a `description` saying what it means, not what type it is; every
+request body and non-trivial response at least one realistic example, carrying **no real data, no
+production identifiers, and no personal data**. Constraints that exist in code — lengths, ranges,
+patterns, allowed values — appear in the schema too, or callers discover them through `400`
+responses. Pagination, sorting, and filtering parameters are documented with their defaults and
+bounds.
 
 ## Exposure
 

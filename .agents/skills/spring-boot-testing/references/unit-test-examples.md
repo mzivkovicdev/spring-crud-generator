@@ -7,10 +7,32 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 
 ## Contents
 
+- [Types that are deliberately not unit tested](#types-that-are-deliberately-not-unit-tested)
 - [Aggregate service unit test excerpt](#aggregate-service-unit-test-excerpt)
 - [Application service unit test excerpt](#application-service-unit-test-excerpt)
+- [Test data rules](#test-data-rules)
 - [Test-data factory](#test-data-factory)
 - [Rejected unit tests](#rejected-unit-tests)
+
+## Types that are deliberately not unit tested
+
+The rule is coverage of behavior, not coverage of files. These types have no direct unit test, and
+their absence is correct rather than a gap:
+
+| Type | Where it is proven instead |
+| --- | --- |
+| REST controllers | `@WebMvcTest` slice plus full application integration |
+| MapStruct mappers with no hand-written logic | Through the service unit tests and integration tests that use them; a generated mapping is verified by the compiler and `ReportingPolicy.ERROR` |
+| Request and response TOs, domain records, entities | Through the boundaries that serialize, validate, and persist them |
+| Getters, setters, `equals`, `hashCode`, `toString` | Entity equality is proven where it matters, in a persistence test that puts instances in a collection across states |
+| Spring configuration classes, `@ConfigurationProperties`, `SecurityConfig` | Full application integration, including startup failure on invalid configuration |
+| An application service that coordinates nothing, or a handler that forwards a single call | Nothing at this level. `spring-boot-patterns` rejects the pass-through itself; test the aggregate service and the endpoint |
+| Framework behavior itself | Not tested at all |
+
+A mapper method with hand-written logic — `default` method, custom expression, qualifier, or
+decorator — is behavior and gets a unit test, as does any static utility with a real decision. Test a
+security policy as a unit only when the policy is the subject; runtime authentication and
+authorization are proven in integration tests.
 
 ## Aggregate service unit test excerpt
 
@@ -212,6 +234,16 @@ class UserManagementApplicationServiceTest {
 The second test is the one that justifies this level: that no user is created when the organization
 refuses the membership is a property of the use case, and neither aggregate service can prove it. Rollback itself is not asserted here, because
 that is Spring behavior and belongs to an application integration test.
+
+## Test data rules
+
+These rules hold at every test level, whatever generator the project uses.
+
+- Factories provide valid defaults and scenario overrides: build the complete object, then vary only the field the case is about.
+- Keep generation reproducible: deterministic seeds, fixed `Clock` values, unique generated natural keys for database tests.
+- Leave generated identifiers and version fields unset when a persistence fixture represents a new entity.
+- Do not hardcode complete object graphs, credentials, personal data, secrets, or repeated arbitrary business values in test methods.
+- Explicit values stay when they are the subject of the assertion: boundary numbers, enum states, route constants, error codes, HTTP statuses, malformed inputs.
 
 ## Test-data factory
 

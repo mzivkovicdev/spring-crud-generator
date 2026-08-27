@@ -11,12 +11,23 @@ the required `@WebMvcTest` for each REST controller.
 
 ## Contents
 
+- [Choosing the web mode](#choosing-the-web-mode)
 - [HTTP application integration test](#http-application-integration-test)
 - [Authenticated request helper](#authenticated-request-helper)
+- [Deferred effects, outbox, and concurrency scope](#deferred-effects-outbox-and-concurrency-scope)
 - [Container and database rules](#container-and-database-rules)
 - [Focused persistence integration test when justified](#focused-persistence-integration-test-when-justified)
 - [Rejected integration tests](#rejected-integration-tests)
 - [Obtaining a valid token per issuance profile](#obtaining-a-valid-token-per-issuance-profile)
+- [Test selection and suite execution](#test-selection-and-suite-execution)
+
+## Choosing the web mode
+
+Choose the web mode deliberately:
+
+- combine the full context with `MockMvc` or the project's supported mock-server client when an in-process servlet boundary is sufficient;
+- use a random-port client only when a real embedded server is required, and prefer `RestTestClient` with `@AutoConfigureRestTestClient` over `TestRestTemplate` for a new test;
+- do not use a defined port and do not call a separately deployed environment; that is end-to-end scope, which `../SKILL.md` excludes.
 
 ## HTTP application integration test
 
@@ -267,26 +278,45 @@ For validation failures that valid issuance cannot produce — a wrong issuer, a
 expired token, an unapproved algorithm — build the invalid token in isolated test infrastructure
 with test-only keys and claims, or configure the isolated provider to issue it. It must reach the
 real configured decoder. Never reuse a production key and never apply this exception to valid-token
-tests. Omit CSRF tokens only when the tested filter chain is stateless bearer and uses no ambient
-browser credential.
+tests.
+
+With a stateless bearer chain, where clients send the `Authorization` header and no ambient browser
+credential exists, keep CSRF disabled consistently and add no CSRF tokens. For cookie, session, or
+mixed credential models, test the applicable CSRF behavior instead.
+
+## Deferred effects, outbox, and concurrency scope
+
+- Verify the absence of messages, cache entries, files, or external calls when failure must prevent them, including effects deferred to `AFTER_COMMIT`, which must not fire when the use case rolls back.
+- Where the project records an outbox, verify that the outbox row is committed by the same transaction as the business change, and that a rolled-back use case leaves none.
+- Cover wiring, transactions, persistence, migrations, concurrency, and committed state only where the feature can exercise them; do not invent concurrency cases for a path with no concurrency contract.
 
 ## Container and database rules
 
-Reuse one project-owned container configuration instead of declaring a different database per test
-class. Pin the image to the production database engine and approved major or exact version. Prefer
-the Spring Boot service-connection mechanism when the supported project version provides it;
-otherwise register dynamic properties through the project's existing pattern.
+Whenever the scenario touches SQL persistence, run schema migrations and use the same relational
+database engine and relevant major version as production, through Testcontainers or the project's
+equivalent isolated environment. H2-only evidence never proves persistence behavior when production
+uses another database. Reuse one project-owned container configuration instead of declaring a
+different database per test class, and pin the image to the production engine and approved major or
+exact version. Prefer the Spring Boot service-connection mechanism when the supported project
+version provides it; otherwise register dynamic properties through the project's existing pattern.
 
-Run Flyway or Liquibase migrations in the integration context. Do not let Hibernate create a schema
-that bypasses the migration path being verified. Keep the container isolated from production and
-shared environments, and never put real credentials in container configuration.
+Run the schema through the project's migration tool — Flyway or Liquibase — in the integration
+context, never one Hibernate generates or a test-only script creates, because that schema is part of
+what these tests verify; `sql-database-migration` owns the clean-install and idempotency checks that
+sit beside these suites. Keep the container isolated from production and shared environments, and
+never put real credentials in container configuration.
 
-Use the project cleanup strategy from `../SKILL.md`, outside the HTTP request transaction. The
-default is truncation of every table after each test method through one shared extension or base
-class, with referential integrity temporarily relaxed and sequences reset. Reference data required
-by every test comes from migrations or a documented seeding step that runs after cleanup, never from
-another test's inserts. Do not rely on method ordering. If tests run in parallel, allocate
-independent data or disable parallelism for that infrastructure explicitly.
+Run the project cleanup strategy recorded in `docs/project-profile.md` outside the HTTP request
+transaction, and avoid test-managed `@Transactional` on HTTP write tests, where rollback would hide
+commit behavior. Prefer truncating every table after each test method through one project-owned
+JUnit extension, shared `@AfterEach`, or base class — reading table names from JDBC metadata or the
+migration schema, temporarily relaxing referential integrity, and resetting sequences — because that
+is deterministic and order-independent; use a per-class container only when a suite genuinely needs
+an isolated database. Do not delete only the rows a test believes it created, and never use one
+test's inserts as another test's fixture: reference data required by every test comes from
+migrations or a documented seeding step that runs after cleanup. Do not rely on method ordering. If
+tests run in parallel, allocate independent data or disable parallelism for that infrastructure
+explicitly.
 
 ## Focused persistence integration test when justified
 
@@ -387,3 +417,19 @@ issuance profile recorded in `docs/project-profile.md` determines only how the t
 - **Profile A, application-issued.** Seed a synthetic identity directly through the repository, a migration, or a SQL fixture, then call the service's real token endpoint. Seeding breaks the bootstrap circle, because the endpoint that creates identities is itself protected. Never relax a protected endpoint or add a test-only production endpoint to avoid seeding.
 - **Profile B, externally issued.** Run an approved provider container or isolated in-test authorization server, point the issuer configuration at it, and obtain the token through its real protocol endpoint.
 - **Before either exists.** Do not block, skip, or mock. Use a documented temporary test-only issuer: an in-test signing key registered as the configured issuer, minting the claim set the real issuer will produce. Only the key source is temporary; the token still traverses the real decoder, validators, and authorization rules. Record it as a known gap and replace it when the profile is implemented.
+
+## Test selection and suite execution
+
+`*IntegrationTest` requires explicit lifecycle configuration in either build tool, and the two fail
+in opposite ways. Maven Surefire's default `**/*Test.java` pattern also matches the suffix, so
+without an exclusion those tests run in the `test` phase and then again in Failsafe: the suite
+executes twice, the first time in the wrong phase and without the container lifecycle around it.
+Gradle has no default integration task at all, so an unregistered suite simply never runs, which
+looks identical to a green build. Three requirements, whichever tool the project uses:
+
+- unit and slice tests run in the fast phase, integration tests in a separate later phase or task;
+- the verification lifecycle fails when an integration test fails, so a separate phase is not one nobody runs;
+- `docs/project-profile.md` records the resulting commands, so "run the relevant suites" is unambiguous.
+
+`build-and-dependencies` carries the worked Maven and Gradle configuration. Verify it before relying
+on a green build, and fix it as part of the change when it is missing.

@@ -115,9 +115,13 @@ exception in `modern-java-21`; `MockMvc` and `ObjectMapper` remain `final` and c
 
 Focused MVC slice tests do not exercise or verify the Spring Security filter chain. The project's
 `addFilters = false` convention excludes every servlet filter from this `MockMvc` slice, so use it to
-prove the controller and MVC contract only. Do not use `@WithMockUser`, mock tokens, authority values,
-or CSRF here. Full application integration tests own security verification; test another filter
-separately when it owns a public contract.
+prove the controller and MVC contract only: mock users, mock tokens, authority values, and CSRF
+request post-processors have no place in one. Full application integration tests own security
+verification; test another filter separately when it owns a public contract, and keep validation,
+error-handler, serialization, and delegation coverage in the slice.
+
+Do not use an MVC slice as evidence for transaction, database, or other full-application behavior
+excluded from it.
 
 **There is no `@Import(ApiExceptionHandler.class)`, and adding one is a mistake worth naming.**
 `@WebMvcTest` already includes `@ControllerAdvice` beans in the slice, along with JSON

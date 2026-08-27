@@ -9,6 +9,11 @@ authoritative for scope, exceptions, and detail. When this card and an owner ski
 owner wins and this card is the defect to fix. Read the owner skill before implementing anything it
 covers; read the full map in [OWNERSHIP.md](OWNERSHIP.md).
 
+An owner keeps its always-loaded body to the decisions and the rules that decide most reviews, and
+routes the rest to its references — some rule sets live **only** there. Each skill's reference-routing
+section says which file to open for which change; "read the owner skill" means following that routing,
+not reading its `SKILL.md` and stopping.
+
 ## Before writing production code
 
 1. **`docs/project-profile.md` must exist and record every decision the task touches.** No database,
