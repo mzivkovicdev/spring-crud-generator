@@ -64,7 +64,7 @@ Treat a code-review request as read-only by default.
 Resolve the target in this order: the commit, branch, pull request, path, or symbol the user named;
 then pull-request metadata and its merge base; then staged and unstaged working-tree changes; then,
 on a clean tree, the latest commit — stating that scope. Do not guess between materially different
-targets: ask one focused question when the wrong base could invalidate the review.
+targets: ask one focused question when the wrong base or range could invalidate the review.
 
 Record the reviewed base and head before starting, and recheck them before any merge or release
 disposition. If the change moved, review the new delta and the conclusions it invalidates. For

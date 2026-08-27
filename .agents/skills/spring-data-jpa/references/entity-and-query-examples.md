@@ -519,8 +519,8 @@ CREATE UNIQUE INDEX uk_users_email ON users (email);
 
 ## Read-side anti-patterns
 
-Reject. The write-behavior and concurrency-policy groups are in
-[write and locking examples](write-and-locking-examples.md).
+Reject. The write-behavior group is in [write behavior examples](write-behavior-examples.md) and the
+concurrency-policy group in [locking and retry examples](locking-and-retry-examples.md).
 
 **Entity shape.** Records used as entities; Lombok `@Data` on entities; lazy or mutable associations
 in `equals`, `hashCode`, or `toString`; `CascadeType.ALL` without aggregate lifecycle ownership;

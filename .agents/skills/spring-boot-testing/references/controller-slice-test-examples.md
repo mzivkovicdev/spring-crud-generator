@@ -3,6 +3,11 @@
 Use these examples for focused Spring MVC controller tests. Apply every rule from `../SKILL.md`,
 `spring-boot-patterns`, `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
+**This file carries rules, not only examples.** What `addFilters = false` excludes, what therefore
+never belongs in a slice, which contracts move to focused filter tests and full integration tests,
+and what a slice may not be used as evidence for are stated here in full and nowhere else. Treat
+those sections as binding.
+
 Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents

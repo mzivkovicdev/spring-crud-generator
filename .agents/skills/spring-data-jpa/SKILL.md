@@ -33,7 +33,8 @@ The references are part of this skill's rules, not illustrations of them, and se
 only there. Read the one the change touches, and only that one:
 
 - [Entity and query examples](references/entity-and-query-examples.md) for mappings, association ownership, repository design, projections, dynamic and sargable queries, pagination and scrolling, SQL and index performance, and the read-side anti-patterns.
-- [Write and locking examples](references/write-and-locking-examples.md) for locking and retry, flush behavior, bulk DML, large batches, and the write-side anti-patterns.
+- [Locking and retry examples](references/locking-and-retry-examples.md) for optimistic and pessimistic locking, the composed retry annotation for both generations, lock timeouts and ordering, and the concurrency anti-patterns.
+- [Write behavior examples](references/write-behavior-examples.md) for flush timing, bulk DML, large batches, and the write-side anti-patterns.
 
 ## Before changing persistence
 
@@ -159,7 +160,7 @@ semantics, and how long a transaction may stay open. This section owns what happ
 
 The complete rules for flush timing and explicit synchronization, for bulk JPQL and Criteria DML,
 and for bounded batch processing are stated in
-[write and locking examples](references/write-and-locking-examples.md). Read it before writing a
+[write behavior examples](references/write-behavior-examples.md). Read it before writing a
 `@Modifying` query, a `flush` or `saveAndFlush` call, or a loop that touches thousands of rows.
 
 ## Concurrency and locking
@@ -178,8 +179,8 @@ and for bounded batch processing are stated in
 - Enforce uniqueness with a database constraint and handle the race after an application existence check.
 - Remember that bulk DML bypasses normal optimistic version checks, so it can overwrite a concurrent edit with no exception anywhere.
 
-[Write and locking examples](references/write-and-locking-examples.md) carries the strategy-selection
-table, the `@Version` mapping, the retry-versus-client-version decision, the
+[Locking and retry examples](references/locking-and-retry-examples.md) carries the
+strategy-selection table, the `@Version` mapping, the retry-versus-client-version decision, the
 `@OptimisticLockingRetry` annotation for both generations, lock timeouts, lock ordering, and the
 rejected forms. Read it before adding any lock: the three mistakes it prevents — a `catch` that
 never fires because the version check happens at commit, a retry that reuses the failed transaction,
@@ -210,8 +211,8 @@ and verification. This skill owns only what the schema has to look like for the 
 
 The full catalogue sits beside the examples of each one: entity shape, fetch plans, query shape, and
 schema verification in [entity and query examples](references/entity-and-query-examples.md); write
-behavior and concurrency policy in
-[write and locking examples](references/write-and-locking-examples.md). The ones that most often
+behavior in [write behavior examples](references/write-behavior-examples.md); concurrency policy in
+[locking and retry examples](references/locking-and-retry-examples.md). The ones that most often
 survive review:
 
 - A collection fetch join combined with pagination, or `distinct` used to hide the cartesian product it produces.

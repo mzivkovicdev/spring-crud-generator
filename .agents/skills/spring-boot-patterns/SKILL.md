@@ -41,14 +41,14 @@ only what the task needs, and do not load one for unrelated work.
 | [REST boundary rules](references/rest-boundary-rules.md) *(rules)* | Creating or changing a controller, a request/response TO, or a REST mapper |
 | [Service layer rules](references/service-layer-rules.md) *(rules)* | Creating or changing a service, choosing its level, or producing an effect outside a transaction |
 | [Outbound call rules](references/outbound-call-rules.md) *(rules)* | Adding or changing any call to another system: HTTP client, message producer, provider SDK |
-| [Filling the project profile](references/project-profile-template.md) *(rules)* | Creating the profile or filling a missing decision. The template is [an asset](assets/project-profile-template.md) to copy, not retype |
+| [Filling the project profile](references/filling-the-project-profile.md) *(rules)* | Creating the profile or filling a missing decision. The template is [an asset](assets/project-profile-template.md) to copy, not retype |
 | [REST API examples](references/rest-api-examples.md) | Controller, TO, and REST mapper code |
 | [Service and domain examples](references/service-domain-examples.md) | Service, domain model, domain mapper, parameter object, repository-boundary code |
 | [Error handling examples](references/error-handling-examples.md) | Adding or changing a caller-visible failure: a catalog constant, a custom exception, a handler, a validation response |
 | [Infrastructure examples](references/infrastructure-examples.md) | Package placement, method validation, custom exceptions, configuration properties, infrastructure beans, idempotency placement, scheduled execution, or code resembling a listed anti-pattern |
 
-Treat illustrated decisions as normative, but do not assume omitted members or configuration are
-complete.
+Treat the illustrated decisions and the accompanying rules as normative, but do not assume omitted
+members or configuration are complete.
 
 ## REST-only scope
 
@@ -86,11 +86,11 @@ and no synonym.
 
 Three rules hold the vocabulary together, and none of them has an exception:
 
-- **Fallbacks live in exactly one place: the `Fallback` column of the template.** No skill may introduce one in its own prose. An `ASK` row with an empty fallback blocks; a row with one is applied, recorded, and reported in the handoff.
+- **Fallbacks live in exactly one place: the `Fallback` column of the template.** No skill may introduce one in its own prose. An `ASK` row with an empty fallback blocks; a row with one is applied, recorded, and reported in the handoff. If a rule elsewhere in this set reads like a default for a profile decision, the template is authoritative and that prose is the defect to fix.
 - **Never write a version, a coordinate, or any other value from memory** into the profile or a build file. When a `RESOLVE` cannot be completed, record `UNDECIDED` with the reason. A remembered version is a guess wearing a specific-looking number, and it is the failure mode this whole mechanism exists to prevent.
 - **Never assume a value or infer one from a test dependency or an example.** An H2 dependency does not make H2 the database. `UNDECIDED` with a note is a legitimate entry; a fabricated value is not.
 
-[Filling the project profile](references/project-profile-template.md) carries the order of work, what
+[Filling the project profile](references/filling-the-project-profile.md) carries the order of work, what
 makes a decision `ASK` rather than `RESOLVE`, and the notes on individual entries. Read it when
 creating the profile or filling a missing decision. `build-and-dependencies` owns which build and
 version decisions carry which token; do not reclassify one here.

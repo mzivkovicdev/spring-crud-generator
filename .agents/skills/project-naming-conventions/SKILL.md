@@ -31,9 +31,9 @@ feature flag, or infrastructure resource the design does not require.
 Preserve the established terminology — `UserCreateTO`/`UserTO` for the REST contract, `UserDomain`
 for a project-owned domain type, `UserEntity` for the JPA model, `UserSummaryProjection` for a
 repository read projection, `UserRestMapper` and `UserDomainMapper` for the two mapping directions.
-Never replace them with DTO, View, Model, Command, or Query terminology unless the project explicitly
-adopts a different architecture and migrates to it. Apply the exact scope and exceptions of the
-`<Concept>Domain` convention from
+Never replace them with DTO, View, Model, Command, Query, or similarly overlapping terminology
+unless the project explicitly adopts a different architecture and migrates to it. Apply the exact
+scope and exceptions of the `<Concept>Domain` convention from
 [Java, Spring, and test names](references/java-spring-and-test-names.md); do not redefine it
 elsewhere.
 
@@ -104,7 +104,7 @@ platform constraint, and the review rules below say when a heuristic becomes a f
 - **One word per concept, one concept per word.** Do not alternate between `customer`, `client`, and `user` unless they are genuinely different, and do not reuse one word for different concepts in the same bounded context.
 - Make meaningful distinctions: reject numeric suffixes and noise words — `data`, `info`, `object`, `item`, `value`, `manager`, `processor`, `helper` — when they do not narrow meaning.
 - Prefer pronounceable, searchable names, and only approved domain, protocol, vendor, and technical abbreviations. Avoid encodings: Hungarian notation, member or interface prefixes, unexplained implementation suffixes, embedded type names.
-- Match length to scope — concise loop indices only in tiny conventional scopes, explicit names once a value crosses a boundary. Plural nouns for collections, singular for one value.
+- Match length to scope — concise loop indices only in tiny conventional scopes, explicit names once a value lives longer or crosses a boundary. Plural nouns for collections, singular for one value.
 - Name booleans as positive predicates (`active`, `hasPermission`, `canRetry`); avoid double negatives.
 - Include units only when a stronger type cannot express them, such as an unavoidable primitive `timeoutMillis`. Prefer `Duration timeout` where the owning skill permits it.
 - Name symmetric concepts symmetrically, and lifecycle states from one coherent vocabulary.

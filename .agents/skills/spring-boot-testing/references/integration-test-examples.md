@@ -4,6 +4,11 @@ Use these examples for application and database-backed integration tests. Apply 
 `../SKILL.md`, `spring-boot-patterns`, `spring-data-jpa`, `application-security`,
 `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
+**This file carries rules, not only examples.** The web-mode choice, the container and database
+rules, the cleanup strategy, the deferred-effect and outbox scope, and test selection and suite
+execution are stated here in full and nowhere else; `../SKILL.md` routes to them rather than
+repeating them. Treat those sections as binding.
+
 Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 These tests complement, and never replace, direct unit tests for behavioral application services or

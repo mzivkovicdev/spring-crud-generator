@@ -2,6 +2,11 @@
 
 Use this reference for REST paths and parameters, JSON fields, OpenAPI components, error identifiers, database objects, migrations, Spring configuration, environment variables, profiles, and feature flags. Apply `spring-boot-patterns`, `spring-data-jpa`, and `application-security` for behavior and safety.
 
+**The rename-migration procedure lives only here.** `../SKILL.md` states the gate — a name that can
+escape its compilation unit is renamed as a migration — and routes the procedure, the compatibility
+mechanisms, and the never-rename list to [Migrate escaped names](#migrate-escaped-names). Read that
+section before renaming anything that leaves the file it is declared in.
+
 ## Contents
 
 1. [Preserve contracts before style](#preserve-contracts-before-style)

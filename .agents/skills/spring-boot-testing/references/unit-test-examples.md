@@ -3,6 +3,10 @@
 Use these examples for focused Java tests that do not load Spring. Apply every rule from
 `../SKILL.md`, `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
+**This file carries rules, not only examples.** The types that deliberately have no unit test, and
+the test-data rules, are stated here in full and nowhere else; `../SKILL.md` routes to them rather
+than repeating them. Treat those sections as binding.
+
 Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
