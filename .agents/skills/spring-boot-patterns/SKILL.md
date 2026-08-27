@@ -32,26 +32,23 @@ second standard; when it is genuine and cannot wait, apply the precedence order 
 
 ## Reference routing
 
-This skill's body carries the decisions and the rules that decide most reviews. The detail sits in
-references, split into two kinds: **rule references**, which are normative and complete, and
-**example references**, which show the rules applied. Read only what the task needs.
+This body carries the decisions and the rules that decide most reviews. Detail sits in references —
+**rule references** are normative and complete, **example references** show the rules applied. Read
+only what the task needs, and do not load one for unrelated work.
 
-Rule references:
+| Read | When |
+| --- | --- |
+| [REST boundary rules](references/rest-boundary-rules.md) *(rules)* | Creating or changing a controller, a request/response TO, or a REST mapper |
+| [Service layer rules](references/service-layer-rules.md) *(rules)* | Creating or changing a service, choosing its level, or producing an effect outside a transaction |
+| [Outbound call rules](references/outbound-call-rules.md) *(rules)* | Adding or changing any call to another system: HTTP client, message producer, provider SDK |
+| [Filling the project profile](references/project-profile-template.md) *(rules)* | Creating the profile or filling a missing decision. The template is [an asset](assets/project-profile-template.md) to copy, not retype |
+| [REST API examples](references/rest-api-examples.md) | Controller, TO, and REST mapper code |
+| [Service and domain examples](references/service-domain-examples.md) | Service, domain model, domain mapper, parameter object, repository-boundary code |
+| [Error handling examples](references/error-handling-examples.md) | Adding or changing a caller-visible failure: a catalog constant, a custom exception, a handler, a validation response |
+| [Infrastructure examples](references/infrastructure-examples.md) | Package placement, method validation, custom exceptions, configuration properties, infrastructure beans, idempotency placement, scheduled execution, or code resembling a listed anti-pattern |
 
-- Read [REST boundary rules](references/rest-boundary-rules.md) when creating or changing a controller, a request/response TO, or a REST mapper.
-- Read [service layer rules](references/service-layer-rules.md) when creating or changing a service, deciding which service level an operation belongs to, or producing an effect outside a transaction.
-- Read [outbound call rules](references/outbound-call-rules.md) when adding or changing any call to another system: an HTTP client, a message producer, or a provider SDK.
-- Read [filling the project profile](references/project-profile-template.md) when creating the profile or filling a missing decision. The template itself is [an asset](assets/project-profile-template.md) to be copied, not retyped.
-
-Example references:
-
-- Read [REST API examples](references/rest-api-examples.md) for controller, TO, and REST mapper code.
-- Read [service and domain examples](references/service-domain-examples.md) for service, domain model, domain mapper, parameter object, and repository-boundary code.
-- Read [error handling examples](references/error-handling-examples.md) when adding or changing a caller-visible failure: an error catalog constant, a custom exception, a handler method, or a validation response shape. It also carries the full error contract.
-- Read [infrastructure examples](references/infrastructure-examples.md) when deciding package placement or changing method validation, custom exceptions, configuration properties, infrastructure beans, idempotency placement, scheduled execution, or code that resembles a listed anti-pattern.
-
-Treat the illustrated decisions and accompanying rules as normative, but do not assume omitted
-members or configuration are complete. Do not load a reference for unrelated work.
+Treat illustrated decisions as normative, but do not assume omitted members or configuration are
+complete.
 
 ## REST-only scope
 
@@ -67,70 +64,39 @@ not authorize generating a server-rendered presentation layer.
 
 ## The project profile is a precondition
 
-`docs/project-profile.md` is the record of the decisions every skill in this set reads instead of
-guessing. This skill owns it. [The template asset](assets/project-profile-template.md) lists every
-entry, its allowed values, its decision token, and the skill that owns it; copy it rather than
-retyping it, and read [filling the project profile](references/project-profile-template.md) for how
-each entry is settled.
+`docs/project-profile.md` records the decisions every skill in this set reads instead of guessing.
+This skill owns it. [The template asset](assets/project-profile-template.md) lists every entry, its
+allowed values, its token, and its owner; copy it rather than retyping it.
 
 **Do not write production code until the profile exists and records every decision the task
 depends on.** This is a gate, not a preference. Without it each feature silently picks its own
-database, service shape, accessor style, or contract direction, and the result is a codebase that
-disagrees with itself in ways no review catches until much later.
+database, service shape, accessor style, or contract direction, and the codebase disagrees with
+itself in ways no review catches until much later.
 
 ### Decision tokens
 
-Not every unrecorded decision blocks the same way, and treating them alike either stalls trivial
-work or invents architecture. This skill owns the vocabulary; every skill and every template in this
-set uses exactly these three tokens and no synonym.
+This skill owns the vocabulary; every skill and template in this set uses exactly these three tokens
+and no synonym.
 
 | Token | Who settles it | Does it block? |
 | --- | --- | --- |
-| `ASK` | The user, and only the user | **Yes**, unless the template row records a fallback. Stop and ask. There is no defensible default, and a wrong answer is expensive to reverse. |
-| `RESOLVE` | The agent, by looking the answer up and recording it | **No.** Resolve it, record it, and state in the handoff what was chosen and why, so the user overrides once instead of being asked every time. |
-| `UNDECIDED` | Deferred on purpose | **No**, unless the current task touches it. Record what will force the decision. |
+| `ASK` | The user, and only the user | **Yes**, unless the template row records a fallback |
+| `RESOLVE` | The agent, by looking it up and recording it with the date | **No.** Resolve, record, and state the choice in the handoff |
+| `UNDECIDED` | Deferred on purpose | **No**, unless the current task touches it. Record what will force the decision |
 
-**Fallbacks live in one place: the `Fallback` column of the template.** Some `ASK` rows have a
-sanctioned safe answer — concrete service classes, no Lombok, Swagger UI never exposed, server-side
-retry only. For those, and only those, an unanswered decision does not block: apply the fallback,
-write it into the profile as the value, and **state in the handoff that a fallback was applied**, so
-the user overrides once instead of being asked every time. An `ASK` row with an empty fallback
-blocks, with no exception.
+Three rules hold the vocabulary together, and none of them has an exception:
 
-No skill may introduce a fallback in its own prose. If a rule elsewhere in this set reads like a
-default for a profile decision, the template is authoritative and that prose is the defect to fix.
-This is what keeps three different agents from reaching three different answers on the same empty
-repository.
+- **Fallbacks live in exactly one place: the `Fallback` column of the template.** No skill may introduce one in its own prose. An `ASK` row with an empty fallback blocks; a row with one is applied, recorded, and reported in the handoff.
+- **Never write a version, a coordinate, or any other value from memory** into the profile or a build file. When a `RESOLVE` cannot be completed, record `UNDECIDED` with the reason. A remembered version is a guess wearing a specific-looking number, and it is the failure mode this whole mechanism exists to prevent.
+- **Never assume a value or infer one from a test dependency or an example.** An H2 dependency does not make H2 the database. `UNDECIDED` with a note is a legitimate entry; a fabricated value is not.
 
-A decision is `ASK` when nothing in the repository or the ecosystem points to one answer over
-another: the build tool, the database engine, the migration tool, whether a contract document
-exists, the authoring direction, the service interface convention, the entity accessor style. A
-decision is `RESOLVE` when a correct answer exists and only needs looking up: the current supported
-release of a framework, a plugin, or a tool.
+[Filling the project profile](references/project-profile-template.md) carries the order of work, what
+makes a decision `ASK` rather than `RESOLVE`, and the notes on individual entries. Read it when
+creating the profile or filling a missing decision. `build-and-dependencies` owns which build and
+version decisions carry which token; do not reclassify one here.
 
-**When a `RESOLVE` cannot be completed** — no network access, no registry, an ambiguous result —
-record `UNDECIDED` with the reason and say so in the handoff. Never write a version number, a
-coordinate, or any other value from memory into the profile or a build file. A remembered version is
-a guess wearing a specific-looking number, and it is the one failure mode this whole mechanism
-exists to prevent.
-
-The template marks every row with its token. `build-and-dependencies` owns which build and version
-decisions carry which token; do not reclassify one here.
-
-### Order of work on every task
-
-1. Read `docs/project-profile.md`. If every decision the task needs is recorded, implement.
-2. If the file is missing, create it from [the template asset](assets/project-profile-template.md). If entries are missing, identify exactly which.
-3. Fill what the repository already proves — a declared dependency, an applied migration, an existing package layout, a configured datasource.
-4. Complete every `RESOLVE` the task touches, without asking.
-5. Apply the template's `Fallback` value for every unresolved `ASK` row that has one, record it, and note it in the handoff.
-6. **Ask the user, in one message, for every remaining `ASK` with no fallback**, offering the template's allowed values so each answer is one word. Do not ask one question per skill, and do not ask again for something already recorded.
-7. Write the answers into the profile, then implement.
-
-Exceptions are narrow: documentation, comment, or formatting changes need no profile, and a task may
-proceed on a partial profile as long as every decision *that task* touches is recorded. Never assume
-a value, infer one from a test dependency or an example, or record a guess to unblock yourself.
-`UNDECIDED` with a note is a legitimate entry; a fabricated value is not.
+Exceptions to the gate are narrow: documentation, comment, or formatting changes need no profile, and
+a task may proceed on a partial profile as long as every decision *that task* touches is recorded.
 
 ## Rules before coding
 
@@ -143,31 +109,20 @@ a value, infer one from a test dependency or an example, or record a guess to un
 
 ## Spring Boot 3 and 4
 
-Both generations are supported, and `docs/project-profile.md` records which one applies. The
-architecture in this skill is identical on both: controllers, TOs, services, domain models, mappers,
-the transaction boundary, and the error contract do not change. Four things around them do.
+Both generations are supported and **the architecture in this skill is identical on both**:
+controllers, TOs, services, domain models, mappers, the transaction boundary, the error contract,
+`ProblemDetail`, and validation do not change. What differs is what a few surrounding things are
+called — the JSON library, the mapper bean, the serializer annotation, the message-converter
+customizer, the retry engine — and `build-and-dependencies` owns that catalogue in
+[generation differences](../build-and-dependencies/references/generation-differences.md). Read the
+row there for the generation the profile records.
 
-| Concern | Spring Boot 3 | Spring Boot 4 |
-| --- | --- | --- |
-| JSON library | Jackson 2 (`com.fasterxml.jackson`) | Jackson 3 (`tools.jackson`), except `jackson-annotations` |
-| Replacing the mapper bean | define an `ObjectMapper` bean | define a `JsonMapper` bean; an `ObjectMapper` bean no longer replaces it |
-| Custom serializer registration | `@JsonComponent` | `@JacksonComponent` |
-| Customizing HTTP message converters | a `HttpMessageConverters` bean or contributed converter beans | `ServerHttpMessageConvertersCustomizer`; the Boot type is deprecated and contributed converter beans are no longer picked up |
-| Declarative retry | Spring Retry, declared by the project | `org.springframework.resilience.annotation` in the framework, enabled by `@EnableResilientMethods` |
-
-`build-and-dependencies` owns the coordinates in
-[generation differences](../build-and-dependencies/references/generation-differences.md); do not
-restate them here.
-
-One Spring Boot 4 default deserves attention because it can change the public contract without a code
+One Spring Boot 4 default belongs here, because it can change the public contract with no code
 change: **every Jackson module on the classpath is registered automatically**, where Spring Boot 3
 registered only well-known ones. A module arriving transitively can alter how a date, an optional, or
-a domain type serializes, which is a contract change under `rest-api-contract` even though no
-controller was touched. Assert the serialized shape of every response TO in tests, and set
+a domain type serializes — a contract change under `rest-api-contract` though no controller was
+touched. Assert the serialized shape of every response TO in tests, and set
 `spring.jackson.find-and-add-modules=false` when the project wants registration to be explicit.
-
-`ProblemDetail`, Bean Validation, method validation, and `@RestController` behave the same on both
-generations. Nullability annotations in signatures follow `modern-java-21`.
 
 ## Java source rules
 
@@ -188,20 +143,12 @@ Use the repository's existing sound structure instead of performing a broad pack
 | Repository/adapter | Encapsulate persistence or external-provider details |
 | Configuration | Construct and configure infrastructure beans |
 
-Use the established terminology consistently:
-
-| Type | Boundary |
-| --- | --- |
-| `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller |
-| `UserManagementApplicationService` | Use case, in the `applicationservice` package |
-| `UserService`, `OrganizationService` | One aggregate root each, in the `service` package |
-| `UserDomain`, focused service parameter objects | Domain/service |
-| `UserEntity` | JPA persistence, in the `entity` package |
-| `UserSummaryProjection` | Repository persistence projection |
-| `UserRestMapper` | Domain to response TO; request TO to a focused domain input only when justified |
-| `UserDomainMapper` | Entity/projection to domain; explicit creation values to entity |
-
-Read the package layout in [infrastructure examples](references/infrastructure-examples.md) when placing new types.
+Use the established terminology consistently: `UserCreateTO`/`UserTO` at the REST boundary,
+`UserManagementApplicationService` in `applicationservice`, `UserService` in `service` (one aggregate
+root each), `UserDomain` and focused parameter objects at the domain/service boundary, `UserEntity`
+in `entity`, `UserSummaryProjection` from a repository, `UserRestMapper` and `UserDomainMapper` for
+the two mapping directions. `project-naming-conventions` owns the forms; read the package layout in
+[infrastructure examples](references/infrastructure-examples.md) when placing new types.
 
 ## REST controllers and transport objects
 
@@ -222,14 +169,12 @@ a mapper, and [REST API examples](references/rest-api-examples.md) for the code.
 
 ## Domain models
 
-Domain models are independent of REST TOs and JPA entities. Services return domain models, controllers map them to response TOs, and repositories continue to work with persistence entities.
+Services return domain models, controllers map them to response TOs, repositories work with entities.
 
-- Do not add JPA, HTTP, JSON, controller, repository, or Spring infrastructure concerns to a domain model.
-- Keep the domain model immutable when practical.
-- Put business invariants and behavior in the domain when they naturally belong to the represented business concept.
-- Do not expose `UserEntity` outside the service/persistence boundary.
-- Do not create a domain type that merely aliases a TO; the two models may look similar but belong to different boundaries and may evolve independently.
-- Keep a domain-owned enum beside the related domain types. Keep transport-only or persistence-only enums inside their owning boundary package; never collect unrelated enums in a generic package.
+- Do not add JPA, HTTP, JSON, controller, repository, or Spring infrastructure concerns to a domain model, and do not expose an entity outside the service/persistence boundary.
+- Keep the domain model immutable when practical, and put business invariants in it when they belong to the represented concept.
+- Do not create a domain type that merely aliases a TO. The two may look similar, belong to different boundaries, and evolve independently.
+- Keep a domain-owned enum beside the related domain types, and a transport-only or persistence-only enum inside its owning boundary package. Never collect unrelated enums in a generic package.
 
 Read the domain and domain mapper examples in [service and domain examples](references/service-domain-examples.md).
 
@@ -289,13 +234,14 @@ Read the repository-boundary example in [service and domain examples](references
 
 Use Jakarta Bean Validation for structural constraints.
 
-- Use `@Valid` for nested objects and method validation when the service can be called outside the REST boundary.
-- Create a custom constraint only for reusable structural validation; database-dependent and business validation belong to a service or domain policy.
-- Prefer separate request TOs per operation, such as `UserCreateTO` and `UserUpdateTO`, over Bean Validation groups, which make one type's contract depend on the caller. Use groups only when one TO genuinely serves several operations: define the group interfaces beside the TO, name them for the operation, and activate them explicitly with `@Validated(Group.class)` at the handler parameter rather than relying on `Default` inheritance.
-- Constraint messages are human-readable text, never the machine-readable contract; clients branch on the problem type. Keep them stable and free of implementation class names or provider details.
-- Localize messages only when the API contract requires it. If it does, resolve them through the project's `MessageSource` and Bean Validation message interpolation with explicit keys, drive the locale from the `Accept-Language` header with a configured default and a bounded set of supported locales, and never localize the problem type, HTTP status, or any stable identifier.
+- Use `@Valid` for nested objects, and method validation when the service can be called outside the REST boundary.
+- Create a custom constraint only for reusable structural validation. Database-dependent and business validation belong to a service or domain policy.
+- Prefer separate request TOs per operation over Bean Validation groups, which make one type's contract depend on the caller.
+- Constraint messages are human-readable text, never the machine-readable contract; clients branch on the problem type. Keep them free of implementation class names and provider details.
 
-Read the method-validation example in [infrastructure examples](references/infrastructure-examples.md).
+[REST boundary rules](references/rest-boundary-rules.md) carries the validation-group and
+message-localization rules in full; read it before using either. The method-validation example is in
+[infrastructure examples](references/infrastructure-examples.md).
 
 ## Error handling
 
@@ -344,20 +290,12 @@ Use type-safe, validated configuration instead of scattered `@Value` fields.
 
 Read the configuration records and bean example in [infrastructure examples](references/infrastructure-examples.md).
 
-## Security boundary
+## Security and observability boundaries
 
-Apply `application-security` as the single owner of authentication, authorization, CSRF, CORS,
-confidentiality, and security verification. Preserve the service and repository boundaries defined
-by this skill while applying those controls. Do not weaken production security to make tests pass;
-follow `spring-boot-testing` for which test levels include the security filter chain.
+Both are owned elsewhere; this skill owns only where they sit in the layers.
 
-## Observability
-
-`observability-and-logging` owns every logging, metric, tracing, and health rule, including levels,
-placement, correlation context, and tag cardinality. This skill owns only where instrumentation sits
-in the layers: a service records the operation, an adapter records the outbound call, and a
-controller records nothing beyond what the framework already emits. Do not infer a level, a meter
-name, or a cardinality limit from this skill.
+- `application-security` owns authentication, authorization, CSRF, CORS, confidentiality, and security verification. Preserve the service and repository boundaries defined here while applying those controls, and never weaken production security to make a test pass.
+- `observability-and-logging` owns every logging, metric, tracing, and health rule. Placement in the layers is the part this skill decides: a service records the operation, an adapter records the outbound call, and a controller records nothing beyond what the framework already emits. Do not infer a level, a meter name, or a cardinality limit from this skill.
 
 ## Scheduled and asynchronous work
 
@@ -376,53 +314,34 @@ test level, fixtures, isolation, and execution. Behavior-specific cases come fro
 
 ## Anti-patterns
 
-Reject:
+Six shapes account for most of what this skill rejects, and each one **compiles, passes its tests,
+and survives review** unless it is recognised by name:
 
-**Boundary violations.** Fat controllers; entities in API contracts or returned from services; REST
-TOs passed into services; an outbound client with no read timeout; a provider exception or SDK
-response type reaching a service or controller; remote I/O inside long transactions; unbounded collection endpoints;
-generic `Map` responses; a repository injected into an application service; a controller handler
-calling two services; an application service method that only forwards to one aggregate service; one
-aggregate service depending on another; a JPA association crossing an aggregate boundary.
+- a controller handler calling two services, or an application service method that only forwards to one aggregate service;
+- a repository injected into an application service, or one aggregate service depending on another;
+- a JPA association crossing an aggregate boundary;
+- an external effect fired inside the transaction rather than after commit, or after commit where the profile records that losing it is unacceptable;
+- an outbound client with no read timeout, or a provider exception reaching a service or controller;
+- a second machine-readable error identifier beside the RFC 9457 `type`.
 
-**Structure.** Field injection; an aggregate service that only forwards to its repository while its
-invariants live in callers; an application service holding a rule that belongs to one aggregate;
-empty or responsibility-free service interfaces; parameter objects
-that hide unrelated values or mechanically satisfy the size rule `modern-java-21` owns; generic
-`enums` packages; REST exception
-handlers in the custom-exception package; handwritten structural mappers where approved MapStruct
-can express the mapping; a separate mapper per mapping direction for one concept.
-
-**Error contract.** A `code` or `errorCode` member beside the RFC 9457 `type`; a problem type URI or
-internal error code declared outside the error catalog; `traceId`, `spanId`, or a stack trace in a
-`ProblemDetail` body; the same failure logged by both the service that threw it and the advice that
-handles it; a project exception whose simple name collides with a framework type such as
-`ValidationException`; generic exception swallowing.
-
-**Process.** Implementing against a decision `docs/project-profile.md` does not record; hardcoded
-configuration or secrets; self-invocation assumptions for proxy annotations; an external effect
-fired inside the transaction instead of after commit.
-
-Read the rejected code examples in [infrastructure examples](references/infrastructure-examples.md) when reviewing or replacing suspicious existing code.
+[Infrastructure examples](references/infrastructure-examples.md) carries the full rejected list —
+boundary, structure, error-contract, and process — with the code. Read it when reviewing or replacing
+suspicious existing code.
 
 ## Completion checklist
 
-- [ ] `docs/project-profile.md` existed before implementation and records every decision the change relied on. Nothing was assumed, inferred, or guessed.
-- [ ] Controller/listener is a thin transport boundary.
-- [ ] Business rules are in service/domain code, and each rule sits at the level that owns it.
-- [ ] The transaction boundary is the highest service the use case enters: the application service when one exists, otherwise the aggregate service. No aggregate service overrides propagation or isolation to escape it.
-- [ ] No application service holds a repository or a pass-through method, and no aggregate service holds another service.
-- [ ] Every controller handler calls one service, at the level the operation belongs to.
-- [ ] Each external effect uses the delivery mechanism the profile records for it, and a failed delivery is logged rather than silently dropped.
-- [ ] Every outbound client sets connection and read timeouts, and any retry policy exists in exactly one layer.
+- [ ] The profile existed first and records every decision relied on; nothing assumed, inferred, or guessed.
+- [ ] Controller/listener is a thin transport boundary, and each handler calls one service at the level the operation belongs to.
+- [ ] Each business rule sits at the level that owns it.
+- [ ] The transaction boundary is the highest service the use case enters, and no aggregate service overrides propagation or isolation to escape it.
+- [ ] No application service holds a repository or a pass-through method; no aggregate service holds another service.
+- [ ] Each external effect uses the delivery mechanism the profile records, and failed delivery is logged rather than dropped.
+- [ ] Every outbound client sets both timeouts, and retry exists in exactly one layer.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
-- [ ] Service signatures satisfy the size rule `modern-java-21` owns, and any parameter object groups a real domain concept rather than unrelated values.
-- [ ] REST and domain mappers preserve the TO–Domain–Entity boundaries.
-- [ ] Approved MapStruct handles structural mapping with `ReportingPolicy.ERROR`; any handwritten mapper exception is documented.
-- [ ] Each concept has one REST mapper and one domain mapper; any split is documented in the change.
-- [ ] Projections, Specifications, enums, exceptions, handlers, bean configuration, and configuration property types sit in their owning packages without empty scaffolding.
-- [ ] Transactions and security ownership are explicit.
-- [ ] Error responses are stable and safe, the `type` URI is their only machine-readable error identifier, and every caller-visible failure comes from the single error catalog.
-- [ ] Shared numeric bounds such as the maximum page size are declared once and referenced.
+- [ ] Service signatures satisfy the size rule `modern-java-21` owns.
+- [ ] Mappers preserve the TO–Domain–Entity boundaries; MapStruct with `ReportingPolicy.ERROR`; one REST and one domain mapper per concept.
+- [ ] Projections, Specifications, enums, exceptions, handlers, and configuration types sit in their owning packages without empty scaffolding.
+- [ ] Error responses are stable and safe, the `type` URI is their only machine-readable identifier, and every failure comes from the single catalog.
+- [ ] Shared numeric bounds are declared once and referenced.
 - [ ] Configuration is type-safe, externalized, and validated.
-- [ ] The owner skills were applied: `spring-boot-testing` for tests, `modern-java-21` for every touched file, and the quality gates and test suites pass.
+- [ ] `spring-boot-testing` and `modern-java-21` were applied, and the gates and suites pass.

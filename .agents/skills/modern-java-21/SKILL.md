@@ -7,8 +7,6 @@ description: Modern Java 21+ coding standard for every creation, edit, refactor,
 
 Write production-grade Java that is easy to understand, test, change, and operate. Existing code is context for behavior, not automatic permission to repeat its design mistakes.
 
-This skill is authoritative for Java source rules in every file, production and test.
-
 ## Coordination with other skills
 
 This skill is authoritative for Java source rules in every file, production and test.
@@ -34,6 +32,7 @@ Read only what the change requires:
 
 - Read [import order examples](references/import-order-examples.md) when an import block is ambiguous or a tool disagrees with the required order.
 - Read [Javadoc and comments](references/javadoc-and-comments.md) when a touched declaration may need Javadoc, or when deciding deliberately not to write it.
+- Read [language feature examples](references/language-feature-examples.md) for the code behind the type, record, pattern-matching, qualification, and cohesion rules below.
 - Read [worked example rules](references/worked-example-rules.md) before reproducing or adapting a snippet from any skill in this set.
 
 The mechanical rules in this skill — import order, no wildcards, no duplicates, `this.`
@@ -97,20 +96,7 @@ Do not reorganize imports across untouched files as part of an unrelated feature
   intentional and clearer than introducing another value.
 - Return immutable snapshots or unmodifiable views at boundaries; never leak a mutable internal collection.
 - Use records for immutable data carriers such as project TOs, domain values, query results, events, and value objects when their semantics fit. Whether a record may be a JPA entity or an embeddable is `spring-data-jpa`'s decision, not this skill's.
-- Validate record invariants in a compact constructor when they are intrinsic to the value.
-
-```java
-public record MoneyDomain(BigDecimal amount, Currency currency) {
-
-    public MoneyDomain {
-        Objects.requireNonNull(amount, "amount must not be null");
-        Objects.requireNonNull(currency, "currency must not be null");
-        if (amount.signum() < 0) {
-            throw new IllegalArgumentException("amount must not be negative");
-        }
-    }
-}
-```
+- Validate record invariants in a compact constructor when they are intrinsic to the value, and copy a collection component defensively there — without the copy the record is immutable in name only.
 
 ### Use domain types
 
@@ -129,64 +115,30 @@ domain reason.
 
 ## Language features
 
-### Records
-
-Use a record for transparent immutable data:
-
-```java
-public record CustomerRegistrationDetailsDomain(String name, String email) {}
-```
-
-Do not put mutable collections into records without making defensive copies:
-
-```java
-public record CustomerSnapshotDomain(UUID id, List<AddressDomain> addresses) {
-
-    public CustomerSnapshotDomain {
-        addresses = List.copyOf(addresses);
-    }
-}
-```
+The code for everything below is in
+[language feature examples](references/language-feature-examples.md).
 
 ### Pattern matching and switch expressions
 
-Use exhaustive switch expressions for closed domain variants:
-
-```java
-return switch (paymentResult) {
-    case PaymentSucceededDomain success -> this.receiptFor(success);
-    case PaymentRejectedDomain rejected -> this.rejectionFor(rejected);
-    case PaymentPendingDomain pending -> this.pendingFor(pending);
-};
-```
-
-Use a sealed hierarchy only when the variants are intentionally closed and controlled by the same domain.
+Use exhaustive switch expressions for closed domain variants: adding a variant then fails compilation
+rather than falling through at runtime. Use a sealed hierarchy only when the variants are
+intentionally closed and controlled by the same domain.
 
 ### Local variable type inference
 
-Use explicit local variable types throughout project-controlled Java source, including production code, tests, examples, and generated-source templates:
-
-```java
-final CustomerDomain customer = this.customerRepository.getRequired(customerId);
-final CalculationResultDomain result = this.calculate(input);
-```
-
-Do not use `var`. This is a deliberate project readability convention, not a claim that Java local-variable type inference is dynamically typed or universally incorrect. Java still resolves the type statically, but this codebase requires the declared type to remain visible. If a generator emits `var`, change its template or configuration instead of hand-editing generated output.
+Use explicit local variable types throughout project-controlled Java source, including production
+code, tests, examples, and generated-source templates. **Do not use `var`.** This is a deliberate
+readability convention, not a claim that type inference is incorrect: Java still resolves the type
+statically, but this codebase requires the declared type to remain visible. If a generator emits
+`var`, change its template or configuration rather than hand-editing generated output.
 
 ### Instance qualification
 
 Qualify instance-field and instance-method access with `this.` throughout project-controlled Java
-source. This makes instance state and behavior explicit and keeps production code, tests, and
-examples consistent.
-
-```java
-this.customerRepository.save(customer);
-return this.calculateTotal(order);
-```
-
-Do not use `this.` for parameters or local variables. Access a static member declared by another
-type through that type, unless it is imported statically under the project's import policy. A static
-member declared by the current type may remain unqualified.
+source, so instance state and behavior stay explicit and production code, tests, and examples read
+alike. Do not qualify parameters or local variables. Reach a static member declared by another type
+through that type unless it is statically imported; one declared by the current type may remain
+unqualified.
 
 ### Streams
 
@@ -215,30 +167,6 @@ member declared by the current type may remain unqualified.
   When `spring-boot-patterns` selects the service interface convention, treat it as that boundary; do
   not extend the convention mechanically to helpers or unrelated classes.
 
-Framework-neutral example of cohesive behavior:
-
-```java
-public final class OrderTotalCalculator {
-
-    private final DiscountPolicy discountPolicy;
-    private final TaxPolicy taxPolicy;
-
-    public OrderTotalCalculator(
-            final DiscountPolicy discountPolicy,
-            final TaxPolicy taxPolicy) {
-
-        this.discountPolicy = discountPolicy;
-        this.taxPolicy = taxPolicy;
-    }
-
-    public MoneyDomain calculate(final OrderDomain order) {
-        final MoneyDomain subtotal = order.subtotal();
-        final MoneyDomain discountedSubtotal = this.discountPolicy.apply(subtotal, order.customerType());
-        return this.taxPolicy.addTax(discountedSubtotal, order.shippingAddress());
-    }
-}
-```
-
 ## Dependency injection
 
 - Use constructor injection.
@@ -262,14 +190,6 @@ exception to any other collaborator.
 - Do not catch `Throwable`; avoid broad `Exception` catches except at a true top-level boundary.
 - Do not catch a failure, log it, and rethrow it unchanged: that adds no context and duplicates the record. `observability-and-logging` decides where a failure is logged.
 - Exception messages must be actionable but must not expose secrets or sensitive personal data.
-
-```java
-try {
-    return this.paymentClient.charge(request);
-} catch (final PaymentProviderException exception) {
-    throw new PaymentUnavailableException(orderId, exception);
-}
-```
 
 ## Time, IDs, and nondeterminism
 
@@ -317,31 +237,15 @@ Declare those fields non-`final` and `private`. Keep every other test collaborat
 constructor-injected, including `MockMvc`, `ObjectMapper`, repositories, and project-owned test
 clients. Do not use `@Autowired` on a field to avoid this rule.
 
-## Forbidden patterns
-
-- wildcard or unused imports;
-- opaque or repository-inconsistent local type inference;
-- field injection;
-- `Optional` fields or parameters;
-- `null` collections;
-- methods over 100 lines;
-- God classes and generic utility dumping grounds;
-- business logic in controllers or persistence callbacks;
-- broad exception swallowing;
-- mutable global state;
-- hardcoded secrets or environment values;
-- copying a legacy pattern without evaluating it;
-- unverified generated contracts or custom generated behavior.
-
 ## Completion checklist
 
 Before finishing any Java task:
 
-- [ ] Every touched Java file has clean, correctly ordered imports.
-- [ ] Imports follow the project order exactly, and the relevant compile or static checks were run.
+- [ ] Every touched file has clean imports in the project order exactly, and the relevant compile or static check was run.
+- [ ] No `var`, no wildcard or unused import, no field injection, no `Optional` field or parameter, no `null` collection, no mutable global state, no hardcoded secret.
 - [ ] New code uses the project's Java version and no unapproved preview feature.
-- [ ] Methods and classes remain cohesive and reasonably sized.
-- [ ] Nullability, exceptions, time, and mutability are explicit.
+- [ ] Methods and classes stay cohesive and within the size rules; no God class and no generic utility dumping ground.
+- [ ] Nullability, exceptions, time, and mutability are explicit, and no exception is swallowed broadly.
 - [ ] Required Javadoc documents contracts and non-obvious behavior.
+- [ ] No legacy pattern was copied without evaluating it, and no generated contract was left unverified.
 - [ ] Tests cover new or changed behavior and pass.
-- [ ] The diff contains no forbidden pattern listed above.

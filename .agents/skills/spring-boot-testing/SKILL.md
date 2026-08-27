@@ -11,11 +11,9 @@ publicly observable outcomes, not framework internals or invented edge cases.
 ## Coordination with other skills
 
 This skill owns test scope, scenario filtering, test-level placement, doubles, fixtures, isolation,
-and execution. Apply the specialized skills for the behavior being verified.
-
-[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
-it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
-this file. The seams this skill crosses most often:
+and execution; apply the specialized skills for the behavior being verified.
+[The ownership map](../_core/OWNERSHIP.md) is canonical for who owns what and carries the precedence
+order for a genuine conflict — read it there, not from a copy here. The seams crossed most often:
 
 | Seam | This skill owns | The other owner owns |
 | --- | --- | --- |
@@ -25,91 +23,65 @@ this file. The seams this skill crosses most often:
 | Suite execution | which suites must exist and run | `build-and-dependencies` owns the plugin and source-set configuration |
 
 Resolve a conflict through the owning skill and the repository-enforced build configuration; when it
-is genuine and cannot wait, apply the precedence order in [the ownership map](../_core/OWNERSHIP.md)
-and say in the handoff which rule was set aside.
+is genuine and cannot wait, apply that precedence order and name the rule set aside in the handoff.
 
 ## Reference routing
 
-- Read [unit test examples](references/unit-test-examples.md) when testing a service, domain rule,
-  mapper behavior, validator, or focused Java component without a Spring context.
-- Read [controller slice test examples](references/controller-slice-test-examples.md) whenever a REST
-  controller is created or changed.
-- Read [integration test examples](references/integration-test-examples.md) when testing an HTTP
-  boundary, persistence, Spring configuration, security filter chain, transaction, migration, or
-  external adapter with real infrastructure or a controlled substitute.
-- Read `rest-api-contract` when the change touches a public endpoint. It owns the contract drift test
-  and states what about the contract must be asserted; this skill owns the level it runs at.
-- Read [scheduler test examples](references/scheduler-test-examples.md) whenever creating or changing
-  a scheduled job, its trigger configuration, overlap protection, or scheduled side effects.
+Load only the references applicable to the changed behavior.
 
-Load only applicable references for the changed behavior.
+- [Unit test examples](references/unit-test-examples.md): a service, domain rule, mapper behavior, validator, or focused component without a Spring context; also the test-data rules and the types that deliberately have no unit test.
+- [Controller slice test examples](references/controller-slice-test-examples.md): any REST controller created or changed.
+- [Integration test examples](references/integration-test-examples.md): an HTTP boundary, persistence, Spring configuration, security filter chain, transaction, migration, or external adapter with real infrastructure or a controlled substitute; also container, cleanup, and suite-execution rules.
+- [Scheduler test examples](references/scheduler-test-examples.md): a scheduled job, its trigger configuration, overlap protection, or scheduled side effects.
+- `rest-api-contract`: any change touching a public endpoint. It owns the contract drift test and states what about the contract must be asserted; this skill owns the level it runs at.
 
 ## Spring Boot 3 and 4 differ more in tests than anywhere else
 
-Both generations are supported. `docs/project-profile.md` records which one the project uses; read
-that row before writing a test, because the test infrastructure changed far more than the production
-API did. `build-and-dependencies` owns the coordinates in
-[generation differences](../build-and-dependencies/references/generation-differences.md); this
-section owns what it means for a test.
+Both generations are supported; `docs/project-profile.md` records which one applies. Read that row
+before writing a test, because the test infrastructure changed far more than the production API did.
+Mock-bean annotations, `@Mock` and `@Captor` support, `MockMvc` and `TestRestTemplate`
+auto-configuration, security-test support, and the test starters themselves all differ;
+`build-and-dependencies` owns those coordinates in
+[generation differences](../build-and-dependencies/references/generation-differences.md), sections
+"Testing", "Test starters", "Annotations and types that moved", and "Removed in Spring Boot 4". This
+section owns what they mean for a test.
 
-| Concern | Spring Boot 3 | Spring Boot 4 |
-| --- | --- | --- |
-| Replacing a bean with a mock | `@MockBean` / `@SpyBean`, or `@MockitoBean` / `@MockitoSpyBean` from 3.4 onward | `@MockitoBean` / `@MockitoSpyBean` only; the old pair is **removed** |
-| Shared mocks for several tests | `@MockBean` fields on a `@TestConfiguration` | not possible on a configuration class; declare `@MockitoBean(types = {...})` on the test class or a custom composed annotation |
-| `@Mock` and `@Captor` | worked through Spring Boot's listener | need Mockito's own `MockitoExtension`; the listener is removed |
-| `MockMvc` under `@SpringBootTest` | auto-configured | **not** provided; `@AutoConfigureMockMvc` is required |
-| `TestRestTemplate` under `@SpringBootTest` | auto-configured | not provided, and it changed package; needs `@AutoConfigureTestRestTemplate`. Prefer `RestTestClient` with `@AutoConfigureRestTestClient` for new tests |
-| `@WithMockUser`, `@WithUserDetails` | `spring-security-test` | need `spring-boot-starter-security-test` |
-| Test dependencies | one `spring-boot-starter-test` | a `-test` starter per technology under test, each bringing the core stack transitively |
-
-Two of these fail in ways that mislead. A missing `@AutoConfigureMockMvc` on Spring Boot 4 reads as a
+Two of them fail in ways that mislead. A missing `@AutoConfigureMockMvc` on Spring Boot 4 reads as a
 context-wiring defect rather than a missing annotation. A missing `spring-boot-starter-security-test`
 makes `@WithMockUser` behave as though the request were unauthenticated, which looks exactly like an
 authorization bug — and the tempting "fix" is to relax the very control the test exists to prove.
 When a security test fails on Spring Boot 4, verify the dependency before touching the security
 configuration.
 
-Everything else in this skill is generation-neutral. Scenario selection, test levels, fixtures,
-isolation, determinism, and what a test must assert do not change between 3 and 4.
+Everything else here is generation-neutral: scenario selection, test levels, fixtures, isolation,
+determinism, and what a test must assert are the same on 3 and 4.
 
 ## Inspect before writing tests
 
-1. Read `docs/project-profile.md` for the database engine and version, the authentication profile,
-   the migration tool, the cleanup strategy, and the test-selection configuration. When a decision
-   the tests depend on is missing, fill it through the process `spring-boot-patterns` owns before
-   writing tests. Do not substitute H2 for an undecided database, and do not invent an
-   authentication mechanism.
-2. Inspect the Maven or Gradle configuration, supported Java and Spring Boot versions, test source
-   sets, test plugins, naming suffixes, profiles, and CI commands.
-3. Reuse the project's supported JUnit Jupiter version and assertion, mocking, data-generation,
-   container, HTTP, and stub-server libraries. Do not override the Spring Boot dependency
-   management merely to obtain a newer test API.
-4. Inspect nearby sound tests, shared fixtures, container configuration, database cleanup, fixed
-   clocks, custom annotations, and test factories before creating alternatives.
-5. Trace the changed production path and identify its observable contract, transaction effects,
-   security controls, and external side effects.
-6. Derive test cases from requirements and reachable branches. Do not create cases that cannot
-   occur through the tested public boundary or supported system state.
+1. Read `docs/project-profile.md` for the database engine and version, authentication profile, migration tool, cleanup strategy, and test-selection configuration. Fill a missing decision the tests depend on through the process `spring-boot-patterns` owns before writing tests; never substitute H2 for an undecided database, and never invent an authentication mechanism.
+2. Inspect the Maven or Gradle configuration: supported Java and Spring Boot versions, test source sets, plugins, naming suffixes, profiles, CI commands.
+3. Reuse the project's supported JUnit Jupiter version and its assertion, mocking, data-generation, container, HTTP, and stub-server libraries; do not override Spring Boot dependency management to obtain a newer test API.
+4. Inspect nearby sound tests, shared fixtures, container configuration, database cleanup, fixed clocks, custom annotations, and factories before creating alternatives.
+5. Trace the changed production path: observable contract, transaction effects, security controls, external side effects.
+6. Derive cases from requirements and reachable branches; do not create cases that cannot occur through the tested public boundary or supported system state.
 
 ## Keep tests synchronized with every change
 
 For every production-code change:
 
-1. Inspect aggregate-service unit, application-service unit, controller MVC slice, and full application integration coverage for the affected behavior.
+1. Inspect aggregate-service unit, application-service unit, controller MVC slice, and full application integration coverage of the affected behavior, and create every required level that is missing.
 2. Update every assertion and fixture affected by the contract change.
 3. Add a test for every new reachable success, failure, boundary, or regression case.
-4. Create any missing required service unit, controller MVC slice, and full application integration coverage.
-5. Run the focused tests, then every relevant unit, MVC slice, and integration suite.
 
 For a formatting, import-only, comment-only, or equivalent non-behavioral change, do not invent a
-meaningless assertion or mechanically rewrite tests. Confirm that behavior is unchanged and run the
+meaningless assertion or mechanically rewrite tests: confirm behavior is unchanged and run the
 affected suites. Never weaken, disable, delete, or ignore a failing test to complete a change.
 
 ## Select realistic scenarios
 
-Start from the happy path. Place successful test methods before negative and exception cases in the
-source file so the intended behavior is discovered first. This is source organization only: every
-test must remain independent, and runtime ordering must not be required.
+Start from the happy path, and place successful test methods before negative and exception cases in
+the source file so the intended behavior is discovered first. That is source organization only:
+runtime ordering must never be required.
 
 After the happy path, cover only applicable cases such as:
 
@@ -117,150 +89,100 @@ After the happy path, cover only applicable cases such as:
 - missing resources, duplicate data, invalid state, or authorization failure;
 - database constraints, locking, rollback, or transaction behavior;
 - dependency timeout or failure when the application defines handling for it;
-- scheduled execution, disabled scheduling, overlap, or restart behavior when the job contract makes
-  that scenario reachable;
-- a confirmed production defect through a failing-before, passing-after regression test.
+- scheduled execution, disabled scheduling, overlap, or restart behavior when the job contract makes that scenario reachable;
+- a confirmed production defect, through a failing-before, passing-after regression test.
 
-Do not test impossible combinations, arbitrary random failures, private implementation branches,
-or defensive behavior excluded by the public contract. Use parameterized tests when several inputs
+Do not test impossible combinations, arbitrary random failures, private implementation branches, or
+defensive behavior excluded by the public contract. Use parameterized tests when several inputs
 exercise the same rule and need the same assertion.
 
 ## Write focused unit tests
 
 Use the project's supported JUnit Jupiter version, JUnit 5 or newer. A unit test must:
 
-- instantiate the subject directly without loading a Spring `ApplicationContext`;
-- omit `@SpringBootTest`, Spring test slices, `SpringExtension`, and Spring-managed mocks unless the
-  Spring mechanism itself is the subject of the test;
-- mock or fake only dependencies outside the unit, not the subject or simple value objects;
+- instantiate the subject directly, with no Spring `ApplicationContext` and no `@SpringBootTest`, test slice, `SpringExtension`, or Spring-managed mock, unless the Spring mechanism is itself the subject;
+- mock or fake only dependencies outside the unit, never the subject or simple value objects;
 - verify domain decisions, returned state, declared exceptions, and meaningful collaborator effects;
 - assert the absence of a write, event, or external call when that absence is part of the behavior;
-- avoid testing getters, setters, records, framework behavior, generated mapper code without custom
-  logic, or private methods directly.
+- not test getters, setters, records, framework behavior, generated mapper code without custom logic, or private methods directly.
 
-Both service levels `spring-boot-patterns` defines require direct unit tests, and they prove
-different things:
+Both service levels `spring-boot-patterns` defines need direct unit tests, and they prove different
+things:
 
-- An **aggregate service** test proves the aggregate's invariants: rejected state transitions, derived values recomputed after a change, and the writes that must and must not reach its repositories. Mock its repositories and its domain mapper.
-- An **application service** test proves coordination: the order of calls across aggregate services, what is passed between them, and that a failure from one prevents the effects of the other. Mock every aggregate service; do not reach for a repository here, because the unit under test does not have one.
+- an **aggregate service** test proves the aggregate's invariants — rejected state transitions, derived values recomputed after a change, and the writes that must and must not reach its repositories; mock its repositories and its domain mapper;
+- an **application service** test proves coordination — call order across aggregate services, what is passed between them, and that a failure from one prevents the effects of the other; mock every aggregate service, and do not reach for a repository, because the unit under test has none.
 
 Proving only that a collaborator was invoked is insufficient at either level, and integration
-coverage does not replace either. A rule tested at both levels is a signal that it sits at the wrong
-one.
+coverage replaces neither. A rule tested at both levels sits at the wrong one.
 
-### What is deliberately not unit tested
+Coverage is of behavior, not of files: everything with a decision in it needs a unit test, so do not
+skip a service, domain rule, validator, policy, or job because an integration test happens to
+exercise it. The types that deliberately have none, where each is proven instead, and the mapper and
+utility exceptions are in
+[types that are deliberately not unit tested](references/unit-test-examples.md#types-that-are-deliberately-not-unit-tested).
 
-The rule is coverage of behavior, not coverage of files. These types have no direct unit test, and
-their absence is correct rather than a gap:
-
-| Type | Where it is proven instead |
-| --- | --- |
-| REST controllers | `@WebMvcTest` slice plus full application integration |
-| MapStruct mappers with no hand-written logic | Through the service unit tests and integration tests that use them; a generated mapping is verified by the compiler and `ReportingPolicy.ERROR` |
-| Request and response TOs, domain records, entities | Through the boundaries that serialize, validate, and persist them |
-| Getters, setters, `equals`, `hashCode`, `toString` | Entity equality is proven where it matters, in a persistence test that puts instances in a collection across states |
-| Spring configuration classes, `@ConfigurationProperties`, `SecurityConfig` | Full application integration, including startup failure on invalid configuration |
-| An application service that coordinates nothing, or a handler that forwards a single call | Nothing at this level. `spring-boot-patterns` rejects the pass-through itself; test the aggregate service and the endpoint |
-| Framework behavior itself | Not tested at all |
-
-A mapper method with hand-written logic — `default` method, custom expression, qualifier, or
-decorator — is behavior and gets a unit test, as does any static utility with a real decision.
-Everything with a decision in it needs one: do not skip a service, domain rule, validator, policy,
-or job because an integration test happens to exercise it. Test a security policy as a unit only
-when the policy is the subject; runtime authentication and authorization are proven in integration
-tests. Use Mockito's JUnit Jupiter extension when it is the established project library. Do not use
-lenient stubbing or broad `any()` matching to hide an inaccurate fixture.
-
-Framework-assigned fixture fields — `@Mock`, `@Spy`, `@Captor`, `@InjectMocks`, `@MockitoBean`,
-`@MockitoSpyBean`, and a subject rebuilt in `@BeforeEach` — are `private` and non-`final`;
-`modern-java-21` names this an explicit exception to its `final`-field and field-injection rules.
-Every other test collaborator, including `MockMvc`, `ObjectMapper`, repositories, and project-owned
-test clients, stays `final` and constructor-injected.
+Use Mockito's JUnit Jupiter extension when it is the established project library; never use lenient
+stubbing or broad `any()` matching to hide an inaccurate fixture. Framework-assigned fixture fields —
+`@Mock`, `@Spy`, `@Captor`, `@InjectMocks`, `@MockitoBean`, `@MockitoSpyBean`, and a subject rebuilt
+in `@BeforeEach` — are `private` and non-`final`, the explicit exception `modern-java-21` names to
+its `final`-field and field-injection rules; every other test collaborator, `MockMvc`,
+`ObjectMapper`, repositories, and project-owned test clients included, stays `final` and
+constructor-injected.
 
 ## Test every REST controller with an MVC slice
 
-A Spring slice test is neither a pure unit test nor a substitute for full integration coverage.
-Every REST controller requires focused `@WebMvcTest` coverage with its collaborators mocked through
-the mechanism supported by the project version. Mock the services the controller actually injects:
-under the layering `spring-boot-patterns` defines, a controller may hold both an application service
-and an aggregate service, and each handler calls one of them. Prove every handler's
-routing and delegation plus applicable validation, request and response serialization, status,
-headers, and public error contract.
+A slice test is neither a pure unit test nor a substitute for full integration coverage. Every REST
+controller requires focused `@WebMvcTest` coverage with its collaborators mocked through the
+mechanism the project version supports. Mock the services the controller actually injects: under the
+layering `spring-boot-patterns` defines, a controller may hold both an application service and an
+aggregate service, and each handler calls one of them. Prove every handler's routing and delegation
+plus applicable validation, request and response serialization, status, headers, and public error
+contract.
 
-Focused MVC slice tests do not exercise or verify the Spring Security filter chain. Use
-`@AutoConfigureMockMvc(addFilters = false)` for this project and do not use mock users, mock tokens,
-authorities, or CSRF request post-processors in the slice. This setting excludes all servlet filters
-from `MockMvc`, so the slice proves the controller and MVC contract only. Verify security and any
-other filter-owned contract in focused filter tests when useful and in full application integration
-tests. Keep validation, error-handler, serialization, and delegation coverage in the MVC slice.
-
-Do not use an MVC slice as evidence for transaction, database, or other full-application behavior
-excluded from that slice. Conversely, do not omit required MVC slice coverage because a full HTTP
-integration test exercises the same route. The overlap is intentional: each level proves a different
-boundary.
+Run the slice with `@AutoConfigureMockMvc(addFilters = false)`, and do not omit required MVC slice
+coverage because a full HTTP integration test exercises the same route: the overlap is intentional,
+and each level proves a different boundary.
+[Controller slice test examples](references/controller-slice-test-examples.md) carries the rest
+whole: what that setting excludes and what therefore never belongs in a slice, which contracts move
+to focused filter tests and full integration tests, and what a slice may not be used as evidence
+for.
 
 ## Write focused persistence slice tests
 
 Use `@DataJpaTest` only when a custom query, mapping, converter, projection, constraint, ordering,
 pagination, locking, flush behavior, entity equality across persistence states, or database-specific
-persistence rule needs direct proof. Use the actual supported database and migration configuration;
-replacement would change the semantics. Do not create a persistence slice for inherited
-`JpaRepository` CRUD behavior merely because a repository exists — a full application integration
-test already provides sufficient evidence for a simple path.
+persistence rule needs direct proof, and run it against the actual supported database and migration
+configuration, because replacement would change the semantics. Do not create a persistence slice for
+inherited `JpaRepository` CRUD behavior merely because a repository exists — a full application
+integration test is already sufficient evidence for a simple path.
 
 ## Write application integration tests
 
 Use `@SpringBootTest` only when the scenario needs real Spring wiring. For a REST feature, send a
 request through the controller and exercise the real service, mapper, repository, transaction,
-serialization, error handling, and security filter chain.
-
-Choose the web mode deliberately:
-
-- combine the full context with `MockMvc` or the project's supported mock-server client when an
-  in-process servlet boundary is sufficient;
-- use a random-port client only when a real embedded server is required;
-- do not use a defined port or call a separately deployed environment; that is end-to-end scope.
+serialization, error handling, and security filter chain. Choose the web mode deliberately:
+[integration test examples](references/integration-test-examples.md#choosing-the-web-mode) carries
+that decision, the client to prefer for a new test, and what falls outside this skill's scope.
 
 Integration tests must:
 
-- when the scenario touches SQL persistence, run schema migrations and use the same relational
-  database engine and relevant major version as production through Testcontainers or the project's
-  equivalent isolated environment;
-- avoid H2-only evidence for persistence behavior when production uses another database;
-- keep the real entry point, service, relevant adapters, transaction configuration, serialization,
-  and security controls involved in the tested path;
-- for successful and authorization-policy scenarios, obtain a valid credential through the issuance
-  profile recorded for the service, as described under "Obtain a valid token per issuance profile";
-- for bearer-protected APIs, send the valid access token in the `Authorization: Bearer` header;
-- for token-validation failures that approved issuance cannot produce, use a controlled invalid
-  token or isolated provider configuration that traverses the real filter chain and configured
-  decoder; do not replace that path with a mock token, security request post-processor, mocked
-  decoder, or forged authentication;
-- replace only true external systems with controlled stubs, fakes, emulators, or containers;
+- keep the real entry point, service, relevant adapters, transaction configuration, serialization, and security controls of the tested path, replacing only true external systems with controlled stubs, fakes, emulators, or containers;
+- obtain a valid credential through the issuance profile recorded for the service for successful and authorization-policy scenarios, and send it in the `Authorization: Bearer` header on bearer-protected APIs, under "Prove security controls";
 - verify the response or other public result and the committed database state after success;
-- verify the public error contract and prove that invalid or rejected data was not persisted after
-  every negative write scenario;
-- verify absence of messages, cache entries, files, or external calls when failure must prevent them, including effects deferred to `AFTER_COMMIT`, which must not fire when the use case rolls back;
-- where the project records an outbox, verify that the outbox row is committed by the same transaction as the business change and that a rolled-back use case leaves none;
-- run against a schema built by the project's migration tool, never one generated by Hibernate or created by a test-only script; `sql-database-migration` owns the clean-install and idempotency checks that sit beside these suites;
-- avoid test-managed `@Transactional` on HTTP write tests when rollback would hide commit behavior;
-- use the project's explicit database reset or cleanup strategy so tests remain isolated.
+- verify the public error contract after every negative write scenario, and prove that invalid or rejected data was not persisted;
+- verify the deferred effects, outbox behavior, and concurrency scope stated in [integration test examples](references/integration-test-examples.md#deferred-effects-outbox-and-concurrency-scope);
+- never access production or shared staging, and never mock the business path the test exists to prove.
 
 When the project publishes an OpenAPI document, the contract drift test is a required integration
 test under every rule in this section, credentials included: the document endpoint sits behind the
 same filter chain. `rest-api-contract` owns what it asserts.
 
-Record one project-wide cleanup strategy in `docs/project-profile.md`. Prefer truncating all tables
-after each test method through one project-owned JUnit extension or shared `@AfterEach`, reading
-table names from JDBC metadata or the migration schema, restoring referential integrity, and
-resetting sequences; it is deterministic and order-independent. Use a per-class container only when
-a suite genuinely needs an isolated database.
-
-- Do not delete only the rows a test believes it created, and do not use one test's inserts as another's fixture.
-- Seed shared reference data through migrations or a documented seeding step that runs after cleanup.
-- Cover wiring, transactions, persistence, migrations, concurrency, and committed state only where the feature can exercise them; do not invent concurrency cases for a path with no concurrency contract.
-- Overlap with unit or slice tests is fine when the integration test proves a different boundary, but never replaces either level.
-- Do not access production or shared staging, and do not mock the business path the test exists to prove.
+Record one project-wide cleanup strategy in `docs/project-profile.md` and follow it so tests stay
+isolated. [Integration test examples](references/integration-test-examples.md#container-and-database-rules)
+carries the container and database rules whole: the production engine and version through
+Testcontainers, the schema built by the project's migration tool, the default truncation procedure
+and why it is deterministic and order-independent, what may never serve as another test's fixture,
+how shared reference data is seeded, and the only case for a per-class container.
 
 ## Test scheduled jobs at both levels
 
@@ -269,43 +191,33 @@ Every scheduled job must have:
 - a unit test that invokes the job directly, without Spring, and proves its delegation, orchestration, and applicable failure behavior;
 - a scheduler-specific integration test that loads the required Spring context, enables the real trigger with test-only timing, and proves an observable application effect.
 
-[Scheduler test examples](references/scheduler-test-examples.md) carries the execution rules for
-both levels.
+[Scheduler test examples](references/scheduler-test-examples.md) carries the execution rules for both
+levels.
 
 ## Generate and control test data
 
-Use the project's established test-data solution. Do not add a second generator without a clear
-need; when none exists, create a focused factory in test sources rather than scattering object
-construction across test classes.
-
-- Factories provide valid defaults and scenario overrides: build the complete object, then vary only the field the case is about.
-- Keep generation reproducible: deterministic seeds, fixed `Clock` values, unique generated natural keys for database tests.
-- Leave generated identifiers and version fields unset when a persistence fixture represents a new entity.
-- Do not hardcode complete object graphs, credentials, personal data, secrets, or repeated arbitrary business values in test methods.
-- Explicit values stay when they are the subject of the assertion: boundary numbers, enum states, route constants, error codes, HTTP statuses, malformed inputs.
+Use the project's established test-data solution; do not add a second generator without a clear need,
+and when none exists create a focused factory in test sources rather than scattering object
+construction across test classes. [Test data rules](references/unit-test-examples.md#test-data-rules)
+carries the rest whole: factory defaults and overrides, reproducibility, unset identifiers, what must
+never be hardcoded in a test method, and which explicit values belong in the test.
 
 ## Assert observable behavior
 
-- Keep each test focused on one behavior and include all assertions needed to prove that behavior.
-- Assert values, state transitions, stable error types/codes, persistence, and externally visible
-  side effects rather than implementation details.
+- Keep each test focused on one behavior, with every assertion needed to prove it.
+- Assert values, state transitions, stable error types and codes, persistence, and externally visible side effects rather than implementation details.
 - Assert an exception's stable contract; do not couple tests to an incidental raw message.
-- Verify collaborator calls only when the interaction is part of the contract, such as no repository
-  write after validation failure or one event after a committed transition.
+- Verify collaborator calls only when the interaction is part of the contract, such as no repository write after validation failure or one event after a committed transition.
 - Prefer exact assertions over broad non-null, non-empty, or invocation-only checks.
 - Do not duplicate the production algorithm inside the expected-value calculation.
 
 ## Preserve determinism and isolation
 
-- Make tests independent of execution order and shared mutable state.
-- Do not use `@TestMethodOrder` to make one test prepare another.
+- Make tests independent of execution order and shared mutable state, and never use `@TestMethodOrder` to make one test prepare another.
 - Use fixed time, controlled randomness, and explicit locale and time zone when relevant.
-- Do not use `Thread.sleep`; use bounded polling such as the project's Awaitility setup for genuine
-  asynchronous behavior.
-- Keep parallel execution disabled for infrastructure that is not proven parallel-safe; otherwise,
-  isolate database rows, ports, destinations, and mutable resources per test.
-- Avoid `@DirtiesContext` as routine cleanup because it defeats context caching. Correct the leaking
-  state or use a focused reset mechanism.
+- Do not use `Thread.sleep`; use bounded polling such as the project's Awaitility setup for genuine asynchronous behavior.
+- Keep parallel execution disabled for infrastructure not proven parallel-safe; otherwise isolate database rows, ports, destinations, and mutable resources per test.
+- Avoid `@DirtiesContext` as routine cleanup because it defeats context caching; correct the leaking state or use a focused reset mechanism.
 
 ## Prove security controls
 
@@ -315,49 +227,34 @@ a focused policy component may have unit tests for its decisions, but those do n
 Exercise the real filter chain, the service and database scope for object or tenant authorization,
 the serializer for data exposure, and the provider adapter for outbound restrictions.
 
-With a stateless bearer chain where clients send the `Authorization` header and no ambient browser
-credential exists, keep CSRF disabled consistently and add no CSRF tokens. For cookie, session, or
-mixed credential models, test the applicable CSRF behavior instead.
-
-Use synthetic identities and isolated test credentials only. Never use production tokens, customer
-data, live identity providers, or production endpoints.
-
-### Obtain a valid token per issuance profile
-
-`application-security` records the issuance profile in `docs/project-profile.md`. It determines only
-how the test gets a token; everything after that is identical, because the filter chain is the same
-in both profiles. [Integration test examples](references/integration-test-examples.md) carries the
-procedure for Profile A, Profile B, and the temporary case where neither exists yet.
+The issuance profile `application-security` records in `docs/project-profile.md` determines only how
+a test obtains a token; everything after that is identical, because the filter chain is the same in
+both profiles. [Integration test examples](references/integration-test-examples.md#obtaining-a-valid-token-per-issuance-profile)
+carries the procedure for Profile A, Profile B, and the temporary case where neither exists yet.
 
 Never substitute `@WithMockUser`, a security request post-processor, a mocked `JwtDecoder`, or a
 forged `Authentication`; those bypass the chain the test exists to prove. Controlled invalid-token
 fixtures are allowed only for validation failures that valid issuance cannot produce, and must
 exercise the real configured decoder.
 
-## Configure test selection to match the naming convention
-
-`*IntegrationTest` requires explicit lifecycle configuration in either build tool, and the two fail in
-opposite ways. Maven Surefire's default `**/*Test.java` pattern also matches the suffix, so without an
-exclusion those tests run in the `test` phase and then again in Failsafe: the suite executes twice,
-the first time in the wrong phase and without the container lifecycle around it. Gradle has no
-default integration task at all, so an unregistered suite simply never runs, which looks identical to
-a green build. Three requirements, whichever tool the project uses:
-
-- unit and slice tests run in the fast phase, integration tests in a separate later phase or task;
-- the verification lifecycle fails when an integration test fails, so a separate phase is not one nobody runs;
-- `docs/project-profile.md` records the resulting commands, so "run the relevant suites" is unambiguous.
-
-`build-and-dependencies` carries the worked Maven and Gradle configuration. Verify it before relying
-on a green build, and fix it as part of the change when it is missing.
+Which CSRF behavior a test must exercise follows from the credential model, and
+[integration test examples](references/integration-test-examples.md#invalid-token-fixtures) carries
+that rule for the stateless bearer chain and for cookie, session, or mixed models. Use synthetic
+identities and isolated test credentials only: never production tokens, customer data, live identity
+providers, or production endpoints.
 
 ## Execute and report verification
 
-Run the narrowest changed test first for quick feedback. Then run all relevant unit, MVC slice,
-persistence slice, and full integration tests using the repository's Maven or Gradle lifecycle,
-including the integration-test source set or plugin phase. Run the formatter, compiler, and static
-analysis required by the project.
+Run the narrowest changed test first for quick feedback, then every relevant unit, MVC slice,
+persistence slice, and full integration test through the repository's Maven or Gradle lifecycle,
+including the integration-test source set or plugin phase, plus the formatter, compiler, and static
+analysis the project requires. A suffix such as `*IntegrationTest` runs only when the build is
+configured for it, and a suite nobody runs looks exactly like a green build:
+[integration test examples](references/integration-test-examples.md#test-selection-and-suite-execution)
+carries the selection rules, both build tools' failure modes, and the commands the profile must
+record.
 
-Fix the production code or the test when a failure reveals a defect. Treat flaky tests as defects;
+Fix the production code or the test when a failure reveals a defect. Treat flaky tests as defects:
 identify and remove their nondeterminism instead of rerunning until green. Do not claim that tests
 pass unless the commands completed successfully. If infrastructure prevents execution, report the
 exact unrun suites and blocker; the change remains incomplete.
@@ -370,21 +267,21 @@ controlled dependencies is an integration test, not an end-to-end test.
 
 ## Completion checklist
 
-- [ ] Tests cover the happy path first, then every applicable reachable negative case.
-- [ ] Every affected aggregate service has direct focused unit coverage without Spring, proving its own invariants and the writes that must and must not reach its repositories.
-- [ ] Every affected application service has direct focused unit coverage without Spring, proving call order across aggregate services and the effects a failure must prevent.
-- [ ] Every affected REST controller has security-disabled `@WebMvcTest` coverage for its complete public MVC contract.
-- [ ] Full application integration tests prove applicable affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
-- [ ] Successful protected integration requests obtain and send a valid credential through the service's approved isolated authentication flow.
-- [ ] Overlap across levels proves different boundaries; no level was omitted because another exists.
-- [ ] Every changed scheduler has direct unit coverage and a real-trigger integration test.
-- [ ] Negative write scenarios prove that prohibited data was not persisted.
-- [ ] Test data uses the established generator or focused factory and is deterministic.
-- [ ] Tests are independent, secure, and free from arbitrary sleeps and live dependencies.
-- [ ] Every touched Java test follows `modern-java-21`, including the project import order.
-- [ ] Every relevant unit, MVC slice, persistence slice, and full integration suite passes.
-- [ ] Test selection is configured so integration tests actually run, in the correct phase.
-- [ ] Database cleanup follows the project strategy and no test depends on another test's data.
+- [ ] Happy path first, then every applicable reachable negative case.
+- [ ] Every affected aggregate service: direct Spring-free unit coverage of its own invariants and of the writes that must and must not reach its repositories.
+- [ ] Every affected application service: direct Spring-free unit coverage of call order across aggregate services and of the effects a failure must prevent.
+- [ ] Every affected controller: security-disabled `@WebMvcTest` coverage of its complete public MVC contract.
+- [ ] Integration tests prove the affected real wiring, transactions, persistence, migrations, concurrency, and committed state.
+- [ ] Protected integration requests carry a valid credential from the approved isolated authentication flow.
+- [ ] Overlap across levels proves different boundaries; no level omitted because another exists.
+- [ ] Every changed scheduler: direct unit coverage plus a real-trigger integration test.
+- [ ] Negative write scenarios prove prohibited data was not persisted.
+- [ ] Test data comes from the established generator or a focused factory and is deterministic.
+- [ ] Tests are independent and secure: no arbitrary sleeps, no live dependencies.
+- [ ] Every touched Java test follows `modern-java-21`, import order included.
+- [ ] Every relevant unit, MVC slice, persistence slice, and integration suite passes.
+- [ ] Test selection runs integration tests in the correct phase.
+- [ ] Cleanup follows the project strategy; no test depends on another test's data.
 
 ## Primary guidance
 

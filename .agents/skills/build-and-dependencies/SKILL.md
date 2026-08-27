@@ -75,16 +75,15 @@ restates these rules.
 
 ## Both Spring Boot generations are supported
 
-The skill set is written for Spring Boot 3.x and 4.x. The profile records which one the project uses,
-and that is the single answer for every skill.
+The set is written for Spring Boot 3.x and 4.x, and the profile records which one applies. Where a
+rule genuinely differs, the skill that owns the topic states both cases; nothing here assumes a
+generation silently.
 
-- Where a rule genuinely differs between generations, the skill that owns the topic states both cases and names which applies where. Nothing in this set assumes a generation silently.
-- **The generation is not the whole answer.** Spring Boot 4's minor lines carry major versions of Spring Security, Spring Data, and the rest of the portfolio, so a coordinate or a property that holds on one 4.x line can differ on the next. Record the minor line in the profile alongside the generation, and read portfolio versions from the effective dependency tree. [Generation differences](references/generation-differences.md) carries the per-line notes that touch a rule in this set.
-- Spring Boot 4 builds on Spring Framework 7, Jakarta EE 11, and a Servlet 6.1 baseline, and carries major versions of Spring Security, Spring Data, and Jackson. Inspect the effective versions from the build rather than assuming them, and treat a generation change as its own task with its own verification.
-- **This skill owns the catalogue of what each thing is called in each generation.** Read [generation differences](references/generation-differences.md) for starter and module coordinates, relocated annotations, and renamed properties. Other skills state the behavior they own and link there for the coordinate; none of them repeats the table.
-- **That catalogue is a written-down value, so it obeys the same rule as a version number.** Verify a row against the project's effective dependency tree and the upstream migration guide before relying on it for the first time in a project, and again before any generation upgrade. Never treat a row as current because a coordinate resolves — a renamed artifact can keep publishing under its old name for a whole release line.
-- The single most expensive Spring Boot 4 trap belongs here: because auto-configuration is modularized, a third-party library without its Spring Boot module is inert. The application starts, the build stays green, the tests pass, and the feature never runs. Verify wiring by observing the behavior, never by observing that the dependency resolves.
-- A snippet in these references is written against the generation it names. When it names none, it holds for both; verify it against the project's effective versions before relying on it.
+- **This skill owns the catalogue of what each thing is called in each generation.** [Generation differences](references/generation-differences.md) carries starter and module coordinates, relocated annotations, renamed properties, and the per-minor-line notes. Other skills state the behavior they own and link there; none repeats the table.
+- **The generation is not the whole answer.** Spring Boot 4's minor lines carry major versions of Spring Security, Spring Data, and the rest of the portfolio, so a coordinate that holds on one 4.x line can differ on the next. Record the minor line in the profile, and read portfolio versions from the effective dependency tree.
+- **The catalogue is a written-down value, so it obeys the same rule as a version number.** Verify a row against the effective dependency tree and the upstream migration guide before relying on it for the first time, and again before any generation upgrade. Never treat a row as current because a coordinate resolves — a renamed artifact can keep publishing under its old name for a whole release line.
+- **The most expensive Spring Boot 4 trap:** because auto-configuration is modularized, a third-party library without its Spring Boot module is inert. The application starts, the build stays green, the tests pass, and the feature never runs. Verify wiring by observing behavior, never by observing that a dependency resolves.
+- A snippet in these references is written against the generation it names; when it names none, it holds for both. Treat a generation change as its own task with its own verification.
 
 ## Reference routing
 
@@ -136,15 +135,16 @@ The compiler settings are what make `modern-java-21` and the mapper architecture
 
 ### Annotation processors are order-sensitive
 
-This is the single most common way to break this stack.
+This is the single most common way to break this stack, and three of its failures are silent.
 
-- Declare every processor the project needs in one explicit processor path. For this skill set that is the MapStruct processor and the Spring Boot configuration processor.
-- **Lombok is optional.** Nothing here requires it, and the decision belongs in `docs/project-profile.md`. Do not introduce it because an example shows it, and do not remove it from a project that already uses it coherently. If the profile is silent and the repository has no Lombok dependency, apply the template's fallback — no Lombok — and record it.
-- When the project does use Lombok alongside MapStruct, the processor order is **Lombok, then `lombok-mapstruct-binding`, then the MapStruct processor**. Without the binding, MapStruct runs before Lombok generates accessors, and it either fails or silently produces mappers that ignore fields.
-- Omit a version for any processor the Spring Boot BOM manages, and pin only the artifacts it does not, such as the MapStruct processor. Confirm the build tool actually resolves managed versions on the processor path before relying on it; the reference for each tool states the condition.
-- On Maven, declaring `annotationProcessorPaths` disables classpath processor discovery entirely, so every processor must appear in that list. A processor declared only as a dependency stops running.
-- Configure the MapStruct unmapped-target policy at the build level so it cannot be forgotten on an individual mapper.
-- After any change to a processor, its version, or an entity or mapper it reads, rebuild and **inspect the generated sources**. Do not assume generation succeeded because compilation did.
+- **Declare every processor in one explicit processor path.** On Maven, declaring `annotationProcessorPaths` disables classpath discovery entirely, so a processor listed only as a dependency stops running and generates nothing.
+- **Lombok is optional.** Nothing here requires it, and the decision belongs in `docs/project-profile.md`. Never introduce it because an example shows it, and never remove it from a project that uses it coherently. Where the profile is silent and the repository has no Lombok dependency, apply the template's fallback — no Lombok — and record it.
+- **With Lombok and MapStruct together the order is Lombok, then `lombok-mapstruct-binding`, then the MapStruct processor.** Without the binding, MapStruct runs before Lombok generates accessors and either fails or quietly produces mappers that ignore fields.
+- **After any change to a processor, its version, or an entity or mapper it reads, rebuild and inspect the generated sources.** A green compile does not prove the generator produced what you expected.
+
+The per-tool references carry the processor-path declarations, which artifacts the BOM manages, and
+the MapStruct policy flag: [Maven](references/maven-configuration.md) or
+[Gradle](references/gradle-configuration.md).
 
 ## Test execution configuration
 
@@ -201,17 +201,16 @@ generation. Route every finding to the skill that owns the topic rather than fix
 
 ## Auditing a project for dependencies that do not belong
 
-Run this workflow when the user asks which dependencies are unnecessary, or asks to clean up the
-build. Read [dependency audit and removal](references/dependency-audit.md) for the full procedure,
-the tool commands per build tool, and the false-positive list.
+Run this only when the user asks which dependencies are unnecessary or asks to clean up the build —
+removing a dependency is a behavioral change, never a side effect of another task. The procedure, the
+per-tool commands, and the false-positive list are in
+[dependency audit and removal](references/dependency-audit.md).
 
-The short form:
-
-1. Produce the full dependency picture, including transitive paths and scopes.
-2. Classify every **declared** dependency into: used directly, used only at runtime, used only in tests, duplicated capability, obsolete, or no evidence of use.
-3. Verify each candidate against the false-positive list before proposing removal. Drivers, migration tools, logging backends, annotation processors, and auto-configuration-only starters are used without ever being imported, and every static analyzer reports them as unused.
-4. Report the candidates with evidence and let the user decide. Never remove dependencies unasked.
-5. Remove approved candidates one at a time, running the full verification after each, so a failure identifies the responsible dependency.
+Two rules hold wherever the audit runs: **verify every candidate against the false-positive list
+first** — drivers, migration tools, logging backends, annotation processors, and
+auto-configuration-only starters are used without ever being imported, and every static analyzer
+calls them unused — and **report candidates with evidence and let the user decide**, then remove one
+at a time so a failure identifies the responsible dependency.
 
 ## Anti-patterns
 

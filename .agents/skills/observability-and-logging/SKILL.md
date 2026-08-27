@@ -11,18 +11,11 @@ logs, the metrics, and the trace. Instrument for that moment, not for the demo.
 ## Backend neutrality
 
 This skill instruments the application, not the platform. The application emits structured JSON logs
-on standard output, Micrometer meters, and W3C trace context. Every common stack consumes that
-contract, so the choice between ELK, Grafana with Loki and Prometheus, an OpenTelemetry collector,
-or a managed platform does not change application code.
+on standard output, Micrometer meters, and W3C trace context; every common stack consumes that
+contract, so the choice of backend changes no application code. Exactly two declarations touch it,
+both single lines in the project profile: the log JSON format, and the metrics and trace export.
 
-Only two declarations touch the backend, and both are single lines recorded in the project profile:
-
-| Decision | What changes |
-| --- | --- |
-| Log JSON format | One property selecting ECS, Logstash, or GELF. No code changes. |
-| Metrics and trace export | A dependency and a property: registry artifacts on Spring Boot 3, the OpenTelemetry starter on Spring Boot 4. No code changes either way. |
-
-Do not couple application code to a backend. No vendor SDK in a service, no appender that ships logs
+**Never couple application code to a backend.** No vendor SDK in a service, no appender shipping logs
 over the network from inside the application, no log format assembled by hand for one collector.
 Write to standard output and let the platform collect it.
 
@@ -89,14 +82,16 @@ personal data, full request or response bodies, or full SQL with parameters.
 
 ## Instrument the change, not the application
 
-Instrumentation is required by what a change introduces, not by the fact that a change happened.
+Instrumentation is required by what a change introduces, not by the fact that a change happened. A
+change that introduces none of the elements in the table below — exposing an actuator endpoint,
+adding a health indicator, changing configuration, renaming, refactoring without new behavior — needs
+none.
 
-- A change that introduces none of the elements in the table below needs no new instrumentation. Exposing or configuring an actuator endpoint, adding a health indicator, changing configuration, adjusting a build file, renaming, or refactoring without new behavior introduces no service operation, no outbound call, no job, and no fallback path.
-- Correlation context, MDC handling, the log encoder, and the metrics registry are application-wide infrastructure installed once. Install them when the application first needs them or when the task asks for them, not as a side effect of an unrelated change. A task that asks for one actuator endpoint is not a request for a correlation filter.
-- When a requested change would be hard to operate without instrumentation the task did not ask for, name the gap and let the requester decide. Do not decide by adding it, and do not decide by staying silent.
+- **Application-wide infrastructure is installed once**: correlation context, MDC handling, the log encoder, the metrics registry. Install it when the application first needs it or when the task asks, never as a side effect. A task that asks for one actuator endpoint is not a request for a correlation filter.
+- **When a change would be hard to operate without instrumentation the task did not ask for, name the gap and let the requester decide.** Do not decide by adding it, and do not decide by staying silent.
 
-This is proportionality, not deferral. A change that does introduce one of these elements is
-instrumented in that same change; the anti-pattern list rejects instrumentation left for later.
+This is proportionality, not deferral: a change that *does* introduce one of these elements is
+instrumented in that same change.
 
 ## Instrument what a feature needs to be operable
 
