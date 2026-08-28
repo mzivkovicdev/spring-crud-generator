@@ -58,6 +58,7 @@ while an empty `ASK` row is a visible question.
 - **Caching has no owner skill yet.** No skill in this set decides whether the project uses a cache or which technology it uses; a caching skill will own that. Record the answer here when it is made, and leave both rows `UNDECIDED` until then. Do not introduce a cache to fill the row.
   - `application-security` owns what may be cached and under what conditions: classification of cached values, TTL, tenant scope, serialization, and eviction of sensitive data. It does not own the decision itself.
   - `project-naming-conventions` owns cache and cache-key names.
+- **Nullability enforcement** decides how hard the JSpecify contract that `modern-java-21` requires is checked, not whether the annotations are written — they always are, on both generations. The fallback, IDE and review, is a legitimate long-term answer; NullAway adds Error Prone to every compilation and is a change of its own. `build-and-dependencies` owns both the choice and the resolved JSpecify version.
 - **Management authority** depends on whether a custom authority converter is installed; record the literal value the configuration uses, not the scope name.
 - **Quality gate commands** exist so that the first response to a failed gate is to run the fixer rather than to disable the gate.
 - **Interactive UI exposed** follows the same split as the actuator row above: the skill that owns the artifact records whether it is exposed, and `application-security` owns how it is protected wherever it is. Recording `never` is a valid and common answer.

@@ -11,9 +11,11 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 1. [What is gated and what is not](#what-is-gated-and-what-is-not)
 2. [Layer 1: editor and formatter](#layer-1-editor-and-formatter)
 3. [Layer 2: Checkstyle](#layer-2-checkstyle)
-4. [Layer 3: dependency and runtime guards](#layer-3-dependency-and-runtime-guards)
-5. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
-6. [No baseline, no suppressions](#no-baseline-no-suppressions)
+4. [Modules to verify before relying on them](#modules-to-verify-before-relying-on-them)
+5. [Layer 3: dependency and runtime guards](#layer-3-dependency-and-runtime-guards)
+6. [Nullability checking](#nullability-checking)
+7. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
+8. [No baseline, no suppressions](#no-baseline-no-suppressions)
 
 ## What is gated and what is not
 
@@ -41,6 +43,8 @@ compliance.
 Deliberately **not** gated:
 
 - layer boundaries, entity leakage into the transport layer, field injection, and annotation placement. A per-file static check cannot observe a dependency between classes, so these remain a review responsibility under `spring-boot-patterns` and `spring-boot-code-review`. Check them deliberately rather than assuming a green build covered them;
+- whether a `@Nullable` annotation is *correct*. A checker proves the code agrees with the annotations; only review proves the annotations agree with reality, and an annotation added to silence a warning is exactly the case a green build cannot catch;
+- whether a package carries `@NullMarked` at all, unless the project deliberately turns on the optional check described under [Nullability checking](#nullability-checking). This is the one rule in this file that a project may choose to gate or not, and the reason is stated there;
 - whether a name reveals intent;
 - whether a method between 41 and 60 lines should have been split;
 - whether a failure is logged exactly once;
@@ -48,7 +52,9 @@ Deliberately **not** gated:
 - whether a dependency has a real justification;
 - whether a Javadoc sentence is useful.
 
-Presence of Javadoc is intentionally not gated either. The policy in `modern-java-21` is conditional
+Presence of Javadoc is intentionally not gated either, with one narrow exception noted under
+[Nullability checking](#nullability-checking), where a Javadoc module is borrowed to prove a *file*
+exists rather than to require documentation. The policy in `modern-java-21` is conditional
 — required on service contracts, not on TOs, records, or overrides — and Checkstyle cannot express
 that distinction without producing noise that trains people to ignore it. Javadoc *correctness* is
 gated; Javadoc *presence* is a review question.
@@ -213,6 +219,7 @@ each on the first real run, then adopt or discard it deliberately.
 | `VisibilityModifier` (omitted) | Its behaviour on `record` components and on Mockito fixture fields before adding it | Records declare implicitly private final fields, and older versions reported them. The rule it would enforce is already covered by `modern-java-21` in review. |
 | `HideUtilityClassConstructor` (omitted) | Whether it fires on `@Configuration` classes that declare only static `@Bean` methods | Such a class is not a utility class, but it matches the module's shape. `ApiPaths` and `PaginationConstraints` already declare private constructors by convention. |
 | `MatchXpath` for `var` (omitted) | Whether a query such as `//VARIABLE_DEF/TYPE/IDENT[@text='var']` matches every declaration form the project uses, including enhanced-for and try-with-resources | It reads the syntax tree, so it has none of the regexes' string-literal blind spot and is the better rule if it works. The risk is the opposite one: a query that matches nothing fails **open** and the gate quietly stops enforcing anything. Verify against real violations before replacing the regexes, not after. |
+| `JavadocPackage` (omitted) | Whether the project wants a build failure for a package with no `package-info.java`, and that the fileset excludes test sources | It is the only Checkstyle module that proves the file `modern-java-21` requires for `@NullMarked` exists. It is a Javadoc-presence module, which this file otherwise leaves to review, so adopting it is a deliberate exception rather than an oversight. [Nullability checking](#nullability-checking) states when it is worth it. |
 | `FinalLocalVariable` (enabled) | Its behaviour on enhanced-for variables and try-with-resources on the project's Checkstyle version | `validateEnhancedForLoopVariable` is on, which is what `modern-java-21` wants, but the module's treatment of resource variables and of locals assigned in every branch of a conditional has moved between versions. It is enabled because the rule matters from the first commit; confirm it behaves as expected on the first real run rather than after the first argument about it. |
 
 Adopt a module by moving it into the main configuration and running a full build. Do not adopt one
@@ -310,6 +317,38 @@ backend can carry, not from what the application currently produces.
 Apply it per tag key that could plausibly grow, and pair it with a denied-meter alert so an
 accidental unbounded tag is visible rather than silent. This is a safety net, not permission to
 relax the rule in `observability-and-logging`.
+
+## Nullability checking
+
+`modern-java-21` requires JSpecify annotations on every main-source package. How hard that contract
+is enforced is a project decision recorded in `docs/project-profile.md` as **Nullability
+enforcement**; the fallback is the first row below, and it is a legitimate long-term answer.
+
+| Enforcement | What it costs | What it catches |
+| --- | --- | --- |
+| IDE and review *(fallback)* | nothing; IntelliJ IDEA understands JSpecify out of the box, Eclipse needs configuration | mistakes the author sees while typing, and whatever review notices |
+| NullAway on Error Prone | an Error Prone compiler plugin in the build, and a first pass of real fixes | every violation, on every build, for everyone |
+
+Two configuration points decide whether NullAway is usable rather than merely present:
+
+- Set `NullAway:OnlyNullMarked=true`. Without it the checker reports on unmarked code as well, which on a partially migrated repository produces a backlog nobody reads.
+- Leave `NullAway:JSpecifyMode` off unless the build runs on a JDK 22 or later toolchain, which is what that mode requires. The Java *release* stays whatever the profile records; this is a statement about the JDK the build runs on, not about the bytecode it emits.
+
+Whichever row the project picks, record it, and never introduce Error Prone as a side effect of
+another task — it changes every compilation in the build and belongs in a change of its own.
+
+Neither row proves that a package was *marked*: NullAway with `OnlyNullMarked=true` deliberately
+ignores unmarked code, so a package missing its `package-info.java` is silently exempt from the very
+check meant to cover it. Checkstyle's `JavadocPackage` closes that hole — it fails when a package has
+no `package-info.java` — but enable it only if the project accepts what it implies. It is a
+Javadoc-presence module, and this set otherwise leaves Javadoc presence to review on purpose; here it
+is used for file presence, not for documentation, and it is scoped to main sources to match the
+marking rule `modern-java-21` states. Where the project does not enable it, a missing
+`package-info.java` is a review item, and it belongs on the review checklist rather than being
+assumed.
+
+Nullability of generic types and generic methods is not yet fully checked by NullAway. A clean
+NullAway run is not evidence that a generic signature is annotated correctly.
 
 ## Wiring the gates into the build
 

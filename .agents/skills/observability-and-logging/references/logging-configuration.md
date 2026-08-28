@@ -109,7 +109,7 @@ public final class CorrelationContext {
      *
      * @return the correlation identifier, or {@code null} when no request context is established
      */
-    public static String correlationId() {
+    public static @Nullable String correlationId() {
         return MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
     }
 }

@@ -33,6 +33,7 @@ Read only what the change requires:
 - Read [import order examples](references/import-order-examples.md) when an import block is ambiguous or a tool disagrees with the required order.
 - Read [Javadoc and comments](references/javadoc-and-comments.md) when a touched declaration may need Javadoc, or when deciding deliberately not to write it.
 - Read [language feature examples](references/language-feature-examples.md) for the code behind the type, record, pattern-matching, qualification, and cohesion rules below.
+- Read [nullability rules](references/nullability-rules.md) when adding a package, deciding whether a declaration may be null, annotating an array or a generic type, or migrating an existing package to `@NullMarked`.
 - Read [worked example rules](references/worked-example-rules.md) before reproducing or adapting a snippet from any skill in this set.
 
 The mechanical rules in this skill — import order, no wildcards, no duplicates, `this.`
@@ -105,13 +106,25 @@ prevents mixing values or centralizes a real invariant. Examples include `Custom
 `EmailAddressDomain`, `MoneyDomain`, and `OrderNumberDomain`. Do not wrap every primitive without a
 domain reason.
 
-### Null and Optional
+### Nullability and Optional
 
+Nullability is expressed with **JSpecify** annotations, `org.jspecify.annotations`, on both supported
+Spring Boot generations. The artifact carries no framework dependency, so the convention does not
+change when the project moves between generations; `build-and-dependencies` owns its declaration and
+version.
+
+- Every package of project-owned main source carries `@NullMarked` in its `package-info.java`, so an unannotated type usage is non-null and `@Nullable` marks the exceptions. Test sources are excluded: a test routinely passes null deliberately to prove the rejection.
+- Do not write `@NonNull` inside a marked package, and do not introduce a second nullability vocabulary — not JSR-305, not Lombok's `@NonNull`, and not `org.springframework.lang.@Nullable`. That last one is banned on **both** generations, for two different reasons: on Spring Boot 4 it is deprecated, and on Spring Boot 3 it is a second vocabulary that would have to be renamed in every file the day the project upgrades.
+- Nothing checks these annotations at runtime. Keep `Objects.requireNonNull` in constructors and compact constructors, and keep Bean Validation at the boundary; the annotations bind only the calls a compiler saw, and [nullability rules](references/nullability-rules.md) lists every seam where that stops being true.
+- Remove a defensive null check only where the marking proves it can never fire — never at one of the seams that reference names. A check that can never fire hides the one that can; a check removed at a seam is the one that had to stay.
 - Return empty collections, arrays, streams, or maps rather than `null`.
 - Use `Optional<T>` mainly as a return type for a value that may legitimately be absent.
-- Do not use `Optional` for fields, record components, entity attributes, collection elements, or method parameters.
+- Do not use `Optional` for fields, record components, entity attributes, collection elements, or method parameters. `@Nullable` expresses those and, unlike `Optional`, costs no allocation, survives serialization, and maps in JPA.
 - Do not call `Optional.get()` without proving presence. Prefer `orElseThrow`, `map`, `flatMap`, or an explicit branch.
-- Make nullability explicit through validation and contracts. Do not scatter defensive null checks when null should be impossible.
+
+[Nullability rules](references/nullability-rules.md) carries the rest and is binding: annotation
+placement, array and generic syntax, which layer of protection catches what, the seams the
+annotations cannot describe, and the migration procedure for an existing package.
 
 ## Language features
 
@@ -243,9 +256,10 @@ Before finishing any Java task:
 
 - [ ] Every touched file has clean imports in the project order exactly, and the relevant compile or static check was run.
 - [ ] No `var`, no wildcard or unused import, no field injection, no `Optional` field or parameter, no `null` collection, no mutable global state, no hardcoded secret.
+- [ ] Every new main-source package has a `package-info.java` with `@NullMarked`, every genuinely nullable declaration carries JSpecify `@Nullable`, and no second nullability vocabulary was introduced.
 - [ ] New code uses the project's Java version and no unapproved preview feature.
 - [ ] Methods and classes stay cohesive and within the size rules; no God class and no generic utility dumping ground.
-- [ ] Nullability, exceptions, time, and mutability are explicit, and no exception is swallowed broadly.
+- [ ] Nullability, exceptions, time, and mutability are explicit; runtime null checks at deserialization, reflection, and mapper boundaries are still in place; and no exception is swallowed broadly.
 - [ ] Required Javadoc documents contracts and non-obvious behavior.
 - [ ] No legacy pattern was copied without evaluating it, and no generated contract was left unverified.
 - [ ] Tests cover new or changed behavior and pass.

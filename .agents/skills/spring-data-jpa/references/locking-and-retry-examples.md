@@ -76,7 +76,7 @@ public class InventoryEntity {
 
     @Version
     @Column(name = "version", nullable = false)
-    private Long version;
+    private @Nullable Long version;
 
     // Accessors follow the style recorded in docs/project-profile.md.
 }
@@ -90,6 +90,9 @@ The field is the wrapper type `Long`, not `long`, in every entity in this skill 
 `0` before the provider assigns anything, so a transient instance is indistinguishable from a row at
 version zero; `null` says "never persisted" and lets the provider tell the two apart. Use one type
 across every entity so the distinction never depends on which entity you are looking at.
+
+That is also why the field carries `@Nullable` over a `NOT NULL` column. `modern-java-21` owns the
+placement rule and the exception behind it.
 
 Rules:
 
@@ -357,8 +360,8 @@ Use a pessimistic lock only for a justified blocking invariant.
 /**
  * Loads inventory for an update while holding a pessimistic database lock.
  *
- * @param sku inventory identifier; must not be {@code null}
- * @return the locked inventory, or empty when it does not exist; never {@code null}
+ * @param sku inventory identifier
+ * @return the locked inventory, or empty when it does not exist
  * @throws PessimisticLockingFailureException when the lock cannot be acquired before the
  *                                            configured timeout expires
  */

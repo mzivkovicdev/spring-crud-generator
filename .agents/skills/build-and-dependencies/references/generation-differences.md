@@ -46,6 +46,7 @@ that no longer wires anything.
 | Capability | Spring Boot 3 | Spring Boot 4 |
 | --- | --- | --- |
 | Spring MVC | `spring-boot-starter-web` | `spring-boot-starter-webmvc` (`-web` remains but is deprecated) |
+| Nullability annotations | `org.jspecify:jspecify`, **not** managed by this BOM, so the declaration carries a version | `org.jspecify:jspecify`, managed by the BOM and already on the classpath transitively through `spring-core` |
 | SOAP web services | `spring-boot-starter-web-services` | `spring-boot-starter-webservices` |
 | Validation | `spring-boot-starter-validation` | unchanged |
 | Spring Data JPA | `spring-boot-starter-data-jpa` | unchanged |
@@ -100,7 +101,8 @@ must prove; this skill owns the declaration that makes them run.
 | Mapper builder customizer | `Jackson2ObjectMapperBuilderCustomizer` | `JsonMapperBuilderCustomizer` |
 | Customizing HTTP message converters | a `HttpMessageConverters` bean, or contributed converter beans | `ServerHttpMessageConvertersCustomizer`; the Boot type is deprecated and contributed converter beans are no longer picked up |
 | Replacing the mapper bean | define an `ObjectMapper` bean | define a `JsonMapper` (or `XmlMapper`) bean |
-| Nullability annotation | `org.springframework.lang.Nullable` | `org.jspecify.annotations.Nullable` |
+| Nullability annotation on Spring's **own** API surface | `org.springframework.lang.Nullable` | JSpecify; the `org.springframework.lang` set is deprecated |
+| Nullability annotation the **project** writes | `org.jspecify.annotations` | `org.jspecify.annotations` |
 | Declarative retry | Spring Retry's `@Retryable` plus `@EnableRetry`, version-managed by the BOM | `org.springframework.resilience.annotation.Retryable` plus `@EnableResilientMethods`, in the framework |
 | Programmatic retry | Spring Retry's `RetryTemplate` | `org.springframework.core.retry.RetryTemplate` and `RetryPolicy` — this package carries **no** annotation |
 | Spring Retry itself | version-managed by the BOM | still usable, but no longer version-managed; pin it explicitly if the project keeps it |

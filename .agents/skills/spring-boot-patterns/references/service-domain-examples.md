@@ -166,8 +166,8 @@ public class UserService {
     /**
      * Returns a user by identifier.
      *
-     * @param userId user identifier; must not be {@code null}
-     * @return       the matching user; never {@code null}
+     * @param userId user identifier
+     * @return       the matching user
      * @throws ConstraintViolationException when the identifier violates a structural constraint
      * @throws ResourceNotFoundException    when no user exists for the supplied identifier
      */
@@ -207,8 +207,8 @@ public interface UserService {
     /**
      * Returns a user by identifier.
      *
-     * @param userId user identifier; must not be {@code null}
-     * @return       the matching user; never {@code null}
+     * @param userId user identifier
+     * @return       the matching user
      * @throws ConstraintViolationException when the identifier violates a structural constraint
      * @throws ResourceNotFoundException    when no user exists for the supplied identifier
      */
@@ -220,7 +220,7 @@ public interface UserService {
      * @param username    username that satisfies the application contract
      * @param email       email address that satisfies the application contract
      * @param rawPassword raw password accepted only at the hashing boundary
-     * @return            the created user; never {@code null}
+     * @return            the created user
      * @throws ConstraintViolationException when an argument violates a structural constraint
      */
     UserDomain create(
@@ -298,9 +298,9 @@ owning `UserEntity` and the address values, following the entity creation rule i
      * <p>Joins the caller's transaction when one is open. The address row and the updated user are
      * written together in every case.
      *
-     * @param userId     user identifier; must not be {@code null}
-     * @param newAddress address values to store; must not be {@code null}
-     * @return           the user including the stored address; never {@code null}
+     * @param userId     user identifier
+     * @param newAddress address values to store
+     * @return           the user including the stored address
      * @throws ResourceNotFoundException   when no user exists for the supplied identifier
      * @throws BusinessValidationException when the user is not in a state that accepts addresses
      */
@@ -363,11 +363,11 @@ public class UserManagementApplicationService {
      * or the membership cannot be recorded, the user is not created either. The event is published
      * for delivery after commit, so no notification is sent for a registration that rolled back.
      *
-     * @param organizationId organization the user joins; must not be {@code null}
-     * @param username       requested username; must not be {@code null}
-     * @param email          requested email address; must not be {@code null}
+     * @param organizationId organization the user joins
+     * @param username       requested username
+     * @param email          requested email address
      * @param rawPassword    plain password, hashed inside {@code UserService} and never stored raw
-     * @return               the created user; never {@code null}
+     * @return               the created user
      * @throws ResourceNotFoundException   when the organization does not exist
      * @throws BusinessValidationException when the organization does not accept new members
      */
@@ -388,8 +388,8 @@ public class UserManagementApplicationService {
     /**
      * Returns a user together with the display name of the organization they belong to.
      *
-     * @param userId user identifier; must not be {@code null}
-     * @return       the combined profile; never {@code null}
+     * @param userId user identifier
+     * @return       the combined profile
      * @throws ResourceNotFoundException when the user or its organization no longer exists
      */
     @Transactional(readOnly = true)

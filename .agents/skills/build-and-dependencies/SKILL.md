@@ -46,6 +46,7 @@ into those tokens, and no other skill reclassifies one.
 | Java release | `RESOLVE` | A supported LTS at or above the floor is a correct answer that only needs looking up |
 | Spring Boot version within the chosen generation | `RESOLVE` | The current stable release of that branch |
 | Support end date of the chosen branch | `RESOLVE` | Published by the project; look it up rather than assuming the branch is current |
+| Nullability enforcement | `ASK` | Whether the JSpecify contract is checked by IDE and review or by NullAway on Error Prone. Both are defensible; the second changes every compilation, so it is not a lookup |
 | Every plugin and tool version | `RESOLVE` | Checkstyle, Spotless, MapStruct, the OpenAPI generator, the Lombok binding |
 
 An `ASK` blocks the task until the user answers. A `RESOLVE` never blocks: look it up, record it with
@@ -92,7 +93,7 @@ Read only what the change requires:
 - Read [Maven configuration](references/maven-configuration.md) when the project uses Maven.
 - Read [Gradle configuration](references/gradle-configuration.md) when the project uses Gradle.
 - Read [dependency audit and removal](references/dependency-audit.md) when adding, replacing, or removing a dependency, and whenever the user asks which dependencies do not belong.
-- Read [quality gates](references/quality-gates.md) when setting up or changing Checkstyle, Spotless, editor configuration, dependency enforcement, or any other automated check.
+- Read [quality gates](references/quality-gates.md) when setting up or changing Checkstyle, Spotless, editor configuration, dependency enforcement, nullability checking, or any other automated check.
 - Read [generation differences](references/generation-differences.md) when the project is on Spring Boot 4, when a declaration or property does not resolve as a Boot 3 example suggests, or when an upgrade between generations is the task.
 
 ## The dependency justification gate
@@ -122,6 +123,7 @@ Additional rules:
 - When an override is genuinely required, override the BOM property rather than the individual dependency version, and record the reason and a removal condition next to it.
 - Pin every plugin version explicitly. An unpinned plugin makes builds non-reproducible.
 - Keep version properties in one place, named for the artifact.
+- Declare `org.jspecify:jspecify` as a direct dependency on both generations, because `modern-java-21` requires its annotations in every main-source package. **Whether it carries a version depends on the generation**: the Spring Boot 4 BOM manages it, so declare it without one; the Spring Boot 3 BOM does not, so declare it with a `RESOLVE`d version recorded in the profile. On Spring Boot 4 it also arrives transitively through `spring-core`, which is not a reason to leave it undeclared — a direct dependency is declared directly. Declare it in the **default compile scope on both generations**, as a deliberate exception to the annotation-only-library rule above: the annotations have runtime retention, Spring already puts the artifact on the Spring Boot 4 runtime classpath, and narrowing it to `compileOnly` on Spring Boot 3 alone would make the two generations differ for no benefit.
 - Do not run a blanket "upgrade everything". `application-security` owns upgrade triage.
 
 ## Compiler configuration
@@ -169,6 +171,7 @@ A rule a tool can check must fail the build; a rule a tool cannot check belongs 
 - Commit the editor configuration alongside the formatter configuration. Checkstyle reports a violated import order; it does not stop an IDE from reintroducing it on the next "Optimize Imports".
 - Use no baseline file and no suppressions. This project rejects legacy code, so there is nothing to grandfather, and a suppression file is where a standard goes to die. If a rule does not fit, change the rule and say so in review.
 - Label which rules are gated and which are review-only, so nobody mistakes a green build for compliance.
+- Nullability checking is the one gate this skill treats as a project decision rather than a default. The profile's `Nullability enforcement` row records it; the reference states what each level costs and catches. Never add Error Prone as a side effect of another task.
 
 [Quality gates](references/quality-gates.md) explains the mapping from each project rule to the tool
 that enforces it, the dependency enforcement rules, and the Spotless setup. The configurations

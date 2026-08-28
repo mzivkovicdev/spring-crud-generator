@@ -34,13 +34,19 @@ Do not add Javadoc by default to:
 Javadoc explains the contract and the reason, not the implementation. When a declaration requires
 it, include every applicable tag:
 
-- `@param parameterName` for every method or constructor parameter, including semantic meaning, accepted range/format, nullability, units, and ownership when relevant;
+- `@param parameterName` for every method or constructor parameter, including semantic meaning, accepted range/format, units, ownership when relevant, and — under the scoping paragraph below — the condition under which a `@Nullable` parameter may be absent;
 - `@param <T>` for every generic type parameter;
-- `@return` for every non-`void` method, describing the returned value/type, nullability, mutability/ownership, and important state guarantees;
+- `@return` for every non-`void` method, describing the returned value/type, mutability/ownership, important state guarantees, and — under the scoping paragraph below — what an absent value means when the return is `@Nullable`;
 - `@throws ExceptionType` for every checked exception and every runtime exception that is part of the public contract, with the exact condition that causes it;
 - `@deprecated` with the replacement and migration direction whenever `@Deprecated` is used.
 
 Do not add `@return` to constructors or `void` methods. Do not document internal implementation exceptions that cannot escape the API. Keep tags in the order: type parameters, value parameters in signature order, return value, exceptions, then optional `@since`, `@see`, or `@deprecated` metadata.
+
+Inside a `@NullMarked` package the annotation is the nullability contract, so the prose says only
+what the annotation cannot: **under which condition** a `@Nullable` value is absent, or what an
+absent value means to the caller. Writing "must not be `null`" beside a declaration that is already
+non-null by default is the duplication this file exists to prevent — and the copy that rots first,
+because a signature change updates the annotation and leaves the sentence behind.
 
 ## Worked example
 
@@ -51,11 +57,10 @@ Do not add `@return` to constructors or `void` methods. Do not document internal
  * <p>The operation is idempotent for the same order identifier. A successful return guarantees
  * that the reservation is visible to subsequent inventory reads.
  *
- * @param orderId the unique identifier of the order requesting inventory; must not be {@code null}
- * @param lines   the non-empty immutable list of order lines to reserve; must not be {@code null}
- *                and must not contain {@code null} elements
+ * @param orderId the unique identifier of the order requesting inventory
+ * @param lines   the non-empty immutable list of order lines to reserve
  * @return        a {@link ReservationDomain} containing the reserved quantities and reservation
- *                identifier; never {@code null}
+ *                identifier
  * @throws InsufficientInventoryException when any requested item cannot be reserved
  * @throws InventoryUnavailableException when the inventory provider cannot be reached
  */

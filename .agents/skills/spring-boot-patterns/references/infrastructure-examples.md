@@ -129,10 +129,10 @@ public interface TransferService {
     /**
      * Transfers the requested amount between accounts.
      *
-     * @param sourceAccountId source account identifier; must not be {@code null}
-     * @param targetAccountId target account identifier; must not be {@code null}
+     * @param sourceAccountId source account identifier
+     * @param targetAccountId target account identifier
      * @param amount          amount to transfer; must be positive
-     * @return the immutable {@link ReceiptDomain} for the completed transfer; never {@code null}
+     * @return the immutable {@link ReceiptDomain} for the completed transfer
      * @throws ConstraintViolationException when an argument violates a structural constraint
      * @throws InsufficientFundsException when the source account cannot cover the transfer
      */
@@ -235,7 +235,7 @@ public class BusinessValidationException extends RuntimeException {
     /**
      * Returns the catalog entry that decides this failure's public contract.
      *
-     * @return the error catalog constant; never {@code null}
+     * @return the error catalog constant
      */
     public ApplicationError error() {
         return this.error;

@@ -39,6 +39,8 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | Security test scenarios | `application-security` owns which scenarios are required | `spring-boot-testing` owns the level each runs at |
 | Contract assertions | `rest-api-contract` owns what must be asserted | `spring-boot-testing` owns the level it runs at |
 | Idempotency | `application-security` owns the policy | `spring-boot-patterns` owns where it lives in the layers |
+| Nullability in Java code | `modern-java-21` owns the annotation convention and where it goes | `build-and-dependencies` owns the artifact, its version, and how hard the contract is checked |
+| Nullability in the published contract | `rest-api-contract` owns whether a field may be absent or null on the wire | `modern-java-21` owns how the Java declaration behind it is annotated, which is not the same question |
 | Versions of anything | `build-and-dependencies` owns every version choice | no other skill selects a version |
 
 ## Precedence when two skills genuinely conflict

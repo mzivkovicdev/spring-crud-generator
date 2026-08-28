@@ -54,7 +54,7 @@ public enum ApplicationError {
     /**
      * Returns the stable internal identifier used in logs, events, and metrics.
      *
-     * @return the internal error code; never {@code null}
+     * @return the internal error code
      */
     public String code() {
         return this.name();

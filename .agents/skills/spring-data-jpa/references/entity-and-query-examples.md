@@ -34,11 +34,11 @@ public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, updatable = false)
-    private Long id;
+    private @Nullable Long id;
 
     @Version
     @Column(name = "version", nullable = false)
-    private Long version;
+    private @Nullable Long version;
 
     @OneToMany(
             mappedBy = "user",
@@ -80,11 +80,11 @@ public class UserEntity {
         this.createdAt = createdAt;
     }
 
-    public Long getId() {
+    public @Nullable Long getId() {
         return this.id;
     }
 
-    public Long getVersion() {
+    public @Nullable Long getVersion() {
         return this.version;
     }
 
@@ -115,7 +115,7 @@ public class UserEntity {
     /**
      * Adds an address and enforces the aggregate's single-primary-address invariant.
      *
-     * @param address address to attach; must not be {@code null}
+     * @param address address to attach
      */
     public void addAddress(final UserAddressEntity address) {
         if (address.isPrimary()) {
@@ -413,8 +413,8 @@ Reject optional-filter queries that force every predicate into one `OR` expressi
           and (:status is null or user.status = :status)
         """)
 List<UserEntity> search(
-        @Param("email") final String email,
-        @Param("status") final UserStatus status);
+        @Param("email") final @Nullable String email,
+        @Param("status") final @Nullable UserStatus status);
 ```
 
 Build only the predicates required by the request, and address attributes through the generated static
@@ -427,8 +427,8 @@ public final class UserSpecifications {
     }
 
     public static Specification<UserEntity> withFilters(
-            final String email,
-            final UserStatus status) {
+            final @Nullable String email,
+            final @Nullable UserStatus status) {
 
         return (root, query, criteriaBuilder) -> {
             final List<Predicate> predicates = new ArrayList<>();

@@ -27,6 +27,7 @@ The owning skill states the rule; this lens only says where to look. Route each 
 owner rather than restating the rule in the review.
 
 - Code written against the wrong generation's API: `@MockBean` on Spring Boot 4, `.and()` chaining or a removed request matcher under Spring Security 7, `@JsonComponent` where Jackson 3 expects `@JacksonComponent`.
+- A nullability annotation from outside the vocabulary `modern-java-21` requires — the check applies on both generations, not only where the alternative is deprecated.
 - A third-party library declared without its Spring Boot module on Spring Boot 4. The feature is silently inert. Treat any Boot 4 change that adds a technology as requiring proof that the technology actually ran, not proof that it resolved.
 - A configuration property that was renamed between generations, still present under its old name. It binds to nothing and reports nothing.
 - A generation upgrade mixed into a feature change. That is two changes with different risk profiles in one diff; ask for the split rather than reviewing them together.
@@ -78,9 +79,11 @@ Apply `spring-boot-patterns` for the normative TO–Domain–Entity architecture
 - Verify that the domain object remains independent of REST, serialization, JPA, repositories, and Spring infrastructure.
 - Check whether `UserDomainMapper`-style mapping runs while all required persistence state is valid and available.
 - Check every mapper for omitted fields, wrong direction, privilege-bearing fields, mutable collection leakage, accidental lazy loading, and silent normalization.
+- Verify that every package the change adds to main sources carries its `package-info.java`. Where the project does not gate this, review is the only thing that catches it, and an unmarked package silently opts out of the nullability contract rather than failing.
 - Verify mapper technology and update structure against the complete rules in `spring-boot-patterns`;
   do not restate or weaken those rules in review guidance.
 - Check partial-update semantics carefully. Distinguish absent, clear, and set operations and ensure unchanged server-owned fields survive.
+- Check nullability annotations against `modern-java-21`, including its exception for provider-assigned fields. No checker reports the case that matters here — an annotation added to silence a warning rather than to state what the value can hold — because the code and the annotations then agree with each other and disagree with reality.
 - Check exception translation at the owning boundary and verify that causes, stable error semantics, and rollback behavior remain correct.
 
 Do not impose a different mapper construction strategy from `spring-boot-patterns`. Do not rename Domain objects to View, DTO, command, or query terminology.

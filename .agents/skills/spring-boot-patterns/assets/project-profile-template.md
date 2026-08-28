@@ -27,6 +27,7 @@ Last updated: YYYY-MM-DD
 | Uses Lombok | `ASK` | no | yes \| no | `build-and-dependencies` |
 | Base package | `ASK` |  | com.example.myapp | `project-naming-conventions` |
 | Maximum line length | `ASK` | 120 | the value the committed Checkstyle configuration enforces | `build-and-dependencies` |
+| Nullability enforcement | `ASK` | IDE and review | IDE and review \| NullAway on Error Prone | `build-and-dependencies` |
 
 ## Persistence
 
@@ -133,6 +134,7 @@ stays `UNDECIDED` with its reason, never a remembered number.
 | Checkstyle, the tool | `RESOLVE` |  |  |
 | Checkstyle build plugin | `RESOLVE` |  |  |
 | Spotless | `RESOLVE` |  |  |
+| JSpecify | `RESOLVE` |  |  |
 | Surefire, on Maven | `RESOLVE` |  |  |
 | Failsafe, on Maven | `RESOLVE` |  |  |
 | Enforcer, on Maven | `RESOLVE` |  |  |
