@@ -1,7 +1,7 @@
 # Ownership map
 
 This is the single canonical statement of which skill owns which topic. Every skill links here
-instead of restating the full map, so an ownership change is one edit rather than eleven.
+instead of restating the full map, so an ownership change is one edit rather than twelve.
 
 Each skill keeps a short table of the owners it defers to most often. That table is a convenience
 pointer, never a redefinition: when a skill's local table and this file disagree, **this file wins**
@@ -12,7 +12,8 @@ and the skill's table is the defect to fix.
 | Owner | Owns |
 | --- | --- |
 | `modern-java-21` | Java language use, imports, Javadoc, nullability, exception mechanics, type and method design, source structure. Applies to every touched `.java` file, production and test |
-| `spring-boot-patterns` | Controllers, TOs, services and their two levels, domain models, mappers, validation, the error contract, configuration design, package responsibilities, outbound-call structure, and **where the transaction boundary sits**. Owns `docs/project-profile.md` and the decision tokens |
+| `project-decision-profile` | `docs/project-profile.md`, the `ASK` / `RESOLVE` / `UNDECIDED` tokens, the fallback rule, and the order of work for filling a row. Owns the mechanism only; each row's named owner decides what its value means |
+| `spring-boot-patterns` | Controllers, TOs, services and their two levels, domain models, mappers, validation, the error contract, configuration design, package responsibilities, outbound-call structure, and **where the transaction boundary sits** |
 | `spring-data-jpa` | Entities, repositories, queries, projections, fetch plans, locking, database performance, and **transaction behavior inside the boundary**: propagation, isolation, `readOnly`, flush timing |
 | `sql-database-migration` | Migration files, ordering, immutability, expand-and-contract, backfills, seed data, clean-install verification |
 | `rest-api-contract` | The public contract and its document: completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, drift |
@@ -41,6 +42,7 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | Idempotency | `application-security` owns the policy | `spring-boot-patterns` owns where it lives in the layers |
 | Nullability in Java code | `modern-java-21` owns the annotation convention and where it goes | `build-and-dependencies` owns the artifact, its version, and how hard the contract is checked |
 | Nullability in the published contract | `rest-api-contract` owns whether a field may be absent or null on the wire | `modern-java-21` owns how the Java declaration behind it is annotated, which is not the same question |
+| Profile decisions | `project-decision-profile` owns the file, the three tokens, the fallback rule, and whether a missing row blocks | the row's named owner decides what its value means; `build-and-dependencies` classifies every build and version row |
 | Versions of anything | `build-and-dependencies` owns every version choice | no other skill selects a version |
 
 ## Precedence when two skills genuinely conflict

@@ -22,6 +22,7 @@ Which skills a review loads follows from what the change touches:
 | Skill | Apply when |
 | --- | --- |
 | `modern-java-21` | Every review containing Java source |
+| `project-decision-profile` | The change depends on a recorded decision, or `docs/project-profile.md` is missing, stale, or still holds a bare token |
 | `spring-boot-patterns` | Every Spring Boot change |
 | `spring-data-jpa` | Persistence, entities, repositories, queries, locking, or database performance is affected |
 | `sql-database-migration` | A schema object is added, altered, or removed, or a migration file is created or edited |

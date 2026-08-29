@@ -46,7 +46,7 @@ code. Everything applied by identifier carries a version. `toolVersion` is separ
 without it the plugin picks its own default Checkstyle, which is usually behind the version the
 committed configuration was written against.
 
-`RESOLVE` is the decision token defined in `spring-boot-patterns`: look the current release up at
+`RESOLVE` is the decision token defined in `project-decision-profile`: look the current release up at
 setup time, write it into the build file, and record it with its resolution date in the
 resolved-versions table of `docs/project-profile.md`. This reference deliberately carries no pinned
 number, because a number in documentation goes stale and then propagates. If the lookup is

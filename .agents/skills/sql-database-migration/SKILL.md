@@ -31,7 +31,7 @@ this skill crosses most often:
 
 `docs/project-profile.md` records Flyway or Liquibase. Both are correct and nothing here prefers one.
 
-- Read the profile first. When it records neither and the repository contains no migration directory and no migration dependency, **ask the user which tool the project will use.** This is an `ASK` decision in the token vocabulary `spring-boot-patterns` defines, so it blocks: nothing in the repository decides it, so do not pick one, and do not infer a tool from an unrelated dependency.
+- Read the profile first. When it records neither and the repository contains no migration directory and no migration dependency, **ask the user which tool the project will use.** This is an `ASK` decision in the token vocabulary `project-decision-profile` defines, so it blocks: nothing in the repository decides it, so do not pick one, and do not infer a tool from an unrelated dependency.
 - An existing migration directory or applied history table is the answer, whatever the profile says. Correct the profile, not the repository.
 - Never run two migration tools against one schema. Each keeps its own history table and neither describes the full schema, so a clean install reproduces something no environment has. Converting from one to the other is a project of its own, never a side effect of a feature.
 

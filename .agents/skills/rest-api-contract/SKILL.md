@@ -43,7 +43,7 @@ machine-readable contract document at all.
 
 **Record it in `docs/project-profile.md`. When it is not recorded, ask the user before writing the
 first endpoint.** This and the authoring direction below are `ASK` decisions in the token vocabulary
-`spring-boot-patterns` defines, so both block until answered. Do not assume a document exists because springdoc is on the classpath, and do not
+`project-decision-profile` defines, so both block until answered. Do not assume a document exists because springdoc is on the classpath, and do not
 add one because an example shows it.
 
 The rules that hold in both cases are the majority of this skill: what makes a change breaking, the
@@ -147,7 +147,7 @@ and the document-quality rules that make a document usable.
 - A breaking change requires confirmation from known consumers before it merges, not after.
 - Maintain a list of known consumers in the project profile. With no document, that list is the only mechanism by which a breaking change reaches the people it affects.
 - With a document, publish it where consumers can reach it and record that location in the project profile.
-- Interactive documentation such as Swagger UI is a development and internal tool. Record in the project profile which environments expose it, if any; the profile's fallback for that row is `never`. Wherever it is exposed, `application-security` owns how it is protected, exactly as it does for actuator endpoints.
+- Interactive documentation such as Swagger UI is a development and internal tool. Record in the project profile which environments expose it, if any, applying the fallback the template records for that row when the answer is not yet given. Wherever it is exposed, `application-security` owns how it is protected, exactly as it does for actuator endpoints.
 
 ## Anti-patterns
 

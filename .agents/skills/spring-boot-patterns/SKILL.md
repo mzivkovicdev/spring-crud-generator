@@ -11,8 +11,7 @@ Implement vertical, tested features using the project's supported Spring Boot ve
 
 This skill owns the Spring Boot boundaries: controllers, TOs, services and their two levels, domain
 models, mappers, validation, the error contract, configuration design, package responsibilities, and
-where the transaction boundary sits. It also owns `docs/project-profile.md` and the decision tokens
-every other skill reads.
+where the transaction boundary sits.
 
 [The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
 it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
@@ -20,6 +19,7 @@ this file. The seams this skill crosses most often:
 
 | Seam | This skill owns | The other owner owns |
 | --- | --- | --- |
+| The project profile | the meaning of the rows this skill owns: service convention, aggregate roots, reliable delivery, resilience, timeouts, API base path, error catalog | `project-decision-profile` owns the file, the tokens, and whether a missing row blocks |
 | Transactions | which method carries the annotation, and where the boundary sits | `spring-data-jpa` owns what the settings mean |
 | Locking | which layer the retry annotation sits on | `spring-data-jpa` owns `@Version`, lock modes, and the retry mechanism |
 | Repositories | where the boundary sits and what may cross it | `spring-data-jpa` owns repository and query design |
@@ -41,7 +41,6 @@ only what the task needs, and do not load one for unrelated work.
 | [REST boundary rules](references/rest-boundary-rules.md) *(rules)* | Creating or changing a controller, a request/response TO, or a REST mapper |
 | [Service layer rules](references/service-layer-rules.md) *(rules)* | Creating or changing a service, choosing its level, or producing an effect outside a transaction |
 | [Outbound call rules](references/outbound-call-rules.md) *(rules)* | Adding or changing any call to another system: HTTP client, message producer, provider SDK |
-| [Filling the project profile](references/filling-the-project-profile.md) *(rules)* | Creating the profile or filling a missing decision. The template is [an asset](assets/project-profile-template.md) to copy, not retype |
 | [REST API examples](references/rest-api-examples.md) | Controller, TO, and REST mapper code |
 | [Service and domain examples](references/service-domain-examples.md) | Service, domain model, domain mapper, parameter object, repository-boundary code |
 | [Error handling examples](references/error-handling-examples.md) | Adding or changing a caller-visible failure: a catalog constant, a custom exception, a handler, a validation response |
@@ -64,43 +63,18 @@ not authorize generating a server-rendered presentation layer.
 
 ## The project profile is a precondition
 
-`docs/project-profile.md` records the decisions every skill in this set reads instead of guessing.
-This skill owns it. [The template asset](assets/project-profile-template.md) lists every entry, its
-allowed values, its token, and its owner; copy it rather than retyping it.
+`project-decision-profile` owns `docs/project-profile.md`, the `ASK` / `RESOLVE` / `UNDECIDED`
+tokens, the gate that precedes production code, and the order of work for filling a row. Read it
+whenever a decision this skill's work depends on is not recorded.
 
-**Do not write production code until the profile exists and records every decision the task
-depends on.** This is a gate, not a preference. Without it each feature silently picks its own
-database, service shape, accessor style, or contract direction, and the codebase disagrees with
-itself in ways no review catches until much later.
-
-### Decision tokens
-
-This skill owns the vocabulary; every skill and template in this set uses exactly these three tokens
-and no synonym.
-
-| Token | Who settles it | Does it block? |
-| --- | --- | --- |
-| `ASK` | The user, and only the user | **Yes**, unless the template row records a fallback |
-| `RESOLVE` | The agent, by looking it up and recording it with the date | **No.** Resolve, record, and state the choice in the handoff |
-| `UNDECIDED` | Deferred on purpose | **No**, unless the current task touches it. Record what will force the decision |
-
-Three rules hold the vocabulary together, and none of them has an exception:
-
-- **Fallbacks live in exactly one place: the `Fallback` column of the template.** No skill may introduce one in its own prose. An `ASK` row with an empty fallback blocks; a row with one is applied, recorded, and reported in the handoff. If a rule elsewhere in this set reads like a default for a profile decision, the template is authoritative and that prose is the defect to fix.
-- **Never write a version, a coordinate, or any other value from memory** into the profile or a build file. When a `RESOLVE` cannot be completed, record `UNDECIDED` with the reason. A remembered version is a guess wearing a specific-looking number, and it is the failure mode this whole mechanism exists to prevent.
-- **Never assume a value or infer one from a test dependency or an example.** An H2 dependency does not make H2 the database. `UNDECIDED` with a note is a legitimate entry; a fabricated value is not.
-
-[Filling the project profile](references/filling-the-project-profile.md) carries the order of work, what
-makes a decision `ASK` rather than `RESOLVE`, and the notes on individual entries. Read it when
-creating the profile or filling a missing decision. `build-and-dependencies` owns which build and
-version decisions carry which token; do not reclassify one here.
-
-Exceptions to the gate are narrow: documentation, comment, or formatting changes need no profile, and
-a task may proceed on a partial profile as long as every decision *that task* touches is recorded.
+The rows this skill owns the *meaning* of are the architectural ones: service interface convention,
+aggregate roots and their tables, the reliable-delivery mechanism for external effects, the
+resilience library, the outbound timeout budget, the API base path, and the error catalog type. Each
+is decided here and recorded there.
 
 ## Rules before coding
 
-1. Confirm the project profile covers every decision the change touches, per the section above.
+1. Confirm the project profile covers every decision the change touches, per the section above and the process `project-decision-profile` owns.
 2. Inspect `pom.xml` or Gradle files, the configured Java and Spring Boot versions, existing package layout, tests, configuration, migrations, security, and API error format.
 3. Read the full call path affected by the change: controller/listener, service, domain, persistence, cache, and external adapters.
 4. Define acceptance cases, invalid input, missing data, conflicts, authorization, dependency failures, and transaction effects.
@@ -330,7 +304,7 @@ suspicious existing code.
 
 ## Completion checklist
 
-- [ ] The profile existed first and records every decision relied on; nothing assumed, inferred, or guessed.
+- [ ] The profile gate `project-decision-profile` owns was satisfied for every decision this change relied on.
 - [ ] Controller/listener is a thin transport boundary, and each handler calls one service at the level the operation belongs to.
 - [ ] Each business rule sits at the level that owns it.
 - [ ] The transaction boundary is the highest service the use case enters, and no aggregate service overrides propagation or isolation to escape it.

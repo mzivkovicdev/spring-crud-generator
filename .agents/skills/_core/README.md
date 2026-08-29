@@ -1,6 +1,6 @@
 # `_core`
 
-Two shared files that the eleven skills link to instead of duplicating.
+Two shared files that the twelve skills link to instead of duplicating.
 
 | File | What it is | Authority |
 | --- | --- | --- |

@@ -38,12 +38,12 @@ only there. Read the one the change touches, and only that one:
 
 ## Before changing persistence
 
-Read `docs/project-profile.md` first, whose template `spring-boot-patterns` owns. It records the
+Read `docs/project-profile.md` first, whose template `project-decision-profile` owns. It records the
 relational database engine and major version, the entity accessor style, and the identifier
 strategy. When it does not, or when the repository contains no database dependency and no datasource
 configuration, **ask the user which database engine and version the project uses, and record the
 answer in the profile before writing persistence code**. That is an `ASK` decision in the token
-vocabulary `spring-boot-patterns` defines: it blocks. Never pick a database, a dialect, or an
+vocabulary `project-decision-profile` defines: it blocks. Never pick a database, a dialect, or an
 identifier strategy by default, and never infer the production database from a test dependency such
 as H2. `sql-database-migration` settles which migration tool the project uses.
 

@@ -358,7 +358,7 @@ internal error code declared outside the error catalog; `traceId`, `spanId`, or 
 handles it; a project exception whose simple name collides with a framework type such as
 `ValidationException`; generic exception swallowing.
 
-**Process.** Implementing against a decision `docs/project-profile.md` does not record; hardcoded
+**Process.** Implementing against a decision `docs/project-profile.md` does not record, in breach of the gate `project-decision-profile` owns; hardcoded
 configuration or secrets; self-invocation assumptions for proxy annotations; an external effect fired
 inside the transaction instead of after commit.
 

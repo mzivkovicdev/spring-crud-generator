@@ -2,7 +2,7 @@
 
 The rules that hold in every task, in every file, whichever agent is running. This card exists so a
 tool with a small instruction budget can carry the whole set's non-negotiables without loading
-eleven skills.
+twelve skills.
 
 **This card is a summary, never a substitute.** Each rule names its owner, and the owner is
 authoritative for scope, exceptions, and detail. When this card and an owner skill disagree, the
@@ -19,12 +19,12 @@ not reading its `SKILL.md` and stopping.
 1. **`docs/project-profile.md` must exist and record every decision the task touches.** No database,
    build tool, Spring Boot generation, service convention, accessor style, migration tool, contract
    direction, or version is assumed, inferred from a test dependency, or copied from an example.
-   (`spring-boot-patterns`)
+   (`project-decision-profile`)
 2. **Three decision tokens, no synonyms.** `ASK` blocks until the user answers, unless the row
    records a fallback — then apply the fallback, write it into the profile, and say so in the
    handoff. `RESOLVE` never blocks: look it up, record it with the date. `UNDECIDED` is a legitimate
    deferral that names what will force the decision. **Never write a version or coordinate from
-   memory.** (`spring-boot-patterns`, `build-and-dependencies`)
+   memory.** (`project-decision-profile`, `build-and-dependencies`)
 3. **Read the whole affected path before changing it**: controller or listener, service, domain,
    repository, adapters, configuration, tests.
 

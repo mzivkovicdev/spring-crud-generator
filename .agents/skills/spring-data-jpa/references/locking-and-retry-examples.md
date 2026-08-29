@@ -174,9 +174,9 @@ declarative retry into the framework itself. Write the variant for the generatio
 `docs/project-profile.md` records; never carry the other generation's attribute names across, because
 several of them exist in both and mean different things.
 
-The numbers below are the template's fallback policy — 3 attempts, 50 ms initial backoff, inside a
-2 s budget. When the profile records a different `Optimistic retry policy`, use that instead; the
-policy is a recorded decision, not a constant of this example.
+The numbers below are illustrative. `Optimistic retry policy` is a recorded decision, not a constant
+of this example: read the value from the profile, or apply the fallback the template records for that
+row when the profile is silent. Never copy these three numbers forward as though they were the rule.
 
 ### Spring Boot 3: Spring Retry
 

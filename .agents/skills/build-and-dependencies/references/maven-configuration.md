@@ -64,7 +64,7 @@ Checkstyle tool, the second is the Maven plugin that runs it. Pinning only the p
 version to the plugin's own default, which is usually well behind and is the usual reason a
 configuration that uses newer module behaviour fails on one machine and passes on another.
 
-`RESOLVE` is the decision token defined in `spring-boot-patterns`: look the current release up at
+`RESOLVE` is the decision token defined in `project-decision-profile`: look the current release up at
 setup time, write it into the build file, and record it with its resolution date in the
 resolved-versions table of `docs/project-profile.md`. This reference deliberately carries no pinned
 number, because a number written into documentation is stale the month after it is written and is

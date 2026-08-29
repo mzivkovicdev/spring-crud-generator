@@ -58,7 +58,7 @@ determinism, and what a test must assert are the same on 3 and 4.
 
 ## Inspect before writing tests
 
-1. Read `docs/project-profile.md` for the database engine and version, authentication profile, migration tool, cleanup strategy, and test-selection configuration. Fill a missing decision the tests depend on through the process `spring-boot-patterns` owns before writing tests; never substitute H2 for an undecided database, and never invent an authentication mechanism.
+1. Read `docs/project-profile.md` for the database engine and version, authentication profile, migration tool, cleanup strategy, and test-selection configuration. Fill a missing decision the tests depend on through the process `project-decision-profile` owns before writing tests; never substitute H2 for an undecided database, and never invent an authentication mechanism.
 2. Inspect the Maven or Gradle configuration: supported Java and Spring Boot versions, test source sets, plugins, naming suffixes, profiles, CI commands.
 3. Reuse the project's supported JUnit Jupiter version and its assertion, mocking, data-generation, container, HTTP, and stub-server libraries; do not override Spring Boot dependency management to obtain a newer test API.
 4. Inspect nearby sound tests, shared fixtures, container configuration, database cleanup, fixed clocks, custom annotations, and factories before creating alternatives.

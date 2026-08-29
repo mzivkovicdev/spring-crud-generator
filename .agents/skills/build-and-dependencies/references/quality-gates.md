@@ -322,11 +322,12 @@ relax the rule in `observability-and-logging`.
 
 `modern-java-21` requires JSpecify annotations on every main-source package. How hard that contract
 is enforced is a project decision recorded in `docs/project-profile.md` as **Nullability
-enforcement**; the fallback is the first row below, and it is a legitimate long-term answer.
+enforcement**. Both rows below are legitimate long-term answers; the template's `Fallback` column
+says which one applies while the row is unanswered.
 
 | Enforcement | What it costs | What it catches |
 | --- | --- | --- |
-| IDE and review *(fallback)* | nothing; IntelliJ IDEA understands JSpecify out of the box, Eclipse needs configuration | mistakes the author sees while typing, and whatever review notices |
+| IDE and review | nothing; IntelliJ IDEA understands JSpecify out of the box, Eclipse needs configuration | mistakes the author sees while typing, and whatever review notices |
 | NullAway on Error Prone | an Error Prone compiler plugin in the build, and a first pass of real fixes | every violation, on every build, for everyone |
 
 Two configuration points decide whether NullAway is usable rather than merely present:

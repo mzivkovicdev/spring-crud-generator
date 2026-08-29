@@ -33,7 +33,7 @@ When the user asks for a review rather than a change, produce findings under
 
 ## Which build decisions block, and which do not
 
-`spring-boot-patterns` owns `docs/project-profile.md` and defines the decision tokens `ASK`,
+`project-decision-profile` owns `docs/project-profile.md` and defines the decision tokens `ASK`,
 `RESOLVE`, and `UNDECIDED`. This skill owns the classification of every build and version decision
 into those tokens, and no other skill reclassifies one.
 
@@ -49,9 +49,10 @@ into those tokens, and no other skill reclassifies one.
 | Nullability enforcement | `ASK` | Whether the JSpecify contract is checked by IDE and review or by NullAway on Error Prone. Both are defensible; the second changes every compilation, so it is not a lookup |
 | Every plugin and tool version | `RESOLVE` | Checkstyle, Spotless, MapStruct, the OpenAPI generator, the Lombok binding |
 
-An `ASK` blocks the task until the user answers. A `RESOLVE` never blocks: look it up, record it with
-the date in the profile's resolved-versions table, and state in the response what was chosen and why,
-so the user overrides once instead of being asked every time.
+This table classifies; it does not define. What each token means, when an `ASK` blocks and when the
+template's `Fallback` column answers it instead, and what to do with a `RESOLVE` that cannot be
+completed are `project-decision-profile`'s rules. Record every resolved version in the profile's
+resolved-versions table with its date, and state in the response what was chosen and why.
 
 ## Determine the build tool before editing
 
@@ -140,7 +141,7 @@ The compiler settings are what make `modern-java-21` and the mapper architecture
 This is the single most common way to break this stack, and three of its failures are silent.
 
 - **Declare every processor in one explicit processor path.** On Maven, declaring `annotationProcessorPaths` disables classpath discovery entirely, so a processor listed only as a dependency stops running and generates nothing.
-- **Lombok is optional.** Nothing here requires it, and the decision belongs in `docs/project-profile.md`. Never introduce it because an example shows it, and never remove it from a project that uses it coherently. Where the profile is silent and the repository has no Lombok dependency, apply the template's fallback — no Lombok — and record it.
+- **Lombok is optional.** Nothing here requires it, and the decision belongs in `docs/project-profile.md`. Never introduce it because an example shows it, and never remove it from a project that uses it coherently. Where the profile is silent and the repository has no Lombok dependency, apply the fallback the template records for that row and write it into the profile.
 - **With Lombok and MapStruct together the order is Lombok, then `lombok-mapstruct-binding`, then the MapStruct processor.** Without the binding, MapStruct runs before Lombok generates accessors and either fails or quietly produces mappers that ignore fields.
 - **After any change to a processor, its version, or an entity or mapper it reads, rebuild and inspect the generated sources.** A green compile does not prove the generator produced what you expected.
 

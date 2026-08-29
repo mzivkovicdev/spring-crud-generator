@@ -41,8 +41,9 @@ Those follow the approved platform standard.
 ## Record the decisions before instrumenting
 
 `docs/project-profile.md` records the log format, correlation header, tracing decision, metrics
-registry, and exposed actuator endpoints. Its template, owned by `spring-boot-patterns`, lists the
-allowed values; fill a missing decision through the process that skill defines.
+registry, and exposed actuator endpoints. Its template, owned by `project-decision-profile`
+([the asset](../project-decision-profile/assets/project-profile-template.md)), lists the allowed
+values; fill a missing decision through the process that skill defines.
 
 Until the observability backend is chosen, still emit structured JSON and Micrometer meters. That
 work is not wasted, because it is what every candidate backend consumes.
