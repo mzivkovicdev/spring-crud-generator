@@ -46,8 +46,11 @@ Do not generate:
 - documentation providers, which duplicate what the committed document already is;
 - test scaffolding.
 
-Generated sources go to the build output directory, not to `src`. Never commit them, never edit
-them, and never treat them as review material.
+Generated sources go to the build output directory, not to `src`. Never commit them and never edit
+them. They are not *style* review material — nobody reviews a generator's formatting — but they are
+still compiled, still checked for forbidden dependencies and imports, and still required to
+regenerate deterministically. `build-and-dependencies` owns that split in
+[generated code and the gates](../../build-and-dependencies/references/quality-gates.md#generated-code-and-the-gates).
 
 ## Generator configuration
 
@@ -139,7 +142,8 @@ Notes:
 
 - The document is the source of truth. To change an endpoint, change the document, regenerate, then make the code compile. Never the reverse.
 - A compilation failure after regeneration is the contract telling you what a change costs. Fix the code, not the generator settings.
-- Do not commit generated sources, and exclude the generated directory from formatting and quality gates. Gating generated code produces failures nobody can act on.
+- **A defect in the generated output is fixed in the document or the generator configuration, never in the output.** The project owns no template here — the generator is a third-party tool — so the general "fix it in the template" instruction does not apply to this path, and following it literally means hand-editing generated code.
+- Do not commit generated sources, and exclude the generated directory from the **human-style** gates — Spotless, Checkstyle, import order, Javadoc — because the project does not control the generator's formatter and a failure there names no action anyone can take. This is not a blanket exemption: compilation, document validation, forbidden dependencies and imports, and deterministic regeneration still apply. [Generated code and the gates](../../build-and-dependencies/references/quality-gates.md#generated-code-and-the-gates) is the canonical statement; do not widen or narrow it here.
 - Keep the document in the repository, reviewed like source. It is the artifact consumers depend on.
 - Validate the document in the build before generating from it, so a malformed contract fails early with a clear message rather than as a generator stack trace.
 - When the generator's output disagrees with a project convention, change the generator configuration or the convention deliberately. Do not paper over it with a hand-written wrapper type.

@@ -174,6 +174,7 @@ and for bounded batch processing are stated in
 - `@Version` is a property of the entity, not of an operation, so it cannot exist for only some methods. Keep it whenever any path to that entity uses optimistic concurrency, including paths that also take a pessimistic lock. An entity reached exclusively under a pessimistic lock does not need it, and adding one there buys nothing.
 - Modifying a pessimistically locked entity increments the version through the ordinary update, so a concurrent optimistic **writer** still sees the conflict. Locking without modifying does not; `PESSIMISTIC_FORCE_INCREMENT` exists for that case.
 - Never add `PessimisticLockingFailureException` or `CannotAcquireLockException` to the optimistic retry annotation. A lock timeout means another caller holds the row, and retrying immediately lengthens the queue. Decide retry for a locked path separately, with a smaller attempt count.
+- **The two contention failures reach the caller as different statuses.** An exhausted optimistic retry is `409`: the resource genuinely changed and the caller can re-read and resubmit. A lock timeout, a deadlock victim, or a serialization failure is `503` with `Retry-After`: nothing about the resource conflicts with the request and there is nothing for the caller to resolve. Both are translated in the REST exception advice from the Spring framework types, never caught in a service; `spring-boot-patterns` owns the catalog constants and the reasoning.
 - Invoke pessimistic-lock repository methods only inside an active transaction, and complete all locked work before that transaction ends.
 - Configure lock timeouts where supported, lock multiple rows in a consistent order, and keep locked transactions especially short.
 - Enforce uniqueness with a database constraint and handle the race after an application existence check.
@@ -228,5 +229,6 @@ survive review:
 - [ ] Queries are bounded and deterministic, verified against generated SQL and representative plans.
 - [ ] Pagination, projections, transactions, bulk DML, and locking match the access path.
 - [ ] Contention is absorbed by the composed retry annotation at the use-case boundary, a test proves the retry advice wraps the transaction, and `409` reaches the caller only on exhaustion.
+- [ ] The advice translates the framework contention types themselves, so an exhausted retry produces `409` and a lock timeout produces `503` with `Retry-After` rather than either reaching the catch-all as `500`.
 - [ ] Any operation that overwrites rather than recomputes uses the stale-write protection the profile records.
 - [ ] Tests run against the supported database and cover changed persistence behavior.

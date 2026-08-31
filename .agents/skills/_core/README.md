@@ -15,10 +15,11 @@ Neither file replaces reading the owner skill before implementing something it c
 states *that* a rule exists; the owner skill states its scope, its exceptions, and what to do at the
 edges — and the edges are where the expensive mistakes live.
 
-## Known gaps in this skill set
+## Known gaps, and one boundary
 
-Three topics are incompletely owned. They are listed here so an absent rule stays a visible decision
-rather than looking like a settled one.
+Two topics are incompletely owned, and one entry below is a scope boundary rather than a gap. They
+are listed here so an absent rule stays a visible decision rather than looking like a settled one,
+and so a boundary is not mistaken for an oversight.
 
 A gap here means **no skill states how to build the thing**. It does not mean the topic is
 unregulated: a topic can be fully covered for security, naming, and testing while nothing describes
@@ -57,6 +58,12 @@ treating an owned rule as absent is how a project ends up with a second, weaker 
   `none` or `UNDECIDED` in the profile, do not introduce a broker, a listener, or a messaging
   dependency** — the same guard the caching entry above applies, for the same reason.
 
-- **Code generation.** Generated output must pass the same quality gates as hand-written code, and a
-  defect in it is fixed in the template rather than the output. No skill owns generator or template
-  design beyond that.
+- **Code generation.** This is a **scope boundary, not a gap**. How generated sources are gated is
+  owned and stated once, by `build-and-dependencies` in
+  [generated code and the gates](../build-and-dependencies/references/quality-gates.md#generated-code-and-the-gates):
+  correctness, security, and reproducibility gates are required; human-style formatting gates may be
+  excluded; the output is never hand-edited. Do not restate that rule here or anywhere else.
+  What no skill owns is **generator and template design** — template structure, regenerating over
+  existing code, testing a template. That belongs to a project that *builds* a generator, not to a
+  set of rules about what the resulting code must look like, which hold identically whether a person
+  or a template produced it.

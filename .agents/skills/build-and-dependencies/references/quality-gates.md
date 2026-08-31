@@ -9,13 +9,14 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 ## Contents
 
 1. [What is gated and what is not](#what-is-gated-and-what-is-not)
-2. [Layer 1: editor and formatter](#layer-1-editor-and-formatter)
-3. [Layer 2: Checkstyle](#layer-2-checkstyle)
-4. [Modules to verify before relying on them](#modules-to-verify-before-relying-on-them)
-5. [Layer 3: dependency and runtime guards](#layer-3-dependency-and-runtime-guards)
-6. [Nullability checking](#nullability-checking)
-7. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
-8. [No baseline, no suppressions](#no-baseline-no-suppressions)
+2. [Generated code and the gates](#generated-code-and-the-gates)
+3. [Layer 1: editor and formatter](#layer-1-editor-and-formatter)
+4. [Layer 2: Checkstyle](#layer-2-checkstyle)
+5. [Modules to verify before relying on them](#modules-to-verify-before-relying-on-them)
+6. [Layer 3: dependency and runtime guards](#layer-3-dependency-and-runtime-guards)
+7. [Nullability checking](#nullability-checking)
+8. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
+9. [No baseline, no suppressions](#no-baseline-no-suppressions)
 
 ## What is gated and what is not
 
@@ -58,6 +59,39 @@ exists rather than to require documentation. The policy in `modern-java-21` is c
 — required on service contracts, not on TOs, records, or overrides — and Checkstyle cannot express
 that distinction without producing noise that trains people to ignore it. Javadoc *correctness* is
 gated; Javadoc *presence* is a review question.
+
+## Generated code and the gates
+
+**This is the canonical rule for how generated sources are gated.** Every skill that produces or
+consumes generated output links here instead of stating its own version; a second statement is how a
+project ends up gating generated code in one task and exempting it in the next.
+
+Generated output is not exempt from verification, and it is not subject to human-style formatting
+rules. Split the gates by what they prove:
+
+| Gate | On generated sources | Why |
+| --- | --- | --- |
+| Compilation | **Required** | A generated source that does not compile is a broken build, whoever wrote it |
+| Contract, schema, or document validation | **Required** | The input the generator read is the artefact under review; validate it before generating |
+| Banned dependencies, forbidden imports, security enforcement | **Required** | An unsafe dependency is unsafe regardless of who declared it |
+| Deterministic regeneration | **Required** | Two runs from one input produce identical output, or the artefact is not reproducible |
+| Checkstyle, Spotless, import order, Javadoc, line length | **May be excluded** | These encode how a person writes Java. The project does not control the generator's formatter, so a failure here names no action anyone can take |
+| Hand-editing the output | **Forbidden** | It is overwritten on the next generation, silently |
+
+Two consequences follow, and both are rules:
+
+- **Excluding a directory from the formatter is not excluding it from the build.** A project that
+  points Spotless and Checkstyle away from the generated source root still compiles it, still runs
+  the enforcer against its dependencies, and still fails when regeneration is not deterministic.
+- **A defect in generated output is fixed at its source, and the source depends on who owns the
+  generator.** For a project-owned template, the fix is in the template. For a third-party generator
+  such as the OpenAPI generator, the project owns no template: the fix is in the input document or
+  in the generator configuration, and `rest-api-contract` states that in full. "Fix it in the
+  template" is not a universal instruction, and following it literally against a third-party
+  generator leads to editing the output — the one thing the table forbids.
+
+Generated sources belong in the build output directory and are not committed. What *is* committed is
+the input the generator reads, and that input is reviewed like source.
 
 ## Layer 1: editor and formatter
 

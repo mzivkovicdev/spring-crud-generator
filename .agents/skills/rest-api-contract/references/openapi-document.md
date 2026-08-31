@@ -138,6 +138,7 @@ Rules:
 - The schema is named `ProblemDetail` after the type the application actually serializes, Spring's `ProblemDetail`. It is the one schema in the document with no `TO` suffix, because there is no project-owned transfer object behind it; naming it `ProblemTO` would invent a Java type that does not exist. `project-naming-conventions` owns schema naming, and this is its single documented exception.
 - The media type is `application/problem+json`, not `application/json`.
 - `type` is documented as the value consumers branch on, and `title` and `detail` as text that may change. Saying so in the contract is what stops a consumer from matching on the message.
+- **A write operation that takes a pessimistic lock can return `503`, and it belongs in the contract like any other status.** It comes from the shared advice rather than the controller, which is exactly the case the completeness rule in `../SKILL.md` exists for. Document its `Retry-After` header too: a consumer that does not know the header is there will either retry immediately or not at all. The read operation shown above cannot produce it, which is why it is absent there.
 - The body carries no second error identifier. `correlationId` identifies the request, not the failure; `spring-boot-patterns` owns that decision.
 - Never document `traceId`, `spanId`, a stack trace, an exception class name, or an internal hostname.
 - The example uses a synthetic correlation identifier. Examples never carry real data.

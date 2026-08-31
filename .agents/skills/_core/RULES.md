@@ -97,53 +97,57 @@ not reading its `SKILL.md` and stopping.
     generations and its call sites are identical; only the retry engine it composes differs.
     Structurally blocking invariants take a pessimistic lock without needing a measurement; only
     buying a lock for throughput does. (`spring-data-jpa`)
-26. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
+26. **Contention reaches the caller through the REST advice, from the framework's own exception
+    types.** An exhausted optimistic retry is `409`; a lock timeout, deadlock victim, or
+    serialization failure is `503` with `Retry-After`. Neither is caught in a service, and neither
+    may fall through to the catch-all as `500`. (`spring-boot-patterns`, `spring-data-jpa`)
+27. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
     never edited after it is applied anywhere. Hibernate `ddl-auto` is `validate` or `none`.
     (`sql-database-migration`)
 
 ## Outbound and security
 
-27. **No outbound call without explicit connection and read timeouts**, inside the caller's budget.
+28. **No outbound call without explicit connection and read timeouts**, inside the caller's budget.
     Retry policy exists in exactly one layer. Provider exceptions are translated at the adapter.
     (`spring-boot-patterns`)
-28. **Authorization is enforced in the service and persistence path**, not only at the controller.
+29. **Authorization is enforced in the service and persistence path**, not only at the controller.
     Identity, tenant, and ownership come from the authenticated context, never from a request field.
     (`application-security`)
-29. **Never log or hardcode credentials, tokens, personal data, full request or response bodies, or
+30. **Never log or hardcode credentials, tokens, personal data, full request or response bodies, or
     SQL with parameters.** No secret in a build file, a migration, or a test fixture.
     (`application-security`)
 
 ## Observability
 
-30. **A failure is logged once, at the boundary that handles it**, with the internal error code and
+31. **A failure is logged once, at the boundary that handles it**, with the internal error code and
     the correlation identifier. Never catch, log, and rethrow. (`observability-and-logging`)
-31. **Metric tag values are bounded.** Never an identifier, email, tenant, raw URL, timestamp, or
+32. **Metric tag values are bounded.** Never an identifier, email, tenant, raw URL, timestamp, or
     exception message. (`observability-and-logging`)
 
 ## Tests
 
-32. **Production behavior and its tests ship together.** Never weaken, disable, or delete a test to
+33. **Production behavior and its tests ship together.** Never weaken, disable, or delete a test to
     make a change pass, and never relax a security control to make a test pass.
     (`spring-boot-testing`)
-33. **Each level proves a different boundary:** aggregate and application services get Spring-free
+34. **Each level proves a different boundary:** aggregate and application services get Spring-free
     unit tests, every controller gets a `@WebMvcTest` slice with filters disabled, and integration
     tests run against the real database engine with migrations applied and the real filter chain.
     (`spring-boot-testing`)
-34. **Integration tests must actually run, once, in the right phase.** On Maven the suffix also
+35. **Integration tests must actually run, once, in the right phase.** On Maven the suffix also
     matches Surefire's default pattern, so an unexcluded suite runs twice; on Gradle nothing runs it
     until a suite is registered, and an unrun suite looks exactly like a green build.
     (`spring-boot-testing`, `build-and-dependencies`)
 
 ## Dependencies
 
-35. **Every dependency names the requirement it satisfies**, duplicates no existing capability, and
+36. **Every dependency names the requirement it satisfies**, duplicates no existing capability, and
     carries no version when the Spring Boot BOM manages it. Every plugin version is pinned.
     (`build-and-dependencies`)
-36. **Quality gates fail the build**, run before the tests, and are never silenced with a suppression
+37. **Quality gates fail the build**, run before the tests, and are never silenced with a suppression
     file, a baseline, or `@SuppressWarnings`. (`build-and-dependencies`)
 
 ## Worked examples
 
-37. **Every snippet in this set is a pattern to adapt, not a file to copy.** A request for a product
+38. **Every snippet in this set is a pattern to adapt, not a file to copy.** A request for a product
     service produces `ProductService` written from scratch, not a renamed `UserService`.
     (`modern-java-21`)

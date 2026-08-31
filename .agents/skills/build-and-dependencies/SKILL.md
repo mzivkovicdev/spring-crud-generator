@@ -172,6 +172,7 @@ A rule a tool can check must fail the build; a rule a tool cannot check belongs 
 - Commit the editor configuration alongside the formatter configuration. Checkstyle reports a violated import order; it does not stop an IDE from reintroducing it on the next "Optimize Imports".
 - Use no baseline file and no suppressions. This project rejects legacy code, so there is nothing to grandfather, and a suppression file is where a standard goes to die. If a rule does not fit, change the rule and say so in review.
 - Label which rules are gated and which are review-only, so nobody mistakes a green build for compliance.
+- **Generated sources are gated by what a gate proves, not by who wrote them.** Compilation, contract or schema validation, forbidden dependencies and imports, and deterministic regeneration are required; human-style formatting gates may be excluded; the output is never hand-edited. This skill owns that rule and states it once, in [generated code and the gates](references/quality-gates.md#generated-code-and-the-gates). No other skill restates it.
 - Nullability checking is the one gate this skill treats as a project decision rather than a default. The profile's `Nullability enforcement` row records it; the reference states what each level costs and catches. Never add Error Prone as a side effect of another task.
 
 [Quality gates](references/quality-gates.md) explains the mapping from each project rule to the tool

@@ -227,6 +227,7 @@ Three rules carry the weight:
 - **The `type` URI is the only machine-readable error identifier in the body.** Never add a parallel `code`, `errorCode`, or `errorId`; two identifiers for one condition guarantee that clients branch on the wrong one. `project-naming-conventions` owns the URI form.
 - **Every caller-visible failure is declared once**, in a single project-owned error catalog carrying the status, the `type` URI, the title, the detail, and the internal code used in logs, events, and metrics. One declaration is what stops the public type and the internal code from drifting apart.
 - **`correlationId` is the one permitted extension member.** Keep `traceId`, `spanId`, stack traces, exception class names, provider messages, internal hostnames, SQL, internal endpoints, credentials, and personal data out of the body entirely.
+- **The advice translates framework exceptions too, not only project ones.** Concurrency is the case that matters: `spring-data-jpa` absorbs contention with a retry annotation and lets the failure surface from the transaction interceptor, so what reaches the advice is a Spring `OptimisticLockingFailureException` or `PessimisticLockingFailureException`. Without handlers for those two parent types, every real conflict becomes a `500` while the code reads as though the contract were implemented.
 
 Read [error handling examples](references/error-handling-examples.md) for the catalog, the
 `ProblemDetail` handler, the catch-all rules, and exception naming and placement.
@@ -296,7 +297,8 @@ and survives review** unless it is recognised by name:
 - a JPA association crossing an aggregate boundary;
 - an external effect fired inside the transaction rather than after commit, or after commit where the profile records that losing it is unacceptable;
 - an outbound client with no read timeout, or a provider exception reaching a service or controller;
-- a second machine-readable error identifier beside the RFC 9457 `type`.
+- a second machine-readable error identifier beside the RFC 9457 `type`;
+- an exception advice that handles only project exception types, so contention arrives from the framework and the catch-all reports a routine `409` or `503` condition as a `500`.
 
 [Infrastructure examples](references/infrastructure-examples.md) carries the full rejected list —
 boundary, structure, error-contract, and process — with the code. Read it when reviewing or replacing
@@ -316,6 +318,7 @@ suspicious existing code.
 - [ ] Mappers preserve the TO–Domain–Entity boundaries; MapStruct with `ReportingPolicy.ERROR`; one REST and one domain mapper per concept.
 - [ ] Projections, Specifications, enums, exceptions, handlers, and configuration types sit in their owning packages without empty scaffolding.
 - [ ] Error responses are stable and safe, the `type` URI is their only machine-readable identifier, and every failure comes from the single catalog.
+- [ ] The advice maps the framework contention types, so an exhausted retry returns `409` and a lock timeout returns `503` with `Retry-After`, each logged at the level its expectedness deserves.
 - [ ] Shared numeric bounds are declared once and referenced.
 - [ ] Configuration is type-safe, externalized, and validated.
 - [ ] `spring-boot-testing` and `modern-java-21` were applied, and the gates and suites pass.

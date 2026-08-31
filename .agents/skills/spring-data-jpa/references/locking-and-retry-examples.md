@@ -277,27 +277,37 @@ Boot 4 that test is the only evidence you have.
 
 ### Exhaustion is part of the contract
 
-When attempts run out the last exception propagates, which is a framework exception reaching the
-caller as a `500`. `ConcurrentModificationConflictException` is declared in the project error catalog
-as `CONCURRENT_MODIFICATION` and maps to `409`; `spring-boot-patterns` owns both.
+**When attempts run out, the last original exception propagates.** There is no separate
+"retry exhausted" exception to catch: Spring Framework 7 documents that `@Retryable` rethrows the
+last exception from the target method, and Spring Retry does the same when no `@Recover` method
+applies. What reaches the advice is therefore `ObjectOptimisticLockingFailureException`, not a
+project type — so an advice that handles only project exceptions sends it through the catch-all as a
+`500`, and the conflict contract this section describes never happens.
 
-**On Spring Boot 4, mapping it in the REST exception advice is the only option**, because the
-framework's retry support has no recovery callback. Declare the handler once, and the whole project
-is covered:
+The advice must translate the framework type itself:
 
 ```java
-@ExceptionHandler(ConcurrentModificationConflictException.class)
-public ProblemDetail handleConcurrentModification(
-        final ConcurrentModificationConflictException exception) {
-
+@ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
+public ProblemDetail handleOptimisticConflict(final Exception exception) {
     return createProblem(ApplicationError.CONCURRENT_MODIFICATION, exception);
 }
 ```
 
-That handler is the one already shown in
-[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md), so on
-Spring Boot 4 nothing extra is needed beyond making sure the advice also translates the framework's
-own exhaustion exception into it.
+`OptimisticLockingFailureException` is the Spring parent of
+`ObjectOptimisticLockingFailureException` and a **sibling** of `PessimisticLockingFailureException`
+under `ConcurrencyFailureException`, so this handler absorbs every optimistic failure and cannot
+swallow a lock timeout. `CONCURRENT_MODIFICATION` maps to `409`;
+[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md) owns the
+catalog, the handler, and why a lock timeout gets a different status.
+
+**This applies on both generations.** It is not a Spring Boot 4 workaround for the missing
+`@Recover`: a Spring Boot 3 project that chose the advice shape — the recommended, portable one —
+needs exactly the same handler, and omitting it is the single most common way this whole mechanism
+ends up decorative.
+
+`ConcurrentModificationConflictException` remains the project type for the `@Recover` shape below.
+Keeping a handler for it as well costs nothing and lets a project move between the two shapes
+without touching the advice.
 
 **On Spring Boot 3** the advice works identically and is the recommended shape. Spring Retry
 additionally offers `@Recover`, which keeps the conflict policy beside the operation at the cost of a
@@ -342,7 +352,7 @@ public OrderDomain place(final OrderPlacementDomain command) {
 - Keep the worst case inside the request budget the profile records. On Spring Boot 4 say so directly with `timeout`. On Spring Boot 3 there is no wall-clock deadline at all, so the bound is `maxAttempts` and `maxDelay` multiplied out by hand — do that arithmetic rather than assuming, and lower both on a hot path.
 - Meter attempts and exhaustions, per `observability-and-logging`. Log the exhaustion only — a routine retry is not a `WARN`.
 - Tune by composing a second annotation with its own policy, never by loosening this one.
-- Test it as concurrency: drive two transactions to the same row, assert one caller succeeds without an error and that the exhaustion path returns the conflict contract. A single-threaded test proves nothing.
+- Test it as concurrency: drive two transactions to the same row, assert one caller succeeds without an error and that the exhaustion path returns `409` rather than `500`. A single-threaded test proves nothing, and asserting only that an exception was thrown proves nothing about the status the caller sees — which is the half that was missing when this mechanism was decoration.
 
 `build-and-dependencies` owns the declaration on both generations, and
 [generation differences](../../build-and-dependencies/references/generation-differences.md) carries
@@ -389,11 +399,17 @@ This is the common case, not an exotic one, and four things about it are easy to
 - **`@Version` belongs to the entity, not to an operation.** It cannot be present for some methods and absent for others, so keep it whenever any path to that entity uses optimistic concurrency — including paths that also lock. Removing it because "this path locks anyway" silently unprotects every other path. The converse also holds: an entity reached exclusively under a pessimistic lock does not need `@Version`, and adding one there is a column and a check with no reader.
 - **A lock does not bump the version; a modification does.** Modifying a pessimistically locked entity increments it through the ordinary update, so a concurrent optimistic writer still sees the conflict. Locking and only reading leaves the version untouched, which is precisely what `PESSIMISTIC_FORCE_INCREMENT` in the mode table above is for: use it when the protected decision is a read, or when a change to a child must mark the aggregate as changed.
 - **Do not route a pessimistic failure through the optimistic retry annotation.** `PessimisticLockingFailureException` and `CannotAcquireLockException` are not in its `retryFor` and must not be added. A lock timeout means somebody else is holding the row; retrying immediately adds another waiter to a queue that is already too long, and a deadlock victim usually needs the whole use case reconsidered rather than repeated. Decide retry for a locked path deliberately and separately, with a smaller attempt count.
-- **Map the two failures to the same caller-visible contract, from different exceptions.** Both are contention and both are `409` under the error catalog, but they arrive as different types and only one of them is worth retrying first. Declaring them as one condition in the catalog while handling them separately keeps the public contract stable without merging two different operational signals.
+- **Give the two failures different caller-visible contracts, because they are different conditions.** An exhausted optimistic retry means the resource genuinely changed under the caller, which is `409`. A lock wait that timed out means the row was busy and nothing about the resource conflicts with the request, which is `503` with `Retry-After`. Both are contention, and that is exactly why merging them loses the signal: one tells a client to re-read and resubmit, the other tells it to come back unchanged. `spring-boot-patterns` owns both catalog constants and states the RFC 9110 reasoning; declare them as two conditions, not one.
 
 Test both paths, and test them as concurrency. An operation that takes a pessimistic lock needs a
 test with two real transactions where the second one blocks or times out; the optimistic path needs
 its own, as described above. Neither test substitutes for the other.
+
+**Assert the status, not only the exception.** The timed-out caller must receive `503` with a
+`Retry-After` header, and the exhausted optimistic caller `409` — both produced by the advice, from
+framework exception types. A test that asserts only that the transaction failed passes just as
+happily when the caller is receiving `500`, which is precisely the defect these two tests exist to
+catch.
 
 ## Lock timeouts
 
@@ -409,7 +425,7 @@ Optional<InventoryEntity> findForUpdateWithTimeout(@Param("sku") final String sk
 
 - The unit and the support level are database-specific. Confirm the behavior against the configured engine rather than assuming; some engines accept only particular values, and a hint the engine silently ignores gives false confidence.
 - Keep the timeout below the request budget `spring-boot-patterns` records. A lock wait longer than the caller's timeout produces a response nobody receives while the transaction stays open.
-- A timeout raises `PessimisticLockingFailureException`. Translate it at the service boundary exactly as above; contention is not a server fault.
+- A timeout raises `PessimisticLockingFailureException`, and so do a deadlock victim and a serialization failure through its subclasses. **Do not catch it in the service.** Like the optimistic check, it surfaces from the transaction interceptor after the method body returned, so a `catch` around the repository call catches nothing. It is translated once, in the REST exception advice, to `503` with `Retry-After` — see [error handling examples](../../spring-boot-patterns/references/error-handling-examples.md). Contention is not a server fault, but it is also not a conflict with the resource's state.
 
 ## Lock ordering and deadlocks
 

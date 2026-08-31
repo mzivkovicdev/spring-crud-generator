@@ -25,6 +25,8 @@ public enum ApplicationError {
             "The server could not process the request."),
     INVALID_STATE(HttpStatus.CONFLICT, "Invalid resource state",
             "The operation is not allowed in the current resource state."),
+    LOCK_TIMEOUT(HttpStatus.SERVICE_UNAVAILABLE, "Resource temporarily locked",
+            "The resource is busy. Retry after the interval in the Retry-After header.", true),
     ORGANIZATION_CLOSED(HttpStatus.CONFLICT, "Organization closed to new members",
             "The organization does not accept new members."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found",
@@ -39,14 +41,25 @@ public enum ApplicationError {
     private static final String PROBLEM_TYPE_BASE = "https://api.example.com/problems/";
 
     private final String detail;
+    private final boolean expected;
     private final HttpStatus status;
     private final String title;
     private final URI type;
 
     ApplicationError(final HttpStatus status, final String title, final String detail) {
+        this(status, title, detail, false);
+    }
+
+    ApplicationError(
+            final HttpStatus status,
+            final String title,
+            final String detail,
+            final boolean expected) {
+
         this.status = status;
         this.title = title;
         this.detail = detail;
+        this.expected = expected;
         this.type = URI.create(
                 PROBLEM_TYPE_BASE + this.name().toLowerCase(Locale.ROOT).replace('_', '-'));
     }
@@ -62,6 +75,15 @@ public enum ApplicationError {
 
     public String detail() {
         return this.detail;
+    }
+
+    /**
+     * Returns whether this condition is a normal operating outcome rather than a defect.
+     *
+     * @return {@code true} when the condition is expected, which decides the log level
+     */
+    public boolean expected() {
+        return this.expected;
     }
 
     public HttpStatus status() {
@@ -88,6 +110,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final String CORRELATION_ID_PROPERTY = "correlationId";
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
+    // Seconds, as a String because Retry-After is a header value. Read from the
+    // "Pessimistic lock timeout" row of docs/project-profile.md; never shorter than it.
+    private static final String LOCK_RETRY_AFTER_SECONDS = "3";
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleResourceNotFound(final ResourceNotFoundException exception) {
@@ -111,6 +136,24 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             final ConcurrentModificationConflictException exception) {
 
         return createProblem(ApplicationError.CONCURRENT_MODIFICATION, exception);
+    }
+
+    // Required: an exhausted retry propagates the last framework exception, so without this
+    // handler the catch-all below reports a routine conflict as 500. Covers both generations.
+    @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
+    public ProblemDetail handleOptimisticConflict(final RuntimeException exception) {
+        return createProblem(ApplicationError.CONCURRENT_MODIFICATION, exception);
+    }
+
+    // A lock wait that timed out, a deadlock victim, or a serialization failure. Nothing about
+    // the resource conflicts with the request, so this is 503 with Retry-After, never 409.
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ProblemDetail> handleLockTimeout(
+            final PessimisticLockingFailureException exception) {
+
+        return ResponseEntity.status(ApplicationError.LOCK_TIMEOUT.status())
+                .header(HttpHeaders.RETRY_AFTER, LOCK_RETRY_AFTER_SECONDS)
+                .body(createProblem(ApplicationError.LOCK_TIMEOUT, exception));
     }
 
     // Required: without it, the catch-all below would turn a method-security denial into a 500.
@@ -172,7 +215,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private static void logProblem(final ApplicationError error, final Exception exception) {
-        if (error.status().is5xxServerError()) {
+        if (error.status().is5xxServerError() && !error.expected()) {
             LOGGER.atError()
                     .addKeyValue("errorCode", error.code())
                     .setCause(exception)
@@ -188,15 +231,78 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
 This advice is the one place where a caller-visible failure is logged. `observability-and-logging`
 requires exactly one log record per failure, at the boundary that handles it, so services and
-controllers must not log the same exception before throwing it. Expected `4xx` conditions are logged
-at `WARN` without a stack trace; unexpected `5xx` conditions are logged at `ERROR` with the
-exception attached. The `errorCode` is attached as a structured field, not interpolated into the
+controllers must not log the same exception before throwing it. Expected conditions are logged at
+`WARN` without a stack trace; unexpected `5xx` conditions are logged at `ERROR` with the exception
+attached.
+
+**The level follows expectedness, not the status class.** Most `5xx` conditions are defects and most
+expected conditions are `4xx`, which is why a status-class check looks sufficient — but `LOCK_TIMEOUT`
+is a `5xx` that is a normal operating outcome. Logging it at `ERROR` with a stack trace would emit
+one incident-shaped record per contended request, which is exactly the flood that trains operators to
+ignore `ERROR`. The catalog constant carries `expected`, so the decision is declared once beside the
+condition instead of being re-derived in the handler. A new constant is unexpected unless it says
+otherwise, so the flag can only ever make the set of `ERROR` records smaller, never larger. The `errorCode` is attached as a structured field, not interpolated into the
 message, so the message text stays a stable constant that groups across records.
 
-Two handlers exist for reasons that are easy to miss:
+Four handlers exist for reasons that are easy to miss:
 
 - `AccessDeniedException` must be handled explicitly. Filter-level denials never reach an advice, but a method-security denial does, and the catch-all would otherwise report a `403` condition as a `500`.
+- **The two contention handlers are what stop a normal concurrent request from being reported as a server fault.** They are covered in full below, because getting them wrong is invisible until the system is under load.
 - `@ExceptionHandler(Exception.class)` is the catch-all that guarantees every unexpected failure still produces a `ProblemDetail` rather than the default error page. The specific handlers inherited from `ResponseEntityExceptionHandler` take precedence over it, so framework exceptions keep their intended status.
+
+### Contention reaches this advice as a framework exception
+
+`spring-data-jpa` absorbs contention with the composed `@OptimisticLockingRetry` annotation, and a
+lock failure surfaces from the transaction interceptor. **Neither of those produces a project
+exception.** When the retry policy is exhausted the last original exception propagates — Spring
+Framework 7 documents this for `@Retryable`, and Spring Retry behaves the same way without a
+`@Recover` method — so an advice that handles only project types sends every real conflict through
+the catch-all as a `500`. The two handlers above are the fix, and they are required on **both**
+Spring Boot generations, not only where `@Recover` is unavailable.
+
+Take the parent types, not the concrete ones. Spring's DAO hierarchy places both families under
+`ConcurrencyFailureException` as siblings, so each handler covers its own family and neither
+swallows the other:
+
+| Handled type | Also covers | Never catches |
+| --- | --- | --- |
+| `OptimisticLockingFailureException` | `ObjectOptimisticLockingFailureException` | anything pessimistic |
+| `PessimisticLockingFailureException` | `CannotAcquireLockException`, `CannotSerializeTransactionException`, `DeadlockLoserDataAccessException` | anything optimistic |
+
+Spring's own javadoc recommends handling `PessimisticLockingFailureException` rather than its
+subclasses, which is also what keeps a deadlock victim and a serialization failure from falling
+through to the catch-all. `jakarta.persistence.OptimisticLockException` is listed beside the Spring
+type because it can still surface on paths where exception translation did not run.
+
+**The two conditions get different statuses, and the difference is not cosmetic.**
+
+| Condition | Status | Why |
+| --- | --- | --- |
+| Optimistic conflict, retry exhausted | `409` | The resource really did change under the caller. RFC 9110 defines `409` as a conflict with the current state of the target resource, in situations where the caller might resolve it and resubmit — re-reading and re-submitting is exactly the available action |
+| Lock wait timed out, deadlock victim, serialization failure | `503` + `Retry-After` | Nothing about the resource conflicts with the request, and there is nothing for the caller to resolve. The same request succeeds once the holder commits. RFC 9110 defines `503` as a temporary condition the server expects to be alleviated after a delay, and `Retry-After` is the field that carries that delay |
+
+Do not collapse the two into one status because both are "contention". A `409` tells a client to
+inspect and fix something that is not wrong, and it hides the load problem behind a code that reads
+as a data problem. Equally, do not report either as `500`: a caller that retries a `500` is guessing,
+and an operator seeing one is paged for a request that behaved exactly as designed.
+
+`503` is a server-error status, so it counts against an error budget and can trip outlier detection
+or a circuit breaker. That is a reason to alert on a **sustained rate** rather than on individual
+occurrences, and a reason `Retry-After` is mandatory rather than optional — it is not a reason to
+mislabel the condition as `409`. `observability-and-logging` owns the meter; the advice logs it
+once like every other failure.
+
+`LOCK_RETRY_AFTER_SECONDS` is a header value, so it is a `String` constant, and it comes from the
+**Pessimistic lock timeout** row of `docs/project-profile.md` rather than being chosen here. A
+`Retry-After` shorter than that timeout invites the caller back before the holder can plausibly have
+finished, which turns one queue into two.
+
+The optimistic handler declares `RuntimeException` rather than `Exception`: it is the narrowest type
+that covers both listed exceptions, since `jakarta.persistence.OptimisticLockException` and the
+Spring type share no closer ancestor. `modern-java-21` allows a broad type only at a true top-level
+boundary, and taking the narrowest one that compiles is the habit that keeps the exception honest.
+Returning a header requires `ResponseEntity<ProblemDetail>`; a bare `ProblemDetail` return carries
+the status but no headers, which is why that one handler has a different return type from the rest.
 
 ### Two exception shapes, and when each applies
 

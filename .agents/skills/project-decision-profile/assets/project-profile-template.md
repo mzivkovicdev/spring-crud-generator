@@ -41,6 +41,7 @@ Last updated: YYYY-MM-DD
 | Identifier strategy | `ASK` |  |  | `spring-data-jpa` |
 | Stale-write protection | `ASK` | server retry only | server retry only \| version field in update TO \| ETag + If-Match | `spring-data-jpa` |
 | Optimistic retry policy | `ASK` | 3 attempts, 50 ms initial backoff, 2s budget | attempts, initial backoff, budget | `spring-data-jpa` |
+| Pessimistic lock timeout | `ASK` | 3s | the value and unit the configured engine supports; stays below the request budget, and the `Retry-After` sent on a lock timeout is not shorter than it | `spring-data-jpa` |
 
 ## Application design
 
