@@ -12,6 +12,7 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 ## Contents
 
 - [Package layout](#package-layout)
+- [Shared route and bound constants](#shared-route-and-bound-constants)
 - [Method validation](#method-validation)
 - [Custom exceptions](#custom-exceptions)
 - [Configuration properties and beans](#configuration-properties-and-beans)

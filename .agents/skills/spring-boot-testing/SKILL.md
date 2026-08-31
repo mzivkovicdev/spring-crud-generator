@@ -109,11 +109,18 @@ Use the project's supported JUnit Jupiter version, JUnit 5 or newer. A unit test
 Both service levels `spring-boot-patterns` defines need direct unit tests, and they prove different
 things:
 
-- an **aggregate service** test proves the aggregate's invariants — rejected state transitions, derived values recomputed after a change, and the writes that must and must not reach its repositories; mock its repositories and its domain mapper;
+- an **aggregate service** test proves the aggregate's invariants — rejected state transitions, derived values recomputed after a change, and the writes that must and must not reach its repositories; mock its repositories;
 - an **application service** test proves coordination — call order across aggregate services, what is passed between them, and that a failure from one prevents the effects of the other; mock every aggregate service, and do not reach for a repository, because the unit under test has none.
 
 Proving only that a collaborator was invoked is insufficient at either level, and integration
 coverage replaces neither. A rule tested at both levels sits at the wrong one.
+
+**Mock what the subject injects, and nothing else.** A structural mapper is not a dependency under
+the architecture `spring-boot-patterns` defines: it is reached through its generated static
+`INSTANCE`, and `modern-java-21` names that an explicit exception to its service-locator rule. It
+therefore cannot be mocked, and it must not be turned into a Spring bean so that it can be. It runs
+for real in the unit test, which is what makes the test assert the mapped result the caller actually
+receives instead of a stub's stand-in.
 
 Coverage is of behavior, not of files: everything with a decision in it needs a unit test, so do not
 skip a service, domain rule, validator, policy, or job because an integration test happens to

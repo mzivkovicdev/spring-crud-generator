@@ -71,7 +71,7 @@ that point on.
 ## Log deliberately, at one place
 
 - **Log once, at the boundary that handles the failure.** Catching, logging, and rethrowing produces the same stack trace three times and triples the cost of every incident. Where `spring-boot-patterns` defines a use-case level above the aggregate services, that level is the boundary: an operation is logged and metered once per use case, not once per aggregate it touches.
-- Log expected failures at `INFO` or `WARN` with the internal error code, never at `ERROR`. Reserve `ERROR` for unexpected server failures, and always include the exception so the stack trace is captured.
+- Log expected failures at `INFO` or `WARN` with the internal error code, never at `ERROR`. Reserve `ERROR` for unexpected server failures, and always include the exception so the stack trace is captured. **Expectedness decides which of the two a condition is, not its status class** — a `5xx` the system produces by design is still an expected failure. The error catalog `spring-boot-patterns` owns declares it per condition; do not re-derive it in a handler.
 - Never log inside a loop per element. Log the aggregate.
 - Use parameterized placeholders, never string concatenation. Concatenation runs even when the level is disabled.
 - Emit every caller-visible failure from the single REST exception advice that owns the error contract, with the catalog constant's internal `errorCode` as a structured field. That code and the public problem type are the same condition under two names, so an operator moves between a log line and the public contract without a lookup table.
@@ -104,7 +104,7 @@ A feature that introduces any of these elements is instrumented before it is con
 | Call to another service or external system | A timer and an error counter, plus a client-side trace span |
 | Scheduled job | Success and failure counters, and the timestamp of the last successful run |
 | Idempotency, retry, or fallback path | A counter, so silent degradation is visible |
-| Contention: optimistic retry attempts, retry exhaustions, lock timeouts | A counter each, tagged with a bounded outcome. These are the leading indicator of a hot row, and the only one that appears before the latency does |
+| Contention that reaches the caller | A counter for retry exhaustions and one for lock timeouts. The row above meters the attempts; these meter the outcomes, and they rise before latency does |
 | Cache, when the project has one | Hit ratio and eviction metrics |
 
 HTTP server metrics, datasource pool metrics, and JVM metrics come from auto-configuration. Do not

@@ -231,18 +231,17 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
 This advice is the one place where a caller-visible failure is logged. `observability-and-logging`
 requires exactly one log record per failure, at the boundary that handles it, so services and
-controllers must not log the same exception before throwing it. Expected conditions are logged at
-`WARN` without a stack trace; unexpected `5xx` conditions are logged at `ERROR` with the exception
-attached.
+controllers must not log the same exception before throwing it, and it decides which level each
+condition gets.
 
-**The level follows expectedness, not the status class.** Most `5xx` conditions are defects and most
-expected conditions are `4xx`, which is why a status-class check looks sufficient — but `LOCK_TIMEOUT`
-is a `5xx` that is a normal operating outcome. Logging it at `ERROR` with a stack trace would emit
-one incident-shaped record per contended request, which is exactly the flood that trains operators to
-ignore `ERROR`. The catalog constant carries `expected`, so the decision is declared once beside the
-condition instead of being re-derived in the handler. A new constant is unexpected unless it says
-otherwise, so the flag can only ever make the set of `ERROR` records smaller, never larger. The `errorCode` is attached as a structured field, not interpolated into the
-message, so the message text stays a stable constant that groups across records.
+What this catalog owns is the input to that decision: each constant carries `expected`, so the
+answer is declared once beside the condition instead of being re-derived in every handler.
+`LOCK_TIMEOUT` is why the flag exists — it is a `5xx` the system produces by design, and a
+status-class check would misread it. A constant is unexpected unless it says otherwise, so the flag
+can only narrow the set of `ERROR` records, never widen it.
+
+The `errorCode` is attached as a structured field, not interpolated into the message, so the message
+text stays a stable constant that groups across records.
 
 Four handlers exist for reasons that are easy to miss:
 

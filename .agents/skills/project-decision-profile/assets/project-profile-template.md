@@ -73,6 +73,7 @@ Last updated: YYYY-MM-DD
 | Live API versions and retirement dates | `ASK` |  |  | `rest-api-contract` |
 | Interactive UI exposed | `ASK` | never | never \| non-production only | `rest-api-contract` |
 | Generated-type naming resolution | `ASK` |  | suffix \| interfaces only \| n/a | `rest-api-contract` |
+| Generator Jackson binding | `ASK` |  | jackson 3 \| jackson 2 \| n/a &mdash; Spring Boot 4 with contract-first only; verified against the generated imports, never assumed | `rest-api-contract` |
 
 ## Security
 

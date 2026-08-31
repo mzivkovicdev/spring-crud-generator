@@ -47,12 +47,27 @@ Do not generate:
 - test scaffolding.
 
 Generated sources go to the build output directory, not to `src`. Never commit them and never edit
-them. They are not *style* review material — nobody reviews a generator's formatting — but they are
-still compiled, still checked for forbidden dependencies and imports, and still required to
-regenerate deterministically. `build-and-dependencies` owns that split in
+them. They are not *style* review material — nobody reviews a generator's formatting — which is not
+the same as being ungated: `build-and-dependencies` owns that split in
 [generated code and the gates](../../build-and-dependencies/references/quality-gates.md#generated-code-and-the-gates).
 
 ## Generator configuration
+
+**The generation is not optional configuration here.** The generator has a separate switch per
+Spring Boot major, and the wrong one produces code for the other generation's dependencies and
+imports. Read the generation from `docs/project-profile.md` and set exactly one of them:
+
+| Profile records | Option to set | Also set |
+| --- | --- | --- |
+| Spring Boot 3 | `useSpringBoot3` | — |
+| Spring Boot 4 | `useSpringBoot4` | decide `useJackson3` deliberately, below |
+
+Both options are false-by-default except `useSpringBoot3`, which the generator defaults to `true` —
+so a Spring Boot 4 project that simply omits the setting silently generates Spring Boot 3 code.
+Setting the correct one explicitly is what makes that visible in review.
+
+The declaration below shows the Spring Boot 3 branch. Replace the one switch for a Spring Boot 4
+project; nothing else in the block changes.
 
 ```xml
 <plugin>
@@ -68,11 +83,12 @@ regenerate deterministically. `build-and-dependencies` owns that split in
                 <apiPackage>com.example.myapp.controller.api</apiPackage>
                 <modelPackage>com.example.myapp.transferobject</modelPackage>
                 <configOptions>
+                    <!-- Spring Boot 3. On Spring Boot 4 this line becomes
+                         <useSpringBoot4>true</useSpringBoot4> plus the useJackson3 decision. -->
                     <useSpringBoot3>true</useSpringBoot3>
                     <interfaceOnly>true</interfaceOnly>
                     <useTags>true</useTags>
                     <modelNameSuffix>TO</modelNameSuffix>
-                    <useJakartaEe>true</useJakartaEe>
                     <documentationProvider>none</documentationProvider>
                     <openApiNullable>false</openApiNullable>
                 </configOptions>
@@ -93,7 +109,21 @@ What each option is doing, because several are load-bearing:
 - `useTags` groups operations by tag, so one interface per resource rather than one per path. This is why every operation must carry exactly one tag.
 - `documentationProvider=none` stops the generator from adding a springdoc or Swagger dependency. The committed document is the documentation; a generated one would be a second source.
 - `openApiNullable=false` avoids the `JsonNullable` wrapper types, which leak an extra library into every signature. Turn it on only if the project deliberately adopts that library.
-- `useJakartaEe` is required on every supported Spring Boot generation: both 3.x and 4.x are on the `jakarta` namespace, and the generator still defaults to the old one.
+- **`useJakartaEe` is not set, because the generation switch already implies it.** Both `useSpringBoot3` and `useSpringBoot4` enable it, and both supported generations are on the `jakarta` namespace. Setting it a second time is harmless but misleading: it suggests the namespace is an independent choice when it follows from the generation.
+
+### The Jackson decision on Spring Boot 4
+
+`useJackson3` exists only on the Spring Boot 4 branch — the generator rejects it otherwise — and it
+is **a decision, not a default**. Record it in `docs/project-profile.md` and verify it rather than
+assuming either answer, because the surrounding facts do not point one way:
+`build-and-dependencies` records that Spring Boot 4 carries Jackson 3, but also that
+`jackson-annotations` deliberately kept its old group and package, so generated models can look
+correct under either setting while the databind types behind them differ.
+
+Verify it the way this skill set verifies every generated artefact: generate once, read the imports
+in the generated model, and confirm they match the Jackson the application actually configures.
+A mismatch here does not fail the build — it fails at the first request that serializes one of those
+types, which is the failure mode contract-first exists to eliminate.
 
 Bind generation to the phase that runs before compilation so the interfaces exist when the
 controllers compile, and confirm the generated sources are on the compile source root.
@@ -143,7 +173,7 @@ Notes:
 - The document is the source of truth. To change an endpoint, change the document, regenerate, then make the code compile. Never the reverse.
 - A compilation failure after regeneration is the contract telling you what a change costs. Fix the code, not the generator settings.
 - **A defect in the generated output is fixed in the document or the generator configuration, never in the output.** The project owns no template here — the generator is a third-party tool — so the general "fix it in the template" instruction does not apply to this path, and following it literally means hand-editing generated code.
-- Do not commit generated sources, and exclude the generated directory from the **human-style** gates — Spotless, Checkstyle, import order, Javadoc — because the project does not control the generator's formatter and a failure there names no action anyone can take. This is not a blanket exemption: compilation, document validation, forbidden dependencies and imports, and deterministic regeneration still apply. [Generated code and the gates](../../build-and-dependencies/references/quality-gates.md#generated-code-and-the-gates) is the canonical statement; do not widen or narrow it here.
+- Do not commit generated sources, and exclude the generated directory from the human-style gates only — the project does not control the generator's formatter, so a failure there names no action anyone can take. Which gates those are, and which still apply, is stated once in [generated code and the gates](../../build-and-dependencies/references/quality-gates.md#generated-code-and-the-gates). It is not a blanket exemption; do not widen or narrow it here.
 - Keep the document in the repository, reviewed like source. It is the artifact consumers depend on.
 - Validate the document in the build before generating from it, so a malformed contract fails early with a clear message rather than as a generator stack trace.
 - When the generator's output disagrees with a project convention, change the generator configuration or the convention deliberately. Do not paper over it with a hand-written wrapper type.

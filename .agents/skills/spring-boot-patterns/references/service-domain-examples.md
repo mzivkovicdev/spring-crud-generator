@@ -433,11 +433,18 @@ return nothing is named `find...` and returns `Optional`.
 Do not restate it here or anywhere else: a second declaration is how two files end up disagreeing
 about which methods the aggregate's repository has.
 
-What this skill owns is only where the boundary sits and what may cross it:
+What this skill owns is only where the boundary sits and what may cross it. `PaginationConstraints`
+is the shared-bounds holder declared in
+[infrastructure examples](infrastructure-examples.md#shared-route-and-bound-constants); the class
+this method belongs to is `@Validated`, as Shape A above declares.
+
+
 
 ```java
 @Transactional(readOnly = true)
-public PageDomain<UserDomain> getAll(final int pageNumber, final int pageSize) {
+public PageDomain<UserDomain> getAll(
+        @PositiveOrZero final int pageNumber,
+        @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final int pageSize) {
     final Page<UserEntity> page = this.userRepository.findAll(
             PageRequest.of(
                     pageNumber,
@@ -453,10 +460,11 @@ public PageDomain<UserDomain> getAll(final int pageNumber, final int pageSize) {
 }
 ```
 
-Three things are on show, and all three are boundary rules rather than query rules:
+Four things are on show, and all four are boundary rules rather than query rules:
 
 - The entity never leaves the method. It is mapped to `UserDomain` before the aggregate service returns, so no caller can reach a managed instance.
 - The sort is server-owned and carries a unique tie-breaker, so two requests for the same page return the same rows. `pageNumber` and `pageSize` arrive from the caller; the sort does not.
+- **The page bound is enforced here too, not only at the REST boundary.** The constraints reference `PaginationConstraints.MAXIMUM_PAGE_SIZE`, the same compile-time constant the controller's `@Max` uses, and the class is `@Validated`, so they are enforced. Bounding only the controller leaves the service open to every other caller it has — a scheduled job, a listener, another service — and `spring-data-jpa` requires the read itself to be bounded, not the HTTP request that happens to be in front of it today.
 - `Page` is used because `PageDomain` promises a total. When the caller does not need one, `spring-data-jpa` prefers `Slice` and the domain result changes with it — that skill owns the choice and its cost.
 
 `findAll(Pageable)` is the inherited method, and it is correct here precisely because the operation

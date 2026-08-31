@@ -284,21 +284,10 @@ applies. What reaches the advice is therefore `ObjectOptimisticLockingFailureExc
 project type — so an advice that handles only project exceptions sends it through the catch-all as a
 `500`, and the conflict contract this section describes never happens.
 
-The advice must translate the framework type itself:
-
-```java
-@ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
-public ProblemDetail handleOptimisticConflict(final Exception exception) {
-    return createProblem(ApplicationError.CONCURRENT_MODIFICATION, exception);
-}
-```
-
-`OptimisticLockingFailureException` is the Spring parent of
-`ObjectOptimisticLockingFailureException` and a **sibling** of `PessimisticLockingFailureException`
-under `ConcurrencyFailureException`, so this handler absorbs every optimistic failure and cannot
-swallow a lock timeout. `CONCURRENT_MODIFICATION` maps to `409`;
-[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md) owns the
-catalog, the handler, and why a lock timeout gets a different status.
+So the advice has to translate the Spring type itself, not a project exception.
+[Error handling examples](../../spring-boot-patterns/references/error-handling-examples.md) declares
+that handler once, along with the catalog constant, the exception hierarchy it relies on, and the
+status each contention condition produces. Do not write a second copy here or in a service.
 
 **This applies on both generations.** It is not a Spring Boot 4 workaround for the missing
 `@Recover`: a Spring Boot 3 project that chose the advice shape — the recommended, portable one —
