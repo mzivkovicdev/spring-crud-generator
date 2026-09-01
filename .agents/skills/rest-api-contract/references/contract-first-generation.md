@@ -11,6 +11,10 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 1. [Settle the naming collision first](#settle-the-naming-collision-first)
 2. [What to generate and what not to](#what-to-generate-and-what-not-to)
 3. [Generator configuration](#generator-configuration)
+   - [The options, independent of the build tool](#the-options-independent-of-the-build-tool)
+   - [Maven](#maven)
+   - [Gradle](#gradle)
+   - [The Jackson decision on Spring Boot 4](#the-jackson-decision-on-spring-boot-4)
 4. [Working with generated interfaces](#working-with-generated-interfaces)
 5. [Rules for generated code](#rules-for-generated-code)
 
@@ -66,6 +70,31 @@ Both options are false-by-default except `useSpringBoot3`, which the generator d
 so a Spring Boot 4 project that simply omits the setting silently generates Spring Boot 3 code.
 Setting the correct one explicitly is what makes that visible in review.
 
+### The options, independent of the build tool
+
+The generator takes the same options whichever build tool invokes it. Decide them here, then declare
+them in the project's own build file; `build-and-dependencies` owns that declaration and the version.
+
+| Option | Value | What it decides |
+| --- | --- | --- |
+| `useSpringBoot3` / `useSpringBoot4` | one of them `true` | The generation, per the table above |
+| `useJackson3` | a recorded decision | Spring Boot 4 only; see below |
+| `interfaceOnly` | `true` | API interfaces without controller implementations, so the project's own thin controllers implement them and no logic lands in generated code |
+| `useTags` | `true` | One interface per resource rather than one per path. This is why every operation must carry exactly one tag |
+| `modelNameSuffix` | `TO` | Produces `UserTO` instead of `UserDto`. Omit it only under the interfaces-only resolution, where no models are generated at all |
+| `documentationProvider` | `none` | Stops the generator from adding a springdoc or Swagger dependency. The committed document is the documentation; a generated one would be a second source |
+| `openApiNullable` | `false` | Avoids the `JsonNullable` wrapper types, which leak an extra library into every signature. Turn it on only if the project deliberately adopts that library |
+
+`useJakartaEe` is deliberately absent: both generation switches enable it, and both supported
+generations are on the `jakarta` namespace. Setting it a second time is harmless but misleading — it
+suggests the namespace is an independent choice when it follows from the generation.
+
+Two wiring rules hold whichever build tool declares them, and both fail silently when missed: the
+generated directory is on the compile source root, and generation runs **before** compilation, so
+the interfaces exist when the controllers compile.
+
+### Maven
+
 The declaration below shows the Spring Boot 3 branch. Replace the one switch for a Spring Boot 4
 project; nothing else in the block changes.
 
@@ -102,14 +131,57 @@ project; nothing else in the block changes.
 [Maven configuration](../../build-and-dependencies/references/maven-configuration.md). Resolve it at
 setup time rather than copying a number from documentation.
 
-What each option is doing, because several are load-bearing:
+The Maven plugin adds the generated directory to the compile source root itself, and binding the
+execution to a phase before `compile` satisfies the second wiring rule.
 
-- `interfaceOnly` generates API interfaces without controller implementations, so the project's own thin controllers implement them and no logic lands in generated code.
-- `modelNameSuffix` is the setting that produces `UserTO` instead of `UserDto`. Omit it only under the interfaces-only resolution, where no models are generated at all.
-- `useTags` groups operations by tag, so one interface per resource rather than one per path. This is why every operation must carry exactly one tag.
-- `documentationProvider=none` stops the generator from adding a springdoc or Swagger dependency. The committed document is the documentation; a generated one would be a second source.
-- `openApiNullable=false` avoids the `JsonNullable` wrapper types, which leak an extra library into every signature. Turn it on only if the project deliberately adopts that library.
-- **`useJakartaEe` is not set, because the generation switch already implies it.** Both `useSpringBoot3` and `useSpringBoot4` enable it, and both supported generations are on the `jakarta` namespace. Setting it a second time is harmless but misleading: it suggests the namespace is an independent choice when it follows from the generation.
+### Gradle
+
+The same options, declared through the generator's own Gradle plugin. The plugin id is
+`org.openapi.generator`, and it contributes the `openApiGenerate` task.
+
+```kotlin
+plugins {
+    id("org.openapi.generator") version "RESOLVE"
+}
+
+openApiGenerate {
+    generatorName.set("spring")
+    inputSpec.set("$projectDir/src/main/resources/openapi/openapi.yaml")
+    outputDir.set(layout.buildDirectory.dir("generated/openapi").get().asFile.path)
+    apiPackage.set("com.example.myapp.controller.api")
+    modelPackage.set("com.example.myapp.transferobject")
+    configOptions.set(
+        mapOf(
+            // Spring Boot 3. On Spring Boot 4 this entry becomes "useSpringBoot4" to "true",
+            // plus the useJackson3 decision.
+            "useSpringBoot3" to "true",
+            "interfaceOnly" to "true",
+            "useTags" to "true",
+            "modelNameSuffix" to "TO",
+            "documentationProvider" to "none",
+            "openApiNullable" to "false",
+        )
+    )
+}
+
+sourceSets.main {
+    java.srcDir(layout.buildDirectory.dir("generated/openapi/src/main/java"))
+}
+
+tasks.named("compileJava") {
+    dependsOn(tasks.named("openApiGenerate"))
+}
+```
+
+Three things in that block are the Gradle-specific part of the contract, and all three are silent
+when omitted:
+
+- **The generated directory is added to the main source set.** Maven's plugin does this itself; Gradle's does not, so without the `srcDir` line the sources are generated and never compiled.
+- **`compileJava` depends on the generate task.** Gradle infers no ordering from the source-set entry alone, so a clean build can compile before generating and fail on missing interfaces — or worse, succeed against a stale previous output.
+- **The plugin version is resolved, not remembered**, and recorded in the profile's resolved-versions table like every other tool version. `build-and-dependencies` owns that choice.
+
+Verify both by deleting the build directory and running a full build: the interfaces must be
+regenerated and compiled in one command, with no manual step in between.
 
 ### The Jackson decision on Spring Boot 4
 
