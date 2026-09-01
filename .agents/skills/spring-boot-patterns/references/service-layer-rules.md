@@ -15,6 +15,7 @@ Code examples for everything here are in
 2. [Application services](#application-services)
 3. [External effects and what after-commit delivery does not buy](#external-effects-and-what-after-commit-delivery-does-not-buy)
 4. [Rules for both levels](#rules-for-both-levels)
+   - [The explicit write, by entity state](#the-explicit-write-by-entity-state)
 5. [Service parameter objects](#service-parameter-objects)
 
 ## Aggregate services
@@ -55,7 +56,36 @@ aggregate needs no application service at all, and adding an empty one is scaffo
 - Do not accept REST request/response TOs and do not return JPA entities.
 - Return domain objects such as `UserDomain`; map entities to domain objects before crossing the service boundary.
 - Apply entity mutations through the accessor style recorded in `docs/project-profile.md`. The examples use fluent setters that return the entity; plain `void` setters are equally acceptable when the profile records that choice. Use one style across the project.
-- For update operations, load the entity inside the write transaction, apply explicit business or persistence mutations, call repository `save` exactly once, and map the returned saved entity to a domain object. This project requires the explicit repository write even when JPA dirty checking would persist a managed entity. Use `saveAndFlush` only when subsequent logic must observe immediate database synchronization for a documented reason. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity.
+- For update operations, load the entity inside the write transaction, apply explicit business or persistence mutations, call repository `save` exactly once, and map the returned saved entity to a domain object. Use `saveAndFlush` only when subsequent logic must observe immediate database synchronization for a documented reason. Do not use a MapStruct `@MappingTarget` method to mutate an existing entity.
+
+### The explicit write, by entity state
+
+**This project requires the explicit repository write even where JPA dirty checking would persist a
+managed entity, and that is house style rather than correctness** — the strength
+[`_core/RULES.md`](../../_core/RULES.md#how-strong-each-rule-is) defines. Dirty checking would produce
+the same row. What it would not produce is a line in the diff: with an explicit `save`, the write is
+visible at the point the decision was made, a reviewer can see which method persists and which only
+reads, and a method that stopped writing shows up as a deleted line rather than as silence. That is
+worth the call, and it is why the rule stands — but state it as the reason, because a reader told it
+is a correctness requirement will eventually find out it is not, and then discount the rules around
+it too.
+
+Apply it per entity state; the four cases are not the same operation:
+
+| State of the entity | What the service does | Why |
+| --- | --- | --- |
+| **New** | `save` | There is no other way to persist it |
+| **Managed**, loaded in this transaction | Mutate, then `save` once | The house rule above. The provider would flush it anyway, so `save` adds visibility, not persistence |
+| **Detached**, rebuilt from client input | Do not save it as an update at all | Every field the client did not send is written too, so an omitted field becomes a silent overwrite. `spring-data-jpa` states this and the alternative |
+| **Bulk**, many rows by one statement | Neither — use the bulk path | `spring-data-jpa` owns it, including that bulk DML bypasses the optimistic version check |
+
+One consequence is worth naming because it is invisible at the call site: **`save` on a managed
+instance is a `merge`, so it follows the association's cascade settings.** The `UserEntity` that
+`spring-data-jpa` declares maps its child collection with `PERSIST` and `MERGE`, so saving the root
+reaches the children. That is intended for an aggregate — the root is the only write path into it —
+but it means `save` is not the no-op it looks like on a graph, and a cascade added to a mapping
+changes what every existing `save` call does. `spring-data-jpa` owns cascade design; this rule only
+requires that the call be there.
 
 ## Service parameter objects
 

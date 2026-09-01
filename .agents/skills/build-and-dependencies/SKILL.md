@@ -170,7 +170,7 @@ A rule a tool can check must fail the build; a rule a tool cannot check belongs 
 - Run them in order: formatter, then static analysis, then compile, then tests. A gate that runs after the test suite wastes the slowest part of the cycle.
 - Set every gate to fail the build. A warning nobody must fix is not a gate.
 - Commit the editor configuration alongside the formatter configuration. Checkstyle reports a violated import order; it does not stop an IDE from reintroducing it on the next "Optimize Imports".
-- Use no baseline file and no suppressions. This project rejects legacy code, so there is nothing to grandfather, and a suppression file is where a standard goes to die. If a rule does not fit, change the rule and say so in review.
+- Use no baseline file and no suppressions. This project rejects legacy code, so there is nothing to grandfather, and a suppression file is where a standard goes to die. If a rule does not fit, change the rule and say so in review. Adopting the set into a repository that already has code is the one exception, and it is time-boxed and scoped rather than permanent; [quality gates](references/quality-gates.md#adopting-the-set-into-a-repository-that-already-has-code) states how.
 - Label which rules are gated and which are review-only, so nobody mistakes a green build for compliance.
 - **Generated sources are gated by what a gate proves, not by who wrote them.** Compilation, contract or schema validation, forbidden dependencies and imports, and deterministic regeneration are required; human-style formatting gates may be excluded; the output is never hand-edited. This skill owns that rule and states it once, in [generated code and the gates](references/quality-gates.md#generated-code-and-the-gates). No other skill restates it.
 - Nullability checking is the one gate this skill treats as a project decision rather than a default. The profile's `Nullability enforcement` row records it; the reference states what each level costs and catches. Never add Error Prone as a side effect of another task.
@@ -229,7 +229,7 @@ Reject:
 - Lombok introduced because an example showed it, rather than because the project profile records it;
 - integration tests that run in the unit-test phase, or that no phase runs at all;
 - skipped tests, ignored test failures, or disabled quality gates in committed configuration;
-- a Checkstyle suppression file, a baseline, or a `@SuppressWarnings` used to silence a project rule;
+- a Checkstyle suppression file, a baseline, or a `@SuppressWarnings` used to silence a project rule, or a gate adoption scoped to changed files that carries no end date and no removal condition;
 - a full source formatter that reformats the codebase to its own conventions;
 - credentials, tokens, or environment-specific URLs in build files;
 - an unreviewed repository, wrapper, or distribution URL change;

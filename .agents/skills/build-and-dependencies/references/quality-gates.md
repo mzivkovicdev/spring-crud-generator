@@ -17,6 +17,7 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 7. [Nullability checking](#nullability-checking)
 8. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
 9. [No baseline, no suppressions](#no-baseline-no-suppressions)
+   - [Adopting the set into a repository that already has code](#adopting-the-set-into-a-repository-that-already-has-code)
 
 ## What is gated and what is not
 
@@ -414,3 +415,23 @@ to grandfather, so the usual argument for a baseline does not apply.
 
 If a rule genuinely does not fit the project, change the rule in the configuration and say so in
 review. Do not suppress it at the call site.
+
+### Adopting the set into a repository that already has code
+
+Everything above assumes a greenfield project, which is what this set is written for. Turning the
+same gates on over an existing codebase produces thousands of violations on the first run, and the
+two obvious responses are both wrong: lowering the gates leaves a standard nobody enforces, and
+fixing everything at once produces a diff nobody can review beside the feature work.
+
+Neither is what a baseline is for, so this is the one case where a time-boxed one is the right tool
+— and it is a different artefact from the suppression file this section rejects:
+
+- **Turn the gates on at `error` for changed files only**, through the build's own path filtering or a pre-merge check scoped to the diff. New and touched code meets the standard from day one; untouched code does not block it.
+- **Record the remaining violations once**, as a count per rule with an owner and a date, in the project's own tracking — not as entries a build silently consumes forever.
+- **Give the adoption an end date and a removal condition**, in `docs/project-profile.md` under the deferred decisions. A scoped gate with no end date is a permanent two-tier standard, which is the failure this section exists to prevent, reached by a longer route.
+- **Never let the scoped phase justify a call-site suppression.** The rule above holds throughout: a rule that does not fit is changed in the configuration, once, for everyone.
+
+`RequireThis` and the import order are the two that produce the largest first run, and both are
+mechanical — Spotless applies the import order, and the `this.` qualification is a single automated
+pass. Doing those two before the first scoped build removes most of the count and leaves the
+violations that need a human.

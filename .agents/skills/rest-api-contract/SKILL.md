@@ -80,6 +80,13 @@ lower-friction default for a single service whose consumers are in the same orga
 contract-first earns its cost when a second service, an external consumer, or a separate frontend
 team needs the contract before the implementation exists.
 
+**Code-first needs a document producer declared; contract-first needs a generator.** Neither arrives
+by accident, and neither is this skill's to declare: state the requirement to
+`build-and-dependencies`, which owns the coordinate, the version, and the per-generation difference
+in [generation differences](../build-and-dependencies/references/generation-differences.md). The
+common failure is a code-first project that records `OpenAPI` in the profile, never declares
+springdoc, and discovers at the drift gate that there is no document endpoint to compare against.
+
 **Two consequences are settled with the direction, not discovered later.** Under contract-first the
 generator's model type names collide with this project's `TO` suffix and `transferobject` package
 unless configured, and the generated interface carries the routes so a controller declares none —

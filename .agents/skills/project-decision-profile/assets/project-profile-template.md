@@ -145,6 +145,7 @@ stays `UNDECIDED` with its reason, never a remembered number.
 | JPA static metamodel processor, if Specifications or Criteria are used | `RESOLVE` |  |  |
 | Retry engine, if the project declares one | `RESOLVE` |  |  |
 | OpenAPI generator, if contract-first | `RESOLVE` |  |  |
+| springdoc, if code-first with an OpenAPI document | `RESOLVE` |  |  |
 
 > The Spring Boot BOM manages some of these and not others, and which is which changes between
 > generations. A row is filled with the version the build actually resolves, not with the version

@@ -60,6 +60,12 @@ limit, and the hard size limits are enforced by the project's quality gates and 
 an IDE from reverting the import order. Do not suppress a gate at the call site; if a rule does not
 fit, change the rule and say so in review.
 
+Those six are **house style** in the sense [`_core/RULES.md`](../_core/RULES.md#how-strong-each-rule-is)
+defines: more than one answer is defensible, this project picked one, and the value of picking one is
+that nobody argues about it again. That is not a licence to deviate per file — it is the opposite.
+Changing one is a deliberate change to the rule *and* the gate that enforces it, made once for the
+whole project, never a local exception.
+
 Use this group order:
 
 1. all `import static ...` statements;

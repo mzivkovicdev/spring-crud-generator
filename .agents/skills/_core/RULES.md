@@ -9,10 +9,44 @@ authoritative for scope, exceptions, and detail. When this card and an owner ski
 owner wins and this card is the defect to fix. Read the owner skill before implementing anything it
 covers; read the full map in [OWNERSHIP.md](OWNERSHIP.md).
 
+**A summary drifts in one direction: stricter.** Compressing a rule drops its scope and its
+exceptions first, because those are the clauses that read as detail — and a card that forbids more
+than its owner does is not a safe simplification, it is a rule nobody can follow and nobody owns.
+So a change to any rule here is a change to two files: the owner, and this card. Verify the pair
+against each other, in the same change.
+
 An owner keeps its always-loaded body to the decisions and the rules that decide most reviews, and
 routes the rest to its references — some rule sets live **only** there. Each skill's reference-routing
 section says which file to open for which change; "read the owner skill" means following that routing,
 not reading its `SKILL.md` and stopping.
+
+## How strong each rule is
+
+Every rule below is binding on a project that adopts this set. What differs is what happens when a
+**second project** wants a different answer, and that difference is invisible if the rules are read
+as one flat list.
+
+This is a different axis from the **Must / Default / Avoid** vocabulary
+`project-naming-conventions` defines for naming decisions. That one grades how binding a rule is on
+*this* project; this one grades what a *different* project may change. A rule can be a Must here and
+still be house style — `no var` is exactly that. Do not merge the two scales.
+
+| Strength | What it means | What a second project may do |
+| --- | --- | --- |
+| **Correctness** | Breaking it produces wrong, unsafe, or unoperable software | Nothing. It is not a project preference on any project |
+| **Architecture** | The shape the rest of this set assumes — layers, aggregates, the transaction boundary, the error contract | Choose differently, and accept that much of this set no longer applies. That is a fork, not a setting |
+| **House style** | This organization's chosen convention, where more than one answer is defensible | Change it — but change the **rule and its gate together**, deliberately and once. Never suppress it at a call site, and never let two projects using this set disagree silently |
+
+The house-style rules on this card are **4** (import order and grouping), **5** (no `var`), **6**
+(`this.` qualification), **7** (`final` placement), **9** (the size thresholds), and the *vocabulary*
+in **12** — `TO`, `Domain`, `Entity` are names this project chose, while the boundary those names
+describe is architecture. Everything else here is correctness or architecture.
+
+Reading this the wrong way is the expensive mistake, and it goes in both directions: treating a
+house-style rule as correctness produces an argument nobody can win, and treating a correctness rule
+as taste produces a defect nobody reports. When two rules genuinely conflict, the precedence order
+resolves it, and it resolves it in this direction — style and vocabulary yield to correctness, never
+the reverse.
 
 ## Before writing production code
 
@@ -102,7 +136,9 @@ not reading its `SKILL.md` and stopping.
     serialization failure is `503` with `Retry-After`. Neither is caught in a service, and neither
     may fall through to the catch-all as `500`. (`spring-boot-patterns`, `spring-data-jpa`)
 27. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
-    never edited after it is applied anywhere. Hibernate `ddl-auto` is `validate` or `none`.
+    frozen once it has been applied to any **shared** environment — never edited, renamed,
+    renumbered, or deleted after that. Editing is allowed only while it sits on a feature branch and
+    has run nowhere but the author's own database. Hibernate `ddl-auto` is `validate` or `none`.
     (`sql-database-migration`)
 
 ## Outbound and security
@@ -143,8 +179,11 @@ not reading its `SKILL.md` and stopping.
 36. **Every dependency names the requirement it satisfies**, duplicates no existing capability, and
     carries no version when the Spring Boot BOM manages it. Every plugin version is pinned.
     (`build-and-dependencies`)
-37. **Quality gates fail the build**, run before the tests, and are never silenced with a suppression
-    file, a baseline, or `@SuppressWarnings`. (`build-and-dependencies`)
+37. **Quality gates fail the build** and run before the tests. A suppression file, a baseline, or a
+    `@SuppressWarnings` used to silence a **project rule** is prohibited; if a rule does not fit,
+    change the rule and say so in review. This is written for a greenfield project, which is what
+    the set assumes — adopting the set into a repository that already has code is a different
+    problem, and the owner states how. (`build-and-dependencies`)
 
 ## Worked examples
 

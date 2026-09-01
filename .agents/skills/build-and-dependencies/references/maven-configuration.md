@@ -282,6 +282,13 @@ weakening the build.
 </dependency>
 ```
 
+**The web starter is one of the coordinates that differs by generation.** The declaration above
+names the Spring Boot 3 artifact; on Spring Boot 4 it is `spring-boot-starter-webmvc`, and the old
+name still resolves as a deprecated alias — so a Spring Boot 4 project that copies this block builds
+green while sitting on a name it is supposed to have left behind. The same applies to several other
+starters. [Generation differences](generation-differences.md) is the catalogue; read the column for
+the generation the profile records before copying any dependency block, here or anywhere else.
+
 - No `<version>` appears for a BOM-managed artifact.
 - The JDBC driver is `runtime`. It is loaded by name and never imported, so every analyzer calls it unused.
 - `spring-boot-starter-test` already provides JUnit Jupiter, AssertJ, Hamcrest, Mockito, JSONassert, JsonPath, and the Spring test module. Declaring any of those separately duplicates a managed capability.

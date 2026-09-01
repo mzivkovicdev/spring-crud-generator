@@ -40,6 +40,12 @@ extra["mapstructVersion"] = "RESOLVE"
 extra["lombokMapstructBindingVersion"] = "RESOLVE"
 ```
 
+When the profile records contract-first, the OpenAPI generator's Gradle plugin
+(`org.openapi.generator`) joins the `plugins` block with its own resolved version, and
+`rest-api-contract` owns its configuration in
+[contract-first generation](../../rest-api-contract/references/contract-first-generation.md#gradle).
+Declare it only for a contract-first project; a code-first project generates nothing.
+
 `checkstyle` and `java` are Gradle-distributed plugins and take no version — the Gradle version in
 the committed wrapper pins them, which is one of the reasons the wrapper is reviewed as executable
 code. Everything applied by identifier carries a version. `toolVersion` is separate and required:
@@ -161,6 +167,13 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
 }
 ```
+
+**The web starter is one of the coordinates that differs by generation.** The declaration above
+names the Spring Boot 3 artifact; on Spring Boot 4 it is `spring-boot-starter-webmvc`, and the old
+name still resolves as a deprecated alias — so a Spring Boot 4 project that copies this block builds
+green while sitting on a name it is supposed to have left behind. The same applies to several other
+starters. [Generation differences](generation-differences.md) is the catalogue; read the column for
+the generation the profile records before copying any dependency block, here or anywhere else.
 
 - No version appears for a BOM-managed artifact. The Spring Boot BOM manages the Testcontainers modules, so importing `testcontainers-bom` on top of it is a second source of truth for the same versions. Import it only to deliberately move Testcontainers off the managed version, and record the reason and a removal condition beside it.
 - Use `implementation` by default. Use `api` only in a library module that deliberately exposes a type in its own public API; in an application module it is almost always wrong and it slows down compilation for everything downstream.

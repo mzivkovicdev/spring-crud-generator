@@ -64,9 +64,18 @@ that no longer wires anything.
 | Actuator | `spring-boot-starter-actuator` | unchanged |
 | Micrometer registry | registry artifact, e.g. `micrometer-registry-prometheus` | `spring-boot-starter-micrometer-metrics`, or `spring-boot-starter-opentelemetry` for the OTLP path |
 | Imperative HTTP client | part of the web starter | `spring-boot-starter-restclient` |
+| OpenAPI document producer, code-first only | `org.springdoc:springdoc-openapi-starter-webmvc-api` or `-ui`, on the springdoc 2.x line | the same two artifacts on the springdoc 3.x line; the springdoc major tracks the Spring Boot generation, so the coordinate is unchanged and the version is not |
 
 The deprecated Spring Boot 4 names still resolve. Treat that as a grace period, not as permission: a project
 that starts on Spring Boot 4 uses the new name from the first commit.
+
+**springdoc is not managed by the Spring Boot BOM on either generation**, so its version is always
+declared and always `RESOLVE`d. Choosing between the `-api` and `-ui` artifacts is not a taste
+question: `-ui` bundles Swagger UI into the deployable, so a project whose profile records the
+interactive UI as never exposed declares `-api` and has nothing to switch off later.
+`rest-api-contract` owns whether a document exists at all, and under contract-first this dependency
+is absent entirely — the committed document is the source, and the generator is configured with
+`documentationProvider=none` precisely so it does not pull springdoc back in.
 
 ## Test starters
 
