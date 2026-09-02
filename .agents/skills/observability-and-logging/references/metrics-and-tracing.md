@@ -202,21 +202,52 @@ Tracing is optional and recorded in the project profile. When enabled:
 
 Assert that instrumentation exists, not that it produced a particular number.
 
-```java
-@Test
-void create_whenRequestIsValid_recordsCreationTimer() {
-    this.userService.create("ana", "ana@example.com", "raw-password");
+**An `ObservationRegistry` produces no meters on its own.** It publishes observations; turning those
+into timers is the job of a handler, which Spring Boot wires for you in the application context and
+which a unit test has to register itself. Without the handler the assertion below fails with the
+meter simply absent, which reads as a missing instrumentation bug in production code that is in fact
+correct. This is the whole of the setup:
 
-    assertThat(this.meterRegistry.find("user.creation")
-            .tag("outcome", "success")
-            .timer())
-        .isNotNull()
-        .extracting(Timer::count)
-        .isEqualTo(1L);
+```java
+@ExtendWith(MockitoExtension.class)
+class UserServiceObservationTest {
+
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final ObservationRegistry observationRegistry = ObservationRegistry.create();
+
+    @Mock
+    private UserRepository userRepository;
+
+    private UserService userService;
+
+    @BeforeEach
+    void setUp() {
+        this.observationRegistry.observationConfig()
+                .observationHandler(new DefaultMeterObservationHandler(this.meterRegistry));
+        this.userService = UserTestData.userServiceWith(
+                this.userRepository, this.observationRegistry);
+    }
+
+    @Test
+    void create_whenRequestIsValid_recordsCreationTimer() {
+        this.userService.create("ana", "ana@example.com", "raw-password");
+
+        assertThat(this.meterRegistry.find("user.creation")
+                .tag("outcome", "success")
+                .timer())
+            .isNotNull()
+            .extracting(Timer::count)
+            .isEqualTo(1L);
+    }
 }
 ```
 
-- Use `SimpleMeterRegistry` in unit tests, and the application's registry in integration tests.
+`UserTestData` is the per-aggregate factory declared in
+[`spring-boot-testing` → test-data factory](../../spring-boot-testing/references/unit-test-examples.md#test-data-factory);
+`userServiceWith` is one more scenario method on it, so the subject's remaining constructor
+arguments do not have to be restated in every observation test.
+
+- Use `SimpleMeterRegistry` in unit tests **with the meter observation handler registered against it**, and the application's registry in integration tests, where auto-configuration has already registered one.
 - Assert the meter name and the tags, because those are the contract a dashboard and an alert depend on.
 - Do not assert timing values; they are nondeterministic.
 - Assert that a failure path increments its counter, and that a failing operation is tagged `outcome=failure`. Those two assertions catch silent degradation and the mis-set outcome tag, and they are the ones most often missing.

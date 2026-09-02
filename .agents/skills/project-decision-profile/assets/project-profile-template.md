@@ -112,6 +112,25 @@ Last updated: YYYY-MM-DD
 > listener, or a messaging dependency. `_core/README.md` lists exactly which parts are owned and by
 > whom, so an owned rule is not mistaken for a missing one.
 
+## Performance and capacity
+
+These are the **bounds the code enforces**, not performance targets. Each one turns an unbounded
+wait or an unbounded result into a failure someone chose, which is what keeps a slow dependency from
+becoming a held connection and a held connection from becoming an outage.
+
+| Decision | Token | Fallback | Value | Owner skill |
+| --- | --- | --- | --- | --- |
+| Maximum page size | `ASK` | 100 | the value the shared bound constant declares, enforced at the REST boundary and on the service contract | `spring-data-jpa` |
+| Statement timeout | `ASK` | 5s | per-statement ceiling supported by the recorded engine; stays below the request budget | `spring-data-jpa` |
+| Transaction timeout | `ASK` | the recorded request budget | ceiling for a whole transaction; never below the statement timeout | `spring-data-jpa` |
+| Connection pool size | `ASK` |  | maximum pool size. No fallback: it depends on the engine's own connection limit and on how many instances share it, and a guessed value either starves the application or overloads the database | `spring-data-jpa` |
+| Maximum wait for a connection | `ASK` | 2s | how long a caller waits for a pooled connection before failing. Short on purpose — a long wait converts pool exhaustion into a stalled request nobody times out | `spring-data-jpa` |
+| JDBC batch size | `ASK` | none | batching is enabled deliberately and verified against the generated SQL, never assumed from `saveAll` | `spring-data-jpa` |
+
+> The request budget these rows sit inside is the **Outbound timeout budget** row under
+> **Application design**, which `spring-boot-patterns` owns. Read it first: every value here has to
+> fit within it, and a bound larger than the budget is a bound the caller never waits for.
+
 ## Testing and build commands
 
 | Decision | Token | Fallback | Value | Owner skill |

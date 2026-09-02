@@ -197,6 +197,34 @@ and verification. This skill owns only what the schema has to look like for the 
 - `sql-database-migration` sets the Hibernate schema-generation mode. What matters here is the consequence: with validation on, a mapping that has outrun its migration fails at startup rather than at the first query, so treat that failure as a missing migration.
 - Give constraints and indexes explicit names in the mapping and in the migration, and keep them equal. `project-naming-conventions` owns the form.
 
+## Resource budgets
+
+Every rule above shapes *what* the database does. This section is about *how long* and *how much*,
+and it is the half that decides whether a slow dependency degrades one request or the whole
+application. `docs/project-profile.md` records the numbers under **Performance and capacity**; this
+skill owns what they mean and what happens when one is missing.
+
+**A default that is "no limit" is the dangerous kind, because nothing reports it.** An unbounded
+statement holds its connection; a held connection is one the pool cannot hand out; an exhausted pool
+turns a slow query on one endpoint into a timeout on every endpoint. That chain is the reason these
+are bounds rather than tuning.
+
+- **Set a statement timeout**, at the level the recorded engine supports — a datasource property, a connection-init setting, or a per-query hint. Keep it below the request budget `spring-boot-patterns` records: a statement still running after the caller gave up is pure cost.
+- **Set a transaction timeout** for write use cases, at or below the request budget and never below the statement timeout. It bounds the whole unit, including the parts between statements.
+- **Size the connection pool from the engine's limit and the instance count**, not from a guess. Pool size × instances must stay within what the database accepts, with headroom for migrations and operators. A larger pool is not faster: past the point the database can execute concurrently, it converts queuing in the application into queuing in the engine, where it is harder to see.
+- **Bound the wait for a connection**, and keep it short. A long acquisition wait does not prevent exhaustion; it hides it, by turning a fast failure into a stalled request.
+- **Enable JDBC batching deliberately and verify it in the generated SQL.** `saveAll` is not batching, and the identifier strategy can silently disable it.
+- **Every read that can grow is already bounded** by the pagination rules above; the maximum page size is recorded with the rest of these numbers so it is one decision rather than a constant somebody re-picks.
+
+Two consequences worth stating, because they are where these bounds actually get lost:
+
+- **`REQUIRES_NEW` doubles the connection demand** for the duration of the inner transaction, since the outer one stays open. Account for it in the pool size, or do not use it.
+- **A lock wait sits inside all of this.** The pessimistic lock timeout the profile records is bounded for the same reason, and it must be below the statement timeout, not merely below the request budget.
+
+What this skill does **not** own is measurement: whether the application meets a latency target, and
+what a load test has to prove before a release. [`_core/README.md`](../_core/README.md) records that
+as an open gap rather than leaving it to be assumed.
+
 ## Persistence tests and observability
 
 - Apply `spring-boot-testing` for test structure, data, isolation, and execution.
@@ -232,3 +260,4 @@ survive review:
 - [ ] The advice translates the framework contention types themselves, so neither an exhausted retry nor a lock timeout reaches the catch-all as `500`, and the two are not declared as one condition.
 - [ ] Any operation that overwrites rather than recomputes uses the stale-write protection the profile records.
 - [ ] Tests run against the supported database and cover changed persistence behavior.
+- [ ] Statement, transaction, connection-wait, and pool bounds come from the profile, fit inside the request budget, and no path was left with an unbounded default.

@@ -10,6 +10,7 @@ unchanged; this file covers what is specific to the tool.
 - [Change sets](#change-sets)
 - [Contexts, labels, and preconditions](#contexts-labels-and-preconditions)
 - [Recovering a failed change set](#recovering-a-failed-change-set)
+  - [Resolving a checksum mismatch](#resolving-a-checksum-mismatch)
 
 ## Dependencies
 
@@ -67,7 +68,7 @@ spring:
 ## Change sets
 
 - One change set per logical change, with an id, an author, and a description. `project-naming-conventions` owns the form of the id.
-- Never edit an applied change set. Liquibase stores a checksum in `DATABASECHANGELOG` and fails on mismatch, which is the behavior to rely on rather than work around.
+- Never edit an applied change set. Liquibase stores a checksum in `DATABASECHANGELOG` and fails on mismatch, which is the behavior to rely on rather than work around. When one has been edited anyway, [resolving a checksum mismatch](#resolving-a-checksum-mismatch) is the only sanctioned response, and it is an incident procedure rather than a step in normal work.
 - Do not use `runOnChange` for schema structure. It is the equivalent of a repeatable migration and belongs only on objects that are dropped and recreated in full, such as views and procedures.
 - Prefer Liquibase's declarative change types over `sql` and `sqlFile` when one exists for the change. The declarative form carries the engine differences; raw SQL pins the changelog to one engine.
 - Use raw SQL deliberately when the change has no declarative equivalent, and state the engine it targets.
@@ -84,5 +85,37 @@ spring:
 
 - On an engine without transactional DDL, a failed change set leaves a partially applied schema. Repair the database state by hand only in a non-shared environment; in a shared one, follow the project's incident procedure.
 - `changelogSync` marks change sets as applied without executing them. It is correct only when adopting Liquibase into a database that already has the structure, and wrong in every other case, because it makes the history claim work that never happened.
-- `clearCheckSums` recomputes stored checksums. Use it only after a deliberate, reviewed change to an applied change set's formatting, never to silence a mismatch caused by an edit to its content.
 - After any repair, run a clean install from an empty database, as `../SKILL.md` requires. That is the only proof the history is still coherent.
+
+### Resolving a checksum mismatch
+
+`../SKILL.md` states the rule this section is the single exception to: an applied change set is
+frozen. A checksum mismatch means something edited one anyway, and the response depends on what.
+
+**First establish that the mismatch is real.** Liquibase has narrowed what affects a checksum over
+time — on current versions, whitespace and formatting changes to some object types no longer change
+it at all. A mismatch that appears after a reformat is therefore evidence that something other than
+formatting changed. Diff the change set against the merged revision before touching anything.
+
+Then, in order of preference:
+
+| Response | Scope | Use when |
+| --- | --- | --- |
+| **Revert the edit** | one change set | Always the first answer. The content was frozen; putting it back costs nothing and the history stays true |
+| **A new change set** | additive | The edit was trying to change the schema. That is what a forward migration is for |
+| **`validCheckSum` on that change set** | one change set | The edit is genuinely semantically identical and cannot be reverted — an adoption artefact, a tooling migration. It records the accepted checksum beside the change set, in the changelog, where review can see it |
+| **`clearCheckSums`** | **every change set in the database** | Last resort, for a systemic problem — a Liquibase upgrade that changed the algorithm across the whole history |
+
+**The scope column is the whole argument.** `clearCheckSums` nullifies the entire `MD5SUM` column,
+so it does not just accept the one edit under discussion: it discards the detection for every other
+change set at the same time. If a second file was edited and nobody noticed, that edit is now
+accepted too, permanently and silently. `validCheckSum` accepts one checksum, on one change set, in
+a committed file — which is why it is the targeted tool and `clearCheckSums` is not.
+
+Whichever is used, it is an incident response and not a workflow:
+
+- The semantic identity is **proved**, not asserted — by diff, and against the deployed schema.
+- It is reviewed and approved as its own change, never folded into a feature.
+- Every environment is checked, because the mismatch may exist in only some of them.
+- A clean install from an empty database runs afterwards, per `../SKILL.md`.
+- The reason is recorded, so the next person does not read the accepted checksum as permission.

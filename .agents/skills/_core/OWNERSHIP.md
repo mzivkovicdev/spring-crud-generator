@@ -44,6 +44,7 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | Nullability in the published contract | `rest-api-contract` owns whether a field may be absent or null on the wire | `modern-java-21` owns how the Java declaration behind it is annotated, which is not the same question |
 | Profile decisions | `project-decision-profile` owns the file, the three tokens, the fallback rule, and whether a missing row blocks | the row's named owner decides what its value means; `build-and-dependencies` classifies every build and version row |
 | Versions of anything | `build-and-dependencies` owns every version choice | no other skill selects a version |
+| Resource bounds | `spring-data-jpa` owns the database-side bounds: statement and transaction timeouts, pool size, connection wait, batch size, page size | `spring-boot-patterns` owns the request budget they all fit inside, and `application-security` owns the per-caller limits that stop one client consuming them |
 
 ## Precedence when two skills genuinely conflict
 

@@ -10,13 +10,14 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 
 1. [What is gated and what is not](#what-is-gated-and-what-is-not)
 2. [Generated code and the gates](#generated-code-and-the-gates)
-3. [Layer 1: editor and formatter](#layer-1-editor-and-formatter)
-4. [Layer 2: Checkstyle](#layer-2-checkstyle)
-5. [Modules to verify before relying on them](#modules-to-verify-before-relying-on-them)
-6. [Layer 3: dependency and runtime guards](#layer-3-dependency-and-runtime-guards)
-7. [Nullability checking](#nullability-checking)
-8. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
-9. [No baseline, no suppressions](#no-baseline-no-suppressions)
+3. [Gated but not proven](#gated-but-not-proven)
+4. [Layer 1: editor and formatter](#layer-1-editor-and-formatter)
+5. [Layer 2: Checkstyle](#layer-2-checkstyle)
+6. [Modules to verify before relying on them](#modules-to-verify-before-relying-on-them)
+7. [Layer 3: dependency and runtime guards](#layer-3-dependency-and-runtime-guards)
+8. [Nullability checking](#nullability-checking)
+9. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
+10. [No baseline, no suppressions](#no-baseline-no-suppressions)
    - [Adopting the set into a repository that already has code](#adopting-the-set-into-a-repository-that-already-has-code)
 
 ## What is gated and what is not
@@ -36,7 +37,7 @@ compliance.
 | At most seven parameters | `modern-java-21` | Checkstyle `ParameterNumber` |
 | Method over 100 lines, class over 1000 lines | `modern-java-21` | Checkstyle `MethodLength`, `FileLength` |
 | No `System.out`, `System.err`, `printStackTrace` | `observability-and-logging` | Checkstyle regex |
-| No concatenation in a log call | `observability-and-logging` | Checkstyle regex |
+| No concatenation in a log call, classic and fluent | `observability-and-logging` | Two Checkstyle regexes |
 | Identifier naming form | `project-naming-conventions` | Checkstyle naming modules |
 | Integration tests run in their own phase | `spring-boot-testing` | Surefire/Failsafe or Gradle suites |
 | Banned and duplicated dependencies, JDK version, profile presence | `build-and-dependencies` | `maven-enforcer-plugin` or Gradle constraints |
@@ -93,6 +94,29 @@ Two consequences follow, and both are rules:
 
 Generated sources belong in the build output directory and are not committed. What *is* committed is
 the input the generator reads, and that input is reviewed like source.
+
+## Gated but not proven
+
+A green build proves that every gate ran and found nothing. It does not prove the rule holds,
+because three of these gates are deliberately heuristics — each one is documented where it is
+configured, and this is the consolidated list, so a reviewer has one place to look instead of
+reconstructing it from the notes.
+
+| Rule | What the gate catches | What it cannot see |
+| --- | --- | --- |
+| No `var` | A declaration at the start of a statement, in an enhanced-for, or in a try-with-resources | A `var` written mid-line or inside a single-line block. The patterns are anchored deliberately: an unanchored one fires on a string literal containing `var x = 1`, and a gate that fails correct code gets weakened |
+| No concatenation in a log call | Both call styles, classic and fluent, where a string literal is followed by `+` on the same line | A concatenation split across lines, or one built into a variable first. It is a gate, not a proof |
+| Import group order | Group placement and ordering, and the blank line between **type** groups | The blank line between the static block and the first type group. Checkstyle's `ImportOrder` scopes `separated` to type groups; Spotless formats that boundary and the committed IDE configuration preserves it |
+
+Two more rules are review-only by design and appear in no gate at all: a shared numeric bound
+repeated as a literal rather than referenced from its constant, since `MagicNumber` produces more
+noise than value in a Spring project; and whether a `@Nullable` annotation is *correct*, which a
+checker cannot judge because the code and the annotations then agree with each other and disagree
+with reality.
+
+**This list is what `spring-boot-code-review` reads before trusting a green build.** Anything on it
+stays a review responsibility. Adding a rule to this table is how a gate's known blind spot becomes
+visible instead of folklore; removing one requires the gate to actually close it.
 
 ## Layer 1: editor and formatter
 
@@ -237,10 +261,10 @@ Configuration decisions worth knowing before someone "fixes" them:
 - **`AbbreviationAsWordInName` is set to `1`** so that two consecutive capitals are permitted. That is what allows the project's `TO` suffix, `UserTO` and `UserCreateTO`, while still rejecting `HTTPClient`. `ignoreStaticFinal` keeps `UPPER_SNAKE_CASE` constants out of scope.
 - **`ImportOrder`'s `separated` covers type groups only.** Its own documentation scopes it to type import groups, so the blank line between the static block and the first type group is not checked. `separatedStaticGroups` is **not** the fix — it separates static groups from one another and does nothing while `staticGroups` is unset. That boundary is enforced by Spotless, which formats it, and preserved by the committed IDE configuration; the table above records that division so nobody reads a green Checkstyle run as proof of the whole rule.
 - **The `var` gates are anchored at the start of a statement**, which is why they read oddly. `ignoreComments` excludes comments but not string literals, so an unanchored pattern fires on a fixture whose *data* contains `var x = 1`. A gate that fails correct code is worse than one with a known blind spot, because the first response to it is to weaken it. The trade is deliberate: a `var` written mid-line, inside a single-line block, slips past the gate and is caught in review instead.
-- **The logger-name gate exists to keep the concatenation gate honest.** The concatenation pattern matches the literal identifier `LOGGER`, so a logger named `log` would be silently exempt from it. Enforcing the name is what makes the second gate mean something. It also matches the single logger declaration form `observability-and-logging` requires.
+- **The logger-name gate exists to keep the classic concatenation gate honest.** That pattern matches the literal identifier `LOGGER`, so a logger named `log` would be silently exempt from it; enforcing the name is what makes it mean anything. The fluent pattern does not share that dependency — it anchors on the terminal `.log(` or `.setMessage(` call and never sees the logger's name — which is why the two are worth having separately rather than merged. The name rule also matches the single logger declaration form `observability-and-logging` requires.
 - **`IllegalCatch` deliberately allows `RuntimeException`.** Catching it to tag an observation, increment a failure counter, or record an outcome and then rethrow is a required pattern in `observability-and-logging`. `Error` and `Throwable` stay banned.
 - **`MagicNumber` is not enabled.** In a Spring project it fires mostly on validation annotations and produces more noise than value; the real rule — shared bounds declared once — is covered by review and by the constants the skills already require.
-- **The log-concatenation regex is a heuristic.** It catches the common case and will not catch every one. It is a gate, not a proof.
+- **Log concatenation takes two patterns, because the two call styles put the message in different places.** The classic form has the message inside `LOGGER.info(...)`, so the pattern anchors on the logger. The SLF4J fluent form that `observability-and-logging` requires for structured fields spreads the call across lines, and the message sits on a `.log(...)` or `.setMessage(...)` line carrying no `LOGGER.` prefix at all — invisible to the first pattern. The second anchors on the terminal call instead. Both are still heuristics: a concatenation split across two lines, or assembled into a variable first, passes either one. They are gates, not proofs.
 - **`RequireThis` with `validateOnlyOverlapping=false`** is what makes the `this.` rule real. It is the single noisiest module on an existing codebase and the single most valuable one on a new project, which is why it goes in before the first feature.
 
 ## Modules to verify before relying on them

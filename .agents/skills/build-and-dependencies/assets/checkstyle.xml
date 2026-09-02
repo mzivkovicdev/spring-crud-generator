@@ -161,6 +161,16 @@
                       value="Do not concatenate in a log call; use fields or {} placeholders."/>
         </module>
 
+        <!-- observability-and-logging: the same rule for the SLF4J fluent API, which the classic
+             pattern cannot see. LOGGER.atInfo()...log("x " + y) puts the message on its own line,
+             with no LOGGER. prefix on it, so it is matched on the terminal call instead.
+             setMessage is covered too; both take the message. -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="\.(log|setMessage)\s*\([^;]*&quot;\s*\+"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Do not concatenate into a log message; use a placeholder or a key-value field."/>
+        </module>
+
         <!-- ===== Javadoc correctness, not presence ===== -->
         <module name="JavadocMethod">
             <property name="accessModifiers" value="public"/>

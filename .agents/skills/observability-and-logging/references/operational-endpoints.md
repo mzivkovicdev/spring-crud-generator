@@ -134,14 +134,45 @@ Rules:
 
 ## Testing operational endpoints
 
+**A separate management port changes how these tests are written, and it is easy to miss.** With
+`management.server.port` set, the actuator endpoints are served by their own context on their own
+connector — so `MockMvc`, which dispatches into the main application's servlet context, never reaches
+them and every assertion fails with a `404` that looks like a broken exposure list. These tests need
+a real client against the real management port:
+
 ```java
-@Test
-void healthReadiness_whenApplicationIsRunning_returnsUp() throws Exception {
-    this.mockMvc.perform(get("/actuator/health/readiness"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("UP"));
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "management.server.port=0")
+class ManagementEndpointIntegrationTest {
+
+    private final RestTestClient managementClient;
+
+    ManagementEndpointIntegrationTest(
+            @Value("${local.management.port}") final int managementPort) {
+
+        this.managementClient = RestTestClient.bindToServer()
+                .baseUrl("http://localhost:%d".formatted(managementPort))
+                .build();
+    }
+
+    @Test
+    void healthReadiness_whenApplicationIsRunning_returnsUp() {
+        this.managementClient.get()
+                .uri("/actuator/health/readiness")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("UP");
+    }
 }
 ```
+
+`management.server.port=0` gives the management connector a random free port for the test, and
+Spring Boot publishes the assigned one as `local.management.port` — so the test never hardcodes the
+production port and two suites can run at once. `spring-boot-testing` owns the client choice and
+prefers `RestTestClient` for a new test; where a project has not adopted a separate management port,
+`MockMvc` reaches the actuator like any other endpoint and this ceremony is unnecessary.
 
 - Assert the probe groups return the expected status through the real endpoint, at the integration level.
 - Assert that a disabled or unexposed endpoint is not reachable, and that an authenticated-only endpoint returns `401` without a credential. Those tests are what stop an accidental `include: *` or a dropped management chain from merging.

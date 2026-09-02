@@ -17,7 +17,7 @@ edges — and the edges are where the expensive mistakes live.
 
 ## Known gaps, and one boundary
 
-Two topics are incompletely owned, and one entry below is a scope boundary rather than a gap. They
+Three topics are incompletely owned, and one entry below is a scope boundary rather than a gap. They
 are listed here so an absent rule stays a visible decision rather than looking like a settled one,
 and so a boundary is not mistaken for an oversight.
 
@@ -57,6 +57,14 @@ treating an owned rule as absent is how a project ends up with a second, weaker 
   A project that needs one of those needs a rule that does not exist yet. **While `Message broker` is
   `none` or `UNDECIDED` in the profile, do not introduce a broker, a listener, or a messaging
   dependency** — the same guard the caching entry above applies, for the same reason.
+
+- **Performance measurement.** The *bounds* are owned: `spring-data-jpa` owns the database-side ones,
+  `spring-boot-patterns` the request budget they fit inside, `application-security` the per-caller
+  limits, and `observability-and-logging` what must be instrumented. What nothing owns is the other
+  half — a latency **target** the application is expected to meet, and what a load test has to prove
+  before a release. So the set can tell you a bound is missing; it cannot tell you the application is
+  fast enough. Treat a performance claim without a measurement as unproven, and do not let a bound
+  recorded in the profile read as evidence that it was met.
 
 - **Code generation.** This is a **scope boundary, not a gap**. How generated sources are gated is
   owned and stated once, by `build-and-dependencies` in

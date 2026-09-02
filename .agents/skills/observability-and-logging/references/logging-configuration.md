@@ -285,6 +285,15 @@ LOGGER.error("Request failed errorCode={}", error.code(), exception);
 ```
 
 ```java
+// Wrong: the same concatenation defect in the fluent form, and the one most likely to be
+// written, because this API is the one required for structured fields. The message must
+// stay a constant; the value belongs in a key-value pair beside it.
+LOGGER.atInfo()
+        .addKeyValue("operation", "user.status.change")
+        .log("User " + userId + " changed status");
+```
+
+```java
 // Wrong: the same stack trace is emitted at every layer that rethrows.
 try {
     return this.userRepository.findById(userId);
