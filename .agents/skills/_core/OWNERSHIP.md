@@ -31,7 +31,7 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | Topic | Owner of the rule | Owner of the surrounding decision |
 | --- | --- | --- |
 | Transactions | `spring-data-jpa` owns what the settings mean | `spring-boot-patterns` owns which method carries them |
-| Locking | `spring-data-jpa` owns `@Version`, lock modes, and the retry mechanism | `spring-boot-patterns` owns which layer the retry annotation sits on |
+| Locking | `spring-data-jpa` owns `@Version`, lock modes, the conditional-`UPDATE` alternative, and the retry mechanism | `spring-boot-patterns` owns which layer the retry annotation sits on |
 | Logging in a Java file | `observability-and-logging` owns level, placement, and fields | `application-security` owns what may never appear |
 | Actuator endpoints | `observability-and-logging` owns which are exposed | `application-security` owns how the exposed set is protected |
 | Interactive API documentation | `rest-api-contract` owns whether it is exposed | `application-security` owns how it is protected |

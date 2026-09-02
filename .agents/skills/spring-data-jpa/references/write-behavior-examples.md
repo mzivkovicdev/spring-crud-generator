@@ -70,7 +70,9 @@ The loaded entity can be stale because bulk DML bypasses normal persistence-cont
 not fail when a row was modified concurrently, so a bulk update over rows another transaction is
 editing overwrites that work silently, with no exception anywhere. Where a bulk statement touches
 version-protected rows, either increment the version column in the same statement or scope the
-statement so it cannot overlap concurrent edits, and record which was chosen.
+statement so it cannot overlap concurrent edits, and record which was chosen. Plain JPQL increments
+it with an explicit `set entity.version = entity.version + 1`; on Hibernate, `update versioned` in
+place of `update` does the same without the assignment.
 
 Bulk DML additionally skips entity callbacks, cascades, and auditing. Anything those would have done
 must be done explicitly, by the statement or by the caller.

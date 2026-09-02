@@ -60,7 +60,6 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
     public static final String CORRELATION_ID_HEADER = "Correlation-Id";
     public static final String CORRELATION_ID_MDC_KEY = "correlationId";
 
-    private static final int MAXIMUM_CORRELATION_ID_LENGTH = 64;
     private static final Pattern ALLOWED_CORRELATION_ID = Pattern.compile("^[A-Za-z0-9_-]{1,64}$");
 
     @Override
@@ -84,7 +83,6 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         final String suppliedCorrelationId = request.getHeader(CORRELATION_ID_HEADER);
 
         if (suppliedCorrelationId != null
-                && suppliedCorrelationId.length() <= MAXIMUM_CORRELATION_ID_LENGTH
                 && ALLOWED_CORRELATION_ID.matcher(suppliedCorrelationId).matches()) {
             return suppliedCorrelationId;
         }
@@ -134,6 +132,7 @@ FilterRegistrationBean<CorrelationIdFilter> correlationIdFilterRegistration() {
 Why each part is there:
 
 - The supplied header is untrusted input that will appear in every log line, in the response, and in the error body. Bounding its length and character set prevents log injection and unbounded field values. A value that fails validation is replaced, not rejected: a malformed header is not worth failing a request over.
+- **The bound lives in the pattern, once.** The quantifier *is* the length check, so a separate `length()` comparison beside it would be a second copy of the same number — and the pattern would still be the one that decides. One expression, one place to change it, nothing to keep in sync.
 - The `finally` block in the filter above is what `../SKILL.md` requires; it is shown because omitting it is the most common way this filter is written wrong.
 - Setting the response header lets a user quote the identifier in a support ticket. The REST exception advice additionally copies it from MDC into the `correlationId` member of an error body, because a caller pasting a failed response into a ticket rarely includes the headers. `spring-boot-patterns` owns that decision; `traceId` and `spanId` never go into a response body.
 - The filter is registered with explicit order rather than annotated as a component, so the ordering relative to the security chain is visible and reviewable.

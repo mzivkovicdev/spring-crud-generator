@@ -5,8 +5,8 @@ or pessimistic locking. Apply every rule from `../SKILL.md`; imports are omitted
 
 **This file carries rules, not only examples.** The strategy-selection table, the retry-versus-
 client-version decision, the composed `@OptimisticLockingRetry` annotation for both Spring Boot
-generations, lock timeouts, lock ordering, and the rejected forms are stated here in full and nowhere
-else. The `Rules` blocks below are as binding as `../SKILL.md`.
+generations, lock timeouts, lock ordering, the conditional-`UPDATE` alternative, and the rejected
+forms are stated here in full and nowhere else. The `Rules` blocks below are as binding as `../SKILL.md`.
 
 Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
@@ -25,8 +25,9 @@ exists because the naive version passes its tests and loses data in production.
 7. [When one aggregate uses both](#when-one-aggregate-uses-both)
 8. [Lock timeouts](#lock-timeouts)
 9. [Lock ordering and deadlocks](#lock-ordering-and-deadlocks)
-10. [Uniqueness is a constraint, not a check](#uniqueness-is-a-constraint-not-a-check)
-11. [Rejected code](#rejected-code)
+10. [Atomic conditional DML](#atomic-conditional-dml)
+11. [Uniqueness is a constraint, not a check](#uniqueness-is-a-constraint-not-a-check)
+12. [Rejected code](#rejected-code)
 
 Bulk DML bypasses every optimistic version check described here. When a statement touches
 version-protected rows, read [write behavior examples](write-behavior-examples.md) as well.
@@ -41,17 +42,19 @@ stock is pessimistic. Do not look for one project-wide answer, and do not assume
 | Situation | Strategy | Why |
 | --- | --- | --- |
 | Normal concurrent editing of a row by different users | Optimistic, `@Version` | Conflicts are rare; blocking every reader to prevent a rare conflict costs more than resolving it |
-| A counter, balance, or quota that must never be lost | Optimistic with the retry annotation, or one atomic UPDATE | Read-modify-write across two transactions loses one of them silently |
+| A counter, balance, or quota that must never be lost | Optimistic with the retry annotation, or [one atomic `UPDATE`](#atomic-conditional-dml) | Read-modify-write across two transactions loses one of them silently |
 | Allocating a limited resource: stock, seats, a licence pool, a numbered sequence | Pessimistic write lock | The invariant is "never oversell", and optimistic retry under real contention degrades into a retry storm rather than a queue |
-| Claiming a work item so exactly one worker processes it | Pessimistic write lock, or a conditional UPDATE that claims by status | Two workers must not both win; a version check tells them so only after both did the work |
+| That same allocation when it is one row and the whole rule fits in a `WHERE` clause | One conditional `UPDATE`, decided by its affected row count | The same guarantee for less: the row is held from statement to commit instead of from read to commit, with no application round trip inside the window |
+| Claiming a work item so exactly one worker processes it | Pessimistic write lock, or a [conditional `UPDATE`](#atomic-conditional-dml) that claims by status | Two workers must not both win; a version check tells them so only after both did the work |
 | An invariant spanning rows that must not be read mid-change | Pessimistic write lock, consistent order | Optimistic checks each row separately and cannot see the invariant |
 | A measured hot row where optimistic retries keep failing | Pessimistic write lock | Contention observed in production, not feared in review |
 | Uniqueness of a business key | A database unique constraint | An application check has a race window no lock closes |
 
-Optimistic is the default because it costs nothing when nothing collides. But the last four rows are
-**structurally** pessimistic: the invariant itself decides, and they need no measurement to justify
-the choice. Only the hot-row case requires evidence, because there the invariant would have been
-satisfied either way and the lock is bought purely for throughput.
+Optimistic is the default because it costs nothing when nothing collides. Every row above that names
+a lock or a conditional `UPDATE` is **structurally** so — the invariant itself decides, and needs no
+measurement to justify the choice — with one exception. Only the hot-row case requires evidence,
+because there the invariant would have been satisfied either way and the lock is bought purely for
+throughput.
 
 What a pessimistic lock costs is worth stating plainly, since it is why optimistic wins by default:
 it converts a concurrency problem into an availability one. Every blocked caller holds a connection
@@ -269,11 +272,18 @@ each one; a routine retry is not a `WARN`.
 The retry advice has to wrap the transaction advice. Inverted, every attempt rejoins a transaction
 already marked rollback-only: all of them fail identically while the configuration looks correct.
 
-- **On Spring Boot 3** the default is correct without an explicit order: `@EnableRetry` registers its interceptor at `Ordered.LOWEST_PRECEDENCE - 1` and the transaction interceptor defaults to `Ordered.LOWEST_PRECEDENCE`. Do not set an order on `@EnableTransactionManagement` that inverts it, and verify meta-annotation support on the project's Spring Retry version rather than assuming it.
-- **On Spring Boot 4** the framework documents no ordering guarantee between the two, so the arrangement is not something to read off a default. Set the order explicitly if the project's Spring version exposes one.
+- **On Spring Boot 3** the default is correct without an explicit order: `@EnableRetry` registers its interceptor at `Ordered.LOWEST_PRECEDENCE - 1` and the transaction interceptor defaults to `Ordered.LOWEST_PRECEDENCE`. Verify meta-annotation support on the project's Spring Retry version rather than assuming it.
+- **On Spring Boot 4** the default is correct as well, for the same reason under different names: `@EnableResilientMethods` documents its `order()` default as `Ordered.LOWEST_PRECEDENCE - 1`, and `@EnableTransactionManagement` documents `Ordered.LOWEST_PRECEDENCE`. The lower number is the higher precedence, so the retry advisor is the outer one on both generations.
 
-**On both generations, prove the ordering with a test that counts committed attempts.** On Spring
-Boot 4 that test is the only evidence you have.
+**Leave both at their defaults.** An explicit order that only restates a default is a second source
+of truth, and it outlives the framework change it was written to guard against. If something else in
+the advice chain forces an order to be set, set both ends rather than one — half a pair is how a pair
+gets inverted.
+
+**On both generations, prove the ordering with a test that counts committed attempts.** The defaults
+are documented, not enforced: an order set elsewhere in the project, a custom advisor, or a manually
+registered interceptor can invert them, and the inverted arrangement fails on every attempt while the
+configuration still reads as correct. Nothing but that test tells the two apart.
 
 ### Exhaustion is part of the contract
 
@@ -440,6 +450,71 @@ its frequency.
 
 Keep locked transactions especially short: no outbound call, no user interaction, and no work that
 could have been done before the lock was taken.
+
+## Atomic conditional DML
+
+A third option sits between the two locks: one `UPDATE` that carries the invariant in its `WHERE`
+clause, where the affected row count is the business answer. This is the operation from the
+optimistic example above, written as a single statement.
+
+```java
+@Modifying(flushAutomatically = true, clearAutomatically = true)
+@Query("""
+        update InventoryEntity inventory
+        set inventory.availableQuantity = inventory.availableQuantity - :quantity,
+            inventory.version = inventory.version + 1
+        where inventory.sku = :sku
+          and inventory.availableQuantity >= :quantity
+        """)
+int reserveQuantity(@Param("sku") final String sku, @Param("quantity") final int quantity);
+```
+
+```java
+@Transactional
+public void reserve(final String sku, final int quantity) {
+
+    if (this.inventoryRepository.reserveQuantity(sku, quantity) == 0) {
+        throw new InsufficientInventoryException(sku, quantity);
+    }
+}
+```
+
+Zero rows means the predicate was false — there was not enough stock — not that anything failed. The
+statement cannot oversell, because the database evaluates `availableQuantity >= :quantity` against the
+row it has just locked, inside the statement that writes it. There is no window between the check and
+the write for a second transaction to fit into, so no version check and no retry are needed to close
+one.
+
+**Why this can beat the lock.** A pessimistic read takes its lock at the `select … for update` and
+holds it until commit, so the application's decision — and every round trip it makes — happens inside
+the locked window. The conditional statement takes the same row lock and holds it until commit too,
+but it does not take it until it runs, by which point there is no decision left to make. The window
+shrinks to the tail of the transaction instead of spanning all of it, and every caller queued behind
+it holds a database connection for that much less time. Under real contention that is the difference
+between a queue that drains and a pool that empties, which is why the
+[resource budgets](../SKILL.md#resource-budgets) treat a lock wait as a pool cost.
+
+What it gives up:
+
+- **It is bulk DML**, so every consequence [write behavior examples](write-behavior-examples.md) states applies here too. One of them is load-bearing for this section: the version column is not incremented for you, which is why the statement above assigns it. On a version-protected row, omitting that assignment leaves optimistic writers elsewhere unaware the row ever changed.
+- **The row count answers "did it apply", not "why not".** Distinguishing "no such SKU" from "not enough stock" costs a second query, and a caller that needs the new value costs a read after the clear. Two extra round trips turn the saving back into a loss.
+- **It fits one row and one predicate.** When the decision spans several rows, needs application logic between reading and writing, or feeds later work in the same transaction that must re-read what it wrote, take the lock instead.
+
+What it gains in return is a failure mode that is deterministic. Both locks need a test with two real
+transactions before anyone can believe them; the zero-row branch here is reached by a single-threaded
+test that sets the stock too low. Prove the concurrent behavior once, against the configured engine
+and isolation level, and the per-operation tests stay ordinary.
+
+**Isolation decides what a collision does, so confirm the configured level before relying on either
+behavior.** On PostgreSQL under `READ COMMITTED`, a statement blocked by another transaction's
+uncommitted write waits, and once that transaction commits "the search condition of the command (the
+`WHERE` clause) is re-evaluated to see if the updated version of the row still matches" — which is
+exactly what makes this pattern safe with no retry. Under `REPEATABLE READ` the same collision
+instead aborts the transaction with a serialization failure, which reaches the advice as
+`PessimisticLockingFailureException` and is a `503` by the contract above, unless the operation is
+idempotent enough to retry deliberately. Engines differ: InnoDB's locking statements read the most
+recent committed row rather than the snapshot, so `REPEATABLE READ` there behaves like the first case,
+not the second.
 
 ## Uniqueness is a constraint, not a check
 

@@ -190,7 +190,9 @@ caller-facing Javadoc, `@Validated`, `@Service`, the transaction, and the bodies
 and nothing else about the example changes. Follow whichever convention
 `docs/project-profile.md` records, and do not mix the two within a scope.
 
-The explicit `save` calls are intentional; do not replace them with dirty-checking-only persistence. Apply `spring-data-jpa` and the project’s consistency rules for locking and concurrency. Invoke the service through the Spring proxy so validation and transaction advice are applied.
+The explicit `save` calls are intentional; do not replace them with dirty-checking-only persistence. Invoke the service through the Spring proxy so validation and transaction advice are applied.
+
+**This excerpt shows method validation, and nothing else — do not read it as a transfer implementation.** A transfer between two accounts is the canonical concurrency problem, and the code above has none of the answer: no `@Version`, no lock, and the two accounts loaded in whatever order the caller supplied, which is the shape that deadlocks as soon as anything does lock. `spring-data-jpa` owns that decision and its examples: choose the strategy per operation, and lock multiple rows in an order derived from a stable value rather than from the request.
 
 ## Custom exceptions
 
