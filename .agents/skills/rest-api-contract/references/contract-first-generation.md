@@ -75,15 +75,35 @@ Setting the correct one explicitly is what makes that visible in review.
 The generator takes the same options whichever build tool invokes it. Decide them here, then declare
 them in the project's own build file; `build-and-dependencies` owns that declaration and the version.
 
+**Two kinds of setting live in this list, and putting one where the other belongs fails silently.**
+A *generator option* is declared on the generator itself, beside `generatorName` and `apiPackage`. A
+*config option* is a setting of the `spring` generator specifically, and goes inside the
+`configOptions` block. The generator ignores an unknown entry in `configOptions` without a warning,
+so a generator option written there is simply dropped and the build stays green.
+
+Generator options — **not** inside `configOptions`:
+
+| Option | Value | What it decides |
+| --- | --- | --- |
+| `modelNameSuffix` | `TO` | Produces `UserTO` instead of `UserDto`. Omit it only under the interfaces-only resolution, where no models are generated at all |
+
+Config options — inside `configOptions`:
+
 | Option | Value | What it decides |
 | --- | --- | --- |
 | `useSpringBoot3` / `useSpringBoot4` | one of them `true` | The generation, per the table above |
 | `useJackson3` | a recorded decision | Spring Boot 4 only; see below |
 | `interfaceOnly` | `true` | API interfaces without controller implementations, so the project's own thin controllers implement them and no logic lands in generated code |
 | `useTags` | `true` | One interface per resource rather than one per path. This is why every operation must carry exactly one tag |
-| `modelNameSuffix` | `TO` | Produces `UserTO` instead of `UserDto`. Omit it only under the interfaces-only resolution, where no models are generated at all |
 | `documentationProvider` | `none` | Stops the generator from adding a springdoc or Swagger dependency. The committed document is the documentation; a generated one would be a second source |
 | `openApiNullable` | `false` | Avoids the `JsonNullable` wrapper types, which leak an extra library into every signature. Turn it on only if the project deliberately adopts that library |
+
+**`modelNameSuffix` is the one that gets misplaced**, because every other option in this section is
+a config option and it reads like one more. Written inside `configOptions` it is discarded, the
+generator emits `User`, and the naming collision this whole section exists to prevent arrives anyway
+— now with a hand-written `UserTO` beside a generated `User` for the same concept. Verify it the way
+the [Jackson decision](#the-jackson-decision-on-spring-boot-4) below is verified: generate once and
+read the type names in the output, rather than trusting that the setting was accepted.
 
 `useJakartaEe` is deliberately absent: both generation switches enable it, and both supported
 generations are on the `jakarta` namespace. Setting it a second time is harmless but misleading — it
@@ -111,13 +131,15 @@ project; nothing else in the block changes.
                 <generatorName>spring</generatorName>
                 <apiPackage>com.example.myapp.controller.api</apiPackage>
                 <modelPackage>com.example.myapp.transferobject</modelPackage>
+                <!-- A generator option, so it sits here beside modelPackage and NOT in
+                     configOptions, where it would be ignored without a warning. -->
+                <modelNameSuffix>TO</modelNameSuffix>
                 <configOptions>
                     <!-- Spring Boot 3. On Spring Boot 4 this line becomes
                          <useSpringBoot4>true</useSpringBoot4> plus the useJackson3 decision. -->
                     <useSpringBoot3>true</useSpringBoot3>
                     <interfaceOnly>true</interfaceOnly>
                     <useTags>true</useTags>
-                    <modelNameSuffix>TO</modelNameSuffix>
                     <documentationProvider>none</documentationProvider>
                     <openApiNullable>false</openApiNullable>
                 </configOptions>
@@ -150,6 +172,9 @@ openApiGenerate {
     outputDir.set(layout.buildDirectory.dir("generated/openapi").get().asFile.path)
     apiPackage.set("com.example.myapp.controller.api")
     modelPackage.set("com.example.myapp.transferobject")
+    // A generator option, so it is its own property and NOT a configOptions entry,
+    // where it would be ignored without a warning.
+    modelNameSuffix.set("TO")
     configOptions.set(
         mapOf(
             // Spring Boot 3. On Spring Boot 4 this entry becomes "useSpringBoot4" to "true",
@@ -157,7 +182,6 @@ openApiGenerate {
             "useSpringBoot3" to "true",
             "interfaceOnly" to "true",
             "useTags" to "true",
-            "modelNameSuffix" to "TO",
             "documentationProvider" to "none",
             "openApiNullable" to "false",
         )

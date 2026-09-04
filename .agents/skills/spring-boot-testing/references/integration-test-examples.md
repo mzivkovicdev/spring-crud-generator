@@ -31,7 +31,7 @@ the required `@WebMvcTest` for each REST controller.
 Choose the web mode deliberately:
 
 - combine the full context with `MockMvc` or the project's supported mock-server client when an in-process servlet boundary is sufficient;
-- use a random-port client only when a real embedded server is required, and prefer `RestTestClient` with `@AutoConfigureRestTestClient` over `TestRestTemplate` for a new test;
+- use a random-port client only when a real embedded server is required, and take the client from the generation the profile records: on **Spring Boot 4**, prefer `RestTestClient` with `@AutoConfigureRestTestClient`; on **Spring Boot 3**, `RestTestClient` does not exist — it arrived with Spring Framework 7 — so the client is `TestRestTemplate`. `build-and-dependencies` carries both coordinates in [generation differences](../../build-and-dependencies/references/generation-differences.md); a test written against the wrong one does not compile, which is the good case, and a rule that names only one of them is how that happens on the first try;
 - do not use a defined port and do not call a separately deployed environment; that is end-to-end scope, which `../SKILL.md` excludes.
 
 ## HTTP application integration test

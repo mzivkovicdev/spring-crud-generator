@@ -40,7 +40,8 @@ Load only the references applicable to the changed behavior.
 Both generations are supported; `docs/project-profile.md` records which one applies. Read that row
 before writing a test, because the test infrastructure changed far more than the production API did.
 Mock-bean annotations, `@Mock` and `@Captor` support, `MockMvc` and `TestRestTemplate`
-auto-configuration, security-test support, and the test starters themselves all differ;
+auto-configuration, which real-HTTP client exists at all, security-test support, and the test
+starters themselves all differ;
 `build-and-dependencies` owns those coordinates in
 [generation differences](../build-and-dependencies/references/generation-differences.md), sections
 "Testing", "Test starters", "Annotations and types that moved", and "Removed in Spring Boot 4". This
@@ -52,6 +53,13 @@ makes `@WithMockUser` behave as though the request were unauthenticated, which l
 authorization bug — and the tempting "fix" is to relax the very control the test exists to prove.
 When a security test fails on Spring Boot 4, verify the dependency before touching the security
 configuration.
+
+One of them is a type that exists on only one generation. `RestTestClient` arrived with Spring
+Framework 7, so a random-port test uses it on Spring Boot 4 and `TestRestTemplate` on Spring Boot 3;
+[integration test examples](references/integration-test-examples.md#choosing-the-web-mode) states the
+choice and the operational-endpoint example in `observability-and-logging` shows both. This one fails
+loudly, at compilation, which is the good case — but only for a project that reads the row before
+copying an example written for the other generation.
 
 Everything else here is generation-neutral: scenario selection, test levels, fixtures, isolation,
 determinism, and what a test must assert are the same on 3 and 4.

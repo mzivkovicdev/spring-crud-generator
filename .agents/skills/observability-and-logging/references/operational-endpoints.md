@@ -138,7 +138,16 @@ Rules:
 `management.server.port` set, the actuator endpoints are served by their own context on their own
 connector — so `MockMvc`, which dispatches into the main application's servlet context, never reaches
 them and every assertion fails with a `404` that looks like a broken exposure list. These tests need
-a real client against the real management port:
+a real client against the real management port.
+
+**The client differs by generation, so read the generation from the profile before writing this
+test.** `RestTestClient` arrived with Spring Framework 7 and does not exist on Spring Boot 3, where
+the client is `TestRestTemplate`. `build-and-dependencies` carries both coordinates in
+[generation differences](../../build-and-dependencies/references/generation-differences.md).
+Everything around the client — the two properties, the injected port, what is asserted — is identical
+on both.
+
+**Spring Boot 4:**
 
 ```java
 @SpringBootTest(
@@ -168,11 +177,43 @@ class ManagementEndpointIntegrationTest {
 }
 ```
 
+**Spring Boot 3**, same test through `TestRestTemplate`. The auto-configured instance is bound to the
+application port, not the management one, so this test builds its own and carries the base URL
+itself:
+
+```java
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "management.server.port=0")
+class ManagementEndpointIntegrationTest {
+
+    private final String managementBaseUrl;
+    private final TestRestTemplate managementClient;
+
+    ManagementEndpointIntegrationTest(
+            @Value("${local.management.port}") final int managementPort) {
+
+        this.managementBaseUrl = "http://localhost:%d".formatted(managementPort);
+        this.managementClient = new TestRestTemplate();
+    }
+
+    @Test
+    void healthReadiness_whenApplicationIsRunning_returnsUp() {
+        final ResponseEntity<JsonNode> response = this.managementClient.getForEntity(
+                this.managementBaseUrl + "/actuator/health/readiness", JsonNode.class);
+        final JsonNode body = Objects.requireNonNull(response.getBody());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(body.path("status").asText()).isEqualTo("UP");
+    }
+}
+```
+
 `management.server.port=0` gives the management connector a random free port for the test, and
 Spring Boot publishes the assigned one as `local.management.port` — so the test never hardcodes the
-production port and two suites can run at once. `spring-boot-testing` owns the client choice and
-prefers `RestTestClient` for a new test; where a project has not adopted a separate management port,
-`MockMvc` reaches the actuator like any other endpoint and this ceremony is unnecessary.
+production port and two suites can run at once. `spring-boot-testing` owns the client choice; where a
+project has not adopted a separate management port, `MockMvc` reaches the actuator like any other
+endpoint and this ceremony is unnecessary on either generation.
 
 - Assert the probe groups return the expected status through the real endpoint, at the integration level.
 - Assert that a disabled or unexposed endpoint is not reachable, and that an authenticated-only endpoint returns `401` without a credential. Those tests are what stop an accidental `include: *` or a dropped management chain from merging.
