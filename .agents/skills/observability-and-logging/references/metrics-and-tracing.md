@@ -83,6 +83,45 @@ Use instead:
 If you cannot state the maximum number of distinct values a tag can take, it does not belong on a
 meter. Put it in a log field instead: logs are searchable at high cardinality, metrics are not.
 
+### Capping tag cardinality at runtime
+
+**Cardinality is a runtime property, so no static check and no build gate can see it.** A
+`MeterFilter` can, and it degrades one meter instead of the monitoring backend. This is the only
+enforcement the rule above has, which is why the bean is required rather than optional:
+
+```java
+@Configuration(proxyBeanMethods = false)
+public class MetricsConfiguration {
+
+    private static final int MAXIMUM_ALLOWED_TAG_VALUES = 100;
+    private static final String ALL_METERS = "";
+    private static final String USER_ID_TAG = "userId";
+
+    @Bean
+    MeterFilter boundedUserIdTagMeterFilter() {
+        return MeterFilter.maximumAllowableTags(
+                ALL_METERS, USER_ID_TAG, MAXIMUM_ALLOWED_TAG_VALUES, MeterFilter.deny());
+    }
+}
+```
+
+**The `@Configuration` annotation is load-bearing and its absence is silent.** A class holding a
+`@Bean` method and nothing else is an ordinary class: Spring never sees it, the filter is never
+registered, no startup log says so, and the rule above goes back to being unenforced while the file
+sits in the repository looking like enforcement. Verify by asserting the filter's effect, not its
+presence — record more than the cap's worth of distinct values in a test and assert the meter is
+denied rather than that the bean exists.
+
+The class lives in `config`, like every other bean-constructing type under the package layout
+`spring-boot-patterns` owns. It is not build configuration, and it is not declared in a build file.
+
+Rules:
+
+- The empty meter-name prefix applies the cap to every meter. `userId` stands for any tag key that could plausibly grow: register **one filter per such key** rather than assuming a single filter covers the application.
+- Choose the cap from what the metrics backend can carry, not from what the application currently produces. A cap set to today's volume denies the first legitimate increase.
+- Pair it with an alert on denied meters, so an accidental unbounded tag is visible rather than silent. A filter that quietly drops a meter nobody notices has moved the failure, not removed it.
+- This is a safety net, not permission to relax the rule above. A tag that needs the cap to stay bounded is a tag that should not exist.
+
 ## Instrumenting an operation
 
 Prefer an observation, which produces a timer and a trace span from one instrumentation point.

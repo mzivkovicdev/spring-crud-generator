@@ -14,7 +14,9 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 4. [Layer 1: editor and formatter](#layer-1-editor-and-formatter)
 5. [Layer 2: Checkstyle](#layer-2-checkstyle)
 6. [Modules to verify before relying on them](#modules-to-verify-before-relying-on-them)
-7. [Layer 3: dependency and runtime guards](#layer-3-dependency-and-runtime-guards)
+7. [Layer 3: dependency and build guards](#layer-3-dependency-and-build-guards)
+   - [Maven: enforcer rules](#maven-enforcer-rules)
+   - [Gradle: the same four rules](#gradle-the-same-four-rules)
 8. [Nullability checking](#nullability-checking)
 9. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
 10. [No baseline, no suppressions](#no-baseline-no-suppressions)
@@ -40,7 +42,8 @@ compliance.
 | No concatenation in a log call, classic and fluent | `observability-and-logging` | Two Checkstyle regexes |
 | Identifier naming form | `project-naming-conventions` | Checkstyle naming modules |
 | Integration tests run in their own phase | `spring-boot-testing` | Surefire/Failsafe or Gradle suites |
-| Banned and duplicated dependencies, JDK version, profile presence | `build-and-dependencies` | `maven-enforcer-plugin` or Gradle constraints |
+| Banned and duplicated dependencies, profile presence | `build-and-dependencies` | `maven-enforcer-plugin`, or a resolution rule plus a verification task on Gradle |
+| Java release the build actually uses | `build-and-dependencies` | `requireJavaVersion` on Maven; the toolchain on Gradle, which removes the mismatch rather than detecting it |
 | Metric tag cardinality | `observability-and-logging` | `MeterFilter` at runtime |
 
 Deliberately **not** gated:
@@ -285,9 +288,22 @@ Adopt a module by moving it into the main configuration and running a full build
 because it sounds useful; a gate that produces false positives teaches people to ignore the tool,
 which costs more than the rule was worth.
 
-## Layer 3: dependency and runtime guards
+## Layer 3: dependency and build guards
 
-### Enforcer rules
+Four rules live at this layer: the Java release the build actually uses, the presence of
+`docs/project-profile.md`, version convergence across the dependency graph, and the banned-artifact
+list that encodes the duplicated-capability rule. **Both build tools enforce all four**, but they do
+not enforce them the same way, and two of them Gradle handles structurally rather than with a check.
+Read the subsection for the tool the profile records; the other one does not apply.
+
+| Rule | Maven | Gradle |
+| --- | --- | --- |
+| Java release | `requireJavaVersion`, checking the JDK that runs Maven | The toolchain, which *selects* the JDK rather than checking it — see below |
+| `docs/project-profile.md` exists | `requireFilesExist` | A verification task `check` depends on |
+| Version convergence | `dependencyConvergence` and `requireUpperBoundDeps` | `failOnVersionConflict()`, which is stricter and costs more — see below |
+| Banned artifacts | `bannedDependencies` | A resolution rule over every resolvable configuration |
+
+### Maven: enforcer rules
 
 One plugin declaration, one execution, one `<rules>` block. Do not split these across several
 executions; a second floating `<rules>` block is the most common way this configuration ends up
@@ -350,32 +366,104 @@ The exclusion list encodes the duplicated-capability rule from
 mocking framework, one JUnit, one logging facade. Extend it whenever an audit removes a duplicate,
 so the same library cannot return.
 
-### Metric tag cardinality
+### Gradle: the same four rules
 
-Cardinality is a runtime property, so no static tool can enforce it. A `MeterFilter` can, and it
-degrades one meter instead of the monitoring backend:
+Gradle has no enforcer plugin, and reaching for a third-party one is not the answer — three of these
+four are a few lines of the build script, and the fourth is already covered by a mechanism the
+project has for other reasons. Declare them together in one block so they are found and reviewed as
+a set, the way the `<rules>` block is on Maven.
 
-```java
-public class MetricsConfiguration {
+```kotlin
+// ---- The banned-artifact list, mirroring the Maven <bannedDependencies> excludes. ----
+val bannedGroups: Map<String, String> = mapOf(
+    "com.github.dozermapper" to "MapStruct is the project's mapper",
+    "org.powermock" to "Mockito is the project's mocking framework",
+)
+val bannedModules: Map<String, String> = mapOf(
+    "com.google.code.gson:gson" to "Jackson is the project's JSON library",
+    "org.modelmapper:modelmapper" to "MapStruct is the project's mapper",
+    "junit:junit" to "JUnit Jupiter is the project's test framework",
+    "commons-logging:commons-logging" to "SLF4J is the project's logging facade",
+    "log4j:log4j" to "Logback is the project's logging backend",
+)
 
-    private static final int MAXIMUM_ALLOWED_TAG_VALUES = 100;
-    private static final String ALL_METERS = "";
-
-    @Bean
-    MeterFilter boundedTagsMeterFilter() {
-        return MeterFilter.maximumAllowableTags(
-                ALL_METERS, "userId", MAXIMUM_ALLOWED_TAG_VALUES, MeterFilter.deny());
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        val reason = bannedGroups[requested.group]
+            ?: bannedModules["${requested.group}:${requested.name}"]
+        if (reason != null) {
+            throw GradleException(
+                "Banned dependency ${requested.group}:${requested.name}: $reason. " +
+                    "It arrived directly or transitively; run the dependency audit before adding an exclusion."
+            )
+        }
     }
+}
+
+// ---- The project profile must exist before anything is built. ----
+val projectProfile = File(rootDir, "docs/project-profile.md")
+
+val verifyProjectProfile by tasks.registering {
+    group = "verification"
+    description = "Fails when docs/project-profile.md is missing."
+    outputs.upToDateWhen { false }
+    doLast {
+        if (!projectProfile.exists()) {
+            throw GradleException(
+                "docs/project-profile.md is missing. Create it from the template " +
+                    "before building; see the project README."
+            )
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(verifyProjectProfile)
 }
 ```
 
-The empty meter-name prefix applies the cap to every meter. `userId` stands for any tag key that
-could plausibly grow; register one filter per such key, and choose the cap from what the metrics
-backend can carry, not from what the application currently produces.
+Five things in that block decide whether it is equivalent to the Maven one:
 
-Apply it per tag key that could plausibly grow, and pair it with a denied-meter alert so an
-accidental unbounded tag is visible rather than silent. This is a safety net, not permission to
-relax the rule in `observability-and-logging`.
+- **`configurations.configureEach`, not one named configuration.** A banned artifact reaching only `testRuntimeClasspath` is still in the build. Covering every configuration is what makes this the equivalent of `bannedDependencies`, which is graph-wide on Maven.
+- **`eachDependency` sees transitives**, which is the point: almost nothing on that list is ever declared deliberately. `commons-logging` and `log4j` arrive through somebody else's dependency, which is exactly the case a declaration-only check would miss.
+- **The message names the artifact and the reason.** Maven's rule prints the coordinate; the reason is what stops the next person from adding an exclusion instead of asking why two libraries do one job.
+- **`File(rootDir, …)` and not a per-project path.** The profile lives once at the repository root, so in a multi-module build every subproject must look at the same file — the same decision `${maven.multiModuleProjectDirectory}` makes on Maven. Capturing it into a `val` outside `doLast` keeps the task configuration-cache compatible.
+- **`outputs.upToDateWhen { false }`.** A task with no declared inputs is up-to-date after its first run, so without this line the check passes forever once it has passed once — including after someone deletes the file.
+
+**The Java release needs no rule here, and that is a real difference rather than a gap.** Maven's
+`requireJavaVersion` exists because `maven.compiler.release` and the JDK running Maven are two
+different things, and a mismatch produces different bytecode with no visible failure. A Gradle
+toolchain removes the mismatch instead of detecting it: it *selects* the JDK that compiles and runs
+tests, so the JDK running Gradle cannot affect the output. Declare the toolchain, per
+[Gradle configuration](gradle-configuration.md#java-toolchain-and-compiler), and add no check. A
+project that has not declared one has the Maven problem and no rule against it — that is the finding,
+not a missing enforcer.
+
+**Version convergence is the one place Gradle is genuinely harder, so decide it rather than copying
+it.** Maven's `requireUpperBoundDeps` demands that the resolved version be at least the highest
+requested one; Gradle already resolves that way by default, so that half is free. `dependencyConvergence`
+is stricter — it fails when two paths request *different* versions at all — and its Gradle equivalent,
+`resolutionStrategy.failOnVersionConflict()`, fails on conflicts the Spring Boot BOM is there to
+resolve, so a project that enables it maintains a `force` list from then on.
+
+| Option | What it costs | When it fits |
+| --- | --- | --- |
+| Nothing beyond the BOM | Free. Highest-version resolution is the default, matching `requireUpperBoundDeps` | The default for a project on the Spring Boot BOM |
+| `dependencyLocking` with committed lockfiles | One file per configuration, updated deliberately | Reproducibility matters more than convergence — a resolution change becomes a reviewable diff |
+| `failOnVersionConflict()` plus a `force` list | Ongoing maintenance, and a build that fails on somebody else's upgrade | A project that has been bitten by a silent version bump and accepts the cost |
+
+Record the choice in the profile beside the other build decisions. Do not enable
+`failOnVersionConflict()` because the Maven column has two rules and the Gradle column has one; the
+two tools do not divide this problem the same way, and matching rule counts is not the goal.
+
+### Metric tag cardinality
+
+Metric tag cardinality is the one rule in the gate table that no build tool enforces, because
+cardinality is a runtime property. Its gate is a `MeterFilter` bean, and **that bean is application
+code, not build configuration** — `observability-and-logging` owns it and declares it once, in
+[metrics and tracing](../../observability-and-logging/references/metrics-and-tracing.md#capping-tag-cardinality-at-runtime).
+It appears in the table above so that a reader auditing the gates finds every rule accounted for,
+and nowhere else in this skill.
 
 ## Nullability checking
 
@@ -412,17 +500,44 @@ NullAway run is not evidence that a generic signature is annotated correctly.
 
 ## Wiring the gates into the build
 
-Order matters: format first, then static analysis, then compile, then tests. A build that runs
-Checkstyle after the tests wastes the slowest part of the cycle on code that was never going to
-merge.
+**The rule is that no gate runs after the test suite.** Tests are the slowest part of the cycle, and
+a violation found after them is a violation found at the cost of everything before it. The ideal
+order is format, static analysis, compile, tests — and one build tool can deliver exactly that while
+the other cannot, so state the rule by its purpose rather than by that sequence.
 
 **Maven.** Bind `spotless:check` to `validate` and `checkstyle:check` to `validate` as well, with
 `failOnViolation` true and `violationSeverity` set to `error`. Point it at
-`config/checkstyle/checkstyle.xml` and include test sources. Do not bind either to `verify`.
+`config/checkstyle/checkstyle.xml` and include test sources. Do not bind either to `verify`. That
+gives the ideal order literally: both gates run in the first phase, before anything is compiled.
 
 **Gradle.** Apply the `checkstyle` plugin with `toolVersion` pinned, `maxWarnings = 0`,
 `ignoreFailures = false`, and `configDirectory` set to `config/checkstyle`. Spotless and Checkstyle
-tasks are already wired into `check`.
+tasks are wired into `check` already — but `check` also carries `test`, and being in the same task
+graph orders nothing. Two lines are required, and neither is a default:
+
+```kotlin
+// The formatter needs no compiled classes, so it can run before compilation as on Maven.
+tasks.withType<JavaCompile>().configureEach {
+    dependsOn(tasks.named("spotlessCheck"))
+}
+
+// Checkstyle cannot: checkstyleMain consumes the compiled classes, so the achievable
+// guarantee is that it runs before the tests rather than before the compiler.
+tasks.withType<Test>().configureEach {
+    mustRunAfter(tasks.withType<Checkstyle>())
+}
+```
+
+**The middle two steps swap on Gradle, and it is a property of the tool rather than a choice.**
+`checkstyleMain` takes `sourceSets.main.output` as an input, so it cannot precede `compileJava`;
+Maven's `checkstyle:check` reads sources and runs in `validate` before the compiler. The order Gradle
+can guarantee is therefore **format → compile → static analysis → tests**, which satisfies the rule
+as stated — nothing runs after the tests — while differing from Maven's sequence in the middle.
+Do not try to close the difference by moving Checkstyle to a `doFirst` block or a separate
+source-reading task; that produces a second, weaker Checkstyle run rather than an earlier one.
+
+Use `mustRunAfter` and not `shouldRunAfter` for the test ordering: the second is a hint Gradle drops
+whenever it is scheduling-inconvenient, which makes the gate hold on some runs and not others.
 
 Record the resulting commands in `docs/project-profile.md`, including the local auto-fix command, so
 the first response to a failed gate is to run the fixer rather than to disable the gate.

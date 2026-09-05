@@ -167,7 +167,7 @@ A rule a tool can check must fail the build; a rule a tool cannot check belongs 
 `spring-boot-code-review`. This skill owns the configuration that makes the first group real.
 
 - Configure the gates before the first feature, not after. Retrofitting `RequireThis` or an import order onto an existing codebase is expensive; applying it from the first commit costs nothing.
-- Run them in order: formatter, then static analysis, then compile, then tests. A gate that runs after the test suite wastes the slowest part of the cycle.
+- **No gate runs after the test suite.** Tests are the slowest part of the cycle, so a violation found after them is a violation found at the cost of everything before it. On Maven that means formatter, static analysis, compile, tests, literally, because both gates bind to `validate`. On Gradle `checkstyleMain` consumes the compiled classes and cannot precede the compiler, so the achievable order is formatter, compile, static analysis, tests — which satisfies the rule and differs from Maven in the middle. [Quality gates](references/quality-gates.md#wiring-the-gates-into-the-build) carries the two lines each tool needs; on Gradle neither is a default.
 - Set every gate to fail the build. A warning nobody must fix is not a gate.
 - Commit the editor configuration alongside the formatter configuration. Checkstyle reports a violated import order; it does not stop an IDE from reintroducing it on the next "Optimize Imports".
 - Use no baseline file and no suppressions. This project rejects legacy code, so there is nothing to grandfather, and a suppression file is where a standard goes to die. If a rule does not fit, change the rule and say so in review. Adopting the set into a repository that already has code is the one exception, and it is time-boxed and scoped rather than permanent; [quality gates](references/quality-gates.md#adopting-the-set-into-a-repository-that-already-has-code) states how.
@@ -247,8 +247,8 @@ Reject:
 - [ ] The Java release and `-parameters` are configured explicitly.
 - [ ] The annotation processor path lists every processor in the correct order, matches the project's recorded Lombok decision, and the generated sources were inspected after the build.
 - [ ] Unit, slice, and integration suites each run in their intended phase, and the verification lifecycle fails on integration-test failure.
-- [ ] Quality gates run before the tests, fail the build, and were not weakened by a suppression or baseline.
-- [ ] The build fails when `docs/project-profile.md` is absent or the JDK is below the recorded release.
+- [ ] Quality gates fail the build, none of them runs after the test suite, and none was weakened by a suppression or baseline.
+- [ ] The build fails when `docs/project-profile.md` is absent, and the Java release the build produces is the recorded one — through `requireJavaVersion` on Maven, through the toolchain on Gradle.
 - [ ] No credentials, unapproved repositories, or unreviewed wrapper changes were introduced.
 - [ ] Any removal was user-approved, applied one dependency at a time, and verified by a full build including integration tests and application startup.
 
