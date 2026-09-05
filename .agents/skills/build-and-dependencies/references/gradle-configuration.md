@@ -97,9 +97,10 @@ in plugin behavior. Spring needs it for constructor binding, `@ConfigurationProp
 derivation.
 
 **The toolchain is also this project's Java-release gate**, and it is the reason a Gradle build needs
-no equivalent of Maven's `requireJavaVersion`: it selects the JDK that compiles and runs tests, so
-the JDK running Gradle cannot change the bytecode. A project that skips the toolchain and relies on
-the daemon's JDK has the problem the Maven rule exists to catch, and no rule against it. The other
+no equivalent of Maven's `requireJavaVersion`: it selects the JDK that compiles **and runs the
+tests**, so neither depends on which JDK started the daemon, and a JDK it cannot provision fails the
+build explicitly. A project that skips the toolchain runs its tests on whatever JDK the daemon
+happens to use, which is the question the Maven rule exists to answer, and has no rule against it. The other
 build guards — the banned-artifact list, the project-profile check, and the version-convergence
 decision — are in
 [quality gates](quality-gates.md#gradle-the-same-four-rules), with the Gradle-specific reasons each

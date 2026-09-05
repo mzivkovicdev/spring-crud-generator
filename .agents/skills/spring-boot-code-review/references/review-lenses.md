@@ -117,7 +117,7 @@ Apply `spring-boot-patterns` and `spring-data-jpa`.
 - Check commit-time failures, rollback rules, after-commit actions, outbox or equivalent consistency mechanisms when applicable.
 - Verify that every external effect uses the delivery mechanism `docs/project-profile.md` records for it. An effect the business cannot afford to lose, delivered only from an after-commit listener, is a blocking finding: the commit has already succeeded, so the loss leaves no trace and no retry.
 - Require pessimistic locking, stronger isolation, or a new consistency mechanism only when a concrete invariant and concurrency scenario justify it. Conversely, report an allocation, claim, or cross-row invariant left to optimistic retry alone: `spring-data-jpa` states which mechanism each of those needs, and none of them waits on a measurement. Report the missing mechanism rather than a missing lock specifically — for a rule that fits one row and one predicate, a conditional `UPDATE` is one of the answers it allows.
-- Report a pessimistic failure type added to the optimistic retry policy, and a lock taken without a timeout or without a consistent ordering when more than one row is locked.
+- Report a pessimistic failure type added to the optimistic retry policy, and a lock taken without a timeout, with one expressed through a mechanism the configured engine ignores, or without a consistent ordering when more than one row is locked. `spring-data-jpa` carries the per-engine table; a `@QueryHint` timeout on PostgreSQL is the case that reads as bounded and is not.
 
 ## Persistence and database behavior
 

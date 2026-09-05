@@ -43,7 +43,7 @@ compliance.
 | Identifier naming form | `project-naming-conventions` | Checkstyle naming modules |
 | Integration tests run in their own phase | `spring-boot-testing` | Surefire/Failsafe or Gradle suites |
 | Banned and duplicated dependencies, profile presence | `build-and-dependencies` | `maven-enforcer-plugin`, or a resolution rule plus a verification task on Gradle |
-| Java release the build actually uses | `build-and-dependencies` | `requireJavaVersion` on Maven; the toolchain on Gradle, which removes the mismatch rather than detecting it |
+| Java release the build compiles and tests against | `build-and-dependencies` | `requireJavaVersion` on Maven; the toolchain on Gradle, which selects the JDK rather than checking it |
 | Metric tag cardinality | `observability-and-logging` | `MeterFilter` at runtime |
 
 Deliberately **not** gated:
@@ -356,7 +356,7 @@ Five decisions in that block are deliberate:
 
 - **The `<version>`.** It is easy to assume the Spring Boot parent manages every Maven plugin. It manages a short list — the compiler and Failsafe among them — and Enforcer, Surefire, Checkstyle, and Spotless are not on it. Verify with `./mvnw help:effective-pom` rather than by whether the build happens to work.
 
-- **`${java.version}` rather than a literal.** The Java release is recorded in the project profile and declared once as a property, per [Maven configuration](maven-configuration.md). A literal here would be a second source of truth that silently disagrees with the compiler setting. Note that this rule checks the JDK **running Maven**, which is a different thing from `maven.compiler.release`; both matter, because a toolchain mismatch produces different bytecode with no visible failure.
+- **`${java.version}` rather than a literal.** The Java release is recorded in the project profile and declared once as a property, per [Maven configuration](maven-configuration.md). A literal here would be a second source of truth that silently disagrees with the compiler setting. This rule checks the JDK **running Maven**, which is not the same thing as `maven.compiler.release`: `--release` pins the class-file version and the visible API whatever JDK compiles, so it is not bytecode drift this catches. What it catches is a JDK older than the release — which fails compilation with a message about the release flag rather than about the JDK — and the fact that **the tests run on the Maven JDK**, so a newer one can pass a suite that production will not.
 - **`${maven.multiModuleProjectDirectory}` rather than `${project.basedir}`.** The profile lives once at the repository root. `project.basedir` resolves per module, so in a multi-module build every submodule would look for its own copy and fail.
 - **The message names a path, not a skill.** A developer reading a build failure has no idea what `spring-boot-patterns` is; skills are agent-facing, build output is human-facing. Point at something a person can open.
 - **The profile rule proves existence only**, not that the file is filled in correctly. That stays a review responsibility. It is still worth having, because a missing profile is exactly the case that silently produces an inconsistent codebase.
@@ -428,16 +428,16 @@ Five things in that block decide whether it is equivalent to the Maven one:
 - **`eachDependency` sees transitives**, which is the point: almost nothing on that list is ever declared deliberately. `commons-logging` and `log4j` arrive through somebody else's dependency, which is exactly the case a declaration-only check would miss.
 - **The message names the artifact and the reason.** Maven's rule prints the coordinate; the reason is what stops the next person from adding an exclusion instead of asking why two libraries do one job.
 - **`File(rootDir, …)` and not a per-project path.** The profile lives once at the repository root, so in a multi-module build every subproject must look at the same file — the same decision `${maven.multiModuleProjectDirectory}` makes on Maven. Capturing it into a `val` outside `doLast` keeps the task configuration-cache compatible.
-- **`outputs.upToDateWhen { false }`.** A task with no declared inputs is up-to-date after its first run, so without this line the check passes forever once it has passed once — including after someone deletes the file.
+- **`outputs.upToDateWhen { false }`.** A task declaring no outputs already re-runs every build, so this line changes nothing today — it is there to keep the guarantee if someone later gives the task an output or an input and makes it cacheable. State it as the defensive declaration it is; a check that silently stops running is exactly the failure this whole layer exists to prevent.
 
 **The Java release needs no rule here, and that is a real difference rather than a gap.** Maven's
-`requireJavaVersion` exists because `maven.compiler.release` and the JDK running Maven are two
-different things, and a mismatch produces different bytecode with no visible failure. A Gradle
-toolchain removes the mismatch instead of detecting it: it *selects* the JDK that compiles and runs
-tests, so the JDK running Gradle cannot affect the output. Declare the toolchain, per
+`requireJavaVersion` guards the JDK that runs the build, which is also the JDK the tests run on. A
+Gradle toolchain removes that question instead of checking it: it *selects* the JDK used to compile
+**and to run tests**, independently of the JDK running Gradle, and fails with an explicit message
+when that JDK cannot be provisioned. Declare the toolchain, per
 [Gradle configuration](gradle-configuration.md#java-toolchain-and-compiler), and add no check. A
-project that has not declared one has the Maven problem and no rule against it — that is the finding,
-not a missing enforcer.
+project that skips it and inherits the daemon's JDK has the question back, and no rule against it —
+that is the finding, not a missing enforcer.
 
 **Version convergence is the one place Gradle is genuinely harder, so decide it rather than copying
 it.** Maven's `requireUpperBoundDeps` demands that the resolved version be at least the highest

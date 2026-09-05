@@ -25,6 +25,8 @@ this file. The seams this skill crosses most often:
 | Repositories | where the boundary sits and what may cross it | `spring-data-jpa` owns repository and query design |
 | The public contract | the TO, the `ProblemDetail`, the error catalog | `rest-api-contract` owns whether a change to them is breaking |
 | Instrumentation | where it sits in the layers | `observability-and-logging` owns what is emitted and at what level |
+| Authentication and authorization failures | the error catalog the `401` and `403` are built from, and the advice handler that declines a method-security denial so the filter chain still sees it | `application-security` owns the responses themselves, which the filter chain produces |
+| The `Retry-After` on a lock timeout | the header, derived from the recorded timeout | `spring-data-jpa` owns the timeout value and how it reaches the database |
 
 Do not restate or fork an owner's rules here. Report an unresolved conflict instead of inventing a
 second standard; when it is genuine and cannot wait, apply the precedence order in
@@ -318,7 +320,8 @@ suspicious existing code.
 - [ ] Mappers preserve the TO–Domain–Entity boundaries; MapStruct with `ReportingPolicy.ERROR`; one REST and one domain mapper per concept.
 - [ ] Projections, Specifications, enums, exceptions, handlers, and configuration types sit in their owning packages without empty scaffolding.
 - [ ] Error responses are stable and safe, the `type` URI is their only machine-readable identifier, and every failure comes from the single catalog.
-- [ ] The advice maps the framework contention types, so an exhausted retry returns `409` and a lock timeout returns `503` with `Retry-After`, each logged at the level its expectedness deserves.
+- [ ] The advice maps the framework contention types, so an exhausted retry returns `409` and a lock timeout returns `503` with `Retry-After`, each logged at the level its expectedness deserves, and the `Retry-After` is derived from the recorded timeout rather than written down again.
+- [ ] The advice declines `AccessDeniedException` by rethrowing it, so the filter chain still distinguishes an unauthenticated caller from a forbidden one, and the catch-all does not report either as `500`.
 - [ ] Shared numeric bounds are declared once and referenced.
 - [ ] Configuration is type-safe, externalized, and validated.
 - [ ] `spring-boot-testing` and `modern-java-21` were applied, and the gates and suites pass.

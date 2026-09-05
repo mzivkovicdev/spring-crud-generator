@@ -40,6 +40,8 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | Security test scenarios | `application-security` owns which scenarios are required | `spring-boot-testing` owns the level each runs at |
 | Contract assertions | `rest-api-contract` owns what must be asserted | `spring-boot-testing` owns the level it runs at |
 | Idempotency | `application-security` owns the policy | `spring-boot-patterns` owns where it lives in the layers |
+| Authentication and authorization failures | `application-security` owns the `401` and `403` responses, which the filter chain produces | `spring-boot-patterns` owns the error catalog they are built from, and the advice handler that declines a method-security denial so the chain still sees it |
+| The pessimistic lock timeout | `spring-data-jpa` owns the value and how it reaches the database | `spring-boot-patterns` owns the `Retry-After` header, derived from that value and never retyped |
 | Nullability in Java code | `modern-java-21` owns the annotation convention and where it goes | `build-and-dependencies` owns the artifact, its version, and how hard the contract is checked |
 | Nullability in the published contract | `rest-api-contract` owns whether a field may be absent or null on the wire | `modern-java-21` owns how the Java declaration behind it is annotated, which is not the same question |
 | Profile decisions | `project-decision-profile` owns the file, the three tokens, the fallback rule, and whether a missing row blocks | the row's named owner decides what its value means; `build-and-dependencies` classifies every build and version row |

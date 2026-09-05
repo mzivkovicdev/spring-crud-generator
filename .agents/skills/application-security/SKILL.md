@@ -22,6 +22,7 @@ order — read it there, not from a copy in this file. The seams crossed most of
 | Exposed endpoints | how anything exposed is protected | `observability-and-logging` and `rest-api-contract` own whether it is exposed |
 | Security tests | which scenarios are required | `spring-boot-testing` owns the level each runs at |
 | Idempotency | the policy | `spring-boot-patterns` owns where it lives in the layers |
+| Denial responses | the `401` and `403` the filter chain produces, and which component produces each | `spring-boot-patterns` owns the error catalog they are built from, and the advice handler that declines a method-security denial |
 
 Use the architecture and terminology from `spring-boot-patterns`; do not redefine an owner's rules.
 
@@ -155,7 +156,7 @@ Reject authentication without object and tenant authorization; request-supplied 
 
 - [ ] Security profile, assets, data classification, actors, trust boundaries, and abuse cases identified.
 - [ ] Confidential material stayed inside approved boundaries; no root instruction file was modified as a side effect of this change.
-- [ ] Authentication, authorization, object and property ownership, and tenant isolation enforced at the correct layers.
+- [ ] Authentication, authorization, object and property ownership, and tenant isolation enforced at the correct layers, with `401` and `403` produced by the filter chain and proven by a paired no-credential / insufficient-authority integration test.
 - [ ] API inventory, lifecycle, business abuse, input, output, files, URLs, serialization, messaging, jobs, and resource use safe where applicable.
 - [ ] Secrets, cryptography, TLS, errors, telemetry, storage, Redis, cloud, and supply-chain controls follow the relevant references.
 - [ ] Positive and negative tests prove the changed behavior.

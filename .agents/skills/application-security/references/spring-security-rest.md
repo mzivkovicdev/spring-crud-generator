@@ -181,8 +181,8 @@ chain earlier in this reference owns access to it. Neither is restated here.
 
 ## Failure handling
 
-- Use stable `ProblemDetail` responses consistent with `spring-boot-patterns`.
-- Return `401` for missing or invalid authentication and `403` for authenticated callers lacking permission, unless the API intentionally conceals resource existence.
+- Use stable `ProblemDetail` responses consistent with `spring-boot-patterns`, built from its error catalog rather than from an inline status and message.
+- Return `401` for missing or invalid authentication and `403` for authenticated callers lacking permission, unless the API intentionally conceals resource existence. **Both are produced in the filter chain**, which is the only layer that can tell the two apart; [Spring Security authorization](spring-security-authorization.md#let-the-filter-chain-answer-every-denial) states why, and what the one narrow exception for method security looks like.
 - Include a `WWW-Authenticate` challenge for the selected authentication scheme in every `401` response.
 - Do not expose provider messages, claim-validation details, stack traces, internal authorities, or account existence.
 - Log the security event once with a correlation ID and minimized subject/resource identifiers.

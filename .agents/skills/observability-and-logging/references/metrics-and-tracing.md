@@ -91,7 +91,7 @@ enforcement the rule above has, which is why the bean is required rather than op
 
 ```java
 @Configuration(proxyBeanMethods = false)
-public class MetricsConfiguration {
+class MetricsConfiguration {
 
     private static final int MAXIMUM_ALLOWED_TAG_VALUES = 100;
     private static final String ALL_METERS = "";

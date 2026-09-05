@@ -174,9 +174,12 @@ unqualified.
 - Prefer guard clauses over deep nesting.
 - A method up to 40 lines needs no size justification. A method from 41 through 60 lines requires
   scrutiny and a deliberate decision to keep it whole. A method from 61 through 100 lines must be
-  refactored unless a concrete reason for keeping it intact is documented. A method over 100 lines
-  must be refactored without exception. A class over 1000 lines must be refactored unless a concrete
-  reason is documented.
+  refactored unless a concrete reason for keeping it intact is documented. **A method over 100 lines
+  and a class over 1000 lines must be refactored, without exception**, because `MethodLength` and
+  `FileLength` fail the build at exactly those numbers and `build-and-dependencies` permits no
+  suppression. A documented reason can hold a method open inside the graded bands below 100 lines,
+  where no gate applies; it cannot hold either hard limit open, and writing one there produces a
+  justification the build ignores.
 - Allow up to seven declared parameters in project-owned methods and constructors when their names, order, and purpose remain clear. Treat eight or more as a design warning: first group values that form a cohesive domain concept or invariant into a focused parameter/value object, or document why the signature cannot be changed. Do not create a catch-all wrapper merely to hide unrelated parameters. Existing framework callbacks, overrides, and generated signatures are exempt when the project does not control them.
 - Do not game size rules by extracting meaningless one-line methods. Utility classes are allowed
   when they are stateless, cohesive, and named for one focused responsibility; do not create generic

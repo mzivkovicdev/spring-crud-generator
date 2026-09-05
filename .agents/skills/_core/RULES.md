@@ -70,14 +70,18 @@ the reverse.
 5. **No `var`.** Local variable types are explicit everywhere, including tests and generated-source
    templates. (`modern-java-21`)
 6. **`this.` qualifies every instance field and instance method access.** (`modern-java-21`)
-7. **`final` on fields, parameters, and single-assignment locals.** Framework-assigned test fixtures
-   (`@Mock`, `@InjectMocks`, `@MockitoBean`, a subject rebuilt in `@BeforeEach`) are the only
-   exception. (`modern-java-21`)
+7. **`final` on parameters, single-assignment locals, and fields**, except where mutation is the
+   object's own responsibility — a JPA entity's mapped state — and except the framework-assigned
+   test fixtures (`@Mock`, `@InjectMocks`, `@MockitoBean`, a subject rebuilt in `@BeforeEach`) that
+   the owner names as an explicit exception. The gate checks parameters and locals only, because no
+   static check can tell a dependency field from a mapped one. (`modern-java-21`)
 8. **Constructor injection only.** No field injection, no service locators, no static mutable state.
    A generated MapStruct `INSTANCE` is the one allowed exception. (`modern-java-21`)
-9. **Methods over 100 lines and classes over 1000 lines are refactored, not justified.** Eight or
-   more parameters is a design warning, not a threshold to satisfy with a wrapper object.
-   (`modern-java-21`)
+9. **A method over 100 lines and a class over 1000 lines are refactored; the build enforces both.**
+   Between 41 and 100 lines a method is a judgement call the owner grades in two bands, and a
+   documented reason can hold it open there — above 100, and for a class above 1000, it cannot,
+   because the gate has no suppression. Eight or more parameters is a design warning, not a
+   threshold to satisfy with a wrapper object. (`modern-java-21`)
 10. **Inject `Clock`.** No `Instant.now()` in business logic, no `Thread.sleep` for coordination.
     (`modern-java-21`)
 11. **Nullability is stated, not implied.** Every main-source package carries `@NullMarked` in its
@@ -129,12 +133,16 @@ the reverse.
     project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, never by a
     hand-written loop and never by the caller. The annotation is project-owned on both Spring Boot
     generations and its call sites are identical; only the retry engine it composes differs.
-    Structurally blocking invariants take a pessimistic lock without needing a measurement; only
-    buying a lock for throughput does. (`spring-data-jpa`)
+    A structurally blocking invariant needs a mechanism stronger than retry without waiting for a
+    measurement — a pessimistic lock, or a single conditional `UPDATE` where the whole rule fits one
+    row and one `WHERE` clause. Only buying a lock for throughput needs evidence.
+    (`spring-data-jpa`)
 26. **Contention reaches the caller through the REST advice, from the framework's own exception
-    types.** An exhausted optimistic retry is `409`; a lock timeout, deadlock victim, or
-    serialization failure is `503` with `Retry-After`. Neither is caught in a service, and neither
-    may fall through to the catch-all as `500`. (`spring-boot-patterns`, `spring-data-jpa`)
+    types.** An exhausted optimistic retry is `409`; a lock timeout, deadlock victim, serialization
+    failure, or a statement the database cancelled while it waited is `503` with `Retry-After`,
+    derived from the recorded lock timeout rather than written down again. Neither is caught in a
+    service, and neither may fall through to the catch-all as `500`.
+    (`spring-boot-patterns`, `spring-data-jpa`)
 27. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
     frozen once it has been applied to any **shared** environment — never edited, renamed,
     renumbered, or deleted after that. Editing is allowed only while it sits on a feature branch and

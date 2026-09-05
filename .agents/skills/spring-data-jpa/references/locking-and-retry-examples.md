@@ -62,8 +62,11 @@ while it waits, so an unbounded lock wait exhausts the pool long before it corru
 
 ## Optimistic locking
 
-Add `@Version` to the aggregate root whose consistency matters. Never modify the version value in
-application code, never expose it as a writable transport field, and never copy it from a request.
+Add `@Version` to the aggregate root whose consistency matters. Never assign the version value in
+Java, never expose it as a writable transport field, and never copy it from a request. The single
+exception is a bulk statement, which bypasses the provider's own increment and must therefore carry
+it — [atomic conditional DML](#atomic-conditional-dml) below does exactly that, and
+[write behavior examples](write-behavior-examples.md#bulk-dml) states the two forms.
 
 ```java
 @Entity
@@ -412,19 +415,115 @@ catch.
 
 ## Lock timeouts
 
-An unbounded lock wait is a connection held indefinitely. Set a timeout wherever the provider and
-database support one.
+An unbounded lock wait is a connection held indefinitely, so every pessimistic lock has a timeout.
+Two things about it are easy to get wrong, and both are silent: **the JPA hint does not work on
+every engine**, and **the number ends up written down twice** — once for the database and once for
+the `Retry-After` header the caller receives.
+
+### The value is recorded once and read, never retyped
+
+`docs/project-profile.md` records **Pessimistic lock timeout** under *Persistence*. Bind it as an
+ordinary configuration record — in `config.properties`, like every `@ConfigurationProperties` type
+under the layout `spring-boot-patterns` owns — and let both readers take it from there:
 
 ```java
-@Lock(LockModeType.PESSIMISTIC_WRITE)
-@QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
-@Query("select inventory from InventoryEntity inventory where inventory.sku = :sku")
-Optional<InventoryEntity> findForUpdateWithTimeout(@Param("sku") final String sku);
+@ConfigurationProperties("persistence.locking")
+@Validated
+public record LockingProperties(
+        @NotNull @DurationMin(millis = 1) Duration pessimisticLockTimeout) {
+}
 ```
 
-- The unit and the support level are database-specific. Confirm the behavior against the configured engine rather than assuming; some engines accept only particular values, and a hint the engine silently ignores gives false confidence.
-- Keep the timeout below the request budget `spring-boot-patterns` records. A lock wait longer than the caller's timeout produces a response nobody receives while the transaction stays open.
-- A timeout raises `PessimisticLockingFailureException`, and so do a deadlock victim and a serialization failure through its subclasses. **Do not catch it in the service.** Like the optimistic check, it surfaces from the transaction interceptor after the method body returned, so a `catch` around the repository call catches nothing. It is translated once, in the REST exception advice, to `503` with `Retry-After` — see [error handling examples](../../spring-boot-patterns/references/error-handling-examples.md). Contention is not a server fault, but it is also not a conflict with the resource's state.
+Register it with `@EnableConfigurationProperties(LockingProperties.class)` on the configuration class
+that uses it, or through the project's `@ConfigurationPropertiesScan`. A `@ConfigurationProperties`
+record that nothing registers is not a bean, and the injection point fails at startup — loudly, which
+is the good case.
+
+- **Keep it below the statement timeout**, which is itself below the request budget `spring-boot-patterns` records.
+- **`Retry-After` is derived from this value at runtime, rounded up to whole seconds**, so the header can never be shorter than the wait that produced it. `spring-boot-patterns` owns that header and [deriving Retry-After](../../spring-boot-patterns/references/error-handling-examples.md#deriving-retry-after-from-the-lock-timeout) shows the arithmetic; what matters here is that it reads this property rather than carrying a second number.
+- **A `@QueryHint` value must be a compile-time constant**, so no annotation can read this property. That is the practical reason every mechanism below is configuration rather than an annotation, and the reason a per-query override is a deliberate exception rather than the default shape.
+
+### Applying it to the database, by engine
+
+**A positive `jakarta.persistence.lock.timeout` is honoured by very few engines.** The hint compiles,
+the build is green, the test passes on the happy path, and on most engines nothing bounds the lock
+wait except whatever bounds the statement — which is a different mechanism producing a different
+exception. Confirm the mechanism for the engine the profile records before relying on any of this.
+
+| Engine | What actually bounds the wait | How the value gets there |
+| --- | --- | --- |
+| Oracle | The JPA hint, rendered as `for update wait n` | `spring.jpa.properties.jakarta.persistence.lock.timeout`, from the bound property |
+| PostgreSQL | The `lock_timeout` setting. The hint expresses only `NOWAIT`, at value `0`; a positive value is **ignored** | A connection-init statement on the datasource, or `set_config` per transaction |
+| MySQL / InnoDB | `innodb_lock_wait_timeout`, in whole seconds | A connection-init statement on the datasource |
+| Others | Verify | Treat "the hint is accepted" as no evidence — an ignored hint throws nothing |
+
+**Prefer setting it once per connection over once per transaction.** Both PostgreSQL and MySQL take
+it from a connection-init statement, which the pool runs on every connection it opens, so no call
+site can forget it:
+
+```yaml
+spring:
+  datasource:
+    hikari:
+      # PostgreSQL. On MySQL: set session innodb_lock_wait_timeout = 3
+      connection-init-sql: "set lock_timeout = '3000ms'"
+```
+
+That is one literal in configuration beside the property it must equal, which is as close to a single
+source as a connection-init string allows; assert the pair in a test rather than trusting the two to
+stay in step. It also applies to **every** statement on the connection, so check that the migration
+tool does not share the pool — a schema change that has to wait behind a long transaction should not
+be cancelled by an application-sized lock timeout. Give migrations their own datasource, or narrow
+the setting to the transactions that lock:
+
+```java
+/**
+ * Bounds how long the current transaction waits for a row lock.
+ *
+ * @param timeout PostgreSQL setting value, such as {@code 3000ms}
+ * @return the applied value, as PostgreSQL reports it
+ */
+@Query(value = "select set_config('lock_timeout', :timeout, true)", nativeQuery = true)
+String applyLockTimeout(@Param("timeout") final String timeout);
+```
+
+```java
+@Transactional
+public InventoryDomain reserve(final String sku, final int quantity) {
+    this.inventoryRepository.applyLockTimeout(this.lockingProperties.pessimisticLockTimeout()
+            .toMillis() + "ms");
+    // ... the locking read and the write follow, inside this same transaction.
+}
+```
+
+Three details make that work. `set_config` is used rather than `SET LOCAL` because `SET` accepts no
+bind parameter, so the literal it would need is the second copy of the number this section exists to
+remove. The third argument, `true`, scopes the setting to the current transaction, so it reverts on
+commit or rollback and cannot leak into the next caller that borrows the pooled connection — calling
+it outside a transaction sets nothing and protects nothing. And the value is formatted from the
+`Duration` explicitly: `Duration.toString()` yields ISO-8601 such as `PT3S`, which PostgreSQL
+rejects.
+
+**A per-query `@QueryHints` override is the one shape that reintroduces a second number**, because
+the annotation needs a compile-time constant that no property can supply. Take it only on an engine
+that honours the hint and only where one query genuinely needs a different bound, record that the
+value is now compile-time, and assert in a test that the constant equals the configured property.
+Otherwise the `Retry-After` derived from that property is describing a wait the query no longer has.
+
+### What the failure becomes
+
+A timeout raises `PessimisticLockingFailureException`, and so do a deadlock victim and a
+serialization failure through its subclasses. **Do not catch it in the service.** Like the optimistic
+check, it surfaces from the transaction interceptor after the method body returned, so a `catch`
+around the repository call catches nothing. It is translated once, in the REST exception advice, to
+`503` with `Retry-After` — see
+[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md).
+Contention is not a server fault, but it is also not a conflict with the resource's state.
+
+**Test the timeout, not the configuration.** Hold the row in one transaction, attempt the locked read
+in a second, and assert that it fails within the configured bound rather than blocking until the test
+framework gives up. That test is the only thing that distinguishes a working timeout from an ignored
+hint, and it is the reason the engine table above is worth reading rather than assuming.
 
 ## Lock ordering and deadlocks
 

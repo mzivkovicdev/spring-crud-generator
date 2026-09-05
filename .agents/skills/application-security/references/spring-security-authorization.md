@@ -111,12 +111,54 @@ internal authority `SCOPE_users:write`; do not create a parallel constant for th
 Roles are a separate model: use `hasRole(...)` only when the selected claim mapping deliberately
 produces `ROLE_...` authorities. Configure and test any custom claim mapping explicitly.
 
-Let Spring Security own authentication and access-denied responses. The bearer resource-server
-defaults return `401` or `403` as appropriate, and a `401` includes the required bearer
-`WWW-Authenticate` challenge. Keep those defaults when they satisfy the public API contract.
-Configure focused `AuthenticationEntryPoint` and `AccessDeniedHandler` implementations only when
-the contract additionally requires a custom body or stable code. Register them through the filter
-chain, preserve protocol-required headers, and do not duplicate this handling in MVC advice.
+### Let the filter chain answer every denial
+
+Spring Security owns authentication and access-denied responses, and the reason is a decision no
+other layer can make. `ExceptionTranslationFilter` inspects the current authentication: anonymous or
+remember-me means the caller never authenticated, so the request goes to the
+`AuthenticationEntryPoint` and returns **`401` with the bearer `WWW-Authenticate` challenge**; a
+fully authenticated caller lacking the authority goes to the `AccessDeniedHandler` and returns
+**`403`**. The bearer resource-server defaults already do this. Keep them when they satisfy the
+public API contract, and configure focused `AuthenticationEntryPoint` and `AccessDeniedHandler`
+implementations when the contract requires a stable body — registered through the filter chain,
+preserving protocol-required headers, and built from the project error catalog rather than from
+inline statuses and messages.
+
+**For a project publishing an OpenAPI document that declares `401` and `403` as `ProblemDetail`,
+that condition is already met**, so the two components are required rather than optional: the bearer
+defaults send the right status and challenge with an empty body, which is not what the document
+promises. The `ACCESS_DENIED` and `UNAUTHENTICATED` constants exist in the error catalog
+`spring-boot-patterns` owns precisely so these two emit the same shape as every other failure.
+Where the project publishes no document and no stable body is promised, keeping the defaults is the
+correct answer and the catalog constants stay unused.
+
+**A `403` produced anywhere else is a bug, not a duplicate.** An MVC advice that answers
+`AccessDeniedException` intercepts it before the filter sees it, so the anonymous caller who should
+have received `401` and a challenge receives `403` and none. The defect passes every test written
+with an authenticated fixture, which is most of them.
+
+That leaves one seam, and it is narrow. A method-security denial — `@PreAuthorize` on a service —
+is thrown inside the dispatch, so it *does* reach the MVC advice, where the project's catch-all
+`@ExceptionHandler(Exception.class)` would swallow it into a `500`. `spring-boot-patterns` resolves
+that by declaring a handler for `AccessDeniedException` **whose only statement rethrows it**,
+returning no response, so the exception continues out to the filter chain and is answered there like
+every other denial. That is the one permitted mention of the type in an advice: it exists to decline
+the exception, never to answer it. Read
+[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md#access-denial-is-the-security-chains-contract-not-this-advices)
+before changing either side.
+
+Verify it the way the distinction is made: **one test with no credential and one with a valid
+credential lacking the authority, on the same protected route.** The first must be `401` with a
+`WWW-Authenticate` header, the second `403`. A suite that only ever sends a token cannot see this
+defect at all.
+
+`spring-boot-testing` owns the level, and places runtime authentication and authorization proof in
+full application integration tests only — which is the level this pair needs, because it runs the
+controller slice with filters disabled, where `ExceptionTranslationFilter` never executes and both
+cases would report whatever the advice happens to do, the very thing under test. Its integration
+example already carries the pair, as
+`usersPost_whenTokenIsMissing_returnsUnauthorizedAndDoesNotPersist` and
+`usersPost_whenWriteScopeIsMissing_returnsForbiddenAndDoesNotPersist`.
 
 ### Management endpoints
 
