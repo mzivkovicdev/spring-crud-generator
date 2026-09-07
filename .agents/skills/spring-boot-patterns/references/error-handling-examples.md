@@ -33,6 +33,8 @@ public enum ApplicationError {
             "The requested resource does not exist."),
     RESPONSE_VALIDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Response validation failed",
             "The server could not produce a valid response."),
+    UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Authentication required",
+            "The request did not carry a valid credential."),
     USER_NOT_MODIFIABLE(HttpStatus.CONFLICT, "User not modifiable",
             "The user is not in a state that accepts this change."),
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation failed",
@@ -104,15 +106,31 @@ public enum ApplicationError {
 `https://api.example.com/problems/validation-failed`. Neither can drift from the other, and neither
 can acquire a second spelling somewhere else in the codebase.
 
+`ACCESS_DENIED` and `UNAUTHENTICATED` are in this catalog even though **no handler in this advice
+uses them** — the security filter chain emits both, for the reason stated under
+[access denial](#access-denial-is-the-security-chains-contract-not-this-advices). They belong here
+regardless of which layer writes the response, because the rule is one declaration per
+caller-visible failure, not one declaration per emitter. A security response built from its own
+inline status and message is a second catalog, and `rest-api-contract` publishes both problem types
+like any other.
+
 ```java
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final String CORRELATION_ID_PROPERTY = "correlationId";
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
-    // Seconds, as a String because Retry-After is a header value. Read from the
-    // "Pessimistic lock timeout" row of docs/project-profile.md; never shorter than it.
-    private static final String LOCK_RETRY_AFTER_SECONDS = "3";
+
+    // Retry-After is a header value, so a String, and it is derived once at startup from the
+    // one place the lock timeout is recorded. LockingProperties is the configuration record
+    // declared in spring-data-jpa's lock-timeout section and bound in config.properties like
+    // every other @ConfigurationProperties type. See "Deriving Retry-After from the lock timeout".
+    private final String lockRetryAfterSeconds;
+
+    public ApiExceptionHandler(final LockingProperties lockingProperties) {
+        this.lockRetryAfterSeconds = Long.toString(
+                lockingProperties.pessimisticLockTimeout().plusNanos(999_999_999L).toSeconds());
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleResourceNotFound(final ResourceNotFoundException exception) {
@@ -145,21 +163,27 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return createProblem(ApplicationError.CONCURRENT_MODIFICATION, exception);
     }
 
-    // A lock wait that timed out, a deadlock victim, or a serialization failure. Nothing about
-    // the resource conflicts with the request, so this is 503 with Retry-After, never 409.
-    @ExceptionHandler(PessimisticLockingFailureException.class)
-    public ResponseEntity<ProblemDetail> handleLockTimeout(
-            final PessimisticLockingFailureException exception) {
+    // A lock wait that timed out, a deadlock victim, a serialization failure, or a statement
+    // cancelled by the statement timeout while it waited for a lock. Nothing about the resource
+    // conflicts with the request, so this is 503 with Retry-After, never 409.
+    @ExceptionHandler({PessimisticLockingFailureException.class, QueryTimeoutException.class})
+    public ResponseEntity<ProblemDetail> handleLockTimeout(final DataAccessException exception) {
 
         return ResponseEntity.status(ApplicationError.LOCK_TIMEOUT.status())
-                .header(HttpHeaders.RETRY_AFTER, LOCK_RETRY_AFTER_SECONDS)
+                .header(HttpHeaders.RETRY_AFTER, this.lockRetryAfterSeconds)
                 .body(createProblem(ApplicationError.LOCK_TIMEOUT, exception));
     }
 
-    // Required: without it, the catch-all below would turn a method-security denial into a 500.
+    // Required, and it deliberately produces no response. Without it the catch-all below turns
+    // a method-security denial into a 500; with it, the denial continues to the security filter
+    // chain, which is the only place that can tell an unauthenticated caller (401 with a
+    // challenge) from an authorized-but-forbidden one (403). See "Access denial is the security
+    // chain's contract, not this advice's".
     @ExceptionHandler(AccessDeniedException.class)
-    public ProblemDetail handleAccessDenied(final AccessDeniedException exception) {
-        return createProblem(ApplicationError.ACCESS_DENIED, exception);
+    public void rethrowAccessDenied(final AccessDeniedException exception)
+            throws AccessDeniedException {
+
+        throw exception;
     }
 
     @ExceptionHandler(Exception.class)
@@ -245,7 +269,7 @@ text stays a stable constant that groups across records.
 
 Four handlers exist for reasons that are easy to miss:
 
-- `AccessDeniedException` must be handled explicitly. Filter-level denials never reach an advice, but a method-security denial does, and the catch-all would otherwise report a `403` condition as a `500`.
+- `AccessDeniedException` needs a handler that **rethrows it**. A method-security denial reaches the advice, where the catch-all would report it as `500`; rethrowing stops that without answering it here, and lets the security filter chain give the answer. The section below states why that split is not optional.
 - **The two contention handlers are what stop a normal concurrent request from being reported as a server fault.** They are covered in full below, because getting them wrong is invisible until the system is under load.
 - `@ExceptionHandler(Exception.class)` is the catch-all that guarantees every unexpected failure still produces a `ProblemDetail` rather than the default error page. The specific handlers inherited from `ResponseEntityExceptionHandler` take precedence over it, so framework exceptions keep their intended status.
 
@@ -267,6 +291,16 @@ swallows the other:
 | --- | --- | --- |
 | `OptimisticLockingFailureException` | `ObjectOptimisticLockingFailureException` | anything pessimistic |
 | `PessimisticLockingFailureException` | `CannotAcquireLockException`, `CannotSerializeTransactionException`, `DeadlockLoserDataAccessException` | anything optimistic |
+| `QueryTimeoutException` | a statement the database cancelled on its own timeout, including one cancelled while waiting for a lock | anything that completed |
+
+**`QueryTimeoutException` is listed beside the pessimistic family, not under it.** Spring places it
+under `TransientDataAccessException` as a *sibling* of `ConcurrencyFailureException`, so
+`PessimisticLockingFailureException` does not cover it. That matters wherever the engine bounds a
+lock wait through the statement timeout rather than through a lock timeout — PostgreSQL is the
+common case, and `spring-data-jpa` names it — because the caller then waits, the database cancels
+the statement, and without this type in the list the routine contention this section exists to
+handle arrives at the catch-all as `500`. The handler parameter widens to `DataAccessException`,
+the narrowest type that covers both families.
 
 Spring's own javadoc recommends handling `PessimisticLockingFailureException` rather than its
 subclasses, which is also what keeps a deadlock victim and a serialization failure from falling
@@ -291,10 +325,35 @@ occurrences, and a reason `Retry-After` is mandatory rather than optional — it
 mislabel the condition as `409`. `observability-and-logging` owns the meter; the advice logs it
 once like every other failure.
 
-`LOCK_RETRY_AFTER_SECONDS` is a header value, so it is a `String` constant, and it comes from the
-**Pessimistic lock timeout** row of `docs/project-profile.md` rather than being chosen here. A
-`Retry-After` shorter than that timeout invites the caller back before the holder can plausibly have
-finished, which turns one queue into two.
+### Deriving Retry-After from the lock timeout
+
+A `Retry-After` shorter than the lock timeout invites the caller back before the holder can plausibly
+have finished, which turns one queue into two. The way to guarantee it is never shorter is to stop
+writing it down: the advice takes the **Pessimistic lock timeout** the profile records — the same
+value `spring-data-jpa` applies to the database — and converts it, rounding **up** to whole seconds.
+
+```java
+this.lockRetryAfterSeconds = Long.toString(
+        lockingProperties.pessimisticLockTimeout().plusNanos(999_999_999L).toSeconds());
+```
+
+Adding one nanosecond short of a second before `toSeconds()` is ceiling division: a 2500 ms timeout
+yields `3`, not the `2` that truncation would give and that would send the caller back early. The
+nanosecond form is deliberate — `plusMillis(999)` reads more simply but truncates anything below a
+millisecond, and Spring binds `ns` and `us` durations, so `3000000001ns` would round to `3` and
+reintroduce exactly the too-short header this derivation exists to prevent. A timeout that is
+already a whole number of seconds is unaffected either way.
+
+`LockingProperties` is the record declared under
+[lock timeouts](../../spring-data-jpa/references/locking-and-retry-examples.md#lock-timeouts) in
+`spring-data-jpa`, which owns the value and how it reaches the database on each engine. It is an
+ordinary `@ConfigurationProperties` type in `config.properties`, not a persistence bean — this
+advice depends on the project's configuration, not on its persistence layer. This skill owns only
+the header, and takes the number from that property rather than repeating it.
+
+Assert the relationship in a test: a `503` from a timed-out lock must carry a `Retry-After` no
+smaller than the configured timeout. The two values live in different layers and nothing else keeps
+them in step.
 
 The optimistic handler declares `RuntimeException` rather than `Exception`: it is the narrowest type
 that covers both listed exceptions, since `jakarta.persistence.OptimisticLockException` and the
@@ -348,13 +407,35 @@ Before adding handlers, inventory the exceptions that can cross each controller 
 Normal REST TO responses use `application/json`; RFC 9457 error responses use
 `application/problem+json`.
 
-The catch-all `Exception` handler must not consume failures that Spring Security owns. Filter-level
-authentication and access-denied failures never reach an advice: they are translated inside the
-filter chain, so `401` responses and challenge headers remain the security configuration's
-responsibility. Method-security denials do reach the advice, which is why `AccessDeniedException` is
-handled explicitly above; without that handler the catch-all would report them as `500`. Apply
-`application-security` for `401`, `403`, challenge headers, and any custom security body, and keep
-the two contracts consistent so the same condition does not produce two different shapes.
+### Access denial is the security chain's contract, not this advice's
+
+**A denial that reaches this advice must leave it again.** The handler above rethrows the original
+`AccessDeniedException` and returns nothing, which looks like a no-op and is the whole point.
+
+The reason is a distinction only the filter chain can make. `ExceptionTranslationFilter` asks whether
+the current authentication is anonymous or remember-me: if it is, the caller never authenticated, so
+the request goes to the `AuthenticationEntryPoint` and comes back **`401` with a
+`WWW-Authenticate` challenge**; if the caller is fully authenticated and simply lacks the authority,
+it goes to the `AccessDeniedHandler` and comes back **`403`**. An advice that answers the exception
+itself never lets it reach that filter, so every anonymous caller receives `403` with no challenge —
+a wrong status, a missing protocol header, and a client that cannot tell "log in" from "you may not
+do this".
+
+That is why the handler exists but does not respond. Rethrowing **the original exception** from an
+`@ExceptionHandler` is a supported path, not a trick: Spring's `ExceptionHandlerExceptionResolver`
+recognises that the thrown exception is the one it was resolving, logs nothing, and continues with
+default processing — which is what carries it out to the filter chain. Throwing anything *else* from
+a handler is the accident that path is guarding against, and it does get logged.
+
+What the filter chain then does with it — which component answers, what the body looks like, and
+how it is tested — is `application-security`'s rule, stated in
+[let the filter chain answer every denial](../../application-security/references/spring-security-authorization.md#let-the-filter-chain-answer-every-denial).
+This skill's part ends at declining the exception.
+
+Do not "simplify" this by deleting the rethrowing handler: the catch-all immediately reclaims the
+exception and reports every denial as `500`. Do not simplify it the other way either, by answering
+`403` here: that is the anonymous-caller defect above, and it passes every test written with an
+authenticated fixture.
 
 Handle listener, job, messaging, and asynchronous failures at their owning boundary because they do
 not pass through this advice, and log them there under the same one-record rule. Test each status,

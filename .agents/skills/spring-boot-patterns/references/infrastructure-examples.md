@@ -122,13 +122,20 @@ into a second annotation, a Javadoc sentence, or a test literal.
 
 ## Method validation
 
-Declare application-service method constraints once on the service contract:
+Declare method constraints once on the service contract. The example is an **application service**,
+because a transfer spans two `Account` aggregates and coordination is what that level is for.
+
+`AccountService` is the aggregate service for the `Account` root, with `withdraw` and `deposit`
+operations that enforce its own invariants; `ReceiptDomain` is a domain record and
+`InsufficientFundsException` a project exception. All three belong to this example rather than to the
+`user` vocabulary used elsewhere in this file, because banking makes the two-aggregate case obvious
+in a way a user and an organization do not.
 
 ```java
-public interface TransferService {
+public interface TransferApplicationService {
 
     /**
-     * Transfers the requested amount between accounts.
+     * Transfers the requested amount between two accounts.
      *
      * @param sourceAccountId source account identifier
      * @param targetAccountId target account identifier
@@ -144,19 +151,19 @@ public interface TransferService {
 }
 ```
 
-This example assumes the service-interface and `*ServiceImpl` convention, so the implementation below
+This example assumes the service-interface and `*Impl` convention, so the implementation below
 carries `@Validated`, the dependencies, and the bodies, while the interface above carries the
 constraints and the Javadoc. Do not repeat constraints on the overriding method.
 
 ```java
 @Service
 @Validated
-public class TransferServiceImpl implements TransferService {
+public class TransferApplicationServiceImpl implements TransferApplicationService {
 
-    private final AccountRepository accountRepository;
+    private final AccountService accountService;
 
-    public TransferServiceImpl(final AccountRepository accountRepository) {
-        this.accountRepository = accountRepository;
+    public TransferApplicationServiceImpl(final AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Override
@@ -166,21 +173,10 @@ public class TransferServiceImpl implements TransferService {
             final Long targetAccountId,
             final BigDecimal amount) {
 
-        final AccountEntity sourceAccount = this.accountRepository.findById(sourceAccountId)
-            .orElseThrow(() -> new ResourceNotFoundException("Account", sourceAccountId));
-        final AccountEntity targetAccount = this.accountRepository.findById(targetAccountId)
-            .orElseThrow(() -> new ResourceNotFoundException("Account", targetAccountId));
+        this.accountService.withdraw(sourceAccountId, amount);
+        this.accountService.deposit(targetAccountId, amount);
 
-        sourceAccount.withdraw(amount);
-        targetAccount.deposit(amount);
-
-        final AccountEntity savedSourceAccount = this.accountRepository.save(sourceAccount);
-        final AccountEntity savedTargetAccount = this.accountRepository.save(targetAccount);
-
-        return new ReceiptDomain(
-                savedSourceAccount.getId(),
-                savedTargetAccount.getId(),
-                amount);
+        return new ReceiptDomain(sourceAccountId, targetAccountId, amount);
     }
 }
 ```
@@ -190,9 +186,19 @@ caller-facing Javadoc, `@Validated`, `@Service`, the transaction, and the bodies
 and nothing else about the example changes. Follow whichever convention
 `docs/project-profile.md` records, and do not mix the two within a scope.
 
-The explicit `save` calls are intentional; do not replace them with dirty-checking-only persistence. Invoke the service through the Spring proxy so validation and transaction advice are applied.
+Four things in that pair are the rules it exists to show:
 
-**This excerpt shows method validation, and nothing else — do not read it as a transfer implementation.** A transfer between two accounts is the canonical concurrency problem, and the code above has none of the answer: no `@Version`, no lock, and the two accounts loaded in whatever order the caller supplied, which is the shape that deadlocks as soon as anything does lock. `spring-data-jpa` owns that decision and its examples: choose the strategy per operation, and lock multiple rows in an order derived from a stable value rather than from the request.
+- **The constraints are on the interface, once.** They are the caller-facing contract, so they sit with the Javadoc; repeating them on the implementation creates two contracts that drift.
+- **`@Validated` is on the implementation**, because that is the bean the proxy wraps. On the interface it does nothing.
+- **The application service holds no repository**, and this one holds none. Both accounts are written through `AccountService`, the aggregate service that owns the `Account` root and its invariants — "may this account go below zero" is a rule about an account, not about a transfer. A repository here would give the aggregate a second write path that bypasses those invariants.
+- **Invoke the service through the Spring proxy**, or neither the validation nor the transaction advice applies. Self-invocation defeats both.
+
+**This excerpt shows method validation, and nothing else — do not read it as a transfer
+implementation.** A transfer between two accounts is the canonical concurrency problem and the code
+above has none of the answer: no `@Version`, no lock, no conditional `UPDATE`, and the two accounts
+touched in the order the caller supplied, which is the shape that deadlocks as soon as anything does
+lock. `spring-data-jpa` owns that decision and its examples: choose the strategy per operation, and
+where more than one row is locked, derive the order from a stable value rather than from the request.
 
 ## Custom exceptions
 

@@ -75,11 +75,9 @@ Setting the correct one explicitly is what makes that visible in review.
 The generator takes the same options whichever build tool invokes it. Decide them here, then declare
 them in the project's own build file; `build-and-dependencies` owns that declaration and the version.
 
-**Two kinds of setting live in this list, and putting one where the other belongs fails silently.**
-A *generator option* is declared on the generator itself, beside `generatorName` and `apiPackage`. A
-*config option* is a setting of the `spring` generator specifically, and goes inside the
-`configOptions` block. The generator ignores an unknown entry in `configOptions` without a warning,
-so a generator option written there is simply dropped and the build stays green.
+**Two kinds of setting live in this list, and they are declared in different places.** A *generator
+option* belongs on the generator itself, beside `generatorName` and `apiPackage`. A *config option*
+is a setting of the `spring` generator specifically, and goes inside the `configOptions` block.
 
 Generator options — **not** inside `configOptions`:
 
@@ -99,11 +97,18 @@ Config options — inside `configOptions`:
 | `openApiNullable` | `false` | Avoids the `JsonNullable` wrapper types, which leak an extra library into every signature. Turn it on only if the project deliberately adopts that library |
 
 **`modelNameSuffix` is the one that gets misplaced**, because every other option in this section is
-a config option and it reads like one more. Written inside `configOptions` it is discarded, the
-generator emits `User`, and the naming collision this whole section exists to prevent arrives anyway
-— now with a hand-written `UserTO` beside a generated `User` for the same concept. Verify it the way
-the [Jackson decision](#the-jackson-decision-on-spring-boot-4) below is verified: generate once and
-read the type names in the output, rather than trusting that the setting was accepted.
+a config option and it reads like one more. Declare it as a generator option, which is where the
+generator documents it.
+
+Be accurate about why, because the honest reason is weaker than the obvious one: at the time of
+writing, the generator *also* reads this key back out of the properties that `configOptions`
+populates, so the misplaced form has been observed to work. That is an implementation detail of one
+version, not the documented interface, and it is not what the option's documentation describes.
+Declaring it where it is documented costs nothing and does not depend on that behaviour surviving an
+upgrade. Whichever placement a project inherits, verify the result the way the
+[Jackson decision](#the-jackson-decision-on-spring-boot-4) below is verified: generate once and read
+the type names in the output. A generated `User` beside a hand-written `UserTO` is the collision this
+whole section exists to prevent, and the output is the only thing that proves it did not happen.
 
 `useJakartaEe` is deliberately absent: both generation switches enable it, and both supported
 generations are on the `jakarta` namespace. Setting it a second time is harmless but misleading — it
@@ -131,8 +136,6 @@ project; nothing else in the block changes.
                 <generatorName>spring</generatorName>
                 <apiPackage>com.example.myapp.controller.api</apiPackage>
                 <modelPackage>com.example.myapp.transferobject</modelPackage>
-                <!-- A generator option, so it sits here beside modelPackage and NOT in
-                     configOptions, where it would be ignored without a warning. -->
                 <modelNameSuffix>TO</modelNameSuffix>
                 <configOptions>
                     <!-- Spring Boot 3. On Spring Boot 4 this line becomes
@@ -172,8 +175,6 @@ openApiGenerate {
     outputDir.set(layout.buildDirectory.dir("generated/openapi").get().asFile.path)
     apiPackage.set("com.example.myapp.controller.api")
     modelPackage.set("com.example.myapp.transferobject")
-    // A generator option, so it is its own property and NOT a configOptions entry,
-    // where it would be ignored without a warning.
     modelNameSuffix.set("TO")
     configOptions.set(
         mapOf(
