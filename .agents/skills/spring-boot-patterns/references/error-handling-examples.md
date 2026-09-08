@@ -107,9 +107,9 @@ public enum ApplicationError {
 can acquire a second spelling somewhere else in the codebase.
 
 `ACCESS_DENIED` and `UNAUTHENTICATED` are in this catalog even though **no handler in this advice
-uses them** — the security filter chain emits both, for the reason stated under
-[access denial](#access-denial-is-the-security-chains-contract-not-this-advices). They belong here
-regardless of which layer writes the response, because the rule is one declaration per
+builds a response from them** — the security filter chain emits both, for the reason stated under
+[security denials](#security-denials-are-the-filter-chains-contract-not-this-advices). They belong
+here regardless of which layer writes the response, because the rule is one declaration per
 caller-visible failure, not one declaration per emitter. A security response built from its own
 inline status and message is a second catalog, and `rest-api-contract` publishes both problem types
 like any other.
@@ -174,14 +174,21 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(createProblem(ApplicationError.LOCK_TIMEOUT, exception));
     }
 
-    // Required, and it deliberately produces no response. Without it the catch-all below turns
-    // a method-security denial into a 500; with it, the denial continues to the security filter
-    // chain, which is the only place that can tell an unauthenticated caller (401 with a
-    // challenge) from an authorized-but-forbidden one (403). See "Access denial is the security
-    // chain's contract, not this advice's".
+    // The two declining handlers. Both are required and both deliberately produce no response:
+    // they hand the exception back to the security filter chain, which is the only place that can
+    // tell an unauthenticated caller (401 with a challenge) from an authorized-but-forbidden one
+    // (403). Without them the catch-all below reports either as 500. See "Security denials are the
+    // filter chain's contract, not this advice's".
     @ExceptionHandler(AccessDeniedException.class)
     public void rethrowAccessDenied(final AccessDeniedException exception)
             throws AccessDeniedException {
+
+        throw exception;
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public void rethrowAuthentication(final AuthenticationException exception)
+            throws AuthenticationException {
 
         throw exception;
     }
@@ -267,9 +274,9 @@ can only narrow the set of `ERROR` records, never widen it.
 The `errorCode` is attached as a structured field, not interpolated into the message, so the message
 text stays a stable constant that groups across records.
 
-Four handlers exist for reasons that are easy to miss:
+Five handlers exist for reasons that are easy to miss:
 
-- `AccessDeniedException` needs a handler that **rethrows it**. A method-security denial reaches the advice, where the catch-all would report it as `500`; rethrowing stops that without answering it here, and lets the security filter chain give the answer. The section below states why that split is not optional.
+- **`AccessDeniedException` and `AuthenticationException` both need a handler that rethrows.** Spring Security has two denial families, not one, and both can be raised inside the dispatch where the catch-all would report them as `500`. Rethrowing stops that without answering here, and lets the filter chain give the answer. The section below states why that split is not optional, and why one handler is not enough.
 - **The two contention handlers are what stop a normal concurrent request from being reported as a server fault.** They are covered in full below, because getting them wrong is invisible until the system is under load.
 - `@ExceptionHandler(Exception.class)` is the catch-all that guarantees every unexpected failure still produces a `ProblemDetail` rather than the default error page. The specific handlers inherited from `ResponseEntityExceptionHandler` take precedence over it, so framework exceptions keep their intended status.
 
@@ -407,10 +414,10 @@ Before adding handlers, inventory the exceptions that can cross each controller 
 Normal REST TO responses use `application/json`; RFC 9457 error responses use
 `application/problem+json`.
 
-### Access denial is the security chain's contract, not this advice's
+### Security denials are the filter chain's contract, not this advice's
 
-**A denial that reaches this advice must leave it again.** The handler above rethrows the original
-`AccessDeniedException` and returns nothing, which looks like a no-op and is the whole point.
+**A denial that reaches this advice must leave it again.** The two handlers above rethrow the
+original exception and return nothing, which looks like a no-op and is the whole point.
 
 The reason is a distinction only the filter chain can make. `ExceptionTranslationFilter` asks whether
 the current authentication is anonymous or remember-me: if it is, the caller never authenticated, so
@@ -421,21 +428,53 @@ itself never lets it reach that filter, so every anonymous caller receives `403`
 a wrong status, a missing protocol header, and a client that cannot tell "log in" from "you may not
 do this".
 
-That is why the handler exists but does not respond. Rethrowing **the original exception** from an
+That is why the handlers exist but do not respond. Rethrowing **the original exception** from an
 `@ExceptionHandler` is a supported path, not a trick: Spring's `ExceptionHandlerExceptionResolver`
 recognises that the thrown exception is the one it was resolving, logs nothing, and continues with
 default processing — which is what carries it out to the filter chain. Throwing anything *else* from
 a handler is the accident that path is guarding against, and it does get logged.
 
-What the filter chain then does with it — which component answers, what the body looks like, and
-how it is tested — is `application-security`'s rule, stated in
+#### One handler is not enough, because there are two families
+
+`ExceptionTranslationFilter` searches the cause chain for an `AccessDeniedException` **and** for an
+`AuthenticationException`, and it checks the authentication family first. Declining only the first
+leaves the second going through the catch-all as `500`, which is the same defect one layer over.
+Both families are raised inside the dispatch, where only this advice stands between them and the
+filter:
+
+| Raised inside the dispatch by | Type | Reaches the filter as |
+| --- | --- | --- |
+| Method security denying an authenticated caller | `AuthorizationDeniedException`, an `AccessDeniedException` | `403` from the `AccessDeniedHandler` |
+| Method security with no `Authentication` in the context — the normal case when the chain disables anonymous authentication | `AuthenticationCredentialsNotFoundException` | `401` with the challenge |
+| Method security requiring full authentication from an anonymous caller | `InsufficientAuthenticationException` | `401` with the challenge |
+
+Both types are `RuntimeException` subclasses, so the `throws` clause on each handler is
+documentation rather than a compiler requirement. Keep it: it is what says the method exists to
+propagate rather than to return.
+
+#### The one case that does not use this path
+
+**A service that calls `AuthenticationManager` itself translates the failure at its own boundary.**
+Under the application-issued token profile `application-security` defines, the token endpoint's
+service invokes authentication directly, so a `BadCredentialsException` there is not a denial of
+*this* request by the chain — it is a provider failure inside a use case, and the outbound rule this
+skill already states applies: translate it into a project exception carrying its own catalog
+constant, and let the ordinary handler answer it. Relying on the declining handler instead sends the
+caller a bearer challenge for an endpoint that does not take bearer tokens.
+
+The test that separates the two is the one worth writing: a wrong password on the token endpoint
+must produce the catalog's own credential-failure contract, while a missing token on a protected
+route must produce `401` from the chain.
+
+What the filter chain does with a declined exception — which component answers, what the body looks
+like, and how it is tested — is `application-security`'s rule, stated in
 [let the filter chain answer every denial](../../application-security/references/spring-security-authorization.md#let-the-filter-chain-answer-every-denial).
 This skill's part ends at declining the exception.
 
-Do not "simplify" this by deleting the rethrowing handler: the catch-all immediately reclaims the
-exception and reports every denial as `500`. Do not simplify it the other way either, by answering
-`403` here: that is the anonymous-caller defect above, and it passes every test written with an
-authenticated fixture.
+Do not "simplify" this by deleting either rethrowing handler: the catch-all immediately reclaims the
+exception and reports that family's denials as `500`. Do not simplify it the other way either, by
+answering `401` or `403` here: that is the anonymous-caller defect above, and it passes every test
+written with an authenticated fixture.
 
 Handle listener, job, messaging, and asynchronous failures at their owning boundary because they do
 not pass through this advice, and log them there under the same one-record rule. Test each status,

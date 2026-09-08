@@ -117,19 +117,25 @@ the reverse.
 20. **A public endpoint change is not complete until the contract reflects it** — every path, status,
     header, field, and error condition, including those the shared advice produces.
     (`rest-api-contract`)
+21. **The exception advice answers no security denial; it declines both families.** Declare one
+    handler for `AccessDeniedException` and one for `AuthenticationException`, each of which
+    rethrows the exception unchanged and returns nothing, so `ExceptionTranslationFilter` still
+    produces the `401` with its challenge or the `403`. Declining one and not the other leaves that
+    family reaching the catch-all as `500`, which passes every test that always sends a token.
+    (`spring-boot-patterns`, `application-security`)
 
 ## Persistence
 
-21. **Entities: no records, no Lombok `@Data`, explicit `equals`/`hashCode`** by stable natural key
+22. **Entities: no records, no Lombok `@Data`, explicit `equals`/`hashCode`** by stable natural key
     or by identifier with a constant class-derived hash. Never lazy or mutable state in either.
     (`spring-data-jpa`)
-22. **To-one associations are `LAZY`; `open-in-view` is off; no blanket `EAGER`.** Fetching is a
+23. **To-one associations are `LAZY`; `open-in-view` is off; no blanket `EAGER`.** Fetching is a
     query decision. (`spring-data-jpa`)
-23. **An association never crosses an aggregate boundary.** Reference another root by identifier.
+24. **An association never crosses an aggregate boundary.** Reference another root by identifier.
     (`spring-boot-patterns`, `spring-data-jpa`)
-24. **Every read that can grow with production data is bounded**, deterministically sorted, and
+25. **Every read that can grow with production data is bounded**, deterministically sorted, and
     paginated with an enforced maximum. (`spring-data-jpa`)
-25. **Optimistic locking with `@Version` is the default**, and contention is absorbed by the
+26. **Optimistic locking with `@Version` is the default**, and contention is absorbed by the
     project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, never by a
     hand-written loop and never by the caller. The annotation is project-owned on both Spring Boot
     generations and its call sites are identical; only the retry engine it composes differs.
@@ -137,13 +143,19 @@ the reverse.
     measurement — a pessimistic lock, or a single conditional `UPDATE` where the whole rule fits one
     row and one `WHERE` clause. Only buying a lock for throughput needs evidence.
     (`spring-data-jpa`)
-26. **Contention reaches the caller through the REST advice, from the framework's own exception
+27. **Contention reaches the caller through the REST advice, from the framework's own exception
     types.** An exhausted optimistic retry is `409`; a lock timeout, deadlock victim, serialization
     failure, or a statement the database cancelled while it waited is `503` with `Retry-After`,
     derived from the recorded lock timeout rather than written down again. Neither is caught in a
     service, and neither may fall through to the catch-all as `500`.
     (`spring-boot-patterns`, `spring-data-jpa`)
-27. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
+28. **Every wait is bounded by a mechanism the configured engine actually honours** — statement,
+    transaction, connection acquisition, and lock — with the numbers read from the profile and the
+    connection-level settings delivered through the one channel a pool has. A default of "no limit"
+    reports nothing, an ignored setting throws nothing, and both look exactly like a bound that
+    works, so each one is proven by executing it. Migrations do not inherit the request-sized
+    bounds. (`spring-data-jpa`)
+29. **Every schema change is a migration file, committed with the mapping change**, forward-only, and
     frozen once it has been applied to any **shared** environment — never edited, renamed,
     renumbered, or deleted after that. Editing is allowed only while it sits on a feature branch and
     has run nowhere but the author's own database. Hibernate `ddl-auto` is `validate` or `none`.
@@ -151,43 +163,49 @@ the reverse.
 
 ## Outbound and security
 
-28. **No outbound call without explicit connection and read timeouts**, inside the caller's budget.
+30. **The concurrency model is recorded, and changing it moves the limit rather than removing it.**
+    Virtual threads or a sized platform pool; either way the database pool, the per-caller limits,
+    and the outbound client pools are re-derived in the same change, because with the server's
+    thread pool gone they are the only bounds left. No synchronous request has an in-process
+    timeout, so the recorded request budget is held by the arithmetic of its parts and by the
+    ingress. (`spring-boot-patterns`)
+31. **No outbound call without explicit connection and read timeouts**, inside the caller's budget.
     Retry policy exists in exactly one layer. Provider exceptions are translated at the adapter.
     (`spring-boot-patterns`)
-29. **Authorization is enforced in the service and persistence path**, not only at the controller.
+32. **Authorization is enforced in the service and persistence path**, not only at the controller.
     Identity, tenant, and ownership come from the authenticated context, never from a request field.
     (`application-security`)
-30. **Never log or hardcode credentials, tokens, personal data, full request or response bodies, or
+33. **Never log or hardcode credentials, tokens, personal data, full request or response bodies, or
     SQL with parameters.** No secret in a build file, a migration, or a test fixture.
     (`application-security`)
 
 ## Observability
 
-31. **A failure is logged once, at the boundary that handles it**, with the internal error code and
+34. **A failure is logged once, at the boundary that handles it**, with the internal error code and
     the correlation identifier. Never catch, log, and rethrow. (`observability-and-logging`)
-32. **Metric tag values are bounded.** Never an identifier, email, tenant, raw URL, timestamp, or
+35. **Metric tag values are bounded.** Never an identifier, email, tenant, raw URL, timestamp, or
     exception message. (`observability-and-logging`)
 
 ## Tests
 
-33. **Production behavior and its tests ship together.** Never weaken, disable, or delete a test to
+36. **Production behavior and its tests ship together.** Never weaken, disable, or delete a test to
     make a change pass, and never relax a security control to make a test pass.
     (`spring-boot-testing`)
-34. **Each level proves a different boundary:** aggregate and application services get Spring-free
+37. **Each level proves a different boundary:** aggregate and application services get Spring-free
     unit tests, every controller gets a `@WebMvcTest` slice with filters disabled, and integration
     tests run against the real database engine with migrations applied and the real filter chain.
     (`spring-boot-testing`)
-35. **Integration tests must actually run, once, in the right phase.** On Maven the suffix also
+38. **Integration tests must actually run, once, in the right phase.** On Maven the suffix also
     matches Surefire's default pattern, so an unexcluded suite runs twice; on Gradle nothing runs it
     until a suite is registered, and an unrun suite looks exactly like a green build.
     (`spring-boot-testing`, `build-and-dependencies`)
 
 ## Dependencies
 
-36. **Every dependency names the requirement it satisfies**, duplicates no existing capability, and
+39. **Every dependency names the requirement it satisfies**, duplicates no existing capability, and
     carries no version when the Spring Boot BOM manages it. Every plugin version is pinned.
     (`build-and-dependencies`)
-37. **Quality gates fail the build** and run before the tests. A suppression file, a baseline, or a
+40. **Quality gates fail the build** and run before the tests. A suppression file, a baseline, or a
     `@SuppressWarnings` used to silence a **project rule** is prohibited; if a rule does not fit,
     change the rule and say so in review. This is written for a greenfield project, which is what
     the set assumes — adopting the set into a repository that already has code is a different
@@ -195,6 +213,6 @@ the reverse.
 
 ## Worked examples
 
-38. **Every snippet in this set is a pattern to adapt, not a file to copy.** A request for a product
+41. **Every snippet in this set is a pattern to adapt, not a file to copy.** A request for a product
     service produces `ProductService` written from scratch, not a renamed `UserService`.
     (`modern-java-21`)

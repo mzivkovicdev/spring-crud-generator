@@ -87,6 +87,7 @@ Every security-relevant feature requires tests at the boundary capable of provin
 these scenarios:
 
 - unauthenticated, insufficiently privileged, cross-user, and cross-tenant access;
+- the same unauthenticated and insufficiently privileged pair against a route the filter chain permits and **method security** protects, wherever the project uses it: those denials are raised inside the dispatch and reach the MVC advice first, so this pair is what proves the advice declines them instead of reporting `500`;
 - object-property manipulation, mass assignment, and server-owned fields;
 - malformed, oversized, boundary, injection-oriented, batched, replayed, and duplicate input;
 - token, session, API-key, webhook, CSRF, CORS, and callback behavior applicable to the actual client model;

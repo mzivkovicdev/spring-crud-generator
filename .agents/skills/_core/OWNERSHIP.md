@@ -13,7 +13,7 @@ and the skill's table is the defect to fix.
 | --- | --- |
 | `modern-java-21` | Java language use, imports, Javadoc, nullability, exception mechanics, type and method design, source structure. Applies to every touched `.java` file, production and test |
 | `project-decision-profile` | `docs/project-profile.md`, the `ASK` / `RESOLVE` / `UNDECIDED` tokens, the fallback rule, and the order of work for filling a row. Owns the mechanism only; each row's named owner decides what its value means |
-| `spring-boot-patterns` | Controllers, TOs, services and their two levels, domain models, mappers, validation, the error contract, configuration design, package responsibilities, outbound-call structure, and **where the transaction boundary sits** |
+| `spring-boot-patterns` | Controllers, TOs, services and their two levels, domain models, mappers, validation, the error contract, configuration design, package responsibilities, outbound-call structure, **where the transaction boundary sits**, and the application's runtime shape above the database: the concurrency model, the request budget, conditional reads, compression, and shutdown |
 | `spring-data-jpa` | Entities, repositories, queries, projections, fetch plans, locking, database performance, and **transaction behavior inside the boundary**: propagation, isolation, `readOnly`, flush timing |
 | `sql-database-migration` | Migration files, ordering, immutability, expand-and-contract, backfills, seed data, clean-install verification |
 | `rest-api-contract` | The public contract and its document: completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, drift |
@@ -40,13 +40,15 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | Security test scenarios | `application-security` owns which scenarios are required | `spring-boot-testing` owns the level each runs at |
 | Contract assertions | `rest-api-contract` owns what must be asserted | `spring-boot-testing` owns the level it runs at |
 | Idempotency | `application-security` owns the policy | `spring-boot-patterns` owns where it lives in the layers |
-| Authentication and authorization failures | `application-security` owns the `401` and `403` responses, which the filter chain produces | `spring-boot-patterns` owns the error catalog they are built from, and the advice handler that declines a method-security denial so the chain still sees it |
+| Authentication and authorization failures | `application-security` owns the `401` and `403` responses, which the filter chain produces | `spring-boot-patterns` owns the error catalog they are built from, and the two advice handlers that decline both denial families so the chain still sees them |
 | The pessimistic lock timeout | `spring-data-jpa` owns the value and how it reaches the database | `spring-boot-patterns` owns the `Retry-After` header, derived from that value and never retyped |
 | Nullability in Java code | `modern-java-21` owns the annotation convention and where it goes | `build-and-dependencies` owns the artifact, its version, and how hard the contract is checked |
 | Nullability in the published contract | `rest-api-contract` owns whether a field may be absent or null on the wire | `modern-java-21` owns how the Java declaration behind it is annotated, which is not the same question |
 | Profile decisions | `project-decision-profile` owns the file, the three tokens, the fallback rule, and whether a missing row blocks | the row's named owner decides what its value means; `build-and-dependencies` classifies every build and version row |
 | Versions of anything | `build-and-dependencies` owns every version choice | no other skill selects a version |
 | Resource bounds | `spring-data-jpa` owns the database-side bounds: statement and transaction timeouts, pool size, connection wait, batch size, page size | `spring-boot-patterns` owns the request budget they all fit inside, and `application-security` owns the per-caller limits that stop one client consuming them |
+| Concurrency at the request boundary | `spring-boot-patterns` owns the model — virtual threads or a sized platform pool — and the fact that changing it moves the limit rather than removing it | `spring-data-jpa` owns the database pool that becomes the limit, and `application-security` owns the per-caller limits that become the other one |
+| Conditional reads | `spring-boot-patterns` owns where the `If-None-Match` check sits and that it runs before the representation is built | `rest-api-contract` owns whether the `ETag` and `304` are part of the published contract, and `spring-data-jpa` owns the version the validator is derived from |
 
 ## Precedence when two skills genuinely conflict
 

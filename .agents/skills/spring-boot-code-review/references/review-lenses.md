@@ -144,6 +144,7 @@ Apply `application-security` and load only its references relevant to the change
 
 - Classify affected data and identify actors, subject identity, tenant, ownership, privileges, dangerous sinks, and external destinations.
 - Trace function, object, property, and tenant authorization through service and persistence paths rather than stopping at controller annotations.
+- Check that the REST advice declines **both** security denial families rather than answering either. An advice that handles `AccessDeniedException` and not `AuthenticationException` — or a catch-all with neither — reports an unauthenticated caller as `500` instead of `401` with its challenge. The defect is invisible in a suite whose security tests always send a token, and invisible in a controller slice, where filters are disabled.
 - Check server-owned fields, mass assignment, identifier substitution, replay, duplicate delivery, and administrative bypasses.
 - Check data exposure through response TOs, errors, logs, metrics, traces, caches, events, files, exports, test fixtures, and provider payloads.
 - Check injection and resource-exhaustion paths for SQL, URLs, redirects, files, archives, parsers, deserialization, expressions, headers, and regular expressions as applicable.
@@ -184,6 +185,8 @@ For messages and jobs:
 
 ## Configuration, observability, and operations
 
+- Verify that a change to the concurrency model re-derived what it moved. Enabling virtual threads removes the server thread pool as admission control, so the database pool, the per-caller limits, and the outbound client pools become the only bounds left; a diff that flips the property and touches none of them is a blocking finding, and it passes every test.
+- Verify that no path relies on a synchronous request timeout. `spring.mvc.async.request-timeout` bounds asynchronous return types only, so a project whose handlers return values directly is bounded by the arithmetic of its parts and by the ingress, and that arithmetic is a review responsibility rather than a gated one.
 - Verify that new behavior is configurable only where variability is real and that defaults are safe for production.
 - Check typed configuration binding, validation, profile behavior, environment overrides, and missing or malformed configuration.
 - Check startup ordering and fail-fast behavior for required dependencies. Do not require startup failure for an intentionally optional dependency.

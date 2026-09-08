@@ -132,33 +132,46 @@ promises. The `ACCESS_DENIED` and `UNAUTHENTICATED` constants exist in the error
 Where the project publishes no document and no stable body is promised, keeping the defaults is the
 correct answer and the catalog constants stay unused.
 
-**A `403` produced anywhere else is a bug, not a duplicate.** An MVC advice that answers
-`AccessDeniedException` intercepts it before the filter sees it, so the anonymous caller who should
-have received `401` and a challenge receives `403` and none. The defect passes every test written
+**A `401` or `403` produced anywhere else is a bug, not a duplicate.** An MVC advice that answers a
+denial intercepts it before the filter sees it, so the anonymous caller who should have received
+`401` and a challenge receives whatever the advice decided. The defect passes every test written
 with an authenticated fixture, which is most of them.
 
-That leaves one seam, and it is narrow. A method-security denial — `@PreAuthorize` on a service —
-is thrown inside the dispatch, so it *does* reach the MVC advice, where the project's catch-all
-`@ExceptionHandler(Exception.class)` would swallow it into a `500`. `spring-boot-patterns` resolves
-that by declaring a handler for `AccessDeniedException` **whose only statement rethrows it**,
-returning no response, so the exception continues out to the filter chain and is answered there like
-every other denial. That is the one permitted mention of the type in an advice: it exists to decline
-the exception, never to answer it. Read
-[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md#access-denial-is-the-security-chains-contract-not-this-advices)
+That leaves one seam, and it is narrow but it has **two** sides. A denial raised inside the dispatch
+— `@PreAuthorize` on a service, or a service that reaches an authentication component — does reach
+the MVC advice, where the project's catch-all `@ExceptionHandler(Exception.class)` would swallow it
+into a `500`. `spring-boot-patterns` resolves that by declaring one handler for
+`AccessDeniedException` and one for `AuthenticationException`, **each of whose only statement
+rethrows the exception**, returning no response, so it continues out to the filter chain and is
+answered there like every other denial.
+
+Both are required, because this filter looks for both and treats them differently:
+`ExceptionTranslationFilter` walks the cause chain for an `AuthenticationException` first and for an
+`AccessDeniedException` second, then routes the first to the `AuthenticationEntryPoint` and the
+second through the anonymous check. Declining only `AccessDeniedException` therefore fixes the
+authorization case and leaves the authentication case — a context with no `Authentication`, which is
+the normal state when the chain disables anonymous authentication, and an operation demanding full
+authentication from an anonymous caller — arriving at the catch-all as `500`. Those are the two
+permitted mentions of these types in an advice: they exist to decline, never to answer. Read
+[error handling examples](../../spring-boot-patterns/references/error-handling-examples.md#security-denials-are-the-filter-chains-contract-not-this-advices)
 before changing either side.
 
-Verify it the way the distinction is made: **one test with no credential and one with a valid
-credential lacking the authority, on the same protected route.** The first must be `401` with a
-`WWW-Authenticate` header, the second `403`. A suite that only ever sends a token cannot see this
-defect at all.
+Verify it the way the distinction is made: **three tests on protected routes.** No credential must
+give `401` with a `WWW-Authenticate` header; a valid credential lacking the authority must give
+`403`; and where the project uses method security, a route whose authorization is enforced in the
+service must give the same two answers rather than `500` — that third pair is the one the declining
+handlers exist for, and the only one that fails when either handler is missing. A suite that only
+ever sends a token cannot see any of this.
 
 `spring-boot-testing` owns the level, and places runtime authentication and authorization proof in
-full application integration tests only — which is the level this pair needs, because it runs the
-controller slice with filters disabled, where `ExceptionTranslationFilter` never executes and both
-cases would report whatever the advice happens to do, the very thing under test. Its integration
-example already carries the pair, as
+full application integration tests only — which is the level these tests need, because the
+controller slice runs with filters disabled, where `ExceptionTranslationFilter` never executes and
+every case would report whatever the advice happens to do, the very thing under test. Its
+integration example already carries the chain-enforced pair, as
 `usersPost_whenTokenIsMissing_returnsUnauthorizedAndDoesNotPersist` and
-`usersPost_whenWriteScopeIsMissing_returnsForbiddenAndDoesNotPersist`.
+`usersPost_whenWriteScopeIsMissing_returnsForbiddenAndDoesNotPersist`. The method-security pair is
+the same two scenarios aimed at a route the chain permits and the service protects, and it is
+required wherever the project uses method security at all.
 
 ### Management endpoints
 

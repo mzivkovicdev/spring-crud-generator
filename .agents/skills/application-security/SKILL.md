@@ -22,7 +22,7 @@ order — read it there, not from a copy in this file. The seams crossed most of
 | Exposed endpoints | how anything exposed is protected | `observability-and-logging` and `rest-api-contract` own whether it is exposed |
 | Security tests | which scenarios are required | `spring-boot-testing` owns the level each runs at |
 | Idempotency | the policy | `spring-boot-patterns` owns where it lives in the layers |
-| Denial responses | the `401` and `403` the filter chain produces, and which component produces each | `spring-boot-patterns` owns the error catalog they are built from, and the advice handler that declines a method-security denial |
+| Denial responses | the `401` and `403` the filter chain produces, and which component produces each | `spring-boot-patterns` owns the error catalog they are built from, and the two advice handlers that decline both denial families |
 
 Use the architecture and terminology from `spring-boot-patterns`; do not redefine an owner's rules.
 

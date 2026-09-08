@@ -25,7 +25,7 @@ this file. The seams this skill crosses most often:
 | Repositories | where the boundary sits and what may cross it | `spring-data-jpa` owns repository and query design |
 | The public contract | the TO, the `ProblemDetail`, the error catalog | `rest-api-contract` owns whether a change to them is breaking |
 | Instrumentation | where it sits in the layers | `observability-and-logging` owns what is emitted and at what level |
-| Authentication and authorization failures | the error catalog the `401` and `403` are built from, and the advice handler that declines a method-security denial so the filter chain still sees it | `application-security` owns the responses themselves, which the filter chain produces |
+| Authentication and authorization failures | the error catalog the `401` and `403` are built from, and the two advice handlers that decline both denial families so the filter chain still sees them | `application-security` owns the responses themselves, which the filter chain produces |
 | The `Retry-After` on a lock timeout | the header, derived from the recorded timeout | `spring-data-jpa` owns the timeout value and how it reaches the database |
 
 Do not restate or fork an owner's rules here. Report an unresolved conflict instead of inventing a
@@ -43,6 +43,7 @@ only what the task needs, and do not load one for unrelated work.
 | [REST boundary rules](references/rest-boundary-rules.md) *(rules)* | Creating or changing a controller, a request/response TO, or a REST mapper |
 | [Service layer rules](references/service-layer-rules.md) *(rules)* | Creating or changing a service, choosing its level, or producing an effect outside a transaction |
 | [Outbound call rules](references/outbound-call-rules.md) *(rules)* | Adding or changing any call to another system: HTTP client, message producer, provider SDK |
+| [Runtime and request budget](references/runtime-and-request-budget.md) *(rules)* | Choosing or changing the concurrency model, holding a request inside its budget, answering a repeated read without rebuilding it, compression, or shutdown behavior |
 | [REST API examples](references/rest-api-examples.md) | Controller, TO, and REST mapper code |
 | [Service and domain examples](references/service-domain-examples.md) | Service, domain model, domain mapper, parameter object, repository-boundary code |
 | [Error handling examples](references/error-handling-examples.md) | Adding or changing a caller-visible failure: a catalog constant, a custom exception, a handler, a validation response |
@@ -230,6 +231,7 @@ Three rules carry the weight:
 - **Every caller-visible failure is declared once**, in a single project-owned error catalog carrying the status, the `type` URI, the title, the detail, and the internal code used in logs, events, and metrics. One declaration is what stops the public type and the internal code from drifting apart.
 - **`correlationId` is the one permitted extension member.** Keep `traceId`, `spanId`, stack traces, exception class names, provider messages, internal hostnames, SQL, internal endpoints, credentials, and personal data out of the body entirely.
 - **The advice translates framework exceptions too, not only project ones.** Concurrency is the case that matters: `spring-data-jpa` absorbs contention with a retry annotation and lets the failure surface from the transaction interceptor, so what reaches the advice is a Spring `OptimisticLockingFailureException` or `PessimisticLockingFailureException`. Without handlers for those two parent types, every real conflict becomes a `500` while the code reads as though the contract were implemented.
+- **The advice answers no security denial, and there are two families to decline.** `AccessDeniedException` and `AuthenticationException` can both be raised inside the dispatch — by method security, or by a service — and only `ExceptionTranslationFilter` can tell an unauthenticated caller from a forbidden one. Declare a handler for each that rethrows the exception unchanged, so the chain produces the `401` with its challenge or the `403`. Declining one and not the other leaves that family reaching the catch-all as `500`.
 
 Read [error handling examples](references/error-handling-examples.md) for the catalog, the
 `ProblemDetail` handler, the catch-all rules, and exception naming and placement.
@@ -246,6 +248,24 @@ rules that matter most, because their defaults are unsafe:
 Read [outbound call rules](references/outbound-call-rules.md) before adding or changing any client.
 `observability-and-logging` owns what an outbound call must emit, and `application-security` owns
 credentials, destination validation, and response-size limits.
+
+## Runtime and request budget
+
+This skill owns the half of a request that happens above the database: how many requests the
+instance serves at once, how long one may take, and what a repeated read costs.
+`spring-data-jpa` owns every bound below it and sizes those numbers against the decisions here.
+
+Three rules carry the weight, and each is a decision recorded in the profile rather than a default:
+
+- **The concurrency model is chosen, not inherited.** Virtual threads or a sized platform pool — and the choice does not remove the limit on concurrency, it moves it. With the server's thread pool gone as an implicit admission control, the database pool, the per-caller limits, and the outbound client pools become the only bounds left, and each has to be re-derived in the same change.
+- **No synchronous request has an in-process timeout.** `spring.mvc.async.request-timeout` bounds asynchronous return types only. The recorded request budget is therefore held by the arithmetic of its parts plus the ingress ceiling, and the arithmetic has to actually come out — a budget nobody added up agrees with nothing.
+- **A repeated read is answered without rebuilding it.** Where a read path is polled and changes rarely, validate the caller's `If-None-Match` against a version the aggregate already keeps, before loading anything. Validating after building the representation saves bytes and no work at all.
+
+Read [runtime and request budget](references/runtime-and-request-budget.md) before changing any of
+them, and before enabling compression or graceful shutdown. `application-security` owns per-caller
+limits and payload bounds, `observability-and-logging` owns what is metered, and
+`build-and-dependencies` owns the Java release that decides whether virtual threads are available at
+all.
 
 ## Idempotency
 
@@ -300,7 +320,8 @@ and survives review** unless it is recognised by name:
 - an external effect fired inside the transaction rather than after commit, or after commit where the profile records that losing it is unacceptable;
 - an outbound client with no read timeout, or a provider exception reaching a service or controller;
 - a second machine-readable error identifier beside the RFC 9457 `type`;
-- an exception advice that handles only project exception types, so contention arrives from the framework and the catch-all reports a routine `409` or `503` condition as a `500`.
+- an exception advice that handles only project exception types, so contention arrives from the framework and the catch-all reports a routine `409` or `503` condition as a `500`;
+- an advice that declines one security denial family and not the other, so an unauthenticated caller receives `500` where the chain would have sent `401` with a challenge.
 
 [Infrastructure examples](references/infrastructure-examples.md) carries the full rejected list —
 boundary, structure, error-contract, and process — with the code. Read it when reviewing or replacing
@@ -315,13 +336,15 @@ suspicious existing code.
 - [ ] No application service holds a repository or a pass-through method; no aggregate service holds another service.
 - [ ] Each external effect uses the delivery mechanism the profile records, and failed delivery is logged rather than dropped.
 - [ ] Every outbound client sets both timeouts, and retry exists in exactly one layer.
+- [ ] The concurrency model is the one the profile records, and any change to it re-derived the database pool, the per-caller limits, and the outbound client pools in the same change.
+- [ ] The request budget's parts add up to less than the budget, and no path relies on a synchronous request timeout that does not exist.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.
 - [ ] Service signatures satisfy the size rule `modern-java-21` owns.
 - [ ] Mappers preserve the TO–Domain–Entity boundaries; MapStruct with `ReportingPolicy.ERROR`; one REST and one domain mapper per concept.
 - [ ] Projections, Specifications, enums, exceptions, handlers, and configuration types sit in their owning packages without empty scaffolding.
 - [ ] Error responses are stable and safe, the `type` URI is their only machine-readable identifier, and every failure comes from the single catalog.
 - [ ] The advice maps the framework contention types, so an exhausted retry returns `409` and a lock timeout returns `503` with `Retry-After`, each logged at the level its expectedness deserves, and the `Retry-After` is derived from the recorded timeout rather than written down again.
-- [ ] The advice declines `AccessDeniedException` by rethrowing it, so the filter chain still distinguishes an unauthenticated caller from a forbidden one, and the catch-all does not report either as `500`.
+- [ ] The advice declines both `AccessDeniedException` and `AuthenticationException` by rethrowing them, so the filter chain still distinguishes an unauthenticated caller from a forbidden one, and the catch-all reports neither as `500`.
 - [ ] Shared numeric bounds are declared once and referenced.
 - [ ] Configuration is type-safe, externalized, and validated.
 - [ ] `spring-boot-testing` and `modern-java-21` were applied, and the gates and suites pass.

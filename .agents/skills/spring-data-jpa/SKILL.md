@@ -35,6 +35,7 @@ only there. Read the one the change touches, and only that one:
 - [Entity and query examples](references/entity-and-query-examples.md) for mappings, association ownership, repository design, projections, dynamic and sargable queries, pagination and scrolling, SQL and index performance, and the read-side anti-patterns.
 - [Locking and retry examples](references/locking-and-retry-examples.md) for optimistic and pessimistic locking, the atomic conditional `UPDATE` that is the third strategy, the composed retry annotation for both generations, lock timeouts and ordering, and the concurrency anti-patterns.
 - [Write behavior examples](references/write-behavior-examples.md) for flush timing, bulk DML, large batches, and the write-side anti-patterns.
+- [Resource bounds](references/resource-bounds.md) *(rules)* for how a statement, transaction, connection-acquisition, or pool bound is actually applied: the three levels a bound can sit at, the delivery channel each engine offers and why they all share one, the migration exception, and the tests that prove a bound is real.
 
 ## Before changing persistence
 
@@ -210,12 +211,19 @@ statement holds its connection; a held connection is one the pool cannot hand ou
 turns a slow query on one endpoint into a timeout on every endpoint. That chain is the reason these
 are bounds rather than tuning.
 
-- **Set a statement timeout**, at the level the recorded engine supports — a datasource property, a connection-init setting, or a per-query hint. Keep it below the request budget `spring-boot-patterns` records: a statement still running after the caller gave up is pure cost.
-- **Set a transaction timeout** for write use cases, at or below the request budget and never below the statement timeout. It bounds the whole unit, including the parts between statements.
+- **Set a statement timeout at the connection level**, so it covers every statement the connection carries and not only the queries the application issues itself. Keep it below the request budget `spring-boot-patterns` records: a statement still running after the caller gave up is pure cost.
+- **Set a transaction timeout**, project-wide by default and tighter where a use case needs it, at or below the request budget and never below the statement timeout. It bounds the whole unit, including the parts between statements — and a read needs one as much as a write does, because `readOnly` bounds nothing.
 - **Size the connection pool from the engine's limit and the instance count**, not from a guess. Pool size × instances must stay within what the database accepts, with headroom for migrations and operators. A larger pool is not faster: past the point the database can execute concurrently, it converts queuing in the application into queuing in the engine, where it is harder to see.
 - **Bound the wait for a connection**, and keep it short. A long acquisition wait does not prevent exhaustion; it hides it, by turning a fast failure into a stalled request.
 - **Enable JDBC batching deliberately and verify it in the generated SQL.** `saveAll` is not batching, and the identifier strategy can silently disable it.
 - **Every read that can grow is already bounded** by the pagination rules above; the maximum page size is recorded with the rest of these numbers so it is one decision rather than a constant somebody re-picks.
+
+**How each of those is applied is stated once, in
+[resource bounds](references/resource-bounds.md)** — the three levels a bound can sit at and which
+one is the real one, the delivery channel each engine offers, the rule that every connection-level
+setting shares one channel, why migrations must not inherit the application's bounds, and the test
+that proves each bound rather than reading it. Read it before configuring or reviewing any of these
+numbers; a bound the engine ignores looks exactly like a bound that works.
 
 Two consequences worth stating, because they are where these bounds actually get lost:
 

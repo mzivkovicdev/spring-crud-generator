@@ -411,4 +411,4 @@ class CustomerServiceImpl implements CustomerService {
 - Bound batches and memory usage; persist progress or checkpoints for large work.
 - Configure executors explicitly where concurrency matters.
 - Propagate context intentionally and handle failures; never fire-and-forget critical work silently.
-- Evaluate virtual threads only after confirming blocking model, pinning, connection pools, and operational behavior.
+- The application's concurrency model, virtual threads included, is decided in [runtime and request budget](runtime-and-request-budget.md#choose-the-concurrency-model), not here. Scheduled and asynchronous work inherits that decision; it does not make its own.

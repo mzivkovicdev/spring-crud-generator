@@ -453,28 +453,27 @@ exception. Confirm the mechanism for the engine the profile records before relyi
 | Engine | What actually bounds the wait | How the value gets there |
 | --- | --- | --- |
 | Oracle | The JPA hint, rendered as `for update wait n` | `spring.jpa.properties.jakarta.persistence.lock.timeout`, from the bound property |
-| PostgreSQL | The `lock_timeout` setting. The hint expresses only `NOWAIT`, at value `0`; a positive value is **ignored** | A connection-init statement on the datasource, or `set_config` per transaction |
-| MySQL / InnoDB | `innodb_lock_wait_timeout`, in whole seconds | A connection-init statement on the datasource |
+| PostgreSQL | The `lock_timeout` setting. The hint expresses only `NOWAIT`, at value `0`; a positive value is **ignored** | The connection-level channel, or `set_config` per transaction |
+| MySQL / InnoDB | `innodb_lock_wait_timeout`, in whole seconds | The connection-level channel |
 | Others | Verify | Treat "the hint is accepted" as no evidence — an ignored hint throws nothing |
 
-**Prefer setting it once per connection over once per transaction.** Both PostgreSQL and MySQL take
-it from a connection-init statement, which the pool runs on every connection it opens, so no call
-site can forget it:
+"The connection-level channel" is the one
+[resource bounds](resource-bounds.md#delivering-the-settings-by-engine) defines per engine, and it
+carries the statement timeout beside this value. Oracle is the exception in both directions: the
+hint is what bounds a lock wait there, and it is also the only statement bound the engine offers.
 
-```yaml
-spring:
-  datasource:
-    hikari:
-      # PostgreSQL. On MySQL: set session innodb_lock_wait_timeout = 3
-      connection-init-sql: "set lock_timeout = '3000ms'"
-```
+**Prefer setting it once per connection over once per transaction**, so no call site can forget it.
+The lock timeout is one of several engine settings a pooled connection carries, and they share one
+delivery channel: [resource bounds](resource-bounds.md#one-connection-several-settings) owns that
+channel, states how each engine accepts it, and states why the statement timeout and this value are
+declared together rather than through two mechanisms. Read it before adding either.
 
-That is one literal in configuration beside the property it must equal, which is as close to a single
-source as a connection-init string allows; assert the pair in a test rather than trusting the two to
-stay in step. It also applies to **every** statement on the connection, so check that the migration
-tool does not share the pool — a schema change that has to wait behind a long transaction should not
-be cancelled by an application-sized lock timeout. Give migrations their own datasource, or narrow
-the setting to the transactions that lock:
+Whatever the channel, the value in it is a second copy of the recorded number, so assert the pair in
+a test rather than trusting the two to stay in step. The setting also applies to **every** statement
+on the connection, so the migration tool must not share the pool — a schema change that has to wait
+behind a long transaction should not be cancelled by an application-sized lock timeout;
+[resource bounds](resource-bounds.md#migrations-must-not-inherit-the-applications-bounds) states how
+that is resolved. The alternative is to narrow the setting to the transactions that lock:
 
 ```java
 /**

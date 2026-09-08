@@ -37,6 +37,7 @@ Last updated: YYYY-MM-DD
 | Migration tool | `ASK` |  | Flyway \| Liquibase | `sql-database-migration` |
 | Migration identifier scheme | `ASK` | UTC timestamp | UTC timestamp \| sequential counter | `sql-database-migration` |
 | Migration user separate from application user | `ASK` | no | yes \| no | `sql-database-migration` |
+| Migration datasource separate from the application pool | `ASK` | yes | yes \| no — a shared pool makes migrations inherit the request-sized statement and idle-in-transaction bounds, which cancels a large schema change at deploy time | `spring-data-jpa` |
 | Entity accessor style | `ASK` |  | fluent \| void | `spring-data-jpa` |
 | Identifier strategy | `ASK` |  |  | `spring-data-jpa` |
 | Stale-write protection | `ASK` | server retry only | server retry only \| version field in update TO \| ETag + If-Match | `spring-data-jpa` |
@@ -120,9 +121,17 @@ becoming a held connection and a held connection from becoming an outage.
 
 | Decision | Token | Fallback | Value | Owner skill |
 | --- | --- | --- | --- | --- |
+| Concurrency model | `ASK` | platform threads, pool recorded below | virtual threads \| platform threads — changing it moves the limit on concurrency rather than removing it, so the database pool, the per-caller limits, and the outbound client pools are re-derived with it | `spring-boot-patterns` |
+| Server thread pool size | `ASK` | the server default, recorded explicitly | maximum in-flight requests when the model is platform threads; `n/a` on virtual threads, where the database pool is the admission control instead | `spring-boot-patterns` |
+| Ingress request ceiling | `ASK` |  | the wall-clock timeout the platform enforces in front of the application. No fallback: nothing inside the application bounds a synchronous request, so this number and the parts arithmetic are the whole budget | `spring-boot-patterns` |
+| Response compression | `ASK` | at the ingress, not in the application | ingress \| application \| none | `spring-boot-patterns` |
+| Conditional reads on polled endpoints | `ASK` | no | yes \| no — validated before the representation is built, against a version the aggregate already keeps | `spring-boot-patterns` |
+| Shutdown grace period | `ASK` | 20s | above the request budget, and below the platform's own termination grace period | `spring-boot-patterns` |
 | Maximum page size | `ASK` | 100 | the value the shared bound constant declares, enforced at the REST boundary and on the service contract | `spring-data-jpa` |
-| Statement timeout | `ASK` | 5s | per-statement ceiling supported by the recorded engine; stays below the request budget | `spring-data-jpa` |
-| Transaction timeout | `ASK` | the recorded request budget | ceiling for a whole transaction; never below the statement timeout | `spring-data-jpa` |
+| Statement timeout | `ASK` | 5s | per-statement ceiling, applied at the connection level so it covers every statement the connection carries; stays below the request budget. Not every engine has one — record the gap where it does not | `spring-data-jpa` |
+| Idle-in-transaction timeout | `ASK` | 10s | how long an open transaction may sit between statements before the engine terminates the session; `none` where the engine has no equivalent | `spring-data-jpa` |
+| Connection-level settings channel | `RESOLVE` |  | the one driver mechanism that carries the statement, lock, and idle-in-transaction settings together; follows the engine and driver, and there is exactly one per pool | `spring-data-jpa` |
+| Transaction timeout | `ASK` | the recorded request budget | project-wide ceiling for a whole transaction, tightened per use case where needed; never below the statement timeout, and required for reads as well as writes | `spring-data-jpa` |
 | Connection pool size | `ASK` |  | maximum pool size. No fallback: it depends on the engine's own connection limit and on how many instances share it, and a guessed value either starves the application or overloads the database | `spring-data-jpa` |
 | Maximum wait for a connection | `ASK` | 2s | how long a caller waits for a pooled connection before failing. Short on purpose — a long wait converts pool exhaustion into a stalled request nobody times out | `spring-data-jpa` |
 | JDBC batch size | `ASK` | none | batching is enabled deliberately and verified against the generated SQL, never assumed from `saveAll` | `spring-data-jpa` |
