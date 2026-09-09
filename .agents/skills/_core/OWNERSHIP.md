@@ -22,6 +22,7 @@ and the skill's table is the defect to fix.
 | `observability-and-logging` | What must be instrumented and how: log levels and placement, correlation context, meters and tag cardinality, tracing, actuator endpoints, probes |
 | `build-and-dependencies` | Build files, dependency and plugin declarations, **all version selection**, compiler and annotation-processor configuration, test-phase separation, quality gates |
 | `project-naming-conventions` | Every developer-owned name and every rename migration: identifiers, packages, tests, REST paths and fields, database objects, configuration keys, meters, spans, log fields |
+| `application-caching` | Cache design, independent of the store: what may be cached and why, key identity, staleness budget and TTL, invalidation and its ordering against a transaction, sizing and eviction, serialization of cached values, failure behavior, and the Hibernate second-level cache |
 | `spring-boot-code-review` | Review scope, evidence, severity, reporting, merge readiness. Never a second coding standard |
 
 ## Split topics
@@ -44,6 +45,10 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | The pessimistic lock timeout | `spring-data-jpa` owns the value and how it reaches the database | `spring-boot-patterns` owns the `Retry-After` header, derived from that value and never retyped |
 | Nullability in Java code | `modern-java-21` owns the annotation convention and where it goes | `build-and-dependencies` owns the artifact, its version, and how hard the contract is checked |
 | Nullability in the published contract | `rest-api-contract` owns whether a field may be absent or null on the wire | `modern-java-21` owns how the Java declaration behind it is annotated, which is not the same question |
+| Cache keys | `application-caching` owns the key's **identity** — every input that varies the value, tenant and authorizing subject included | `project-naming-conventions` owns the cache name and the key's textual form |
+| What may be cached | `application-security` owns classification, the values that may never be cached, and abuse limits on cache growth | `application-caching` owns everything about the entry once the value is permitted |
+| Cache invalidation | `application-caching` owns that it happens after commit and what it must cover | `spring-boot-patterns` owns the after-commit mechanism it uses and the layer the trigger sits in |
+| The second-level cache | `application-caching` owns that it is a cache, its concurrency strategy, and the query-cache decision | `spring-data-jpa` owns the mapping, the regions, and the provider settings |
 | Profile decisions | `project-decision-profile` owns the file, the three tokens, the fallback rule, and whether a missing row blocks | the row's named owner decides what its value means; `build-and-dependencies` classifies every build and version row |
 | Versions of anything | `build-and-dependencies` owns every version choice | no other skill selects a version |
 | Resource bounds | `spring-data-jpa` owns the database-side bounds: statement and transaction timeouts, pool size, connection wait, batch size, page size | `spring-boot-patterns` owns the request budget they all fit inside, and `application-security` owns the per-caller limits that stop one client consuming them |

@@ -164,11 +164,16 @@ For WebClient or another outbound client:
 - Check whether an event-loop thread blocks, a servlet request waits without a bound, or an async error is discarded.
 - Verify failure translation and whether downstream 4xx, 429, 5xx, malformed responses, timeouts, and partial responses produce intended behavior.
 
-For Redis:
+For a cache, whichever technology the profile records:
 
-- Trace key construction, tenant scope, serializer/schema compatibility, TTL, missing values, invalidation, stampede behavior, and unavailable behavior.
-- Verify that cached representation and invalidation match the architecture established by the other project skills.
-- Check whether sensitive data, authorization decisions, mutable values, or stale negative results are cached beyond their safe lifetime.
+- Read `application-caching` before writing a finding, and read the profile's cache register. A cache that is not in the register is itself the finding.
+- Check the key against the value it holds. Every input that varies the result must be in it — tenant always, and the authorizing subject whenever the value was filtered by who asked. A key missing one of those is a cross-caller data leak, not a staleness bug, and it is the highest-severity thing in this lens.
+- Check the ordering of every invalidation. `@CacheEvict` on a `@Transactional` method evicts **before** the commit, so a concurrent reader repopulates from the pre-write row and the entry is permanently stale. Verify the project's recorded shape — an after-commit listener or a transaction-aware cache manager — is actually the one in use.
+- Check that the write invalidates **every** cache holding a value derived from what it changed, not only the one named in the annotation. Derived counts, lists, and flags are what get missed.
+- Check that entries have a TTL even where invalidation is explicit, that a local cache has a size bound, and that the cached value is an immutable project-owned type rather than an entity, a library type, or a mutable collection.
+- Check the failure path: an error handler so a cache outage does not become an application outage, and a timeout so a hanging cache does not cost the wait *and* the work.
+- Treat the Hibernate second-level and query caches as caches under every point above, and report either one enabled while the profile records no cache.
+- Check whether sensitive data, authorization decisions, or stale negative results are cached beyond their safe lifetime; `application-security` owns that judgement.
 
 For AWS or another cloud provider:
 

@@ -153,10 +153,15 @@ Do not use this reference to name Kubernetes CronJobs, platform schedulers, CI j
 
 ## Name caches and cache keys
 
-Caching technology is recorded in `docs/project-profile.md`. Where this section says Redis, read it
-as the selected cache or key-value store; Redis is the expected choice if one is adopted, and the
-naming rules apply to any store. When no cache has been selected, do not introduce cache names or
-key formats.
+Caching technology is recorded in `docs/project-profile.md` and `application-caching` owns it. Where
+this section says Redis, read it as the selected cache or key-value store; the naming rules apply to
+any store. When no cache has been selected, do not introduce cache names or key formats.
+
+**This section owns the name and the key's textual form. It does not own what goes in the key.**
+Which inputs make up an entry's identity — the tenant, the authorizing subject where the value was
+filtered, the locale, anything else that varies the value — is `application-caching`'s decision, and
+a key that is well formed and incomplete is the defect that serves one caller's data to another.
+Read that skill before choosing what a key is made of; read this one for how it is written.
 
 Name a cache from the lookup or result it stores:
 
@@ -191,7 +196,7 @@ Rules:
 - Distinguish cache, lock, idempotency, and rate-limit key namespaces because their semantics and TTLs differ.
 - Treat a cache-name or key-format change as a migration when old entries can coexist.
 
-Apply the cache behavior, serializer, TTL, failure, and security rules from their owner skills. A well-named key does not make an unsafe cache design correct.
+Apply the cache behavior, serializer, TTL, failure, and topology rules from `application-caching`, and the classification rules from `application-security`. A well-named key does not make an unsafe cache design correct.
 
 ## Name metrics and tags
 

@@ -33,6 +33,7 @@ this file. The seams this skill crosses most often:
 | Log content | level, placement, and field structure | `application-security` owns what may never appear |
 | Actuator endpoints | which are exposed | `application-security` owns how the exposed set is protected |
 | Meter and span names | which meters must exist | `project-naming-conventions` owns what they are called |
+| Cache behavior | which cache facts must be visible | `application-caching` owns the cache design those facts describe |
 | Assertions | what is worth asserting | `spring-boot-testing` owns the level it runs at |
 
 Out of scope: log shipping, retention infrastructure, dashboards, alert rules, and SLO definitions.
@@ -105,7 +106,7 @@ A feature that introduces any of these elements is instrumented before it is con
 | Scheduled job | Success and failure counters, and the timestamp of the last successful run |
 | Idempotency, retry, or fallback path | A counter, so silent degradation is visible |
 | Contention that reaches the caller | A counter for retry exhaustions and one for lock timeouts. The row above meters the attempts; these meter the outcomes, and they rise before latency does |
-| Cache, when the project has one | Hit ratio and eviction metrics |
+| Cache, when the project has one | Hit ratio and eviction rate, read together — a good ratio beside a high eviction rate means the cache is thrashing — plus a counter per failed cache operation, with a bounded tag separating a read from an eviction. `application-caching` owns why those two failures differ |
 
 HTTP server metrics, datasource pool metrics, and JVM metrics come from auto-configuration. Do not
 reimplement them.

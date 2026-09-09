@@ -1,6 +1,6 @@
 # `_core`
 
-Two shared files that the twelve skills link to instead of duplicating.
+Two shared files that the thirteen skills link to instead of duplicating.
 
 | File | What it is | Authority |
 | --- | --- | --- |
@@ -17,20 +17,22 @@ edges — and the edges are where the expensive mistakes live.
 
 ## Known gaps, and one boundary
 
-Three topics are incompletely owned, and one entry below is a scope boundary rather than a gap. They
+Two topics are incompletely owned, and one entry below is a scope boundary rather than a gap. They
 are listed here so an absent rule stays a visible decision rather than looking like a settled one,
 and so a boundary is not mistaken for an oversight.
+
+**Caching was on this list and no longer is.** `application-caching` owns it: key identity, the
+staleness budget and TTL, invalidation and its ordering against a transaction, eviction,
+serialization, failure behavior, topology, and the Hibernate second-level cache. `application-security`
+still owns what may be cached and `project-naming-conventions` still owns what a cache and its keys
+are called — the split is in [the ownership map](OWNERSHIP.md#split-topics). The guard that used to
+live here now lives in that skill and is unchanged: while `Cache used` is `no` or `UNDECIDED`, do not
+introduce a cache, a cache annotation, or a cache dependency.
 
 A gap here means **no skill states how to build the thing**. It does not mean the topic is
 unregulated: a topic can be fully covered for security, naming, and testing while nothing describes
 the mechanism. Each entry below names what is owned before it names what is missing, because
 treating an owned rule as absent is how a project ends up with a second, weaker version of it.
-
-- **Caching.** `docs/project-profile.md` records whether a cache exists and which technology it uses,
-  and `application-security` owns what may be cached and under what conditions. Nothing owns cache
-  design: key format, TTL, invalidation, eviction ordering relative to a transaction, or serialization.
-  While `Cache used` is `no` or `UNDECIDED`, do not introduce a cache, a cache annotation, or a cache
-  dependency.
 
 - **Asynchronous messaging.** Much of this is owned, and the owned parts are not gaps:
 

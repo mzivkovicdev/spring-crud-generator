@@ -20,6 +20,7 @@ order for a genuine conflict — read it there, not from a copy here. The seams 
 | Security scenarios | the level each runs at | `application-security` owns which are required |
 | Contract assertions | the level the drift gate runs at | `rest-api-contract` owns what it asserts |
 | Persistence scenarios | fixtures, isolation, execution | `spring-data-jpa` owns which JPA behavior needs proof |
+| Cache scenarios | the level each runs at | `application-caching` owns which five must exist wherever a cache does |
 | Suite execution | which suites must exist and run | `build-and-dependencies` owns the plugin and source-set configuration |
 
 Resolve a conflict through the owning skill and the repository-enforced build configuration; when it

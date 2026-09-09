@@ -22,6 +22,7 @@ order — read it there, not from a copy in this file. The seams crossed most of
 | Exposed endpoints | how anything exposed is protected | `observability-and-logging` and `rest-api-contract` own whether it is exposed |
 | Security tests | which scenarios are required | `spring-boot-testing` owns the level each runs at |
 | Idempotency | the policy | `spring-boot-patterns` owns where it lives in the layers |
+| Caching | classification, what may never be cached, and abuse limits on cache growth | `application-caching` owns everything about the entry once the value is permitted — key identity, TTL, invalidation, and failure behavior |
 | Denial responses | the `401` and `403` the filter chain produces, and which component produces each | `spring-boot-patterns` owns the error catalog they are built from, and the two advice handlers that decline both denial families |
 
 Use the architecture and terminology from `spring-boot-patterns`; do not redefine an owner's rules.
@@ -67,10 +68,14 @@ and the rule that it never carries real data, internal hostnames, or administrat
 same split applies to actuator endpoints, whose exposure `observability-and-logging` owns.
 
 **Reading "Redis" in these references.** Caching technology is a project decision recorded in
-`docs/project-profile.md`. Read Redis as "the selected cache or key-value store": the rules on
-classification, key format, TTL, tenant scope, serialization, and sensitive values apply to any
-cache, and Redis is the expected choice if one is adopted. When none has been selected, do not
-introduce one to satisfy a rule.
+`docs/project-profile.md`, and `application-caching` owns it. Read Redis as "the selected cache or
+key-value store": the rules here on classification, tenant scope, and sensitive values apply to any
+cache, whichever one the project selects, and to none if it selects none. When no cache has been
+selected, do not introduce one to satisfy a rule. This skill states what a cache may hold and who
+may reach it; the design of the entry — its key identity, TTL, invalidation, and failure
+behavior — belongs to `application-caching`, and one rule sits on the seam: a cache is never a
+source of truth for an authorization decision, because a cached decision outlives the revocation
+that should have changed it.
 
 ## Reference routing
 

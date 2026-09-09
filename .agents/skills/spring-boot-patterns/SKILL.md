@@ -25,6 +25,7 @@ this file. The seams this skill crosses most often:
 | Repositories | where the boundary sits and what may cross it | `spring-data-jpa` owns repository and query design |
 | The public contract | the TO, the `ProblemDetail`, the error catalog | `rest-api-contract` owns whether a change to them is breaking |
 | Instrumentation | where it sits in the layers | `observability-and-logging` owns what is emitted and at what level |
+| Caching | the layers a cache sits in, the after-commit mechanism its invalidation uses, and the proxy semantics that decide whether `@Cacheable` applies at all | `application-caching` owns the cache: whether one exists, its key, its TTL, and what invalidation must cover |
 | Authentication and authorization failures | the error catalog the `401` and `403` are built from, and the two advice handlers that decline both denial families so the filter chain still sees them | `application-security` owns the responses themselves, which the filter chain produces |
 | The `Retry-After` on a lock timeout | the header, derived from the recorded timeout | `spring-data-jpa` owns the timeout value and how it reaches the database |
 
@@ -292,6 +293,7 @@ Read the configuration records and bean example in [infrastructure examples](ref
 Both are owned elsewhere; this skill owns only where they sit in the layers.
 
 - `application-security` owns authentication, authorization, CSRF, CORS, confidentiality, and security verification. Preserve the service and repository boundaries defined here while applying those controls, and never weaken production security to make a test pass.
+- `application-caching` owns every cache. This skill decides only where one may sit: the read-through belongs at the aggregate service, on the domain object it already returns, never on a repository and never on an entity. Invalidation is triggered from the write path through the same after-commit mechanism external effects use, and it carries the same limit — a crash after commit loses it. Do not introduce a cache from here; the profile gate is that skill's.
 - `observability-and-logging` owns every logging, metric, tracing, and health rule. Placement in the layers is the part this skill decides: a service records the operation, an adapter records the outbound call, and a controller records nothing beyond what the framework already emits. Do not infer a level, a meter name, or a cardinality limit from this skill.
 
 ## Scheduled and asynchronous work

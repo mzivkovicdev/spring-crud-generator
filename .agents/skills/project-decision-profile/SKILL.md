@@ -72,11 +72,15 @@ one here, and do not classify a new row from this skill alone — the row's owne
 
 ## Rows with no owner skill
 
-Two topics appear in the template with `none yet` in the owner column: caching, and the messaging
-*mechanism*. Those rows exist so the decision stays visible, not so a skill can act on them. While
-such a row reads `no` or `UNDECIDED`, do not introduce the technology it names to fill it.
-[`_core/README.md`](../_core/README.md) states exactly which parts of each topic are owned and by
+Two rows appear in the template with `none yet` in the owner column, and both belong to the
+messaging *mechanism*. They exist so the decision stays visible, not so a skill can act on them.
+While such a row reads `none` or `UNDECIDED`, do not introduce the technology it names to fill it.
+[`_core/README.md`](../_core/README.md) states exactly which parts of that topic are owned and by
 whom; read it before concluding a rule is missing.
+
+The caching rows were in this category and are not any more: `application-caching` owns them, and
+the guard on them is that skill's rather than this one's — unchanged in substance, and now with a
+skill behind it that says what to do once the answer is `yes`.
 
 ## Completion checklist
 

@@ -22,6 +22,7 @@ this skill crosses most often:
 | Locking | `@Version`, lock modes, and the retry mechanism | `spring-boot-patterns` owns which layer the retry annotation sits on |
 | Schema | what the schema must look like for a mapping to work | `sql-database-migration` owns the migration file that creates it |
 | Persistence tests | which JPA scenarios need proof | `spring-boot-testing` owns scope, fixtures, and execution |
+| The second-level and query caches | the mapping, the regions, and the provider settings | `application-caching` owns that they are caches: the profile gate, the concurrency strategy, and whether the query cache is worth having |
 
 This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using
 vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier
@@ -180,7 +181,7 @@ and for bounded batch processing are stated in
 - Invoke pessimistic-lock repository methods only inside an active transaction, and complete all locked work before that transaction ends.
 - **Bound every lock wait, and verify the mechanism against the configured engine.** A positive `jakarta.persistence.lock.timeout` is honoured by very few engines — on PostgreSQL it is ignored outright, and the wait is then bounded only by the statement timeout, which cancels the statement and surfaces as `QueryTimeoutException` rather than as a lock failure. [Lock timeouts](references/locking-and-retry-examples.md#lock-timeouts) carries the mechanism per engine and the rule that the timeout is recorded once and read, never retyped. Lock multiple rows in a consistent order, and keep locked transactions especially short.
 - Enforce uniqueness with a database constraint and handle the race after an application existence check.
-- Remember that bulk DML bypasses normal optimistic version checks, so it can overwrite a concurrent edit with no exception anywhere.
+- Remember that bulk DML bypasses normal optimistic version checks, so it can overwrite a concurrent edit with no exception anywhere. It bypasses the second-level cache the same way, where one is enabled — `application-caching` owns that consequence.
 
 [Locking and retry examples](references/locking-and-retry-examples.md) carries the
 strategy-selection table, the `@Version` mapping, the retry-versus-client-version decision, the
@@ -233,6 +234,19 @@ Two consequences worth stating, because they are where these bounds actually get
 What this skill does **not** own is measurement: whether the application meets a latency target, and
 what a load test has to prove before a release. [`_core/README.md`](../_core/README.md) records that
 as an open gap rather than leaving it to be assumed.
+
+## The provider's own caches
+
+The first-level cache is the persistence context and is not optional: it is scoped to one
+transaction, and every rule in this skill about flush timing and stale managed entities is a rule
+about it.
+
+**The second-level cache and the query cache are different, and neither is this skill's to enable.**
+They are caches in the sense `application-caching` defines, so they sit behind the same profile gate
+as any other, need the same staleness budget, and carry a correctness decision — the concurrency
+strategy — that reads like a tuning attribute. This skill owns what the mapping and the region
+configuration look like once the decision is recorded; that skill owns whether it is recorded at all
+and what each strategy costs. **Do not enable either because a property exists.**
 
 ## Persistence tests and observability
 

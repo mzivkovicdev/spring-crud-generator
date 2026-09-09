@@ -32,6 +32,7 @@ Which skills a review loads follows from what the change touches:
 | `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test selection, or quality gate is affected |
 | `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected |
 | `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed |
+| `application-caching` | A cache is added, configured, read from, invalidated, or removed — including the Hibernate second-level and query caches — or a write touches data another cache holds |
 
 This skill never wins a precedence contest, because it states no rule of its own: report the conflict
 as a finding and name both rules.

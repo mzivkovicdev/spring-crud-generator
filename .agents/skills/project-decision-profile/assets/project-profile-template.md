@@ -101,11 +101,29 @@ Last updated: YYYY-MM-DD
 
 | Decision | Token | Fallback | Value | Owner skill |
 | --- | --- | --- | --- | --- |
-| Cache used | `ASK` | no | yes \| no \| UNDECIDED | none yet |
-| Cache technology | `ASK` |  |  | none yet |
+| Cache used | `ASK` | no | yes \| no \| UNDECIDED — gates every row below it | `application-caching` |
+| Cache technology | `ASK` |  | the store, or `UNDECIDED`. Design does not wait for it; configuration does | `application-caching` |
+| Cache topology | `ASK` |  | local \| distributed \| near — a separate decision from the technology, and the one that decides whether an eviction on one instance is seen by another | `application-caching` |
+| Cache failure mode | `ASK` | fail open | fail open \| fail closed — fail open needs an error handler, or a cache outage becomes an application outage | `application-caching` |
+| Cache operation timeout | `ASK` | 50ms | the bound on one cache read, write, or evict; well inside the request budget, because a hanging cache costs the wait *and* the work it was meant to avoid | `application-caching` |
+| Cached value serialization | `ASK` |  | the format and its configuration; never Java serialization. Changes here move the key namespace version | `application-caching` |
+| Cache key namespace | `ASK` |  | the prefix and version segment every key carries | `project-naming-conventions` |
+| Invalidation shape | `ASK` | after-commit listener | after-commit listener \| transaction-aware cache manager — one for the whole project, because a codebase with both has no rule | `application-caching` |
+| Source survives a cold cache | `ASK` |  | yes \| no. `no` makes the cache part of the availability design, not an optimization, and changes how a deploy is sequenced | `application-caching` |
+| Hibernate second-level cache | `ASK` | no | no \| the entities cached and the concurrency strategy per region. It is a cache and every row above applies to it | `application-caching` |
+| Hibernate query cache | `ASK` | no | no \| the queries cached, with the measurement that justified each | `application-caching` |
 
-> No skill owns caching design yet. While `Cache used` is `no` or `UNDECIDED`, do not introduce a
-> cache, a cache annotation, or a cache dependency into the project.
+**Cache register.** One row per cache. `application-caching` owns the columns; a cache that is not
+here does not exist.
+
+| Cache | Contents | Justification | Staleness budget | TTL | Invalidation | Key inputs | Size bound |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |  |  |
+
+> While `Cache used` is `no` or `UNDECIDED`, do not introduce a cache, a cache annotation, or a
+> cache dependency into the project — including the Hibernate second-level and query caches, which
+> are switched on by a property that reads like tuning. `application-caching` owns that guard and
+> states what to do once the answer is `yes`.
 
 > The two messaging rows under **Application design** carry the same guard for the same reason.
 > Security, naming, layering, and testing of messaging are owned; the delivery and consumer

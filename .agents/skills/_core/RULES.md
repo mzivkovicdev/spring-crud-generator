@@ -2,7 +2,7 @@
 
 The rules that hold in every task, in every file, whichever agent is running. This card exists so a
 tool with a small instruction budget can carry the whole set's non-negotiables without loading
-twelve skills.
+thirteen skills.
 
 **This card is a summary, never a substitute.** Each rule names its owner, and the owner is
 authoritative for scope, exceptions, and detail. When this card and an owner skill disagree, the
@@ -161,51 +161,62 @@ the reverse.
     has run nowhere but the author's own database. Hibernate `ddl-auto` is `validate` or `none`.
     (`sql-database-migration`)
 
+## Caching
+
+30. **A cache is a recorded decision with a staleness budget, and its invalidation happens after the
+    commit.** No cache exists — the Hibernate second-level and query caches included — while the
+    profile says otherwise. Evicting inside the transaction lets a concurrent reader repopulate from
+    the pre-write row, so the entry is permanently stale; evicting after commit is briefly stale and
+    self-heals. Every entry carries a TTL inside the recorded budget, because an invalidation can be
+    lost and the TTL is the only repair. The key carries every input that varies the value, tenant
+    and authorizing subject included — a key that omits one serves one caller's data to another.
+    (`application-caching`)
+
 ## Outbound and security
 
-30. **The concurrency model is recorded, and changing it moves the limit rather than removing it.**
+31. **The concurrency model is recorded, and changing it moves the limit rather than removing it.**
     Virtual threads or a sized platform pool; either way the database pool, the per-caller limits,
     and the outbound client pools are re-derived in the same change, because with the server's
     thread pool gone they are the only bounds left. No synchronous request has an in-process
     timeout, so the recorded request budget is held by the arithmetic of its parts and by the
     ingress. (`spring-boot-patterns`)
-31. **No outbound call without explicit connection and read timeouts**, inside the caller's budget.
+32. **No outbound call without explicit connection and read timeouts**, inside the caller's budget.
     Retry policy exists in exactly one layer. Provider exceptions are translated at the adapter.
     (`spring-boot-patterns`)
-32. **Authorization is enforced in the service and persistence path**, not only at the controller.
+33. **Authorization is enforced in the service and persistence path**, not only at the controller.
     Identity, tenant, and ownership come from the authenticated context, never from a request field.
     (`application-security`)
-33. **Never log or hardcode credentials, tokens, personal data, full request or response bodies, or
+34. **Never log or hardcode credentials, tokens, personal data, full request or response bodies, or
     SQL with parameters.** No secret in a build file, a migration, or a test fixture.
     (`application-security`)
 
 ## Observability
 
-34. **A failure is logged once, at the boundary that handles it**, with the internal error code and
+35. **A failure is logged once, at the boundary that handles it**, with the internal error code and
     the correlation identifier. Never catch, log, and rethrow. (`observability-and-logging`)
-35. **Metric tag values are bounded.** Never an identifier, email, tenant, raw URL, timestamp, or
+36. **Metric tag values are bounded.** Never an identifier, email, tenant, raw URL, timestamp, or
     exception message. (`observability-and-logging`)
 
 ## Tests
 
-36. **Production behavior and its tests ship together.** Never weaken, disable, or delete a test to
+37. **Production behavior and its tests ship together.** Never weaken, disable, or delete a test to
     make a change pass, and never relax a security control to make a test pass.
     (`spring-boot-testing`)
-37. **Each level proves a different boundary:** aggregate and application services get Spring-free
+38. **Each level proves a different boundary:** aggregate and application services get Spring-free
     unit tests, every controller gets a `@WebMvcTest` slice with filters disabled, and integration
     tests run against the real database engine with migrations applied and the real filter chain.
     (`spring-boot-testing`)
-38. **Integration tests must actually run, once, in the right phase.** On Maven the suffix also
+39. **Integration tests must actually run, once, in the right phase.** On Maven the suffix also
     matches Surefire's default pattern, so an unexcluded suite runs twice; on Gradle nothing runs it
     until a suite is registered, and an unrun suite looks exactly like a green build.
     (`spring-boot-testing`, `build-and-dependencies`)
 
 ## Dependencies
 
-39. **Every dependency names the requirement it satisfies**, duplicates no existing capability, and
+40. **Every dependency names the requirement it satisfies**, duplicates no existing capability, and
     carries no version when the Spring Boot BOM manages it. Every plugin version is pinned.
     (`build-and-dependencies`)
-40. **Quality gates fail the build** and run before the tests. A suppression file, a baseline, or a
+41. **Quality gates fail the build** and run before the tests. A suppression file, a baseline, or a
     `@SuppressWarnings` used to silence a **project rule** is prohibited; if a rule does not fit,
     change the rule and say so in review. This is written for a greenfield project, which is what
     the set assumes — adopting the set into a repository that already has code is a different
@@ -213,6 +224,6 @@ the reverse.
 
 ## Worked examples
 
-41. **Every snippet in this set is a pattern to adapt, not a file to copy.** A request for a product
+42. **Every snippet in this set is a pattern to adapt, not a file to copy.** A request for a product
     service produces `ProductService` written from scratch, not a renamed `UserService`.
     (`modern-java-21`)

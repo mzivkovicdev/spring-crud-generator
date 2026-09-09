@@ -27,6 +27,7 @@ this file. The seams this skill crosses most often:
 | Compiler settings | the configuration | `modern-java-21` owns the language rules it enables |
 | Test phases | the plugin and source-set configuration | `spring-boot-testing` owns which suites must exist |
 | Supply chain | the declarations | `application-security` owns provenance, SBOM, and vulnerability triage |
+| The cache provider | the starter, the coordinate, and the version | `application-caching` owns which technology the project needs and requires the active provider to be pinned rather than discovered on the classpath |
 
 When the user asks for a review rather than a change, produce findings under
 `spring-boot-code-review` and do not edit build files.
