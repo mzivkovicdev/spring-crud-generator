@@ -23,6 +23,7 @@ this skill crosses most often:
 | Schema | what the schema must look like for a mapping to work | `sql-database-migration` owns the migration file that creates it |
 | Persistence tests | which JPA scenarios need proof | `spring-boot-testing` owns scope, fixtures, and execution |
 | The second-level and query caches | the mapping, the regions, and the provider settings | `application-caching` owns that they are caches: the profile gate, the concurrency strategy, and whether the query cache is worth having |
+| Tenancy | the mapping and the mechanism that puts the tenant into the SQL | `application-security` owns the model, where the tenant is read from, and that every path is scoped |
 
 This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using
 vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier
@@ -36,6 +37,7 @@ only there. Read the one the change touches, and only that one:
 - [Entity and query examples](references/entity-and-query-examples.md) for mappings, association ownership, repository design, projections, dynamic and sargable queries, pagination and scrolling, SQL and index performance, and the read-side anti-patterns.
 - [Locking and retry examples](references/locking-and-retry-examples.md) for optimistic and pessimistic locking, the atomic conditional `UPDATE` that is the third strategy, the composed retry annotation for both generations, lock timeouts and ordering, and the concurrency anti-patterns.
 - [Write behavior examples](references/write-behavior-examples.md) for flush timing, bulk DML, large batches, and the write-side anti-patterns.
+- [Applying the tenant scope](references/entity-and-query-examples.md#applying-the-tenant-scope) *(rules)* whenever the profile records a tenancy model other than `single-tenant`: the mechanism per model, and the statements it does not reach.
 - [Resource bounds](references/resource-bounds.md) *(rules)* for how a statement, transaction, connection-acquisition, or pool bound is actually applied: the three levels a bound can sit at, the delivery channel each engine offers and why they all share one, the migration exception, and the tests that prove a bound is real.
 
 ## Before changing persistence
@@ -123,6 +125,21 @@ identifier reference across a boundary, values copied so history cannot change r
 explicit `LAZY` to-one associations, cascade and `orphanRemoval` behavior, bidirectional
 synchronization, collection type, and when a join table becomes an entity — are stated in full in
 [entity and query examples](references/entity-and-query-examples.md).
+
+## Tenant scoping
+
+`application-security` owns the tenancy model recorded in `docs/project-profile.md` and the rule that
+the tenant comes from a verified claim. This skill owns only the mechanism that puts it into the SQL,
+and it is stated in full in
+[applying the tenant scope](references/entity-and-query-examples.md#applying-the-tenant-scope).
+
+Two consequences belong here because they change the rules above rather than the queries:
+
+- **The mechanism is provider-level, chosen once for the project.** A predicate each repository method is expected to remember is one a method will forget, and a forgotten tenant predicate returns rows rather than an error.
+- **It does not reach statements the provider did not compose** — native SQL, bulk DML, routines and views — and under a discriminator model each of those is an unscoped statement until it carries the predicate itself. Verify against the generated SQL, exactly as this skill requires for the version column in bulk DML.
+
+While the profile records `single-tenant`, none of this applies: do not add a tenant column, a
+resolver, or a predicate. `application-security` owns that guard.
 
 ## N+1 and fetch plans
 
@@ -276,6 +293,7 @@ survive review:
 ## Completion checklist
 
 - [ ] Mappings, migrations, associations, cascades, and orphan behavior agree.
+- [ ] Under a tenancy model other than `single-tenant`, the scope is applied by the project's one provider-level mechanism, every statement the provider did not compose carries the predicate explicitly, and a second tenant's credential is proven to receive the not-found contract.
 - [ ] Fetch plans are explicit; N+1 risk is tested.
 - [ ] Queries are bounded and deterministic, verified against generated SQL and representative plans.
 - [ ] Pagination, projections, transactions, bulk DML, and locking match the access path.

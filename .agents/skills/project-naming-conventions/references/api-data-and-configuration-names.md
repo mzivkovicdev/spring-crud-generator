@@ -299,7 +299,7 @@ Rules:
 - Do not call a non-unique index `uk_*` or a normal index `pk_*`.
 - Avoid reserved words and quoted mixed-case identifiers unless an existing schema requires them.
 - Account for database case folding, identifier length, schemas, catalogs, and vendor-specific object namespaces.
-- Apply tenant identifiers only where the relational model requires them; never embed actual tenant or customer names in object names.
+- Apply tenant identifiers only where the recorded tenancy model requires them — `application-security` owns that row, and under `single-tenant` there is no tenant column to name. Where there is one, use **one column name across every table**, `tenant_id` by default: a schema that alternates between `tenant_id`, `org_id`, and `account_id` for one concept is the case the one-word-per-concept rule exists to prevent, and here it also hides an unscoped table. Name a per-tenant unique constraint for the tenant and the business key together, `uk_<table>_tenant_id_<column>`, so the name says the uniqueness is per tenant; lead a tenant-scoped index with the same column, `ix_<table>_tenant_id_<columns>`. Never embed actual tenant or customer names in object names.
 
 Do not create or rename an index, constraint, table, or column merely to satisfy naming style. `spring-data-jpa` must establish the semantic and performance need.
 

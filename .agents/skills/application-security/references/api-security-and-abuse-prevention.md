@@ -124,11 +124,13 @@ CAPTCHA or IP blocking alone is not sufficient. Avoid controls that create dispr
 
 Use idempotency when duplicate execution can create additional state, cost, messages, or external effects.
 
-- Bind an idempotency key to authenticated subject, tenant, operation, and a canonical request fingerprint.
+- Bind an idempotency key to authenticated subject, operation, a canonical request fingerprint, and the tenant wherever the recorded tenancy model has one.
 - Give keys a documented format, maximum length, retention window, and data classification.
-- Atomically claim the key and request fingerprint before executing the effect. Persist the final outcome under the same record and make concurrent duplicates observe a defined in-progress or completed state.
+- Atomically claim the key and request fingerprint, and persist the final outcome under the same record. Atomicity is a database unique constraint, never an application existence check.
+- **A concurrent duplicate reaches a defined outcome, never a second execution and never a generic failure.** Which defined outcome depends on the claim shape `spring-boot-patterns` owns and `docs/project-profile.md` records: under `single-phase` the duplicate waits on the constraint and then replays the recorded outcome or wins the claim, and under `two-phase` it reads the in-progress claim and is told to come back. This skill requires that the behavior is defined, bounded, and tested; that skill decides which of the two the project uses and states what each returns.
 - Return the original compatible outcome for the same key and payload.
-- Reject reuse of the same key with a different payload or operation.
+- Reject reuse of the same key with a different payload or operation, as a condition distinct from a replay.
+- Where the recorded shape is `two-phase`, an in-progress claim is bounded by a lease and an expired one is reclaimable. An unbounded in-progress state is a denial-of-service against the caller's own key: one crash makes that key permanently unusable, and a caller that cannot retry a payment is an availability incident, not a hygiene issue.
 - Do not use a caller-controlled key as a cache key without canonicalization, hashing where appropriate, length limits, and tenant scoping.
 - `spring-boot-patterns` owns which delivery mechanism an external effect uses. This skill's concern is what an attacker can do with it: a replayed or duplicated delivery must not produce a second charge, a second grant, or a second notification, so require provider idempotency keys or compensating behavior for effects a caller can trigger repeatedly.
 - Distinguish transport retries from replay attacks. Signatures, timestamps, nonces, sequence numbers, or event IDs may be required at external boundaries.
@@ -184,7 +186,7 @@ Follow [untrusted input and dangerous sinks](untrusted-input-and-dangerous-sinks
 - [ ] Function, object, property, and tenant authorization have positive and negative tests.
 - [ ] Request, batch, response, concurrency, provider, and financial limits match real operation cost.
 - [ ] Sensitive business flows resist technically valid automated abuse.
-- [ ] Idempotency is actor-scoped, payload-bound, atomic, expiring, and concurrency-tested.
+- [ ] Idempotency is actor-scoped, payload-bound, atomic, expiring, and concurrency-tested, and a concurrent duplicate reaches the defined outcome the recorded claim shape specifies.
 - [ ] Sensitive responses and absolute URLs use safe cache, host, and proxy behavior.
 - [ ] Callbacks and webhooks verify configuration authority, signatures, time, replay, tenant, schema, size, idempotency, and destinations.
 - [ ] Third-party and internal API responses receive the same trust-boundary validation as user input.

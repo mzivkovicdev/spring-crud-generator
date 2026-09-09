@@ -163,6 +163,10 @@ filtered, the locale, anything else that varies the value — is `application-ca
 a key that is well formed and incomplete is the defect that serves one caller's data to another.
 Read that skill before choosing what a key is made of; read this one for how it is written.
 
+Where the recorded tenancy model puts a tenant in the key, write it as a **leading segment** rather
+than a suffix, so every one of a tenant's entries shares a prefix a store can scan, and so a key
+missing the scope is visibly a different shape rather than a shorter tail.
+
 Name a cache from the lookup or result it stores:
 
 ```text

@@ -1,6 +1,6 @@
 ---
 name: spring-boot-patterns
-description: Production Spring Boot patterns for Java 21+ backend REST APIs, REST controllers, services, domain models, validation, transport objects (TOs), mapping, persistence, exception handling, configuration, security boundaries, observability, and feature packaging. Excludes server-side page rendering and UI views. Use for every new Spring Boot REST feature or modification to controllers, services, configuration, scheduled jobs, listeners, or API contracts.
+description: Application architecture for Java 21+ Spring Boot backend REST APIs — REST controllers and transport objects (TOs), the two service levels, domain models, mappers, validation, the RFC 9457 error contract and its catalog, configuration design, package responsibilities, outbound-call structure, where the transaction boundary sits, and the runtime shape above the database (concurrency model, request budget, conditional reads, compression, shutdown). Also decides only where persistence, security, caching, idempotency and observability sit in the layers; those topics themselves belong to spring-data-jpa, application-security, application-caching and observability-and-logging. Excludes server-side page rendering and UI views. Use for every new Spring Boot REST feature and for every change to a controller, service, mapper, error condition, configuration class, scheduled job, or listener.
 ---
 
 # Spring Boot Patterns Skill
@@ -73,8 +73,8 @@ whenever a decision this skill's work depends on is not recorded.
 
 The rows this skill owns the *meaning* of are the architectural ones: service interface convention,
 aggregate roots and their tables, the reliable-delivery mechanism for external effects, the
-resilience library, the outbound timeout budget, the API base path, and the error catalog type. Each
-is decided here and recorded there.
+resilience library, the outbound timeouts, the request budget, the idempotency claim shape, the API
+base path, and the error catalog type. Each is decided here and recorded there.
 
 ## Rules before coding
 
@@ -272,8 +272,18 @@ all.
 
 `application-security` owns the idempotency policy: when a key is required, how it is bound to the
 authenticated subject and request fingerprint, its format, retention, and abuse controls. This skill
-owns where that policy lives in the layers, and
-[infrastructure examples](references/infrastructure-examples.md) carries those placement rules.
+owns where that policy lives in the layers, **which claim shape the project uses**, and what a
+concurrent duplicate receives.
+
+The shape is a recorded decision, `Idempotency claim shape` in `docs/project-profile.md`, and one
+project uses one of them throughout:
+
+- **`single-phase` is the default.** The claim is written inside the use case's transaction, so the claim and the effect commit or roll back together and a failed attempt leaves nothing to block a genuine retry. A concurrent duplicate blocks on the unique constraint, bounded by the recorded lock timeout, and then replays the recorded outcome or wins the claim.
+- **`two-phase` is required, not preferred, where the use case makes a synchronous external call whose result the caller receives.** The effect cannot be deferred to the recorded reliable-delivery mechanism and cannot be rolled back, so the claim commits first, under a lease. Its cost is that lease: without one, a crash between the two commits makes that key permanently unusable.
+
+[Infrastructure examples](references/infrastructure-examples.md#idempotency-placement) carries the
+placement rules, the comparison, the lease and reclaim rules, and the two catalog conditions both
+shapes need.
 
 ## Configuration properties
 
@@ -322,6 +332,7 @@ and survives review** unless it is recognised by name:
 - an external effect fired inside the transaction rather than after commit, or after commit where the profile records that losing it is unacceptable;
 - an outbound client with no read timeout, or a provider exception reaching a service or controller;
 - a second machine-readable error identifier beside the RFC 9457 `type`;
+- an idempotency claim committed separately from the effect under `single-phase`, or a `two-phase` claim with no lease — the first breaks the rollback guarantee, the second blocks its key forever the first time the process dies mid-use-case;
 - an exception advice that handles only project exception types, so contention arrives from the framework and the catch-all reports a routine `409` or `503` condition as a `500`;
 - an advice that declines one security denial family and not the other, so an unauthenticated caller receives `500` where the chain would have sent `401` with a challenge.
 
@@ -347,6 +358,7 @@ suspicious existing code.
 - [ ] Error responses are stable and safe, the `type` URI is their only machine-readable identifier, and every failure comes from the single catalog.
 - [ ] The advice maps the framework contention types, so an exhausted retry returns `409` and a lock timeout returns `503` with `Retry-After`, each logged at the level its expectedness deserves, and the `Retry-After` is derived from the recorded timeout rather than written down again.
 - [ ] The advice declines both `AccessDeniedException` and `AuthenticationException` by rethrowing them, so the filter chain still distinguishes an unauthenticated caller from a forbidden one, and the catch-all reports neither as `500`.
+- [ ] Any idempotent operation uses the claim shape the profile records, and a concurrent duplicate reaches the defined outcome that shape specifies rather than a second execution or a `500`.
 - [ ] Shared numeric bounds are declared once and referenced.
 - [ ] Configuration is type-safe, externalized, and validated.
 - [ ] `spring-boot-testing` and `modern-java-21` were applied, and the gates and suites pass.

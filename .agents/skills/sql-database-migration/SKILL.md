@@ -26,6 +26,7 @@ this skill crosses most often:
 | Wiring | that migrations must actually run | `build-and-dependencies` owns the dependency that runs them |
 | Names | nothing | `project-naming-conventions` owns migration, table, column, constraint, and index names |
 | Startup gate | that a gate exists | `observability-and-logging` owns whether it appears in readiness |
+| Tenant scope | the schema the model needs, and running the history once per tenant where the model has more than one | `application-security` owns the tenancy model, `spring-data-jpa` the mapping |
 
 ## The migration tool is a recorded decision
 
@@ -82,6 +83,20 @@ and the project needs one rule for it.
 - State `NOT NULL`, defaults, precision, scale, and length explicitly. A column added without them defers the decision to the engine.
 - Adding a column with a default rewrites the table on some engines and versions. Check the recorded engine and version before adding one to a large table.
 - Never put credentials, personal data, or environment-specific values in a migration. It is committed source, readable by everyone with repository access.
+
+## Tenancy changes what a migration has to cover
+
+`application-security` owns the **Tenancy model** row in `docs/project-profile.md`. While it records
+`single-tenant`, nothing here applies. Otherwise the model decides what one migration means:
+
+- **`discriminator column`.** The tenant column is `NOT NULL` from the migration that adds it, it appears in every unique constraint over a business key — uniqueness is per tenant, not global — and it is the leading column of the indexes serving tenant-scoped access paths. A backfill that adds the column to a populated table is an expand-and-contract change like any other, and the constraint that makes it valid ships in the contract phase.
+- **`schema-per-tenant`.** The history is applied once per schema, so a release is not complete when one schema has migrated. State in the change how the run enumerates tenants and what happens when one fails halfway, because a partially migrated estate is the state the application then starts against. Never let a new tenant's schema be created by application code; it is a migration run like every other.
+- **`database-per-tenant`.** The same, one database at a time, with one connection budget per tenant. The clean-install check below is per tenant database, not once for the estate.
+- **Every model.** Reference data seeded per tenant is still seed data under the rules in [incompatible changes, backfills, and seed data](references/incompatible-changes-and-data.md), and a backfill that touches every tenant is bounded and resumable per tenant rather than in one statement.
+
+The migration connection is not tenant-scoped by anything the application configures, so a migration
+is the one place a cross-tenant statement is ordinary. Write the tenant predicate explicitly in any
+migration that touches tenant-owned rows, and state in the change which tenants it covers.
 
 ## Changes that are not backward compatible
 
@@ -145,6 +160,7 @@ Each of these is a rule above, in the shape it usually reaches review. Reject:
 - [ ] Only reference data the application requires is seeded, keyed by a business key.
 - [ ] On Spring Boot 4, the Spring Boot starter is present, not only the third-party library.
 - [ ] A clean install from an empty database ran, and re-running the history applied nothing.
+- [ ] Under a tenancy model with more than one schema or database, the history ran for every tenant, and a per-tenant failure leaves a state the change describes.
 
 ## Primary guidance
 

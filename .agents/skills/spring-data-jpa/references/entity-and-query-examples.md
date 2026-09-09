@@ -2,10 +2,11 @@
 
 Use this file when implementing or reviewing entity mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths. Apply every rule from `../SKILL.md`; imports are omitted.
 
-**This file carries rules, not only examples.** Association ownership, repository design, read
-projections, sargable and dynamic queries, pagination and scrolling, SQL and index performance, and
-the read-side anti-pattern catalogue are stated here in full and nowhere else, because they apply
-while writing exactly this code. The `Rules` blocks below are as binding as `../SKILL.md`.
+**This file carries rules, not only examples.** Association ownership, repository design, the
+tenant-scoping mechanism, read projections, sargable and dynamic queries, pagination and scrolling,
+SQL and index performance, and the read-side anti-pattern catalogue are stated here in full and
+nowhere else, because they apply while writing exactly this code. The `Rules` blocks below are as
+binding as `../SKILL.md`.
 
 Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
@@ -13,12 +14,13 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 
 1. [Entity mapping](#entity-mapping)
 2. [Association mapping](#association-mapping)
-3. [Repository and projection queries](#repository-and-projection-queries)
-4. [Fetch plans](#fetch-plans)
-5. [Dynamic queries](#dynamic-queries)
-6. [Pagination](#pagination)
-7. [SQL and indexes](#sql-and-indexes)
-8. [Read-side anti-patterns](#read-side-anti-patterns)
+3. [Applying the tenant scope](#applying-the-tenant-scope)
+4. [Repository and projection queries](#repository-and-projection-queries)
+5. [Fetch plans](#fetch-plans)
+6. [Dynamic queries](#dynamic-queries)
+7. [Pagination](#pagination)
+8. [SQL and indexes](#sql-and-indexes)
+9. [Read-side anti-patterns](#read-side-anti-patterns)
 
 ## Entity mapping
 
@@ -249,6 +251,54 @@ Note what this means for `UserEntity` above: it has a collection but no `@ManyTo
 organization membership is a row the `organization` aggregate owns, reached through
 `OrganizationService`, not a column or an association on `UserEntity`. That is the same rule seen
 from the other side.
+
+## Applying the tenant scope
+
+Read this section only when **Tenancy model** in `docs/project-profile.md` records something other
+than `single-tenant`. `application-security` owns that decision, what each model means, and the rule
+that the tenant comes from a verified claim; this section owns the mechanism that puts it into the
+SQL, and the list of places the mechanism does not reach.
+
+**Choose one mechanism for the whole project and apply it at the provider, not at the call site.**
+A predicate every repository method is expected to remember is a predicate one method will forget,
+and the forgotten one is a cross-tenant read that returns rows, throws nothing, and passes every test
+whose fixtures belong to a single tenant.
+
+| Model | Mechanism | What it does |
+| --- | --- | --- |
+| `discriminator column` | Hibernate's `@TenantId` on the tenant field of every tenant-owned entity, with a `CurrentTenantIdentifierResolver` bean that reads the resolved tenant | The provider adds the predicate to every load and every JPQL and Criteria query, and assigns the value on insert. The field is provider-owned, so it is never set from Java and never accepted from a request |
+| `schema-per-tenant` | Hibernate's schema multi-tenancy: a `MultiTenantConnectionProvider` that selects the schema on the borrowed connection, plus the same resolver | The query is ordinary; the connection decides which schema it reads. The provider must reset the schema when the connection is returned, or the next borrower inherits it |
+| `database-per-tenant` | The same pair, resolving to a datasource per tenant | One pool per tenant, so `../SKILL.md`'s pool arithmetic is per tenant and the engine's connection limit is reached far sooner |
+
+These are provider APIs, so they are written-down values like any coordinate: confirm the annotation
+and the resolver and connection-provider contracts against the Hibernate line the build actually
+resolves before writing them, and again on a provider major upgrade. `build-and-dependencies` owns
+which line that is.
+
+The resolver is the single place the tenant enters persistence, and it reads the value the security
+context already holds. It never reads a header, a `ThreadLocal` a filter set from a request field, or
+a parameter — `application-security` owns where the value comes from, and this is the seam where a
+wrong answer becomes an unscoped query.
+
+### What the mechanism does not cover
+
+Every item below issues SQL the provider did not compose, so the tenant predicate is absent unless
+the statement carries it. Under `schema-per-tenant` and `database-per-tenant` the connection settles
+most of these; under `discriminator column` each one is a hole, and the first two are the ones that
+reach production.
+
+- **Native SQL**, including a native `@Query` and anything issued through `JdbcTemplate` or a driver-level call. Write the predicate explicitly and bind the tenant from the resolver, never from a parameter the caller influenced.
+- **Bulk JPQL and Criteria DML.** Verify against the generated SQL whether the configured provider version adds the predicate, and add it explicitly where it does not. This is the same verification rule the [write behavior examples](write-behavior-examples.md#bulk-dml) already require for the version column, for the same reason.
+- **A stored routine, a view, or a trigger.** The database object carries the scope or it does not have one; `sql-database-migration` owns its definition.
+- **`find` by identifier on a shared surrogate key.** Under a discriminator model an identifier is unique across tenants, so a lookup by identifier alone reaches another tenant's row. The provider's tenant filter covers this; a hand-written native lookup does not.
+- **Unique constraints and indexes.** A business key is unique *per tenant*, so the tenant column belongs in the constraint and, as its leading column, in the indexes that serve tenant-scoped access paths. `sql-database-migration` owns the migration and `project-naming-conventions` the names.
+- **The second-level cache**, where one is enabled. A region shared across tenants serves one tenant's entity to another; `application-caching` owns the key and states that the tenant is part of it.
+
+### Rules
+
+- The tenant field is mapped `nullable = false, updatable = false`. A row that can change tenant is a row that can be moved out of its isolation by an ordinary update.
+- Assert the mechanism, do not read it: one integration test per tenant-scoped access path in which a second tenant's credential receives the not-found contract, and one that inspects the generated SQL for the predicate on a bulk statement. `spring-boot-testing` owns the level both run at.
+- A query that must legitimately cross tenants is a named, separately authorized capability under `application-security`, written as an explicit native statement with its own test — never the ordinary path with the mechanism disabled.
 
 ## Repository and projection queries
 
@@ -496,8 +546,8 @@ SQL and index-performance rules:
 - Index foreign-key and join columns when required by the database and access paths.
 - Prevent accidental cartesian products and duplicate rows from incorrect joins.
 - Use existence queries instead of counting all rows when only presence is required.
-- Apply tenant and soft-delete predicates to derived, JPQL, native, bulk, and count queries.
-- Include tenant keys in relevant unique constraints and indexes for tenant-scoped data.
+- Apply the tenant scope through the project's one mechanism, per [applying the tenant scope](#applying-the-tenant-scope), and carry the predicate explicitly in every statement that mechanism does not compose — native, bulk, and any count query behind one of them. Soft-delete and status predicates have no such mechanism, so they are written on every derived, JPQL, native, bulk, and count query by hand.
+- Include the tenant key in the unique constraints and, as the leading column, in the indexes that serve tenant-scoped access paths.
 - Configure query or transaction timeouts for bounded operational work.
 - Use native SQL only for a concrete feature, portability, or measured performance reason.
 
