@@ -11,31 +11,30 @@ logs, the metrics, and the trace. Instrument for that moment, not for the demo.
 ## Backend neutrality
 
 This skill instruments the application, not the platform. The application emits structured JSON logs
-on standard output, Micrometer meters, and W3C trace context. Every common stack consumes that
-contract, so the choice between ELK, Grafana with Loki and Prometheus, an OpenTelemetry collector,
-or a managed platform does not change application code.
+on standard output, Micrometer meters, and W3C trace context; every common stack consumes that
+contract, so the choice of backend changes no application code. Exactly two declarations touch it,
+both single lines in the project profile: the log JSON format, and the metrics and trace export.
 
-Only two declarations touch the backend, and both are single lines recorded in the project profile:
-
-| Decision | What changes |
-| --- | --- |
-| Log JSON format | One property selecting ECS, Logstash, or GELF. No code changes. |
-| Metrics and trace export | The Micrometer registry artifact and the exporter, per `build-and-dependencies`. |
-
-Do not couple application code to a backend. No vendor SDK in a service, no appender that ships logs
+**Never couple application code to a backend.** No vendor SDK in a service, no appender shipping logs
 over the network from inside the application, no log format assembled by hand for one collector.
 Write to standard output and let the platform collect it.
 
 ## Coordination with other skills
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `application-security` | What must never be logged, data classification, masking, redaction, retention, and securing management endpoints |
-| `project-naming-conventions` | The names of meters, tags, spans, log fields, and internal error codes |
-| `spring-boot-patterns` | Layer responsibilities and the error contract this skill records |
-| `build-and-dependencies` | Registry, exporter, and encoder declarations |
-| `spring-boot-testing` | Test levels; this skill owns what about observability is worth asserting |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
+This skill owns what must be instrumented and how: log levels and placement, correlation context,
+meters and tag cardinality, tracing, actuator endpoints, and probes.
+
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Log content | level, placement, and field structure | `application-security` owns what may never appear |
+| Actuator endpoints | which are exposed | `application-security` owns how the exposed set is protected |
+| Meter and span names | which meters must exist | `project-naming-conventions` owns what they are called |
+| Cache behavior | which cache facts must be visible | `application-caching` owns the cache design those facts describe |
+| Assertions | what is worth asserting | `spring-boot-testing` owns the level it runs at |
 
 Out of scope: log shipping, retention infrastructure, dashboards, alert rules, and SLO definitions.
 Those follow the approved platform standard.
@@ -43,8 +42,9 @@ Those follow the approved platform standard.
 ## Record the decisions before instrumenting
 
 `docs/project-profile.md` records the log format, correlation header, tracing decision, metrics
-registry, and exposed actuator endpoints. Its template, owned by `spring-boot-patterns`, lists the
-allowed values; fill a missing decision through the process that skill defines.
+registry, and exposed actuator endpoints. Its template, owned by `project-decision-profile`
+([the asset](../project-decision-profile/assets/project-profile-template.md)), lists the allowed
+values; fill a missing decision through the process that skill defines.
 
 Until the observability backend is chosen, still emit structured JSON and Micrometer meters. That
 work is not wasted, because it is what every candidate backend consumes.
@@ -71,8 +71,8 @@ that point on.
 
 ## Log deliberately, at one place
 
-- **Log once, at the boundary that handles the failure.** Catching, logging, and rethrowing produces the same stack trace three times and triples the cost of every incident.
-- Log expected `4xx` failures at `INFO` or `WARN` with the internal error code, never at `ERROR`. Reserve `ERROR` for unexpected server failures, and always include the exception so the stack trace is captured.
+- **Log once, at the boundary that handles the failure.** Catching, logging, and rethrowing produces the same stack trace three times and triples the cost of every incident. Where `spring-boot-patterns` defines a use-case level above the aggregate services, that level is the boundary: an operation is logged and metered once per use case, not once per aggregate it touches.
+- Log expected failures at `INFO` or `WARN` with the internal error code, never at `ERROR`. Reserve `ERROR` for unexpected server failures, and always include the exception so the stack trace is captured. **Expectedness decides which of the two a condition is, not its status class** — a `5xx` the system produces by design is still an expected failure. The error catalog `spring-boot-patterns` owns declares it per condition; do not re-derive it in a handler.
 - Never log inside a loop per element. Log the aggregate.
 - Use parameterized placeholders, never string concatenation. Concatenation runs even when the level is disabled.
 - Emit every caller-visible failure from the single REST exception advice that owns the error contract, with the catalog constant's internal `errorCode` as a structured field. That code and the public problem type are the same condition under two names, so an operator moves between a log line and the public contract without a lookup table.
@@ -84,14 +84,16 @@ personal data, full request or response bodies, or full SQL with parameters.
 
 ## Instrument the change, not the application
 
-Instrumentation is required by what a change introduces, not by the fact that a change happened.
+Instrumentation is required by what a change introduces, not by the fact that a change happened. A
+change that introduces none of the elements in the table below — exposing an actuator endpoint,
+adding a health indicator, changing configuration, renaming, refactoring without new behavior — needs
+none.
 
-- A change that introduces none of the elements in the table below needs no new instrumentation. Exposing or configuring an actuator endpoint, adding a health indicator, changing configuration, adjusting a build file, renaming, or refactoring without new behavior introduces no service operation, no outbound call, no job, and no fallback path.
-- Correlation context, MDC handling, the log encoder, and the metrics registry are application-wide infrastructure installed once. Install them when the application first needs them or when the task asks for them, not as a side effect of an unrelated change. A task that asks for one actuator endpoint is not a request for a correlation filter.
-- When a requested change would be hard to operate without instrumentation the task did not ask for, name the gap and let the requester decide. Do not decide by adding it, and do not decide by staying silent.
+- **Application-wide infrastructure is installed once**: correlation context, MDC handling, the log encoder, the metrics registry. Install it when the application first needs it or when the task asks, never as a side effect. A task that asks for one actuator endpoint is not a request for a correlation filter.
+- **When a change would be hard to operate without instrumentation the task did not ask for, name the gap and let the requester decide.** Do not decide by adding it, and do not decide by staying silent.
 
-This is proportionality, not deferral. A change that does introduce one of these elements is
-instrumented in that same change; the anti-pattern list rejects instrumentation left for later.
+This is proportionality, not deferral: a change that *does* introduce one of these elements is
+instrumented in that same change.
 
 ## Instrument what a feature needs to be operable
 
@@ -103,7 +105,8 @@ A feature that introduces any of these elements is instrumented before it is con
 | Call to another service or external system | A timer and an error counter, plus a client-side trace span |
 | Scheduled job | Success and failure counters, and the timestamp of the last successful run |
 | Idempotency, retry, or fallback path | A counter, so silent degradation is visible |
-| Cache, when the project has one | Hit ratio and eviction metrics |
+| Contention that reaches the caller | A counter for retry exhaustions and one for lock timeouts. The row above meters the attempts; these meter the outcomes, and they rise before latency does |
+| Cache, when the project has one | Hit ratio and eviction rate, read together — a good ratio beside a high eviction rate means the cache is thrashing — plus a counter per failed cache operation, with a bounded tag separating a read from an eviction. `application-caching` owns why those two failures differ |
 
 HTTP server metrics, datasource pool metrics, and JVM metrics come from auto-configuration. Do not
 reimplement them.
@@ -113,11 +116,13 @@ text, timestamp, or exception message as a tag value. Every distinct value creat
 an unbounded tag will exhaust the metrics backend, and it is the fastest way to take down a
 monitoring stack. Use a templated route, a bounded outcome, and a bounded error category.
 
-Because cardinality is a runtime property that no static check can see, back the rule with a
-`MeterFilter` that caps allowable values per tag key and denies the meter beyond the cap, so an
-accidental unbounded tag degrades one meter instead of the monitoring backend.
-`build-and-dependencies` shows the configuration. The filter is a safety net, not permission to
-relax the rule.
+Because cardinality is a runtime property that no static check and no build gate can see, back the
+rule with a `MeterFilter` that caps allowable values per tag key and denies the meter beyond the cap,
+so an accidental unbounded tag degrades one meter instead of the monitoring backend. It is an
+ordinary `@Configuration` bean in `config`, and
+[metrics and tracing](references/metrics-and-tracing.md#capping-tag-cardinality-at-runtime) declares
+it — including the annotation whose absence silently unregisters the whole thing. The filter is a
+safety net, not permission to relax the rule.
 
 ## Test what is worth testing
 

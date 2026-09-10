@@ -9,35 +9,42 @@ Review the change for concrete production risk. Prefer a small number of verifie
 
 ## Coordination with other skills
 
-Treat this skill as the owner of review scope, investigation, evidence, prioritization, and reporting. Do not use it as a second coding standard.
+Treat this skill as the owner of review scope, investigation, evidence, prioritization, and reporting.
+Do not use it as a second coding standard.
 
-Apply the normative skills as follows:
+**[The ownership map](../_core/OWNERSHIP.md) states what each skill owns.** It is not repeated here,
+because a copy of it in the review skill is the fastest way to get a review that enforces a rule
+nobody owns. Read the rule in the owning skill before writing a finding, and never resolve a
+disagreement from a table in this file.
 
-| Skill | Apply when | Treat as owner of |
-| --- | --- | --- |
-| `modern-java-21` | Every review containing Java source | Java 21 usage, local type-inference policy, imports, Javadoc, nullability, exception mechanics, and source structure |
-| `spring-boot-patterns` | Every Spring Boot change | REST-only boundaries, TO–Domain–Entity architecture, mappers, services, validation, errors, configuration, where the transaction boundary sits, and feature structure |
-| `spring-data-jpa` | Persistence, entities, repositories, queries, migrations, locking, or database performance is affected | JPA mappings, association ownership, fetch plans, SQL/query behavior, flush and persistence-context semantics, isolation, locking, migrations, and database-specific test scenarios |
-| `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected | Confidentiality, threat analysis, authentication, authorization, abuse prevention, secrets, cloud and messaging security, and security verification |
-| `spring-boot-testing` | Production behavior or tests are changed or reviewed | Realistic scenario selection, unit and integration scope, fixtures, doubles, isolation, negative persistence verification, and test execution |
-| `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed | Vocabulary, identifier form, cross-boundary naming consistency, application/platform naming ownership, and safe rename migrations |
-| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test-selection, or quality-gate configuration is affected | Dependency justification, version management, compiler and processor configuration, test phase separation, quality-gate configuration, and the dependency audit and removal workflow |
-| `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected | Log levels and placement, correlation propagation, meter selection and tag cardinality, trace propagation, endpoint exposure, and probe composition |
-| `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed | Contract completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, and document drift |
+Which skills a review loads follows from what the change touches:
 
-Resolve every applicable owner skill before evaluating compliance:
+| Skill | Apply when |
+| --- | --- |
+| `modern-java-21` | Every review containing Java source |
+| `project-decision-profile` | The change depends on a recorded decision, or `docs/project-profile.md` is missing, stale, or still holds a bare token |
+| `spring-boot-patterns` | Every Spring Boot change |
+| `spring-data-jpa` | Persistence, entities, repositories, queries, locking, or database performance is affected |
+| `sql-database-migration` | A schema object is added, altered, or removed, or a migration file is created or edited |
+| `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected |
+| `spring-boot-testing` | Production behavior or tests are changed or reviewed |
+| `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed |
+| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test selection, or quality gate is affected |
+| `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected |
+| `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed |
+| `application-caching` | A cache is added, configured, read from, invalidated, or removed — including the Hibernate second-level and query caches — or a write touches data another cache holds |
 
-1. Use the active skill catalog when the exact skill name is available.
-2. Otherwise, find an exact matching `name` in repository-controlled skill locations such as `.claude/skills/<name>/SKILL.md` or `.agents/skills/<name>/SKILL.md`. If the repository uses another layout, search its tracked `SKILL.md` files by exact frontmatter name.
-3. Read the owner skill completely and load only the references it routes for the reviewed change.
+This skill never wins a precedence contest, because it states no rule of its own: report the conflict
+as a finding and name both rules.
 
-Never substitute remembered guidance, a similarly named public skill, or an internet result for a missing owner skill. Continue a general defect review when useful, but list the missing owner skill as a coverage gap and do not claim compliance with its rules. If the requested decision materially depends on that unavailable standard, stop that part of the review and ask for the approved source.
+Resolve every applicable owner skill before evaluating compliance: use the active skill catalog, or
+find an exact matching frontmatter `name` in repository-controlled locations such as
+`.claude/skills/<name>/SKILL.md`. Read the owner completely and load only the references it routes.
 
-Honor the always-on confidentiality instruction from `application-security` before inspecting, copying, searching, or sharing commercial-project material. Use only generic, anonymized internet searches and approved project tools.
-
-Do not restate an owner skill's exact rule in this skill. In particular, do not invent an alternative import order, local type-inference rule, Javadoc policy, mapper architecture, service signature policy, entity update pattern, naming convention, association default, or security baseline. If a build-enforced project rule and a skill rule conflict, follow the conflict handling defined by the owning skill and report the discrepancy accurately.
-
-In review-only mode, interpret an owner skill's instruction to add, copy, update, or ensure a repository artifact as an instruction to verify it. Report a missing mandatory artifact as a finding; do not create it until the user requests fixes.
+- **Never substitute remembered guidance, a similarly named public skill, or an internet result for a missing owner skill.** Continue a general defect review when useful, but list the missing owner as a coverage gap and do not claim compliance with its rules. If the requested decision materially depends on that unavailable standard, stop that part of the review and ask for the approved source.
+- **Never invent a rule an owner skill would have stated** — an alternative import order, type-inference rule, Javadoc policy, mapper architecture, signature policy, entity update pattern, naming convention, association default, or security baseline. When a build-enforced project rule and a skill rule conflict, follow the owning skill's conflict handling and report the discrepancy accurately.
+- **In review-only mode, an owner skill's instruction to add, copy, update, or ensure an artifact is an instruction to verify it.** Report a missing mandatory artifact as a finding; do not create it until the user requests fixes.
+- Honor the always-on confidentiality instruction from `application-security` before inspecting, copying, searching, or sharing commercial-project material. Use only generic, anonymized searches and approved project tools.
 
 ## Reference routing
 
@@ -56,29 +63,26 @@ Treat a code-review request as read-only by default.
 
 ## Establish the review scope
 
-Resolve the target in this order:
+Resolve the target in this order: the commit, branch, pull request, path, or symbol the user named;
+then pull-request metadata and its merge base; then staged and unstaged working-tree changes; then,
+on a clean tree, the latest commit — stating that scope. Do not guess between materially different
+targets: ask one focused question when the wrong base or range could invalidate the review.
 
-1. Use the commit, branch, pull request, base branch, path, or symbol explicitly named by the user.
-2. Use available pull-request metadata and its merge base when the request refers to the current pull request.
-3. Review staged and unstaged working-tree changes when the request refers to current local changes.
-4. If the tree is clean and the user asks to review the latest change, review the latest commit and state that scope.
-
-Do not guess between materially different targets. Ask one focused question when choosing the wrong base or range could invalidate the review.
-
-Record the reviewed base and head revisions before starting. For working-tree reviews, record that staged and unstaged changes were included and preserve the reviewed diff. Recheck the head and working tree before a final merge or release disposition. If the change moved, review the new delta and any invalidated conclusions before finishing.
+Record the reviewed base and head before starting, and recheck them before any merge or release
+disposition. If the change moved, review the new delta and the conclusions it invalidates. For
+multi-file reviews keep a coverage record — revision, changed files, traced paths, generated files,
+and anything not reviewed. Too large to review completely means requesting a split or delivering an
+explicitly partial review; it never means marking unreviewed paths complete.
 
 Before judging the diff:
 
-- distinguish gated rules from review-only rules: a rule enforced by Checkstyle, Spotless, or the enforcer plugin is already proven by a green build, so spend review attention on the rules no tool can check — layer boundaries and entity leakage, whether a name reveals intent, whether a failure is logged exactly once, whether a test asserts real behavior, whether a dependency has a justification, whether a tag is genuinely bounded;
-- report a weakened gate — a new suppression, a baseline file, a lowered severity, a disabled plugin — as a finding in its own right, regardless of what it was silencing;
-- read `docs/project-profile.md` and inspect repository instructions, contribution rules, architecture decisions, security profile, data-classification policy, API and event contracts, migration conventions, and CI quality gates relevant to the change;
-- report as a blocking finding any production change made without a project profile covering the decisions it touches, and any change that assumed a database, authentication profile, cache, service convention, accessor style, contract document, or authoring direction the profile does not record, and a change that added or edited a repository-root instruction file as a side effect;
-- inspect the configured Java, Spring Boot, Spring Framework, build-plugin, and dependency versions relevant to the change;
-- identify the intended behavior from the task, acceptance criteria, API or event contract, migration, tests, and established behavior;
-- inspect enough callers, implementations, configuration, data access, tests, and downstream consumers to validate the changed path;
-- identify generated files and review their source template, annotation, schema, or generator instead of reporting style defects in generated output.
-
-Create a coverage record for multi-file reviews: reviewed revision, changed files, traced execution paths, generated or mechanical files, and anything not reviewed. If the change is too large for complete review, request a split or explicitly deliver a partial review; never mark unreviewed files or paths as complete.
+- **Spend attention on what no tool can check.** A rule a gate enforces *completely* is proven by a green build, and re-reading it by hand is wasted attention. Layer boundaries and entity leakage, whether a name reveals intent, whether a failure is logged exactly once, whether a test asserts real behavior, whether a dependency has a justification, whether a tag is genuinely bounded — none of those are enforced at all.
+- **Some gates are heuristics, and a green build does not close them.** `build-and-dependencies` keeps the list in [gated but not proven](../build-and-dependencies/references/quality-gates.md#gated-but-not-proven): the `var` and log-concatenation patterns and the import-group boundary each have a documented blind spot. Treat those as review responsibilities in the changed lines, not as covered. Reading a heuristic gate as a proof is how the one case it was known to miss ships.
+- **Report a weakened gate as a finding in its own right** — a new suppression, a baseline file, a lowered severity, a disabled plugin — regardless of what it was silencing. The one thing that is not a weakening is a scoped, dated gate adoption that `build-and-dependencies` sanctions for a repository that already has code: check that it carries its owner, its end date, and its removal condition in the profile, and report a **missing** one of those, not the adoption itself. An adoption with no end date has become the permanent two-tier standard it was meant to avoid, and that is the finding.
+- Read `docs/project-profile.md` and the repository instructions, architecture decisions, security profile, data-classification policy, contracts, migration conventions, and CI gates relevant to the change.
+- **Report as a blocking finding** any production change made without a profile covering the decisions it touches; any change that assumed a database, authentication profile, cache, service convention, accessor style, contract document, or authoring direction the profile does not record; and any change that added or edited a repository-root instruction file as a side effect.
+- Inspect the configured Java, Spring Boot, Spring Framework, plugin, and dependency versions; identify the intended behavior from the task, acceptance criteria, contract, migration, tests, and established behavior; and inspect enough callers, configuration, data access, tests, and downstream consumers to validate the changed path.
+- Identify generated files and review their template, annotation, schema, or generator instead of reporting style defects in generated output.
 
 ## Review in risk order
 

@@ -1,0 +1,182 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+    <property name="severity" value="error"/>
+    <property name="charset" value="UTF-8"/>
+    <property name="fileExtensions" value="java"/>
+
+    <module name="NewlineAtEndOfFile"/>
+    <module name="FileTabCharacter">
+        <property name="eachLine" value="true"/>
+    </module>
+
+    <!-- modern-java-21: class size -->
+    <module name="FileLength">
+        <property name="max" value="1000"/>
+    </module>
+
+    <!-- Must equal the "Maximum line length" row in docs/project-profile.md, whose fallback
+         is 120. Change both together or the gate and the recorded decision disagree. -->
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package .*|^import .*|https?://"/>
+    </module>
+
+    <module name="TreeWalker">
+
+        <!-- ===== modern-java-21: imports ===== -->
+        <module name="AvoidStarImport"/>
+        <module name="RedundantImport"/>
+        <module name="UnusedImports">
+            <property name="processJavadoc" value="true"/>
+        </module>
+        <!-- "separated" covers the blank line between TYPE import groups only. The blank line
+             between the static block and the first type group is not checked by this module;
+             Spotless formats it and the committed IDE configuration preserves it. See
+             "What is gated and what is not" in quality-gates.md. Do not add
+             separatedStaticGroups here: it separates static groups from each other and does
+             nothing while "staticGroups" is unset, which it is. -->
+        <module name="ImportOrder">
+            <property name="groups" value="java,jakarta,javax,com,org,*"/>
+            <property name="option" value="top"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
+        </module>
+
+        <!-- ===== modern-java-21: explicitness ===== -->
+        <module name="RequireThis">
+            <property name="checkFields" value="true"/>
+            <property name="checkMethods" value="true"/>
+            <property name="validateOnlyOverlapping" value="false"/>
+        </module>
+        <module name="FinalParameters">
+            <property name="tokens" value="METHOD_DEF,CTOR_DEF"/>
+        </module>
+        <module name="FinalLocalVariable">
+            <property name="validateEnhancedForLoopVariable" value="true"/>
+        </module>
+        <module name="ExplicitInitialization"/>
+
+        <!-- No var. Three patterns: a declaration that starts a statement, a for-loop
+             variable, and a try-with-resources variable.
+
+             The first pattern is anchored at the start of the line on purpose. An unanchored
+             pattern also matches the text inside a string literal, and ignoreComments does not
+             cover string literals - only comments. A test fixture holding "var x = 1" as data
+             would then fail the build, and the first response to a gate that fires on correct
+             code is to weaken the gate.
+
+             These are heuristics, not proofs. MatchXpath expresses the same rule against the
+             syntax tree with no string-literal false positives; adopt it once verified on the
+             project's Checkstyle version, per "Modules to verify before relying on them". -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="^\s*(final\s+)?var\s+\w+\s*="/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Do not use var; declare the explicit type."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="for\s*\(\s*(final\s+)?var\s"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Do not use var; declare the explicit type."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="try\s*\(\s*(final\s+)?var\s"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Do not use var; declare the explicit type."/>
+        </module>
+
+        <!-- ===== modern-java-21: size and shape ===== -->
+        <module name="MethodLength">
+            <property name="max" value="100"/>
+            <property name="countEmpty" value="false"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="7"/>
+            <property name="tokens" value="METHOD_DEF,CTOR_DEF"/>
+            <property name="ignoreOverriddenMethods" value="true"/>
+        </module>
+        <module name="OuterTypeFilename"/>
+        <module name="OneTopLevelClass"/>
+        <!-- HideUtilityClassConstructor and VisibilityModifier are deliberately absent.
+             See "Modules to verify before relying on them". -->
+
+        <!-- ===== modern-java-21: exceptions ===== -->
+        <module name="IllegalCatch">
+            <property name="illegalClassNames" value="java.lang.Error,java.lang.Throwable"/>
+        </module>
+        <module name="IllegalThrows"/>
+        <module name="EmptyCatchBlock">
+            <property name="exceptionVariableName" value="ignored|expected"/>
+        </module>
+        <module name="EqualsHashCode"/>
+        <module name="MissingOverride"/>
+        <module name="StringLiteralEquality"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="NeedBraces"/>
+
+        <!-- ===== project-naming-conventions: identifier form ===== -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <module name="TypeName"/>
+        <module name="MethodName"/>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+        <module name="LocalVariableName"/>
+        <module name="LocalFinalVariableName"/>
+        <module name="ConstantName"/>
+        <module name="AbbreviationAsWordInName">
+            <property name="allowedAbbreviationLength" value="1"/>
+            <property name="ignoreStaticFinal" value="true"/>
+        </module>
+
+        <!-- ===== observability-and-logging ===== -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="System\.(out|err)\."/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Use the SLF4J logger, not System.out or System.err."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="\.printStackTrace\s*\("/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Log the exception through SLF4J instead."/>
+        </module>
+        <!-- The concatenation gate below matches the identifier LOGGER, so this one enforces
+             that a logger is actually called LOGGER. Without it a logger named "log" is
+             invisible to the gate and the rule silently stops applying to that file. -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="\bLogger\s+(?!LOGGER\b)\w+\s*="/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message"
+                      value="Name the logger LOGGER; the log-hygiene gates match that name."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="LOGGER\.(trace|debug|info|warn|error)\s*\([^;]*&quot;\s*\+"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message"
+                      value="Do not concatenate in a log call; use fields or {} placeholders."/>
+        </module>
+
+        <!-- observability-and-logging: the same rule for the SLF4J fluent API, which the classic
+             pattern cannot see. LOGGER.atInfo()...log("x " + y) puts the message on its own line,
+             with no LOGGER. prefix on it, so it is matched on the terminal call instead.
+             setMessage is covered too; both take the message. -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="\.(log|setMessage)\s*\([^;]*&quot;\s*\+"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Do not concatenate into a log message; use a placeholder or a key-value field."/>
+        </module>
+
+        <!-- ===== Javadoc correctness, not presence ===== -->
+        <module name="JavadocMethod">
+            <property name="accessModifiers" value="public"/>
+        </module>
+        <module name="SummaryJavadoc"/>
+        <module name="NonEmptyAtclauseDescription"/>
+
+    </module>
+</module>

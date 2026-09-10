@@ -7,26 +7,35 @@ the members it omits — accessors, constructors, and the rest of the contract �
 the excerpt verbatim into production code. When an omitted member is required for the code to
 compile, such as a MapStruct-visible creation path, the example says so explicitly.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
 - [Package layout](#package-layout)
+- [Shared route and bound constants](#shared-route-and-bound-constants)
 - [Method validation](#method-validation)
 - [Custom exceptions](#custom-exceptions)
 - [Configuration properties and beans](#configuration-properties-and-beans)
 - [Rejected code](#rejected-code)
+- [Idempotency placement](#idempotency-placement)
+- [Scheduled and asynchronous execution](#scheduled-and-asynchronous-execution)
 
 ## Package layout
 
 ```text
 src/main/java/com/example/myapp/
 ├── MyAppApplication.java          # @SpringBootApplication
+├── applicationservice/            # Use cases; owns the transaction boundary
+│   ├── UserManagementApplicationService.java
+│   └── impl/                      # Implementations when the project uses this convention
+│       └── UserManagementApplicationServiceImpl.java
 ├── config/                        # Bean configuration classes
+│   ├── ApplicationTimeConfiguration.java  # The Clock bean
+│   ├── CatalogClientConfiguration.java    # Constructs the outbound client
 │   ├── SecurityConfig.java
 │   ├── WebConfig.java
 │   └── properties/                # @ConfigurationProperties types
-│       └── CatalogClientProperties.java
+│       └── CatalogClientProperties.java   # Outbound integration, not a domain type
 ├── controller/                    # REST controllers
 │   ├── ApiPaths.java              # Single declaration of the API base path
 │   └── UserController.java
@@ -35,8 +44,9 @@ src/main/java/com/example/myapp/
 │   │   └── UserRestMapper.java
 │   └── domain/                    # Entity/projection -> domain; creation values -> new entity
 │       └── UserDomainMapper.java
-├── service/                       # Business logic and application contracts
-│   ├── UserService.java
+├── service/                       # One service per aggregate root
+│   ├── UserService.java           # Owns users + user_address
+│   ├── OrganizationService.java   # Owns organization
 │   └── impl/                      # Implementations when the project uses this convention
 │       └── UserServiceImpl.java
 ├── domain/                        # Framework-independent business models
@@ -72,9 +82,9 @@ src/main/java/com/example/myapp/
 Use this layered layout consistently unless the repository already enforces a compatible layered
 variation; do not migrate a coherent layout unless migration is explicitly in scope. The projection
 and specification subpackages appear because the example contains corresponding types. Create either
-subpackage only with its first type, never as empty scaffolding. Application service interfaces
-and `service.impl` are shown because this example assumes that project convention. Follow the service
-interface decision from `../SKILL.md`; do not create interfaces for helpers or types without a real
+subpackage only with its first type, never as empty scaffolding. The `impl` subpackages are shown
+because this example assumes that project convention. Follow the service interface decision from
+`../SKILL.md`; do not create interfaces for helpers or types without a real
 contract. A `util` package is valid for cohesive stateless utilities, but it must not become a
 dumping ground for unrelated behavior.
 
@@ -112,18 +122,25 @@ into a second annotation, a Javadoc sentence, or a test literal.
 
 ## Method validation
 
-Declare application-service method constraints once on the service contract:
+Declare method constraints once on the service contract. The example is an **application service**,
+because a transfer spans two `Account` aggregates and coordination is what that level is for.
+
+`AccountService` is the aggregate service for the `Account` root, with `withdraw` and `deposit`
+operations that enforce its own invariants; `ReceiptDomain` is a domain record and
+`InsufficientFundsException` a project exception. All three belong to this example rather than to the
+`user` vocabulary used elsewhere in this file, because banking makes the two-aggregate case obvious
+in a way a user and an organization do not.
 
 ```java
-public interface TransferService {
+public interface TransferApplicationService {
 
     /**
-     * Transfers the requested amount between accounts.
+     * Transfers the requested amount between two accounts.
      *
-     * @param sourceAccountId source account identifier; must not be {@code null}
-     * @param targetAccountId target account identifier; must not be {@code null}
+     * @param sourceAccountId source account identifier
+     * @param targetAccountId target account identifier
      * @param amount          amount to transfer; must be positive
-     * @return the immutable {@link ReceiptDomain} for the completed transfer; never {@code null}
+     * @return the immutable {@link ReceiptDomain} for the completed transfer
      * @throws ConstraintViolationException when an argument violates a structural constraint
      * @throws InsufficientFundsException when the source account cannot cover the transfer
      */
@@ -134,20 +151,19 @@ public interface TransferService {
 }
 ```
 
-This example assumes that the project uses the service-interface and `*ServiceImpl` convention. Keep validation constraints on the interface and place `@Validated` on the concrete Spring bean. Do not repeat constraints on the overriding method.
-
-With the concrete-service convention, there is no second place to split: declare the constraints and
-the caller-facing Javadoc on the `@Service` class itself and annotate that class with `@Validated`.
+This example assumes the service-interface and `*Impl` convention, so the implementation below
+carries `@Validated`, the dependencies, and the bodies, while the interface above carries the
+constraints and the Javadoc. Do not repeat constraints on the overriding method.
 
 ```java
 @Service
 @Validated
-public class TransferServiceImpl implements TransferService {
+public class TransferApplicationServiceImpl implements TransferApplicationService {
 
-    private final AccountRepository accountRepository;
+    private final AccountService accountService;
 
-    public TransferServiceImpl(final AccountRepository accountRepository) {
-        this.accountRepository = accountRepository;
+    public TransferApplicationServiceImpl(final AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Override
@@ -157,26 +173,32 @@ public class TransferServiceImpl implements TransferService {
             final Long targetAccountId,
             final BigDecimal amount) {
 
-        final AccountEntity sourceAccount = this.accountRepository.findById(sourceAccountId)
-            .orElseThrow(() -> new ResourceNotFoundException("Account", sourceAccountId));
-        final AccountEntity targetAccount = this.accountRepository.findById(targetAccountId)
-            .orElseThrow(() -> new ResourceNotFoundException("Account", targetAccountId));
+        this.accountService.withdraw(sourceAccountId, amount);
+        this.accountService.deposit(targetAccountId, amount);
 
-        sourceAccount.withdraw(amount);
-        targetAccount.deposit(amount);
-
-        final AccountEntity savedSourceAccount = this.accountRepository.save(sourceAccount);
-        final AccountEntity savedTargetAccount = this.accountRepository.save(targetAccount);
-
-        return new ReceiptDomain(
-                savedSourceAccount.getId(),
-                savedTargetAccount.getId(),
-                amount);
+        return new ReceiptDomain(sourceAccountId, targetAccountId, amount);
     }
 }
 ```
 
-The explicit `save` calls are intentional; do not replace them with dirty-checking-only persistence. Apply `spring-data-jpa` and the project’s consistency rules for locking and concurrency. Invoke the service through the Spring proxy so validation and transaction advice are applied.
+**With the concrete-service convention there is no second place to split**: the constraints, the
+caller-facing Javadoc, `@Validated`, `@Service`, the transaction, and the bodies all sit on one class,
+and nothing else about the example changes. Follow whichever convention
+`docs/project-profile.md` records, and do not mix the two within a scope.
+
+Four things in that pair are the rules it exists to show:
+
+- **The constraints are on the interface, once.** They are the caller-facing contract, so they sit with the Javadoc; repeating them on the implementation creates two contracts that drift.
+- **`@Validated` is on the implementation**, because that is the bean the proxy wraps. On the interface it does nothing.
+- **The application service holds no repository**, and this one holds none. Both accounts are written through `AccountService`, the aggregate service that owns the `Account` root and its invariants — "may this account go below zero" is a rule about an account, not about a transfer. A repository here would give the aggregate a second write path that bypasses those invariants.
+- **Invoke the service through the Spring proxy**, or neither the validation nor the transaction advice applies. Self-invocation defeats both.
+
+**This excerpt shows method validation, and nothing else — do not read it as a transfer
+implementation.** A transfer between two accounts is the canonical concurrency problem and the code
+above has none of the answer: no `@Version`, no lock, no conditional `UPDATE`, and the two accounts
+touched in the order the caller supplied, which is the shape that deadlocks as soon as anything does
+lock. `spring-data-jpa` owns that decision and its examples: choose the strategy per operation, and
+where more than one row is locked, derive the order from a stable value rather than from the request.
 
 ## Custom exceptions
 
@@ -204,14 +226,52 @@ security profile. It is safe when identifiers are opaque and non-enumerable, and
 identifier is itself personal data such as an email address. The message stays internal in either
 case; `ApiExceptionHandler` never copies it into the response body.
 
+`BusinessValidationException` is the **carrier** shape described in
+[error handling examples](error-handling-examples.md#two-exception-shapes-and-when-each-applies): it
+takes a catalog constant rather than a message, so one handler serves every business rule while each
+rule keeps its own status and problem type.
+
 ```java
 public class BusinessValidationException extends RuntimeException {
 
-    public BusinessValidationException(final String message) {
-        super(Objects.requireNonNull(message, "message must not be null"));
+    private final ApplicationError error;
+
+    public BusinessValidationException(final ApplicationError error) {
+        super(Objects.requireNonNull(error, "error must not be null").code());
+        this.error = error;
+    }
+
+    /**
+     * Returns the catalog entry that decides this failure's public contract.
+     *
+     * @return the error catalog constant
+     */
+    public ApplicationError error() {
+        return this.error;
     }
 }
 ```
+
+The message is the internal code, not free text: it is what appears in a stack trace an operator
+reads, and it already matches the structured `errorCode` field the advice logs. Never add a
+constructor that takes a message, a status, or a URI — the constant is the only input, or the catalog
+stops being the single declaration.
+
+```java
+public class ConcurrentModificationConflictException extends RuntimeException {
+
+    public ConcurrentModificationConflictException(
+            final Object identifier, final Throwable cause) {
+
+        super("Concurrent modification of resource with identifier: %s".formatted(
+                Objects.requireNonNull(identifier, "identifier must not be null")), cause);
+    }
+}
+```
+
+This one is the **fixed-mapping** shape: it means exactly one thing, so the handler resolves
+`ApplicationError.CONCURRENT_MODIFICATION` itself. `spring-data-jpa` throws it when the optimistic
+retry policy is exhausted.
 
 Name the project's validation category `BusinessValidationException`. Do not name it
 `ValidationException`: that simple name collides with `jakarta.validation.ValidationException`, and
@@ -221,7 +281,11 @@ Bean Validation failure.
 ## Configuration properties and beans
 
 `CatalogClientProperties` is a configuration property type, so it lives in `config.properties`.
-`CatalogClientConfiguration` constructs beans, so it lives directly in `config`.
+`CatalogClientConfiguration` constructs beans, so it lives directly in `config`. The catalog client
+is deliberately outside this example application's own vocabulary: it stands for any external system
+the application calls, and its naming follows the outbound-client rule in
+`project-naming-conventions` rather than the domain vocabulary used by the `user` types elsewhere in
+this file.
 
 ```java
 @ConfigurationProperties("clients.catalog")
@@ -229,16 +293,45 @@ Bean Validation failure.
 public record CatalogClientProperties(
         @NotNull URI baseUrl,
         @NotNull @DurationMin(millis = 1) Duration connectTimeout,
-        @NotNull @DurationMin(millis = 1) Duration responseTimeout) {
+        @NotNull @DurationMin(millis = 1) Duration readTimeout) {
 }
 ```
 
-Validate required timeouts as strictly positive so invalid configuration fails during startup.
+Validate required timeouts as strictly positive so invalid configuration fails during startup. The
+two names match the outbound timeouts the project profile records, so a configuration key, a
+property component, and a profile row all say the same word.
 
 ```java
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(CatalogClientProperties.class)
 class CatalogClientConfiguration {
+
+    @Bean
+    CatalogClient catalogClient(
+            final RestClient.Builder restClientBuilder,
+            final CatalogClientProperties properties) {
+
+        return new CatalogClient(restClientBuilder
+                .baseUrl(properties.baseUrl().toString())
+                .build());
+    }
+}
+```
+
+**This bean is incomplete as written, deliberately.** The connection and read timeouts are applied to
+the request factory the builder uses, and the type that carries them differs by Spring Boot
+generation; `build-and-dependencies` owns that coordinate in
+[generation differences](../../build-and-dependencies/references/generation-differences.md). Read it
+and configure both timeouts from `properties` before this client goes anywhere near a running system
+— [outbound call rules](outbound-call-rules.md) states why a client without a read timeout takes the
+application down rather than the dependency.
+
+A configuration class is named for what it constructs. Unrelated infrastructure beans get their own
+class rather than a spare `@Bean` method in the nearest existing one:
+
+```java
+@Configuration(proxyBeanMethods = false)
+class ApplicationTimeConfiguration {
 
     @Bean
     Clock applicationClock() {
@@ -248,6 +341,35 @@ class CatalogClientConfiguration {
 ```
 
 ## Rejected code
+
+`../SKILL.md` names the six shapes that most often survive review. This is the full catalogue it
+points at. Every entry restates a rule stated there or in a rule reference; the value of the list is
+recognition, not novelty.
+
+**Boundary violations.** Fat controllers; entities in API contracts or returned from services; REST
+TOs passed into services; an outbound client with no read timeout; a provider exception or SDK
+response type reaching a service or controller; remote I/O inside long transactions; unbounded
+collection endpoints; generic `Map` responses; a repository injected into an application service; a
+controller handler calling two services; an application service method that only forwards to one
+aggregate service; one aggregate service depending on another; a JPA association crossing an
+aggregate boundary.
+
+**Structure.** Field injection; an aggregate service that only forwards to its repository while its
+invariants live in callers; an application service holding a rule that belongs to one aggregate;
+empty or responsibility-free service interfaces; parameter objects that hide unrelated values or
+mechanically satisfy the size rule `modern-java-21` owns; generic `enums` packages; REST exception
+handlers in the custom-exception package; handwritten structural mappers where approved MapStruct can
+express the mapping; a separate mapper per mapping direction for one concept.
+
+**Error contract.** A `code` or `errorCode` member beside the RFC 9457 `type`; a problem type URI or
+internal error code declared outside the error catalog; `traceId`, `spanId`, or a stack trace in a
+`ProblemDetail` body; the same failure logged by both the service that threw it and the advice that
+handles it; a project exception whose simple name collides with a framework type such as
+`ValidationException`; generic exception swallowing.
+
+**Process.** Implementing against a decision `docs/project-profile.md` does not record, in breach of the gate `project-decision-profile` owns; hardcoded
+configuration or secrets; self-invocation assumptions for proxy annotations; an external effect fired
+inside the transaction instead of after commit.
 
 ```java
 // Wrong: entity exposure, repository access, business logic, and time in controller.
@@ -273,3 +395,60 @@ interface CustomerService {
 class CustomerServiceImpl implements CustomerService {
 }
 ```
+
+## Idempotency placement
+
+`application-security` owns the policy — when a key is required, what it is bound to, its format,
+retention, and abuse controls. This skill owns where that policy lives in the layers, **which of the
+two claim shapes the project uses**, and what a concurrent duplicate receives.
+
+Placement is the same in both shapes:
+
+- Accept the idempotency key at the REST boundary as an explicit, validated, bounded header or field. Do not read it from arbitrary request state.
+- Pass it into the application service as an ordinary explicit parameter or as part of the focused service input. Never pass the request TO.
+- Keep the claim store behind a repository or adapter like any other persistence concern. Do not put it in a controller, mapper, or entity callback.
+- Return the recorded original outcome for a repeated key through the same response mapping as the first call, so the public contract is identical.
+- Uniqueness of the claim is a database unique constraint, never an application existence check. `spring-data-jpa` states why, and the race after the check is exactly the one this feature exists to close.
+
+### The two shapes, and which one the project uses
+
+`docs/project-profile.md` records **Idempotency claim shape**. The two are not preferences: one is
+the default and the other is required for a specific use-case shape, and a project uses one of them
+throughout, because a codebase with both has two answers for what a concurrent duplicate receives.
+
+| | `single-phase` — the default | `two-phase` |
+| --- | --- | --- |
+| When the claim commits | With the effect, in the use case's one transaction | Before the effect, in its own transaction, carrying a lease deadline |
+| Required when | The effect is a database write, which under this architecture is most of them — an external effect goes through the recorded reliable-delivery mechanism and commits with the business change | The use case makes a **synchronous** external call whose result the caller receives, so the effect cannot be deferred to an outbox and cannot be rolled back |
+| What a concurrent duplicate does | Blocks on the unique constraint, bounded by the recorded pessimistic lock timeout | Reads the in-progress claim immediately and does not block |
+| What it then observes | The recorded outcome, once the first caller commits — or nothing, if that caller rolled back, in which case this caller wins the claim and executes | An in-progress claim whose lease has not expired |
+| What the caller receives | The original outcome, replayed through the same mapping | `409` from the catalog's in-progress condition, with `Retry-After` derived from the lease as the lock-timeout header is derived from its timeout |
+| What a failure leaves behind | Nothing. The claim rolls back with the effect, so a genuine retry is a fresh attempt | A claim in progress until its lease expires, which is what makes the lease mandatory rather than a refinement |
+
+**`single-phase` is the default because it is the only shape in which the claim and the effect cannot
+disagree.** A claim that outlives a rolled-back use case blocks the caller from ever retrying
+successfully; a claim that never lands lets the effect happen twice. Committing them together removes
+both, and the cost is that a concurrent duplicate waits rather than being told to wait.
+
+**`two-phase` exists for the case `single-phase` cannot cover**, and its cost is the lease. A crash
+between the two commits leaves a claim nothing will complete, so:
+
+- **Every two-phase claim carries a lease deadline**, recorded as `Idempotency claim lease` in the profile like every other bound, and inside the request budget.
+- **An expired lease is reclaimable by the next caller**, which is the only thing that stops one crash from making a key permanently unusable. Reclaim by a conditional `UPDATE` on the claim row — the shape `spring-data-jpa` states for a claim exactly one worker may win — never by deleting the row and inserting a new one.
+- **Recording the outcome is its own transaction**, and its failure is logged and metered rather than swallowed: the effect has already happened, so a lost outcome means the next duplicate re-executes it.
+- **`Retry-After` on the in-progress `409` is a hint, not a contract.** RFC 9110 defines the field normatively for `503` and for `3xx`; sending it here keeps one mechanism for "come back later" and costs nothing, but the condition is identified by its `type` URI and a client that ignores the header is still correct. Derive it from the recorded lease exactly as the lock-timeout header is derived from the recorded timeout — read, never retyped.
+
+### Rules for both
+
+- **The claim is keyed by the key and the caller**, per `application-security`: the authenticated subject, the tenant where the recorded tenancy model has one, the operation, and the request fingerprint. A key scoped to nothing lets one caller replay another's outcome.
+- **The same key with a different payload is rejected**, and it is a distinct catalog condition from a replay — a client that changed the body and reused the key has a bug, and answering it with the first call's response hides it.
+- **Both conditions are declared in the error catalog** like every other caller-visible failure: the in-progress condition and the key-reuse-with-different-payload condition. Neither reaches the catch-all.
+- **Test simultaneous duplicates and retry-after-timeout at the integration boundary**, per `spring-boot-testing`, and assert the status the caller receives rather than only that the effect happened once. Under `two-phase`, add the expired-lease case: it is the only test that proves a crashed attempt does not block the key forever.
+
+## Scheduled and asynchronous execution
+
+- Use a distributed lock or database claim pattern when a job must run once across the cluster.
+- Bound batches and memory usage; persist progress or checkpoints for large work.
+- Configure executors explicitly where concurrency matters.
+- Propagate context intentionally and handle failures; never fire-and-forget critical work silently.
+- The application's concurrency model, virtual threads included, is decided in [runtime and request budget](runtime-and-request-budget.md#choose-the-concurrency-model), not here. Scheduled and asynchronous work inherits that decision; it does not make its own.

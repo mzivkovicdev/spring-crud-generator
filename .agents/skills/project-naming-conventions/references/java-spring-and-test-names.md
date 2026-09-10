@@ -45,22 +45,24 @@ Prefer `id` and `userId` consistently. Do not alternate between `id`, `identifie
 Use lowercase package and Java module names. Use the organization's approved reverse-domain root and stable capability vocabulary:
 
 ```text
-com.acme.myapp.controller
-com.acme.myapp.mapper.rest
-com.acme.myapp.mapper.domain
-com.acme.myapp.service
-com.acme.myapp.service.impl
-com.acme.myapp.domain
-com.acme.myapp.repository
-com.acme.myapp.repository.projection
-com.acme.myapp.repository.specification
-com.acme.myapp.entity
-com.acme.myapp.transferobject.request
-com.acme.myapp.transferobject.response
-com.acme.myapp.exception
-com.acme.myapp.exception.handler
-com.acme.myapp.config
-com.acme.myapp.config.properties
+com.example.myapp.controller
+com.example.myapp.mapper.rest
+com.example.myapp.mapper.domain
+com.example.myapp.applicationservice
+com.example.myapp.applicationservice.impl
+com.example.myapp.service
+com.example.myapp.service.impl
+com.example.myapp.domain
+com.example.myapp.repository
+com.example.myapp.repository.projection
+com.example.myapp.repository.specification
+com.example.myapp.entity
+com.example.myapp.transferobject.request
+com.example.myapp.transferobject.response
+com.example.myapp.exception
+com.example.myapp.exception.handler
+com.example.myapp.config
+com.example.myapp.config.properties
 ```
 
 This project uses a layered package layout. Keep controllers, services, domain models, repositories, JPA entities, mappers, transfer objects, exceptions, and configuration in their established layer packages. Introduce a deeper package only with its first type and only when it represents a distinct responsibility; never create empty package scaffolding. Follow `spring-boot-patterns` for exact package responsibilities.
@@ -75,8 +77,9 @@ Rules:
 - Avoid dumping grounds such as `common`, `misc`, `general`, `stuff`, `helpers`, or a broad `util`
   package. A `util` package and `*Utils` type are acceptable when each utility is stateless, cohesive,
   and named for one focused responsibility, such as `DateRangeUtils`.
-- When the user or repository selects the application-service `*ServiceImpl` convention, put those
-  implementations in `service.impl`. Otherwise, do not introduce that package solely for symmetry.
+- When the user or repository selects the `*ServiceImpl` convention, put those implementations in
+  `service.impl` and `applicationservice.impl`. Otherwise, do not introduce either package solely
+  for symmetry.
   Never use `impl` as a dumping ground for unrelated types.
 - Do not create a generic `enums` package. Put each enum beside the business or architectural concept that owns it: domain enums with domain types, transport-only enums in the transport boundary, and persistence-only enums in the persistence boundary.
 - Keep Java source filenames identical to their top-level public type names.
@@ -105,7 +108,7 @@ Use `UpperCamelCase`.
 | Exception | Handling contract it represents, plus `Exception` | `ResourceNotFoundException`, `BusinessValidationException` |
 | Test class | Subject plus test scope suffix | `UserServiceTest`, `UserRepositoryIntegrationTest` |
 
-Do not prefix interfaces with `I` or suffix them with `Interface`. Use `Impl` for application-service
+Do not prefix interfaces with `I` or suffix them with `Interface`. Use `Impl` for service
 implementations when that is the explicit user preference or coherent project convention. Outside
 that convention, use `Default`, `Base`, `Abstract`, or `Impl` only when the modifier communicates a
 real, stable distinction.
@@ -133,8 +136,9 @@ Use a suffix only when the type owns that responsibility:
 | Role | Form | Example |
 | --- | --- | --- |
 | REST controller | `<Resource>Controller` | `UserController` |
-| Application service contract | `<Capability>Service` | `UserService` |
-| Application service implementation when selected | `<Capability>ServiceImpl` | `UserServiceImpl` |
+| Application service | `<Capability>ApplicationService` | `UserManagementApplicationService` |
+| Aggregate service | `<Aggregate>Service` | `UserService` |
+| Service implementation when selected | `<Name>Impl` | `UserServiceImpl`, `UserManagementApplicationServiceImpl` |
 | JPA repository | `<Aggregate>Repository` | `UserRepository` |
 | JPA entity | `<Concept>Entity` | `UserEntity` |
 | REST transfer object | Established `<Concept>TO` form | `UserCreateTO`, `UserTO` |
@@ -345,7 +349,7 @@ Reject or question:
 - framework or provider names leaking into domain types;
 - package names that mirror an organization chart or temporary project;
 - generic `enums` packages that separate enums from their owning concepts;
-- an unexplained `*Impl` suffix outside the selected application-service convention;
+- an unexplained `*Impl` suffix outside the selected service-interface convention;
 - accessors or predicates with misleading verbs;
 - names that expose credentials, customer data, tenant names, or vulnerabilities;
 - broad renames with no consumer inventory or compatibility plan.

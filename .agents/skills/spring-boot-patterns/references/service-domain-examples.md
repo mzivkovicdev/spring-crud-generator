@@ -2,7 +2,7 @@
 
 Use these examples when implementing or reviewing domain models, domain mappers, service contracts, service implementations, focused parameter objects, or repository boundaries. Apply all rules from `../SKILL.md`, `modern-java-21`, `spring-data-jpa`, `application-security`, and `project-naming-conventions`; imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -10,6 +10,8 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 - [Domain mapper](#domain-mapper)
 - [Focused service parameter object](#focused-service-parameter-object)
 - [Service contract and implementation](#service-contract-and-implementation)
+- [Aggregate service: owning an invariant](#aggregate-service-owning-an-invariant)
+- [Application service: owning a use case](#application-service-owning-a-use-case)
 - [Repository boundary](#repository-boundary)
 
 ## Domain models
@@ -35,6 +37,16 @@ public record PageDomain<T>(
     }
 }
 ```
+
+```java
+public record UserProfileDomain(
+        UserDomain user,
+        String organizationName) {
+}
+```
+
+`UserProfileDomain` is the result of a use case that reads from two aggregates; it belongs to the
+application service layer, not to either aggregate.
 
 `PageDomain` prevents Spring Data's `Page` from becoming a service or REST contract. A project may use a differently named framework-independent page result, but it must keep pagination semantics explicit and stable.
 
@@ -72,7 +84,9 @@ between mapper and entity fails the build rather than a request.
 
 ## Focused service parameter object
 
-Use separate parameters by default when a project-owned method has up to seven declared parameters and the signature remains clear. The following seven-parameter signature is acceptable; it does not need a custom input class solely because it is near the limit:
+`modern-java-21` owns the signature-size rule; this section only shows it applied at the service
+boundary. The signature below is within the limit and needs no custom input class merely because it
+is near it:
 
 ```java
 public interface UserProfileService {
@@ -88,7 +102,8 @@ public interface UserProfileService {
 }
 ```
 
-When an eighth project-owned parameter would be required, first group only values that already form a cohesive domain concept or enforce an invariant. Keep the target identifier separate:
+When the count crosses that limit, group only values that already form a cohesive domain concept or
+enforce an invariant, and keep the target identifier separate:
 
 ```java
 public record UserProfileDetailsDomain(
@@ -115,7 +130,7 @@ Do not introduce a catch-all input class to hide unrelated values, and do not cr
 
 ## Service contract and implementation
 
-The application-service interface is optional and the decision is recorded in
+The service interface is optional and the decision is recorded in
 `docs/project-profile.md`. Both shapes appear below. Use exactly one of them across the project.
 
 ### Shape A: concrete service, no interface
@@ -151,8 +166,8 @@ public class UserService {
     /**
      * Returns a user by identifier.
      *
-     * @param userId user identifier; must not be {@code null}
-     * @return       the matching user; never {@code null}
+     * @param userId user identifier
+     * @return       the matching user
      * @throws ConstraintViolationException when the identifier violates a structural constraint
      * @throws ResourceNotFoundException    when no user exists for the supplied identifier
      */
@@ -164,6 +179,12 @@ public class UserService {
 }
 ```
 
+`getById` is shown in full. The same class also declares `create`, `getAll`, `updateById`, and
+`deleteById` — the operations the `users` aggregate owns and the ones the controller example calls
+directly. They follow the same shape: `@Transactional` on the writes, entities mapped to domain
+objects before returning, and `ResourceNotFoundException` for a missing identifier. `create` appears
+in full under [Shape B](#shape-b-interface-plus-implementation).
+
 Do not introduce `UserService` plus an empty `UserServiceImpl` in order to reach Shape B. An
 interface with one implementation, no external implementor, and no substitution requirement adds a
 file and a jump without adding a contract.
@@ -174,17 +195,20 @@ Use this shape when `docs/project-profile.md` records the `*ServiceImpl` convent
 boundary exists: another module implements the contract, more than one implementation is deployed,
 or the type is a port with substitutable adapters.
 
+Only the difference from Shape A is shown. The interface carries the contract; `getAll`,
+`updateById`, and `deleteById` follow the same form and are omitted.
+
 ```java
 /**
- * Defines user application operations used by inbound adapters.
+ * Defines user operations for the user aggregate.
  */
 public interface UserService {
 
     /**
      * Returns a user by identifier.
      *
-     * @param userId user identifier; must not be {@code null}
-     * @return       the matching user; never {@code null}
+     * @param userId user identifier
+     * @return       the matching user
      * @throws ConstraintViolationException when the identifier violates a structural constraint
      * @throws ResourceNotFoundException    when no user exists for the supplied identifier
      */
@@ -196,52 +220,19 @@ public interface UserService {
      * @param username    username that satisfies the application contract
      * @param email       email address that satisfies the application contract
      * @param rawPassword raw password accepted only at the hashing boundary
-     * @return            the created user; never {@code null}
+     * @return            the created user
      * @throws ConstraintViolationException when an argument violates a structural constraint
      */
     UserDomain create(
             @NotBlank @Size(max = 120) final String username,
             @NotBlank @Email @Size(max = 254) final String email,
             @NotBlank @Size(max = 128) final String rawPassword);
-
-    /**
-     * Returns one bounded page of users.
-     *
-     * @param pageNumber zero-based page number; must not be {@code null}
-     * @param pageSize   page size from 1 through {@link PaginationConstraints#MAXIMUM_PAGE_SIZE};
-     *                   must not be {@code null}
-     * @return           a framework-independent page result; never {@code null}
-     * @throws ConstraintViolationException when an argument violates a structural constraint
-     */
-    PageDomain<UserDomain> getAll(
-            @NotNull @PositiveOrZero final Integer pageNumber,
-            @NotNull @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final Integer pageSize);
-
-    /**
-     * Updates the editable user profile fields.
-     *
-     * @param userId   user identifier; must not be {@code null}
-     * @param username new username
-     * @param email    new email address
-     * @return         the updated user state; never {@code null}
-     * @throws ConstraintViolationException when an argument violates a structural constraint
-     * @throws ResourceNotFoundException    when no user exists for the supplied identifier
-     */
-    UserDomain updateById(
-            @NotNull final Long userId,
-            @NotBlank @Size(max = 120) final String username,
-            @NotBlank @Email @Size(max = 254) final String email);
-
-    /**
-     * Deletes a user by identifier.
-     *
-     * @param userId user identifier; must not be {@code null}
-     * @throws ConstraintViolationException when the identifier violates a structural constraint
-     * @throws ResourceNotFoundException    when no user exists for the supplied identifier
-     */
-    void deleteById(@NotNull final Long userId);
 }
 ```
+
+The implementation carries the annotations, the dependencies, and the bodies from Shape A, with no
+Javadoc and no validation constraints repeated. One method shows the pattern; the rest are identical
+to Shape A apart from `@Override`:
 
 ```java
 @Service
@@ -249,92 +240,15 @@ public interface UserService {
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private final Clock clock;
-    private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
-    public UserServiceImpl(
-            final Clock clock,
-            final PasswordEncoder passwordEncoder,
-            final UserRepository userRepository) {
-
-        this.clock = clock;
-        this.passwordEncoder = passwordEncoder;
-        this.userRepository = userRepository;
-    }
+    // Remaining fields, constructor, and methods are those of Shape A.
 
     @Override
     public UserDomain getById(final Long userId) {
         return this.userRepository.findById(userId)
-            .map(UserDomainMapper.INSTANCE::mapUserEntityToUserDomain)
-            .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-    }
-
-    @Override
-    @Transactional
-    public UserDomain create(
-            final String username,
-            final String email,
-            final String rawPassword) {
-
-        final String passwordHash = this.passwordEncoder.encode(rawPassword);
-        final UserEntity newUser = UserDomainMapper.INSTANCE.mapToNewUserEntity(
-                username,
-                email,
-                passwordHash,
-                UserStatus.PENDING_VERIFICATION,
-                Instant.now(this.clock));
-        final UserEntity savedUser = this.userRepository.save(newUser);
-
-        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(savedUser);
-    }
-
-    @Override
-    public PageDomain<UserDomain> getAll(final Integer pageNumber, final Integer pageSize) {
-        final Pageable pageable = PageRequest.of(
-                pageNumber,
-                pageSize,
-                Sort.by(Sort.Order.asc("id"))
-        );
-        final Page<UserEntity> users = this.userRepository.findAll(pageable);
-        final List<UserDomain> items = UserDomainMapper.INSTANCE.mapUserEntitiesToUserDomains(
-                users.getContent()
-        );
-
-        return new PageDomain<>(
-                items,
-                users.getNumber(),
-                users.getSize(),
-                users.getTotalElements(),
-                users.getTotalPages()
-        );
-    }
-
-    @Override
-    @Transactional
-    public UserDomain updateById(
-            final Long userId,
-            final String username,
-            final String email) {
-
-        final UserEntity existingUser = this.getEntityById(userId);
-        existingUser.setUsername(username)
-                .setEmail(email);
-        final UserEntity savedUser = this.userRepository.save(existingUser);
-
-        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(savedUser);
-    }
-
-    @Override
-    @Transactional
-    public void deleteById(final Long userId) {
-        final UserEntity existingUser = this.getEntityById(userId);
-        this.userRepository.delete(existingUser);
-    }
-
-    private UserEntity getEntityById(final Long userId) {
-        return this.userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+                .map(UserDomainMapper.INSTANCE::mapUserEntityToUserDomain)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
     }
 }
 ```
@@ -354,26 +268,211 @@ two statements.
 explicit exception to its service-locator rule because the mapper is stateless, generated, and
 performs no I/O; do not inject it, and do not extend the exception to any other collaborator. Do not replace it with dirty-checking-only persistence or `saveAndFlush` without a documented immediate-flush requirement. Translate expected persistence failures into the stable application error contract and test the real database constraint.
 
-## Repository boundary
+## Aggregate service: owning an invariant
+
+`UserService` above is an aggregate service. Its aggregate is the `users` root plus its
+`user_address` children: an address cannot exist without its user, nothing references an address by
+its own identifier, and "exactly one address is primary" is a rule about the user, not about the
+address row.
+
+This excerpt adds one method and one field to the `UserService` declared under Shape A; the class
+annotations, the existing constructor parameters, and the existing methods are unchanged. There is no
+`@Override` because Shape A declares no interface — under Shape B the same method carries one.
+`UserAddressRepository` is the second repository of the same aggregate, which is why this service
+holds both and no other service does. `UserEntity.addAddress` appends the address and clears any
+previous primary flag — that method is where the invariant is actually enforced.
+`NewAddressDomain` is a focused parameter object declared like the one under
+[focused service parameter object](#focused-service-parameter-object). `ApplicationError` is the
+error catalog and `BusinessValidationException` the project validation exception, both described in
+`../SKILL.md`. `UserStatus` is the domain enum used by the Shape A example above.
+`UserAddressEntity` is the child entity of this aggregate; its single public constructor takes the
+owning `UserEntity` and the address values, following the entity creation rule in `spring-data-jpa`.
+`UserAddressRepository` is a `JpaRepository` for it.
 
 ```java
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
+    private final UserAddressRepository userAddressRepository;
 
-    Optional<UserEntity> findByEmail(final String email);
+    /**
+     * Adds an address to a user and applies the single-primary-address invariant.
+     *
+     * <p>Joins the caller's transaction when one is open. The address row and the updated user are
+     * written together in every case.
+     *
+     * @param userId     user identifier
+     * @param newAddress address values to store
+     * @return           the user including the stored address
+     * @throws ResourceNotFoundException   when no user exists for the supplied identifier
+     * @throws BusinessValidationException when the user is not in a state that accepts addresses
+     */
+    @Transactional
+    public UserDomain addAddress(
+            @NotNull final Long userId,
+            @NotNull final NewAddressDomain newAddress) {
 
-    @Query("""
-            select userEntity
-            from UserEntity userEntity
-            where userEntity.department.id = :departmentId
-            order by userEntity.id asc
-            """)
-    Slice<UserEntity> findByDepartmentId(
-            @Param("departmentId") final Long departmentId,
-            final Pageable pageable
-    );
+        final UserEntity user = this.userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-    boolean existsByEmail(final String email);
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessValidationException(ApplicationError.USER_NOT_MODIFIABLE);
+        }
+
+        final UserAddressEntity address = new UserAddressEntity(
+                user, newAddress.street(), newAddress.city(), newAddress.primary());
+
+        this.userAddressRepository.save(address);
+        user.addAddress(address);
+        this.userRepository.save(user);
+
+        return UserDomainMapper.INSTANCE.mapUserEntityToUserDomain(user);
+    }
+```
+
+The `@Transactional` here uses default propagation. Called from a use case it joins that
+transaction; called directly by a job it opens its own, so the two writes are never split. The
+use-case boundary is still the application service — this annotation only removes the failure mode
+where a direct caller commits each write separately.
+
+## Application service: owning a use case
+
+`UserManagementApplicationService` coordinates two aggregates and owns the transaction the use case
+runs in. It holds no repository: one here would give the `users` aggregate a second write path that
+bypasses `UserService` and its invariant.
+
+`OrganizationService` is the aggregate service for the `organization` root and the membership rows
+it owns. This example uses three of its operations: `getJoinable` returns an organization that
+currently accepts members or throws, `addMember` records the membership, and `getByMemberId` returns
+the organization a user belongs to or throws. `OrganizationDomain` is its domain record with `id()`
+and `displayName()`. `UserProfileDomain` is a domain record combining a `UserDomain` with that
+display name, and `UserRegisteredEvent` is a project event record.
+
+```java
+@Service
+@Transactional
+public class UserManagementApplicationService {
+
+    private final UserService userService;
+    private final OrganizationService organizationService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    // Constructor omitted; all three dependencies are required and assigned to final fields.
+
+    /**
+     * Registers a user as a member of an organization.
+     *
+     * <p>Defines the transaction for the use case. When the organization does not accept members,
+     * or the membership cannot be recorded, the user is not created either. The event is published
+     * for delivery after commit, so no notification is sent for a registration that rolled back.
+     *
+     * @param organizationId organization the user joins
+     * @param username       requested username
+     * @param email          requested email address
+     * @param rawPassword    plain password, hashed inside {@code UserService} and never stored raw
+     * @return               the created user
+     * @throws ResourceNotFoundException   when the organization does not exist
+     * @throws BusinessValidationException when the organization does not accept new members
+     */
+    public UserDomain register(
+            final Long organizationId,
+            final String username,
+            final String email,
+            final String rawPassword) {
+
+        final OrganizationDomain organization = this.organizationService.getJoinable(organizationId);
+        final UserDomain user = this.userService.create(username, email, rawPassword);
+        this.organizationService.addMember(organization.id(), user.id());
+
+        this.eventPublisher.publishEvent(new UserRegisteredEvent(user.id(), organization.id()));
+        return user;
+    }
+
+    /**
+     * Returns a user together with the display name of the organization they belong to.
+     *
+     * @param userId user identifier
+     * @return       the combined profile
+     * @throws ResourceNotFoundException when the user or its organization no longer exists
+     */
+    @Transactional(readOnly = true)
+    public UserProfileDomain getProfile(final Long userId) {
+        final UserDomain user = this.userService.getById(userId);
+        final OrganizationDomain organization = this.organizationService.getByMemberId(userId);
+
+        return new UserProfileDomain(user, organization.displayName());
+    }
 }
 ```
 
-Every collection query is bounded and deterministically ordered. Apply `spring-data-jpa` before copying or extending a repository pattern; use an explicit projection when a read path does not need a complete entity.
+`register` writes to two aggregates, and neither aggregate service knows about the other. That is
+exactly why the boundary sits here: a failure in `addMember` must leave no user behind, and only the
+method that spans both can guarantee it. Note also what is *not* here — the rule about which
+organizations accept members lives in `getJoinable`, inside the aggregate that owns it, so it is not
+repeated by every caller that creates a user.
+
+`UserRegisteredEvent` is consumed by a `@TransactionalEventListener(phase = AFTER_COMMIT)` listener
+rather than by a direct call to a notification component, so a rollback cannot leave a message
+already sent. That is the whole of what after-commit delivery guarantees here. This example assumes
+a profile that records the listener alone as sufficient for this effect; if a lost registration
+notice were unacceptable, `../SKILL.md` requires an outbox row written by this same transaction.
+
+`getProfile` composes one read from each aggregate, and `readOnly` takes effect because this is the
+outermost transactional method.
+
+Note what this class does **not** contain. Listing, updating, and deleting a user stay inside the
+`users` aggregate, so they have no method here — the controller calls `UserService` for those. A
+forwarding method would add a second name for one operation and a second place to keep in sync, and
+repeated across a few features it turns this class into a facade over the whole application.
+
+Both examples follow the `get` and `find` distinction in `project-naming-conventions`: `getById`,
+`getJoinable`, and `getByMemberId` return a value or throw, while a method that may legitimately
+return nothing is named `find...` and returns `Optional`.
+
+## Repository boundary
+
+`UserRepository` is declared once for this whole skill set, in
+[`spring-data-jpa` → entity and query examples](../../spring-data-jpa/references/entity-and-query-examples.md#repository-and-projection-queries).
+Do not restate it here or anywhere else: a second declaration is how two files end up disagreeing
+about which methods the aggregate's repository has.
+
+What this skill owns is only where the boundary sits and what may cross it. `PaginationConstraints`
+is the shared-bounds holder declared in
+[infrastructure examples](infrastructure-examples.md#shared-route-and-bound-constants); the class
+this method belongs to is `@Validated`, as Shape A above declares.
+
+
+
+```java
+@Transactional(readOnly = true)
+public PageDomain<UserDomain> getAll(
+        @PositiveOrZero final int pageNumber,
+        @Min(1) @Max(PaginationConstraints.MAXIMUM_PAGE_SIZE) final int pageSize) {
+    final Page<UserEntity> page = this.userRepository.findAll(
+            PageRequest.of(
+                    pageNumber,
+                    pageSize,
+                    Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))));
+
+    return new PageDomain<>(
+            UserDomainMapper.INSTANCE.mapUserEntitiesToUserDomains(page.getContent()),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages());
+}
+```
+
+Four things are on show, and all four are boundary rules rather than query rules:
+
+- The entity never leaves the method. It is mapped to `UserDomain` before the aggregate service returns, so no caller can reach a managed instance.
+- The sort is server-owned and carries a unique tie-breaker, so two requests for the same page return the same rows. `pageNumber` and `pageSize` arrive from the caller; the sort does not.
+- **The page bound is enforced here too, not only at the REST boundary.** The constraints reference `PaginationConstraints.MAXIMUM_PAGE_SIZE`, the same compile-time constant the controller's `@Max` uses, and the class is `@Validated`, so they are enforced. Bounding only the controller leaves the service open to every other caller it has — a scheduled job, a listener, another service — and `spring-data-jpa` requires the read itself to be bounded, not the HTTP request that happens to be in front of it today.
+- `Page` is used because `PageDomain` promises a total. When the caller does not need one, `spring-data-jpa` prefers `Slice` and the domain result changes with it — that skill owns the choice and its cost.
+
+`findAll(Pageable)` is the inherited method, and it is correct here precisely because the operation
+is "every user, a page at a time": the `Pageable` bounds it and the name still describes what it
+returns. An operation that filters — active users only, one organization's users — is a **different
+method with a different name** calling a derived query such as `findByStatus`, not `getAll` with a
+predicate quietly added inside it. A method whose name outgrows its behaviour is how a caller ends up
+paginating a set it did not ask for.
+
+Apply `spring-data-jpa` before copying or extending any repository pattern, and use an explicit
+projection when a read path does not need a complete entity.

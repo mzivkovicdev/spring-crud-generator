@@ -5,7 +5,7 @@ observation, or enabling and propagating distributed tracing. Apply every rule f
 `project-naming-conventions` for meter and span names, and `build-and-dependencies` for the registry
 and exporter declarations; imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -21,11 +21,23 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 
 Application code depends on `MeterRegistry` only. The backend is a dependency and a property.
 
+Micrometer is the instrumentation API on every supported Spring Boot generation. What changes with
+the generation is the export wiring, not a single rule about meters, tags, or spans.
+
+**On Spring Boot 3**, add the registry artifact for the backend:
+
 | Backend | Registry artifact | Model |
 | --- | --- | --- |
 | Prometheus, including a Grafana stack | `micrometer-registry-prometheus` | Scraped from an actuator endpoint |
 | OpenTelemetry collector, vendor-neutral | `micrometer-registry-otlp` | Pushed to the collector |
 | Elastic-based stack | `micrometer-registry-elastic`, or OTLP through a collector | Pushed |
+
+**On Spring Boot 4**, prefer the OpenTelemetry starter, which carries metrics, traces, and logs over
+OTLP from one dependency instead of a registry artifact per signal and per backend. A
+Prometheus scrape endpoint remains a valid choice when the platform pulls rather than receives; that
+is a deployment decision, recorded in the profile. Reporting metrics through Micrometer stays the
+recommendation either way — do not move application code onto the OpenTelemetry metrics API because
+the starter is present, or those meters stop behaving like the rest.
 
 Rules:
 
@@ -71,28 +83,59 @@ Use instead:
 If you cannot state the maximum number of distinct values a tag can take, it does not belong on a
 meter. Put it in a log field instead: logs are searchable at high cardinality, metrics are not.
 
+### Capping tag cardinality at runtime
+
+**Cardinality is a runtime property, so no static check and no build gate can see it.** A
+`MeterFilter` can, and it degrades one meter instead of the monitoring backend. This is the only
+enforcement the rule above has, which is why the bean is required rather than optional:
+
+```java
+@Configuration(proxyBeanMethods = false)
+class MetricsConfiguration {
+
+    private static final int MAXIMUM_ALLOWED_TAG_VALUES = 100;
+    private static final String ALL_METERS = "";
+    private static final String USER_ID_TAG = "userId";
+
+    @Bean
+    MeterFilter boundedUserIdTagMeterFilter() {
+        return MeterFilter.maximumAllowableTags(
+                ALL_METERS, USER_ID_TAG, MAXIMUM_ALLOWED_TAG_VALUES, MeterFilter.deny());
+    }
+}
+```
+
+**The `@Configuration` annotation is load-bearing and its absence is silent.** A class holding a
+`@Bean` method and nothing else is an ordinary class: Spring never sees it, the filter is never
+registered, no startup log says so, and the rule above goes back to being unenforced while the file
+sits in the repository looking like enforcement. Verify by asserting the filter's effect, not its
+presence — record more than the cap's worth of distinct values in a test and assert the meter is
+denied rather than that the bean exists.
+
+The class lives in `config`, like every other bean-constructing type under the package layout
+`spring-boot-patterns` owns. It is not build configuration, and it is not declared in a build file.
+
+Rules:
+
+- The empty meter-name prefix applies the cap to every meter. `userId` stands for any tag key that could plausibly grow: register **one filter per such key** rather than assuming a single filter covers the application.
+- Choose the cap from what the metrics backend can carry, not from what the application currently produces. A cap set to today's volume denies the first legitimate increase.
+- Pair it with an alert on denied meters, so an accidental unbounded tag is visible rather than silent. A filter that quietly drops a meter nobody notices has moved the failure, not removed it.
+- This is a safety net, not permission to relax the rule above. A tag that needs the cap to stay bounded is a tag that should not exist.
+
 ## Instrumenting an operation
 
 Prefer an observation, which produces a timer and a trace span from one instrumentation point.
 
-```java
-@Service
-@Transactional(readOnly = true)
-public class UserService {
+This is an excerpt of the `UserService` declared in
+[`spring-boot-patterns` → service and domain examples](../../spring-boot-patterns/references/service-domain-examples.md#service-contract-and-implementation).
+It adds one constructor dependency and wraps the existing `create` body, which moves unchanged into
+the private `createUser`; the class annotations and every other method stay as declared there.
 
+```java
     private static final String OUTCOME_KEY = "outcome";
     private static final String USER_CREATION_OBSERVATION = "user.creation";
 
     private final ObservationRegistry observationRegistry;
-    private final UserRepository userRepository;
-
-    public UserService(
-            final ObservationRegistry observationRegistry,
-            final UserRepository userRepository) {
-
-        this.observationRegistry = observationRegistry;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public UserDomain create(final String username, final String email, final String rawPassword) {
@@ -101,7 +144,7 @@ public class UserService {
                         .start();
 
         try (Observation.Scope ignoredScope = observation.openScope()) {
-            final UserDomain createdUser = this.doCreate(username, email, rawPassword);
+            final UserDomain createdUser = this.createUser(username, email, rawPassword);
 
             observation.lowCardinalityKeyValue(OUTCOME_KEY, "success");
 
@@ -115,7 +158,6 @@ public class UserService {
             observation.stop();
         }
     }
-}
 ```
 
 The outcome tag is set **after** the operation completes, in the branch that knows what happened.
@@ -136,6 +178,11 @@ correlation attach to it. Closing it in a try-with-resources and stopping in `fi
 an observation that is started and never stopped leaks and never records.
 
 For a simple duration where a span adds nothing, a timer is enough:
+
+The excerpt below is a method of an outbound adapter that holds `MeterRegistry` and the billing
+client as constructor-injected `final` fields — `this.meterRegistry` and `this.billingClient` — plus
+the constant shown with it. `OUTCOME_KEY` is the same constant declared in the observation example
+above.
 
 ```java
 private static final String BILLING_LOOKUP_TIMER = "billing.client.lookups";
@@ -182,7 +229,7 @@ degradation with no counter is invisible until it becomes an outage.
 
 Tracing is optional and recorded in the project profile. When enabled:
 
-- Use Micrometer Tracing with an OpenTelemetry bridge and an OTLP exporter unless the platform requires otherwise. The exporter is a dependency and a property; the instrumentation is unchanged either way.
+- On Spring Boot 3, use Micrometer Tracing with an OpenTelemetry bridge and an OTLP exporter unless the platform requires otherwise. On Spring Boot 4, the OpenTelemetry starter covers the same path with one dependency. The exporter is a dependency and a property; the instrumentation is identical either way.
 - Propagation is W3C `traceparent` by default. Do not invent a custom propagation header.
 - Auto-instrumentation covers inbound HTTP, outbound `RestClient` and `WebClient`, and scheduled tasks. Add manual spans only for a meaningful internal operation that auto-instrumentation cannot see.
 - Sampling is a deployed configuration decision. Do not hardcode a sampling probability in application code.
@@ -194,21 +241,52 @@ Tracing is optional and recorded in the project profile. When enabled:
 
 Assert that instrumentation exists, not that it produced a particular number.
 
-```java
-@Test
-void create_whenRequestIsValid_recordsCreationTimer() {
-    this.userService.create("ana", "ana@example.com", "raw-password");
+**An `ObservationRegistry` produces no meters on its own.** It publishes observations; turning those
+into timers is the job of a handler, which Spring Boot wires for you in the application context and
+which a unit test has to register itself. Without the handler the assertion below fails with the
+meter simply absent, which reads as a missing instrumentation bug in production code that is in fact
+correct. This is the whole of the setup:
 
-    assertThat(this.meterRegistry.find("user.creation")
-            .tag("outcome", "success")
-            .timer())
-        .isNotNull()
-        .extracting(Timer::count)
-        .isEqualTo(1L);
+```java
+@ExtendWith(MockitoExtension.class)
+class UserServiceObservationTest {
+
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final ObservationRegistry observationRegistry = ObservationRegistry.create();
+
+    @Mock
+    private UserRepository userRepository;
+
+    private UserService userService;
+
+    @BeforeEach
+    void setUp() {
+        this.observationRegistry.observationConfig()
+                .observationHandler(new DefaultMeterObservationHandler(this.meterRegistry));
+        this.userService = UserTestData.userServiceWith(
+                this.userRepository, this.observationRegistry);
+    }
+
+    @Test
+    void create_whenRequestIsValid_recordsCreationTimer() {
+        this.userService.create("ana", "ana@example.com", "raw-password");
+
+        assertThat(this.meterRegistry.find("user.creation")
+                .tag("outcome", "success")
+                .timer())
+            .isNotNull()
+            .extracting(Timer::count)
+            .isEqualTo(1L);
+    }
 }
 ```
 
-- Use `SimpleMeterRegistry` in unit tests, and the application's registry in integration tests.
+`UserTestData` is the per-aggregate factory declared in
+[`spring-boot-testing` → test-data factory](../../spring-boot-testing/references/unit-test-examples.md#test-data-factory);
+`userServiceWith` is one more scenario method on it, so the subject's remaining constructor
+arguments do not have to be restated in every observation test.
+
+- Use `SimpleMeterRegistry` in unit tests **with the meter observation handler registered against it**, and the application's registry in integration tests, where auto-configuration has already registered one.
 - Assert the meter name and the tags, because those are the contract a dashboard and an alert depend on.
 - Do not assert timing values; they are nondeterministic.
 - Assert that a failure path increments its counter, and that a failing operation is tagged `outcome=failure`. Those two assertions catch silent degradation and the mis-set outcome tag, and they are the ones most often missing.

@@ -1,6 +1,6 @@
 ---
 name: spring-data-jpa
-description: Spring Data JPA and Hibernate patterns for Java 21+ applications on any supported relational database. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, schema migrations, database reads or writes, or transactional behavior. Covers mapping, associations, fetch plans, queries, transactions, pagination, locking, migrations, and persistence tests.
+description: Spring Data JPA and Hibernate patterns for Java 21+ applications on any supported relational database. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, database reads or writes, or transactional behavior. Covers mapping, associations, fetch plans, queries, transaction behavior, pagination, locking, and persistence tests. Schema migration files belong to sql-database-migration.
 ---
 
 # Spring Data JPA Skill
@@ -10,295 +10,296 @@ Design persistence for correctness, predictable SQL, and verified performance. J
 ## Coordination with other skills
 
 This skill owns JPA and database behavior beneath the service boundary. Use the architecture,
-terminology, mapper directions, and package responsibilities from `spring-boot-patterns`, and do not
-restate an owner's rules here:
+terminology, mapper directions, and package responsibilities from `spring-boot-patterns`.
 
-| Owner | Owns |
-| --- | --- |
-| `modern-java-21` | Java style, imports, Javadoc, source structure |
-| `spring-boot-patterns` | Controller, service, domain, and mapper boundaries, and where the transaction boundary sits; this skill owns transaction behavior inside it |
-| `spring-boot-testing` | Test scope, fixtures, isolation, execution; this skill owns the JPA scenarios they prove |
-| `application-security` | Confidential data, tenant and object ownership, encryption, audit, backups, dangerous query input |
-| `observability-and-logging` | Log levels and placement, including that the service records the operation, not the repository |
-| `build-and-dependencies` | Driver, migration-tool, and annotation-processor declarations |
-| `project-naming-conventions` | Entity, repository, table, column, constraint, index, and migration names |
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what and carries
+the precedence order for a genuine conflict. Read it there rather than from a copy here. The seams
+this skill crosses most often:
 
-This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier strategies.
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Transactions | what the settings mean: propagation, isolation, `readOnly`, flush | `spring-boot-patterns` owns which method carries them |
+| Locking | `@Version`, lock modes, and the retry mechanism | `spring-boot-patterns` owns which layer the retry annotation sits on |
+| Schema | what the schema must look like for a mapping to work | `sql-database-migration` owns the migration file that creates it |
+| Persistence tests | which JPA scenarios need proof | `spring-boot-testing` owns scope, fixtures, and execution |
+| The second-level and query caches | the mapping, the regions, and the provider settings | `application-caching` owns that they are caches: the profile gate, the concurrency strategy, and whether the query cache is worth having |
+| Tenancy | the mapping and the mechanism that puts the tenant into the SQL | `application-security` owns the model, where the tenant is read from, and that every path is scoped |
+
+This skill is database-agnostic. Inspect the configured database and Hibernate dialect before using
+vendor-specific SQL, types, indexes, hints, locking options, migration syntax, or identifier
+strategies.
 
 ## Reference routing
 
-Read only the examples required by the change:
+The references are part of this skill's rules, not illustrations of them, and several rule sets live
+only there. Read the one the change touches, and only that one:
 
-- Read [entity and query examples](references/entity-and-query-examples.md) for mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths.
-- Read [write and locking examples](references/write-and-locking-examples.md) for bulk DML, persistence-context synchronization, or pessimistic locking.
+- [Entity and query examples](references/entity-and-query-examples.md) for mappings, association ownership, repository design, projections, dynamic and sargable queries, pagination and scrolling, SQL and index performance, and the read-side anti-patterns.
+- [Locking and retry examples](references/locking-and-retry-examples.md) for optimistic and pessimistic locking, the atomic conditional `UPDATE` that is the third strategy, the composed retry annotation for both generations, lock timeouts and ordering, and the concurrency anti-patterns.
+- [Write behavior examples](references/write-behavior-examples.md) for flush timing, bulk DML, large batches, and the write-side anti-patterns.
+- [Applying the tenant scope](references/entity-and-query-examples.md#applying-the-tenant-scope) *(rules)* whenever the profile records a tenancy model other than `single-tenant`: the mechanism per model, and the statements it does not reach.
+- [Resource bounds](references/resource-bounds.md) *(rules)* for how a statement, transaction, connection-acquisition, or pool bound is actually applied: the three levels a bound can sit at, the delivery channel each engine offers and why they all share one, the migration exception, and the tests that prove a bound is real.
 
 ## Before changing persistence
 
-Read `docs/project-profile.md` first, whose template `spring-boot-patterns` owns. It records the
-relational database engine and major version, the migration tool, the entity accessor style, and the
-identifier strategy. When it does not, or when the repository contains no database dependency,
-no datasource configuration, and no migration directory, **ask the user which database engine and
-version and which migration tool the project uses, and record the answer in the profile before
-writing persistence code**. Do not pick a database, a dialect, an identifier strategy, or a
-migration tool by default, and do not infer the production database from a test dependency such as
-H2.
+Read `docs/project-profile.md` first, whose template `project-decision-profile` owns. It records the
+relational database engine and major version, the entity accessor style, and the identifier
+strategy. When it does not, or when the repository contains no database dependency and no datasource
+configuration, **ask the user which database engine and version the project uses, and record the
+answer in the profile before writing persistence code**. That is an `ASK` decision in the token
+vocabulary `project-decision-profile` defines: it blocks. Never pick a database, a dialect, or an
+identifier strategy by default, and never infer the production database from a test dependency such
+as H2. `sql-database-migration` settles which migration tool the project uses.
 
-Apply `build-and-dependencies` for the driver, migration-tool, and annotation-processor declarations
-that this skill depends on; it owns the build files, and this skill owns the persistence behavior
-they enable.
+`build-and-dependencies` owns the driver, migration-tool, and annotation-processor declarations this
+skill depends on; state the requirement to it rather than editing a build file from here. This skill
+owns the persistence behavior they enable.
 
 Then inspect:
 
-1. Spring Boot, Spring Data JPA, Jakarta Persistence, Hibernate, JDBC driver, database, and migration-tool versions;
+1. Spring Boot, Spring Data JPA, Jakarta Persistence, Hibernate, driver, database, and migration-tool versions;
 2. entity mappings, association ownership, converters, listeners, inheritance, identifier generation, and equality;
-3. service transaction boundaries and every caller affected by the change;
-4. schema migrations, constraints, indexes, column types, defaults, and expected data volume;
+3. service transaction boundaries and every caller the change affects;
+4. migrations, constraints, indexes, column types, defaults, and expected data volume;
 5. query cardinality, selectivity, ordering, pagination, read/write ratio, and concurrency;
-6. generated SQL and database execution plans for important access paths;
+6. generated SQL and execution plans for important access paths;
 7. repository, migration, locking, query-count, and database integration tests.
 
 Do not copy a nearby persistence pattern before understanding its generated SQL and lifecycle behavior.
 
+## Spring Boot 3 and 4
+
+Both generations are supported, and `docs/project-profile.md` records which one applies. No mapping,
+association, query, transaction, or locking rule changes between them: JPA semantics are the same,
+and a correct entity stays correct. Only naming and versions differ — the Jakarta Persistence and
+Hibernate lines, the `@EntityScan` package, the exception-translation property, the static metamodel
+processor artifact, and the Spring Data JPA line. `build-and-dependencies` owns all of those
+coordinates in
+[generation differences](../build-and-dependencies/references/generation-differences.md), and the
+effective versions are read from the build, never from a written-down table.
+
+A provider major version is not a formatting change. Hibernate 7 tightens specification conformance
+where Hibernate 6 was lenient, so a mapping, an HQL query, or a lifecycle assumption that worked
+before can now be rejected or produce different SQL. On an upgrade, verify the generated SQL and the
+execution plans for the important access paths again rather than assuming the previous verification
+still holds. On a new project, this is simply the behavior being designed against.
+
 ## Entity mapping
 
-Entity rules:
-
-- Do not use records as entities. Records may be embeddables only when supported by the configured provider and project version.
+- Never use records as entities. A record may be an embeddable only when the configured provider and project version support it.
 - Keep entities and persistent accessors non-final unless verified bytecode enhancement removes proxy limitations.
 - Provide a `protected` no-argument constructor when possible.
-- Use field or property access consistently; place mapping annotations according to the chosen strategy.
-- Use one accessor style across every entity, recorded in `docs/project-profile.md`. The examples use fluent setters returning the entity; plain `void` setters are equally acceptable. Do not mix the two.
-- Expose the getters required by persistence-to-domain mapping. With field access, JPA does not require public accessors, but mapping code must still be able to read the selected state.
+- Use field or property access consistently, and place mapping annotations according to the chosen strategy.
+- Use one accessor style across every entity, recorded in `docs/project-profile.md`. The examples use fluent setters returning the entity; plain `void` setters are equally acceptable. Never mix the two.
+- Expose the getters persistence-to-domain mapping requires. Field access needs no public accessors, but mapping code must still be able to read the selected state.
 - Keep entity mappings, migrations, and database definitions aligned for names, nullability, length, precision, scale, uniqueness, defaults, foreign keys, and indexes.
 - Database constraints enforce integrity; application validation does not replace them.
-- Use `@Version` when concurrent updates must not silently overwrite each other. Never modify the version value in application code.
+- Use `@Version` when concurrent updates must not silently overwrite each other, and never assign the version value in Java: it is provider-owned, no setter is written for it, and it is never copied from a request. The one place a version is written deliberately is a bulk statement, which bypasses the provider's own increment and must therefore carry it — [write behavior examples](references/write-behavior-examples.md#bulk-dml) states how, and Jakarta Persistence requires it of a portable application.
 - Prefer `EnumType.STRING`; treat enum renames as data migrations.
-- Define timestamp/timezone policy explicitly and use `BigDecimal` precision and scale for fixed-decimal columns.
+- Define timestamp/timezone policy explicitly, and use `BigDecimal` precision and scale for fixed-decimal columns.
 - Choose identifier generation for the actual database and verify its effect on batching and round trips.
 - Never use Lombok `@Data` on entities.
+- Keep entity listeners limited to persistence concerns; never perform repository or remote calls from callbacks.
 - Implement `equals` and `hashCode` explicitly using the strategy below, excluding lazy associations and mutable state from them and from `toString`. Never let Lombok, an IDE template, or a record-like default generate them, and never leave the JVM identity default in place when instances enter a `Set`, a `Map`, or a bidirectional collection. Test equality across transient, managed, detached, and proxied instances.
 
 ### Entity equality strategy
 
 Choose per entity, in this order:
 
-1. **Stable natural key.** When the entity has an immutable, non-null business key assigned before persistence, such as an ISO country code or an externally issued order number, compare on that key and derive `hashCode` from it. This is the preferred strategy because the contract holds in every state.
+1. **Stable natural key.** When the entity has an immutable, non-null business key assigned before persistence — an ISO country code, an externally issued order number — compare on that key and derive `hashCode` from it. Preferred, because the contract then holds in every state.
 2. **Surrogate identifier with a constant hash.** Otherwise compare on the surrogate identifier and return a constant `hashCode`. A constant hash is required, not a shortcut: the identifier is null before persistence and assigned afterwards, so any identifier-derived hash changes while the instance sits in a hash-based collection.
 
-```java
-@Override
-public boolean equals(final Object other) {
-    if (this == other) {
-        return true;
-    }
-    if (!(other instanceof UserEntity otherUser)) {
-        return false;
-    }
+Rules for the surrogate strategy, shown as working code on `UserEntity` in
+[entity and query examples](references/entity-and-query-examples.md):
 
-    return this.id != null && this.id.equals(otherUser.getId());
-}
-
-@Override
-public int hashCode() {
-    return UserEntity.class.hashCode();
-}
-```
-
-Rules for this strategy:
-
-- `instanceof` with pattern matching is the type check: it accepts a provider proxy of the same entity, so no provider-specific class unwrapping is needed or used here. Read the other identifier through its getter, never the field, so a proxy resolves.
+- `instanceof` with pattern matching is the type check: it accepts a provider proxy of the same entity, so no provider-specific unwrapping is needed. Read the other identifier through its getter, never the field, so a proxy resolves.
 - Two transient instances are never equal, and a transient instance is never equal to a persisted one. That is the intended contract.
 - Return a constant class-derived `hashCode`. Not `Objects.hash(id)`, which breaks on persist, and not `getClass().hashCode()`, which differs between an entity and its proxy.
 - Exclude mutable columns, versions, associations, and collections from both methods, and apply the same strategy to every entity so collection behavior is uniform.
-- Keep entity listeners limited to persistence concerns; never perform repository or remote calls from callbacks.
 
 ## Association ownership
 
-- Set to-one associations to `LAZY` explicitly unless a measured access path proves another choice.
-- Treat fetching as a query/use-case decision, not an entity-wide default.
-- Cascade only lifecycle operations owned by the aggregate; never default to `CascadeType.ALL`.
-- Never cascade remove from a child or shared reference to its parent.
-- Use `orphanRemoval` only when removing the child from the owning collection must delete it.
-- Use unidirectional associations by default.
-- Introduce a bidirectional association only when concrete use cases require navigation in both directions.
-- Keep both sides of every bidirectional association synchronized through explicit helper methods.
-- Choose `List`, `Set`, or `Map` from business and ordering semantics.
-- Query large child sets separately instead of exposing unbounded entity collections.
-- Model a many-to-many join table as an entity when it has attributes, ordering, audit data, identity, lifecycle, or independent constraints.
+`spring-boot-patterns` decides which entities form one aggregate, and that decision constrains every
+mapping: an association may only exist inside an aggregate. The rules that follow from it — the
+identifier reference across a boundary, values copied so history cannot change retroactively,
+explicit `LAZY` to-one associations, cascade and `orphanRemoval` behavior, bidirectional
+synchronization, collection type, and when a join table becomes an entity — are stated in full in
+[entity and query examples](references/entity-and-query-examples.md).
 
-## Repository design
+## Tenant scoping
 
-- Use derived queries while their names remain short and their generated predicates are appropriate.
-- Use explicit JPQL when derivation becomes ambiguous or hides important joins.
-- JPQL uses entity and attribute names, not table and column names.
-- Bind values through parameters; never concatenate data into JPQL or SQL.
-- Use `Optional` for an optional single result and `existsBy...` when only presence is needed.
-- Bound every result that can grow with production data.
-- Do not invoke inherited destructive or unbounded methods on production-sized data without a bounded use case. When preventing those calls at the repository API is a project requirement, define and verify a tailored base repository instead of assuming `JpaRepository` hides them.
-- Use a custom repository for queries clearer with Specifications, Criteria, Querydsl, `EntityManager`, or native SQL.
-- Consume repository `Stream<T>` results inside the required transaction and close them with try-with-resources; never return an open stream across the service boundary.
-- Add Javadoc only when locking, timeout, fetch, ordering, native-SQL, or consistency semantics are non-obvious.
+`application-security` owns the tenancy model recorded in `docs/project-profile.md` and the rule that
+the tenant comes from a verified claim. This skill owns only the mechanism that puts it into the SQL,
+and it is stated in full in
+[applying the tenant scope](references/entity-and-query-examples.md#applying-the-tenant-scope).
 
-## Read projections
+Two consequences belong here because they change the rules above rather than the queries:
 
-- Use projections for bounded read paths that need only selected columns.
-- A persistence projection is neither a TO nor a domain result; map it before leaving the service.
-- Keep interface projections closed and top-level. Nested properties can materialize joins and more data than expected.
-- Avoid `Object[]`, raw `Tuple`, and `Map<String, Object>` as cross-layer contracts.
-- Cover native projections with integration tests against the supported database.
+- **The mechanism is provider-level, chosen once for the project.** A predicate each repository method is expected to remember is one a method will forget, and a forgotten tenant predicate returns rows rather than an error.
+- **It does not reach statements the provider did not compose** — native SQL, bulk DML, routines and views — and under a discriminator model each of those is an unscoped statement until it carries the predicate itself. Verify against the generated SQL, exactly as this skill requires for the version column in bulk DML.
+
+While the profile records `single-tenant`, none of this applies: do not add a tenant column, a
+resolver, or a predicate. `application-security` owns that guard.
 
 ## N+1 and fetch plans
 
-Choose the smallest suitable fetch mechanism:
-
-1. projection for a read-only subset;
-2. `@EntityGraph` for a known entity graph;
-3. fetch join for a controlled association shape;
-4. provider-supported batch fetching for intentional lazy traversal.
+Choose the smallest suitable fetch mechanism, in this order: a projection for a read-only subset;
+`@EntityGraph` for a known entity graph; a fetch join for a controlled association shape;
+provider-supported batch fetching for intentional lazy traversal.
 
 - Do not solve N+1 with blanket `EAGER` fetching.
-- Disable Open EntityManager in View for REST services with `spring.jpa.open-in-view=false`.
-
+- Disable Open EntityManager in View for REST services with `spring.jpa.open-in-view=false`, and never enable `hibernate.enable_lazy_load_no_trans`. Both let lazy loading succeed outside the service transaction, so the queries appear at rendering time where no service test observes them.
 - Resolve `LazyInitializationException` by fetching required state inside the service transaction.
-- Check mapper, logging, debugger, `equals`, `hashCode`, and `toString` access for accidental lazy loading.
+- Check mapper, serializer, logging, debugger, `equals`, `hashCode`, and `toString` access for accidental lazy loading.
 - Do not fetch-join multiple collections without proving cardinality and provider behavior.
 - Do not combine collection fetch joins with pagination. Page root identifiers first and load the required graph in a bounded second query, or use a projection.
-- Do not use `distinct` to hide a cartesian product or incorrect fetch plan.
+- Do not use `distinct` to hide a cartesian product or an incorrect fetch plan.
 - Add query-count tests for N+1-sensitive flows.
 
-## Sargable and dynamic queries
+## Repositories, queries, and access paths
 
-- Build only required predicates for optional filters.
-- Prefer the JPA static metamodel or Querydsl for non-trivial dynamic queries; raw attribute-name strings fail only at runtime after incompatible refactoring.
-- Normalize values according to the business contract before querying; do not apply functions to indexed columns by habit.
-- Functions, casts, arithmetic, and implicit type conversion on indexed columns can prevent normal index access.
-- Avoid leading-wildcard searches on large tables unless a suitable search/index feature is deliberately used.
-- Bound `IN` collections; use chunking or a measured database-specific bulk strategy for very large sets.
-- Never issue a repository query inside a per-row loop when one set-based query can retrieve the data.
-- Allowlist sort fields and directions; never pass user input to `JpaSort.unsafe`.
+The complete rules for repository design, read projections, sargable and dynamic queries, pagination
+and keyset scrolling, and SQL and index performance are stated in
+[entity and query examples](references/entity-and-query-examples.md), beside the queries they
+govern. Read that file before writing or reviewing any of them; none of it is decided here.
 
-## Pagination and scrolling
-
-- Enforce maximum page size at the REST boundary.
-- Always sort deterministically with a unique tie-breaker.
-- Use `Page` only when the caller needs a total and the count query is acceptably cheap.
-- Use `Slice` when only next-page information is needed.
-- Prefer keyset scrolling for deep or high-volume traversal when the API can represent a cursor.
-- Keyset sort columns must be non-null, deterministic, and supported by an effective index.
-- Never paginate or sort database-sized results in memory.
-- Supply an explicit `countQuery` when a complex or native paged query cannot be derived correctly or efficiently.
-
-## SQL and index performance
-
-- Inspect generated SQL for every complex or high-volume query.
-- Use the supported database's execution-plan tool with representative statistics and data volume.
-- Select only required columns for read-heavy paths; avoid loading full entities and LOBs for summaries.
-- Align composite index order with actual equality, range, join, and sort predicates.
-- Avoid redundant and speculative indexes because each index adds storage and write cost.
-- Index foreign-key and join columns when required by the database and access paths.
-- Prevent accidental cartesian products and duplicate rows from incorrect joins.
-- Use existence queries instead of counting all rows when only presence is required.
-- Apply tenant and soft-delete predicates to derived, JPQL, native, bulk, and count queries.
-- Include tenant keys in relevant unique constraints and indexes for tenant-scoped data.
-- Configure query or transaction timeouts for bounded operational work.
-- Use native SQL only for a concrete feature, portability, or measured performance reason.
-
-## Transactions and flush behavior
+## Transaction behavior
 
 `spring-boot-patterns` owns where the boundary sits: which method carries `@Transactional`, proxy
 semantics, and how long a transaction may stay open. This section owns what happens inside it.
 
 - Use `readOnly = true` for read operations as an optimization hint, not as an authorization guarantee.
-- Use `REQUIRES_NEW` only for a documented consistency reason and account for extra connection demand.
-- Follow the complete explicit update-and-save structure owned by `spring-boot-patterns`; do not
-  replace it with a dirty-checking-only implementation.
-- Treat flush timing separately from update intent. JPA can synchronize managed state at flush or
-  commit even when the project requires an explicit repository `save` call.
-- Use `flush` or `saveAndFlush` only when subsequent logic must observe database synchronization immediately, such as a deliberately handled constraint failure or database-generated effect; document and test that reason.
-- Never call `saveAndFlush` for every item in a loop.
-- Remember that JPQL/HQL and some native queries can trigger an automatic flush before query execution.
+- `readOnly` takes effect only where the transaction actually starts. On a method that joins an existing write transaction the attribute is ignored, so declaring it there proves nothing and reads as a guarantee the code does not have.
+- Use `REQUIRES_NEW` only for a documented consistency reason, and account for the extra connection demand.
+- Follow the complete explicit update-and-save structure owned by `spring-boot-patterns`; do not replace it with a dirty-checking-only implementation.
+- Never rebuild a detached entity from client input and save it as an update. Every field the client did not send is written too, so an omitted field becomes a silent overwrite that no validation reports.
 - Choose isolation levels from actual anomalies and database behavior.
 
-## Bulk DML and large batches
+## Flush behavior, bulk DML, and large batches
 
-- Bulk JPQL/Criteria updates and deletes bypass entity synchronization, callbacks, cascades, and optimistic-lock checks.
-- Invoke bulk DML through an active write transaction owned by a public service method.
-- Flush pending changes first when required and clear or refresh affected managed state deliberately.
-- Pair `clearAutomatically = true` with `flushAutomatically = true` when pending changes must not be discarded.
-- Return and verify the affected row count when it is part of correctness.
-- Prefer set-based DML over loading thousands of entities only to update or delete them.
-- Process large entity batches in bounded chunks and clear the persistence context between chunks.
-- `saveAll` is not proof of JDBC batching; configure and verify batching for the provider, database, and identifier strategy.
-- Never retain an unbounded number of managed entities in one persistence context.
+The complete rules for flush timing and explicit synchronization, for bulk JPQL and Criteria DML,
+and for bounded batch processing are stated in
+[write behavior examples](references/write-behavior-examples.md). Read it before writing a
+`@Modifying` query, a `flush` or `saveAndFlush` call, or a loop that touches thousands of rows.
 
 ## Concurrency and locking
 
-- Prefer optimistic locking with `@Version` for normal concurrent editing.
-- Translate lock failures into a stable conflict or retry contract at the service boundary.
-- Retry only when the complete operation is safe to repeat.
-- Use pessimistic locking only when measured contention and invariants justify blocking.
-- Invoke pessimistic-lock repository methods only inside an active transaction and complete all locked work before that transaction ends.
-- Configure lock timeouts where supported and lock multiple rows in a consistent order.
-- Keep locked transactions especially short.
+- **Choose the strategy per operation, not per entity.** There are three, and all three appear in most applications, frequently on the same aggregate: editing a product is optimistic, reserving its stock is pessimistic, decrementing it by a fixed amount is one conditional `UPDATE`. Optimistic is the default because it costs nothing when nothing collides.
+- **The application absorbs contention; the caller does not.** Repeat the operation through the project's composed `@OptimisticLockingRetry` annotation at the use-case boundary, and surface `409 Conflict` only when the retry policy is exhausted. Never answer routine contention by asking the caller to send the request again, and never write a retry loop by hand.
+- That annotation composes `@Transactional` with the generation's declarative retry so the retry advice wraps the transaction and each attempt gets a fresh one. **Both generations document interceptor orders that already produce that arrangement, so leave them at their defaults** — an explicit order that restates a default is a second source of truth. Prove it anyway with a test that counts committed attempts: the defaults are documented, not enforced, and another advisor in the project can invert them while the configuration still reads as correct. Never catch the optimistic failure below the annotation: an aggregate service performs the write and lets the version check surface at commit.
+- Retry only when the complete operation is safe to repeat: it recomputes from state it re-reads and has produced no external side effect.
+- Retry cannot prevent a stale-client overwrite, where a caller submits values computed from state it no longer has. That needs a version supplied by the caller — a read-only field in the update TO, or `ETag` with `If-Match` — and `docs/project-profile.md` records which, or records that every write is transformational and neither is needed. A caller-supplied version is verified, never assigned to `@Version`.
+- Use a pessimistic lock when the invariant requires blocking — allocating limited stock, seats, or a numbered sequence, claiming a work item, or protecting an invariant spanning rows. Those need a mechanism stronger than retry, and none of them waits on a measurement. Only buying a lock purely for throughput on a hot row requires evidence from production.
+- **Prefer one atomic conditional `UPDATE` over the lock where the whole rule fits one row and one `WHERE` clause** — a decrement that must not go negative, a status claim that exactly one worker may win. The affected row count is the business answer, and the row is held from the statement to the commit rather than from the read to the commit, so every caller queued behind it holds a connection for less time. It is bulk DML, so it carries every bulk consequence: read [locking and retry examples](references/locking-and-retry-examples.md#atomic-conditional-dml) before choosing it, and take the lock instead when the decision spans rows, needs application logic between reading and writing, or feeds later work in the same transaction.
+- `@Version` is a property of the entity, not of an operation, so it cannot exist for only some methods. Keep it whenever any path to that entity uses optimistic concurrency, including paths that also take a pessimistic lock. An entity reached exclusively under a pessimistic lock does not need it, and adding one there buys nothing.
+- Modifying a pessimistically locked entity increments the version through the ordinary update, so a concurrent optimistic **writer** still sees the conflict. Locking without modifying does not; `PESSIMISTIC_FORCE_INCREMENT` exists for that case.
+- Never add `PessimisticLockingFailureException` or `CannotAcquireLockException` to the optimistic retry annotation. A lock timeout means another caller holds the row, and retrying immediately lengthens the queue. Decide retry for a locked path separately, with a smaller attempt count.
+- **The two contention failures are different conditions, and neither is caught in a service.** An exhausted optimistic retry means the row genuinely changed under the caller; a lock timeout, deadlock victim, serialization failure, or a statement the database cancelled while it waited means the row was held and the wait expired. Both surface from the transaction interceptor after the method body returned, so both are translated in the REST exception advice, from the Spring framework types rather than a project exception. `spring-boot-patterns` decides what each one shows the caller — and it gives them **different** statuses, so do not declare them as one condition.
+- Invoke pessimistic-lock repository methods only inside an active transaction, and complete all locked work before that transaction ends.
+- **Bound every lock wait, and verify the mechanism against the configured engine.** A positive `jakarta.persistence.lock.timeout` is honoured by very few engines — on PostgreSQL it is ignored outright, and the wait is then bounded only by the statement timeout, which cancels the statement and surfaces as `QueryTimeoutException` rather than as a lock failure. [Lock timeouts](references/locking-and-retry-examples.md#lock-timeouts) carries the mechanism per engine and the rule that the timeout is recorded once and read, never retyped. Lock multiple rows in a consistent order, and keep locked transactions especially short.
 - Enforce uniqueness with a database constraint and handle the race after an application existence check.
-- Remember that bulk DML bypasses normal optimistic version checks.
+- Remember that bulk DML bypasses normal optimistic version checks, so it can overwrite a concurrent edit with no exception anywhere. It bypasses the second-level cache the same way, where one is enabled — `application-caching` owns that consequence.
+
+[Locking and retry examples](references/locking-and-retry-examples.md) carries the
+strategy-selection table, the `@Version` mapping, the retry-versus-client-version decision, the
+`@OptimisticLockingRetry` annotation for both generations, lock timeouts, lock ordering, and the
+rejected forms. Read it before adding any lock: the three mistakes it prevents — a `catch` that
+never fires because the version check happens at commit, a retry that reuses the failed transaction,
+and a retry that silently overwrites a concurrent edit because the values never came from the
+re-read — all compile and all pass a single-threaded test.
 
 ## Schema migrations
 
-- Use the project's Flyway or Liquibase convention as schema source of truth.
-- Do not use Hibernate auto-DDL to create or update production schemas.
-- Give constraints and indexes stable, explicit names.
-- Keep migrations compatible with rolling deployments.
-- Use expand-and-contract for incompatible changes.
-- Do not run massive blocking backfills in application-startup migrations without lock, duration, recovery, and rollout analysis.
-- Separate large data backfills from schema changes when operational control is required.
-- Evaluate vendor-specific online/concurrent index features for large production tables.
-- Verify clean installation from an empty isolated production-engine database and the affected
-  application mappings. Migration checksum or syntax validation supplements runtime verification.
+`sql-database-migration` owns migration files, ordering, expand-and-contract, backfills, seed data,
+and verification. This skill owns only what the schema has to look like for the mappings to work.
+
+- Every mapping change this skill produces requires a migration in the same commit. Do not treat schema generation as a substitute.
+- `sql-database-migration` sets the Hibernate schema-generation mode. What matters here is the consequence: with validation on, a mapping that has outrun its migration fails at startup rather than at the first query, so treat that failure as a missing migration.
+- Give constraints and indexes explicit names in the mapping and in the migration, and keep them equal. `project-naming-conventions` owns the form.
+
+## Resource budgets
+
+Every rule above shapes *what* the database does. This section is about *how long* and *how much*,
+and it is the half that decides whether a slow dependency degrades one request or the whole
+application. `docs/project-profile.md` records the numbers under **Performance and capacity**; this
+skill owns what they mean and what happens when one is missing.
+
+**A default that is "no limit" is the dangerous kind, because nothing reports it.** An unbounded
+statement holds its connection; a held connection is one the pool cannot hand out; an exhausted pool
+turns a slow query on one endpoint into a timeout on every endpoint. That chain is the reason these
+are bounds rather than tuning.
+
+- **Set a statement timeout at the connection level**, so it covers every statement the connection carries and not only the queries the application issues itself. Keep it below the request budget `spring-boot-patterns` records: a statement still running after the caller gave up is pure cost.
+- **Set a transaction timeout**, project-wide by default and tighter where a use case needs it, at or below the request budget and never below the statement timeout. It bounds the whole unit, including the parts between statements — and a read needs one as much as a write does, because `readOnly` bounds nothing.
+- **Size the connection pool from the engine's limit and the instance count**, not from a guess. Pool size × instances must stay within what the database accepts, with headroom for migrations and operators. A larger pool is not faster: past the point the database can execute concurrently, it converts queuing in the application into queuing in the engine, where it is harder to see.
+- **Bound the wait for a connection**, and keep it short. A long acquisition wait does not prevent exhaustion; it hides it, by turning a fast failure into a stalled request.
+- **Enable JDBC batching deliberately and verify it in the generated SQL.** `saveAll` is not batching, and the identifier strategy can silently disable it.
+- **Every read that can grow is already bounded** by the pagination rules above; the maximum page size is recorded with the rest of these numbers so it is one decision rather than a constant somebody re-picks.
+
+**How each of those is applied is stated once, in
+[resource bounds](references/resource-bounds.md)** — the three levels a bound can sit at and which
+one is the real one, the delivery channel each engine offers, the rule that every connection-level
+setting shares one channel, why migrations must not inherit the application's bounds, and the test
+that proves each bound rather than reading it. Read it before configuring or reviewing any of these
+numbers; a bound the engine ignores looks exactly like a bound that works.
+
+Two consequences worth stating, because they are where these bounds actually get lost:
+
+- **`REQUIRES_NEW` doubles the connection demand** for the duration of the inner transaction, since the outer one stays open. Account for it in the pool size, or do not use it.
+- **A lock wait sits inside all of this.** The pessimistic lock timeout the profile records is bounded for the same reason, and it must be below the statement timeout, not merely below the request budget. A timeout the engine ignores is the worst case in this whole section: it reads as bounded, the wait falls through to the statement timeout instead, and the failure arrives as a different exception type than the contract expects.
+
+What this skill does **not** own is measurement: whether the application meets a latency target, and
+what a load test has to prove before a release. [`_core/README.md`](../_core/README.md) records that
+as an open gap rather than leaving it to be assumed.
+
+## The provider's own caches
+
+The first-level cache is the persistence context and is not optional: it is scoped to one
+transaction, and every rule in this skill about flush timing and stale managed entities is a rule
+about it.
+
+**The second-level cache and the query cache are different, and neither is this skill's to enable.**
+They are caches in the sense `application-caching` defines, so they sit behind the same profile gate
+as any other, need the same staleness budget, and carry a correctness decision — the concurrency
+strategy — that reads like a tuning attribute. This skill owns what the mapping and the region
+configuration look like once the decision is recorded; that skill owns whether it is recorded at all
+and what each strategy costs. **Do not enable either because a property exists.**
 
 ## Persistence tests and observability
 
 - Apply `spring-boot-testing` for test structure, data, isolation, and execution.
 - Use Testcontainers or an equivalent environment with the actual supported database engine; H2-only tests are not evidence of production behavior.
 - Test entity mappings, converters, constraints, generated identifiers, repository queries, projections, entity graphs, pagination, locking, bulk DML, and migrations where relevant.
-- Assert query counts for N+1-sensitive flows.
-- Test deterministic ordering and count queries separately from result queries.
+- Assert query counts for N+1-sensitive flows, and test deterministic ordering and count queries separately from result queries.
 - Test uniqueness races, optimistic conflicts, pessimistic timeouts, commit, and rollback behavior.
-- Enable SQL and bind logging only in safe local/test environments.
+- Enable SQL and bind logging only in safe local and test environments.
 - Compare representative execution plans before and after performance-sensitive query changes.
-- Monitor slow queries, transaction duration, connection-pool saturation, lock waits, deadlocks, rows examined, and database CPU/I/O.
+- Monitor slow queries, transaction duration, connection-pool saturation, lock waits, deadlocks, rows examined, and database CPU and I/O.
 
 ## JPA-specific anti-patterns
 
-Reject:
+The full catalogue sits beside the examples of each one: entity shape, fetch plans, query shape, and
+schema verification in [entity and query examples](references/entity-and-query-examples.md); write
+behavior in [write behavior examples](references/write-behavior-examples.md); concurrency policy in
+[locking and retry examples](references/locking-and-retry-examples.md). The ones that most often
+survive review:
 
-**Entity shape.** Records used as entities; Lombok `@Data` on entities; lazy or mutable associations
-in `equals`, `hashCode`, or `toString`; `CascadeType.ALL` without aggregate lifecycle ownership;
-cascade remove from a child or shared reference to its parent.
-
-**Fetch plans.** Blanket `FetchType.EAGER`; Open EntityManager in View and
-`hibernate.enable_lazy_load_no_trans`; N+1 queries hidden in mappers, serializers, logging, loops, or
-accessors; collection fetch joins combined with pagination; multiple collection fetch joins causing
-cartesian multiplication; `distinct` used to hide an incorrect join or fetch plan.
-
-**Query shape.** Unbounded repository reads, streams, association traversal, or `IN` predicates;
-full-entity loading where a bounded projection suffices; query-per-row loops; optional-filter `OR`
-queries and functions on indexed columns on hot paths without verified plans; leading-wildcard
-searches on large tables without a search index; unsafe user-controlled sorting; missing,
-ineffective, redundant, or speculative indexes.
-
-**Write behavior.** Detached entities reconstructed from client input and saved as updates;
-unnecessary early flushes and `saveAndFlush` inside per-row loops; bulk DML followed by use of stale
-managed entities; pessimistic locks without bounded scope and timeout consideration.
-
-**Schema and verification.** Production schema mutation through Hibernate auto-DDL; destructive
-one-step migrations and uncontrolled startup backfills; H2-only persistence verification for another
-production database.
+- A collection fetch join combined with pagination, or `distinct` used to hide the cartesian product it produces.
+- N+1 queries hidden in a mapper, a serializer, logging, a loop, or an accessor, where no single line looks like a query.
+- A mapping change merged without its migration, or with constraint and index names that differ from the migration's.
+- H2-only verification standing in for another production database.
+- A hand-written retry loop, or an optimistic failure caught below the composed annotation, which leaves the annotation as decoration.
 
 ## Completion checklist
 
 - [ ] Mappings, migrations, associations, cascades, and orphan behavior agree.
-- [ ] Fetch plans are explicit and N+1 risk is tested.
-- [ ] Queries are bounded, deterministic, and verified with generated SQL and representative plans.
+- [ ] Under a tenancy model other than `single-tenant`, the scope is applied by the project's one provider-level mechanism, every statement the provider did not compose carries the predicate explicitly, and a second tenant's credential is proven to receive the not-found contract.
+- [ ] Fetch plans are explicit; N+1 risk is tested.
+- [ ] Queries are bounded and deterministic, verified against generated SQL and representative plans.
 - [ ] Pagination, projections, transactions, bulk DML, and locking match the access path.
+- [ ] Contention is absorbed by the composed retry annotation at the use-case boundary, a test proves the retry advice wraps the transaction, and `409` reaches the caller only on exhaustion.
+- [ ] The advice translates the framework contention types themselves, so neither an exhausted retry nor a lock timeout reaches the catch-all as `500`, and the two are not declared as one condition.
+- [ ] Any operation that overwrites rather than recomputes uses the stale-write protection the profile records.
 - [ ] Tests run against the supported database and cover changed persistence behavior.
+- [ ] Statement, transaction, connection-wait, pool, and pessimistic-lock bounds come from the profile, fit inside the request budget, and no path was left with an unbounded default.
+- [ ] The lock timeout is applied through a mechanism the configured engine actually honours, proven by a test that a blocked lock fails within the bound rather than waiting.

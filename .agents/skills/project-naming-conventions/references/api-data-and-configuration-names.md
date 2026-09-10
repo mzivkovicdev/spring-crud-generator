@@ -2,6 +2,11 @@
 
 Use this reference for REST paths and parameters, JSON fields, OpenAPI components, error identifiers, database objects, migrations, Spring configuration, environment variables, profiles, and feature flags. Apply `spring-boot-patterns`, `spring-data-jpa`, and `application-security` for behavior and safety.
 
+**The rename-migration procedure lives only here.** `../SKILL.md` states the gate — a name that can
+escape its compilation unit is renamed as a migration — and routes the procedure, the compatibility
+mechanisms, and the never-rename list to [Migrate escaped names](#migrate-escaped-names). Read that
+section before renaming anything that leaves the file it is declared in.
+
 ## Contents
 
 1. [Preserve contracts before style](#preserve-contracts-before-style)
@@ -161,19 +166,25 @@ Examples:
 | `GET /users/{userId}/permissions` | `usersUserIdPermissionsGet` |
 | `POST /orders/{orderId}/cancellation` | `ordersOrderIdCancellationPost` |
 
-The controller handler method name must exactly match the corresponding `operationId`:
+The controller handler method name must exactly match the corresponding `operationId`. What follows
+is an excerpt of the `UserController` declared in
+[`spring-boot-patterns` → REST API examples](../../spring-boot-patterns/references/rest-api-examples.md#rest-controller),
+with only the annotation that carries the name added:
 
 ```java
 @Operation(operationId = "usersUserIdGet")
 @GetMapping("/{userId}")
-public ResponseEntity<UserTO> usersUserIdGet(@PathVariable final Long userId) {
+public ResponseEntity<UserProfileTO> usersUserIdGet(@PathVariable final Long userId) {
     return ResponseEntity.ok(
-            UserRestMapper.INSTANCE.mapUserDomainToUserTO(
-                    this.userService.getById(userId)
+            UserRestMapper.INSTANCE.mapUserProfileDomainToUserProfileTO(
+                    this.userManagement.getProfile(userId)
             )
     );
 }
 ```
+
+The response type and the service the handler calls are `spring-boot-patterns`' decisions. What this
+skill owns is that the method is named `usersUserIdGet` rather than `getUserById`.
 
 Apply the same rule to every controller operation:
 
@@ -223,9 +234,9 @@ the `ProblemDetail` body. Clients branch on it. `title` and `detail` are human-r
 carry no contract.
 
 ```text
-https://api.acme.example/problems/resource-not-found
-https://api.acme.example/problems/duplicate-email
-https://api.acme.example/problems/invalid-order-transition
+https://api.example.com/problems/resource-not-found
+https://api.example.com/problems/duplicate-email
+https://api.example.com/problems/invalid-order-transition
 ```
 
 Rules for the type URI:
@@ -288,7 +299,7 @@ Rules:
 - Do not call a non-unique index `uk_*` or a normal index `pk_*`.
 - Avoid reserved words and quoted mixed-case identifiers unless an existing schema requires them.
 - Account for database case folding, identifier length, schemas, catalogs, and vendor-specific object namespaces.
-- Apply tenant identifiers only where the relational model requires them; never embed actual tenant or customer names in object names.
+- Apply tenant identifiers only where the recorded tenancy model requires them — `application-security` owns that row, and under `single-tenant` there is no tenant column to name. Where there is one, use **one column name across every table**, `tenant_id` by default: a schema that alternates between `tenant_id`, `org_id`, and `account_id` for one concept is the case the one-word-per-concept rule exists to prevent, and here it also hides an unscoped table. Name a per-tenant unique constraint for the tenant and the business key together, `uk_<table>_tenant_id_<column>`, so the name says the uniqueness is per tenant; lead a tenant-scoped index with the same column, `ix_<table>_tenant_id_<columns>`. Never embed actual tenant or customer names in object names.
 
 Do not create or rename an index, constraint, table, or column merely to satisfy naming style. `spring-data-jpa` must establish the semantic and performance need.
 
@@ -418,6 +429,30 @@ Rules:
 - Treat provider-side project, environment, segment, and targeting-resource names as platform-owned; this reference owns the application flag key and its semantics.
 
 ## Migrate escaped names
+
+`../SKILL.md` states the gate — a name that can escape its compilation unit is renamed as a
+migration, and consumers are assumed unable to upgrade atomically. This section carries the procedure
+it routes to.
+
+### The procedure
+
+1. Inventory definitions and consumers with exact searches, generated-code inspection, schema or infrastructure references, and runtime configuration.
+2. Classify the name as internal source, public API, serialized data, persisted schema, configuration, message contract, cache namespace, or observability contract.
+3. Determine whether consumers can upgrade atomically.
+4. Choose a direct rename only for a fully internal, atomically deployable name.
+5. For a contract, use an approved compatibility mechanism: additive alias, deprecation, expand-and-contract migration, dual read/write, versioned schema, or resource replacement plan.
+6. Define removal criteria and an owner for every temporary alias. Never leave a compatibility name indefinitely.
+7. Update code, tests, schemas, documentation, generated clients, migrations, dashboards, alerts, configuration, and consumers in the required order. Coordinate platform-owned changes rather than editing them implicitly.
+8. Verify old, mixed-version, rollback, and new-only states wherever rolling deployment is possible.
+
+### Never rename
+
+- a public field, endpoint, problem type URI, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
+- a table, column, constraint, or index outside a migration;
+- a physical infrastructure resource under this skill alone — use the approved platform standard and a replacement plan;
+- a security-sensitive identifier without applying `application-security`.
+
+### Mechanism by name type
 
 Use the appropriate migration:
 

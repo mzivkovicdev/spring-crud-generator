@@ -1,18 +1,26 @@
 # Entity and Query Examples
 
-Use these examples when implementing or reviewing entity mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths. Apply every rule from `../SKILL.md`; imports are omitted.
+Use this file when implementing or reviewing entity mappings, associations, repositories, projections, fetch plans, dynamic queries, pagination, or SQL access paths. Apply every rule from `../SKILL.md`; imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+**This file carries rules, not only examples.** Association ownership, repository design, the
+tenant-scoping mechanism, read projections, sargable and dynamic queries, pagination and scrolling,
+SQL and index performance, and the read-side anti-pattern catalogue are stated here in full and
+nowhere else, because they apply while writing exactly this code. The `Rules` blocks below are as
+binding as `../SKILL.md`.
+
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
 1. [Entity mapping](#entity-mapping)
 2. [Association mapping](#association-mapping)
-3. [Repository and projection queries](#repository-and-projection-queries)
-4. [Fetch plans](#fetch-plans)
-5. [Dynamic queries](#dynamic-queries)
-6. [Pagination](#pagination)
-7. [SQL and indexes](#sql-and-indexes)
+3. [Applying the tenant scope](#applying-the-tenant-scope)
+4. [Repository and projection queries](#repository-and-projection-queries)
+5. [Fetch plans](#fetch-plans)
+6. [Dynamic queries](#dynamic-queries)
+7. [Pagination](#pagination)
+8. [SQL and indexes](#sql-and-indexes)
+9. [Read-side anti-patterns](#read-side-anti-patterns)
 
 ## Entity mapping
 
@@ -28,11 +36,17 @@ public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, updatable = false)
-    private Long id;
+    private @Nullable Long id;
 
     @Version
     @Column(name = "version", nullable = false)
-    private Long version;
+    private @Nullable Long version;
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE},
+            orphanRemoval = true)
+    private List<UserAddressEntity> addresses = new ArrayList<>();
 
     @Column(name = "username", nullable = false, length = 120)
     private String username;
@@ -68,11 +82,11 @@ public class UserEntity {
         this.createdAt = createdAt;
     }
 
-    public Long getId() {
+    public @Nullable Long getId() {
         return this.id;
     }
 
-    public Long getVersion() {
+    public @Nullable Long getVersion() {
         return this.version;
     }
 
@@ -94,6 +108,23 @@ public class UserEntity {
 
     public Instant getCreatedAt() {
         return this.createdAt;
+    }
+
+    public List<UserAddressEntity> getAddresses() {
+        return Collections.unmodifiableList(this.addresses);
+    }
+
+    /**
+     * Adds an address and enforces the aggregate's single-primary-address invariant.
+     *
+     * @param address address to attach
+     */
+    public void addAddress(final UserAddressEntity address) {
+        if (address.isPrimary()) {
+            this.addresses.forEach(existing -> existing.setPrimary(false));
+        }
+        this.addresses.add(address);
+        address.setUser(this);
     }
 
     public UserEntity setUsername(final String username) {
@@ -130,11 +161,16 @@ public class UserEntity {
 }
 ```
 
-This class is complete and compiles as written; copy its structure rather than a reduced version.
+This class is complete and compiles as written, and it is the **only** declaration of `UserEntity` in
+this skill set. Every other file that mentions it — the aggregate service in `spring-boot-patterns`,
+the mapper, the tests — refers to this one rather than declaring a variant. Copy its structure rather
+than a reduced version.
 
 Why each part is there:
 
 - The `protected` no-argument constructor belongs to the provider. The `public` constructor is the single creation path and is what `UserDomainMapper.mapToNewUserEntity` uses, so every mapped creation property is set exactly once.
+- `addresses` is the aggregate's child collection, and it carries the invariant rather than exposing it. `addAddress` clears any previous primary flag and keeps both sides of the association in step; `getAddresses` returns an unmodifiable view so no caller can bypass either. The collection is mapped inside the aggregate, which is the one place an association is allowed at all.
+- `orphanRemoval` is correct here precisely because an address cannot exist without its user. `CascadeType.ALL` is not used: removing a user is a decision for the aggregate service, not a side effect of a mapping.
 - MapStruct selects that constructor **because it is the only `public` one**. Widening the no-argument constructor to `public` would make MapStruct prefer it and silently produce an entity with every mapped property left null. Keep it `protected`, and treat a change to its visibility as a change to the mapping contract.
 - `id` and `version` are provider-owned. They have getters and no constructor parameter and no setter, so application code and MapStruct cannot write them.
 - Setters exist only for the fields a use case actually updates. Add another setter when a real operation needs it, not preemptively; a setter for `passwordHash` belongs to the credential-change operation that hashes the new value.
@@ -153,18 +189,145 @@ enum in the persistence boundary.
 
 ## Association mapping
 
+`spring-boot-patterns` decides which entities form one aggregate. That decision constrains every
+mapping here: an association may only exist inside an aggregate.
+
+Rules:
+
+- Reference another aggregate root by its identifier, as a plain column, never as a JPA association. A `@ManyToOne` across the boundary hands every caller a writable path into the other aggregate, and no service-layer rule can close it again.
+- Copy a value that must not change retroactively — a price at order time, a rate at signing — onto the referencing entity instead of reading it through an association. This is a business rule about history, not a performance choice.
+- Set to-one associations to `LAZY` explicitly unless a measured access path proves another choice.
+- Treat fetching as a query/use-case decision, not an entity-wide default.
+- Cascade only lifecycle operations owned by the aggregate; never default to `CascadeType.ALL`.
+- Never cascade remove from a child or shared reference to its parent.
+- Use `orphanRemoval` only when removing the child from the owning collection must delete it.
+- Use unidirectional associations by default.
+- Introduce a bidirectional association only when concrete use cases require navigation in both directions.
+- Keep both sides of every bidirectional association synchronized through explicit helper methods.
+- Choose `List`, `Set`, or `Map` from business and ordering semantics.
+- Query large child sets separately instead of exposing unbounded entity collections.
+- Model a many-to-many join table as an entity when it has attributes, ordering, audit data, identity, lifecycle, or independent constraints.
+
+The excerpt below is a field of `UserAddressEntity`, the
+child of the `users` root and the owning side of the collection declared on `UserEntity` above:
+
 ```java
 @ManyToOne(fetch = FetchType.LAZY, optional = false)
 @JoinColumn(
-        name = "customer_id",
+        name = "user_id",
         nullable = false,
-        foreignKey = @ForeignKey(name = "fk_orders_customer"))
+        foreignKey = @ForeignKey(name = "fk_user_address_user"))
+private UserEntity user;
+```
+
+`UserAddressEntity` follows the same shape as `UserEntity` above: a `protected` no-argument
+constructor, one `public` constructor taking the owning user and the address values, and setters only
+where a use case updates. The members the rest of this skill set refers to are `isPrimary()`,
+`setPrimary(boolean)`, and the package-visible `setUser(UserEntity)` that `UserEntity.addAddress`
+calls to keep both sides in step.
+
+Across aggregates, store the identifier instead. The excerpts below belong to `OrderEntity`, an
+illustrative root outside the `user` example, whose customer is a separate root with its own service
+and lifecycle:
+
+```java
+@Column(name = "customer_id", nullable = false, updatable = false)
+private Long customerId;
+```
+
+Rejected, on the same field:
+
+```java
+@ManyToOne(fetch = FetchType.LAZY, optional = false)
+@JoinColumn(name = "customer_id", nullable = false)
 private CustomerEntity customer;
 ```
 
+The rejected form compiles and works, which is why it survives review unless the rule is explicit.
+It hands every holder of an `OrderEntity` a writable path into the customer aggregate, and it invites
+a cascade or a fetch plan that loads one aggregate while saving another.
+
+Note what this means for `UserEntity` above: it has a collection but no `@ManyToOne`. The user's
+organization membership is a row the `organization` aggregate owns, reached through
+`OrganizationService`, not a column or an association on `UserEntity`. That is the same rule seen
+from the other side.
+
+## Applying the tenant scope
+
+Read this section only when **Tenancy model** in `docs/project-profile.md` records something other
+than `single-tenant`. `application-security` owns that decision, what each model means, and the rule
+that the tenant comes from a verified claim; this section owns the mechanism that puts it into the
+SQL, and the list of places the mechanism does not reach.
+
+**Choose one mechanism for the whole project and apply it at the provider, not at the call site.**
+A predicate every repository method is expected to remember is a predicate one method will forget,
+and the forgotten one is a cross-tenant read that returns rows, throws nothing, and passes every test
+whose fixtures belong to a single tenant.
+
+| Model | Mechanism | What it does |
+| --- | --- | --- |
+| `discriminator column` | Hibernate's `@TenantId` on the tenant field of every tenant-owned entity, with a `CurrentTenantIdentifierResolver` bean that reads the resolved tenant | The provider adds the predicate to every load and every JPQL and Criteria query, and assigns the value on insert. The field is provider-owned, so it is never set from Java and never accepted from a request |
+| `schema-per-tenant` | Hibernate's schema multi-tenancy: a `MultiTenantConnectionProvider` that selects the schema on the borrowed connection, plus the same resolver | The query is ordinary; the connection decides which schema it reads. The provider must reset the schema when the connection is returned, or the next borrower inherits it |
+| `database-per-tenant` | The same pair, resolving to a datasource per tenant | One pool per tenant, so `../SKILL.md`'s pool arithmetic is per tenant and the engine's connection limit is reached far sooner |
+
+These are provider APIs, so they are written-down values like any coordinate: confirm the annotation
+and the resolver and connection-provider contracts against the Hibernate line the build actually
+resolves before writing them, and again on a provider major upgrade. `build-and-dependencies` owns
+which line that is.
+
+The resolver is the single place the tenant enters persistence, and it reads the value the security
+context already holds. It never reads a header, a `ThreadLocal` a filter set from a request field, or
+a parameter — `application-security` owns where the value comes from, and this is the seam where a
+wrong answer becomes an unscoped query.
+
+### What the mechanism does not cover
+
+Every item below issues SQL the provider did not compose, so the tenant predicate is absent unless
+the statement carries it. Under `schema-per-tenant` and `database-per-tenant` the connection settles
+most of these; under `discriminator column` each one is a hole, and the first two are the ones that
+reach production.
+
+- **Native SQL**, including a native `@Query` and anything issued through `JdbcTemplate` or a driver-level call. Write the predicate explicitly and bind the tenant from the resolver, never from a parameter the caller influenced.
+- **Bulk JPQL and Criteria DML.** Verify against the generated SQL whether the configured provider version adds the predicate, and add it explicitly where it does not. This is the same verification rule the [write behavior examples](write-behavior-examples.md#bulk-dml) already require for the version column, for the same reason.
+- **A stored routine, a view, or a trigger.** The database object carries the scope or it does not have one; `sql-database-migration` owns its definition.
+- **`find` by identifier on a shared surrogate key.** Under a discriminator model an identifier is unique across tenants, so a lookup by identifier alone reaches another tenant's row. The provider's tenant filter covers this; a hand-written native lookup does not.
+- **Unique constraints and indexes.** A business key is unique *per tenant*, so the tenant column belongs in the constraint and, as its leading column, in the indexes that serve tenant-scoped access paths. `sql-database-migration` owns the migration and `project-naming-conventions` the names.
+- **The second-level cache**, where one is enabled. A region shared across tenants serves one tenant's entity to another; `application-caching` owns the key and states that the tenant is part of it.
+
+### Rules
+
+- The tenant field is mapped `nullable = false, updatable = false`. A row that can change tenant is a row that can be moved out of its isolation by an ordinary update.
+- Assert the mechanism, do not read it: one integration test per tenant-scoped access path in which a second tenant's credential receives the not-found contract, and one that inspects the generated SQL for the predicate on a bulk statement. `spring-boot-testing` owns the level both run at.
+- A query that must legitimately cross tenants is a named, separately authorized capability under `application-security`, written as an explicit native statement with its own test — never the ordinary path with the mechanism disabled.
+
 ## Repository and projection queries
 
+Repository rules:
+
+- Use derived queries while their names remain short and their generated predicates are appropriate.
+- Use explicit JPQL when derivation becomes ambiguous or hides important joins.
+- JPQL uses entity and attribute names, not table and column names.
+- Bind values through parameters; never concatenate data into JPQL or SQL.
+- Use `Optional` for an optional single result and `existsBy...` when only presence is needed.
+- Bound every result that can grow with production data.
+- Do not invoke inherited destructive or unbounded methods on production-sized data without a bounded use case. When preventing those calls at the repository API is a project requirement, define and verify a tailored base repository instead of assuming `JpaRepository` hides them.
+- Use a custom repository for queries clearer with Specifications, Criteria, Querydsl, `EntityManager`, or native SQL.
+- Consume repository `Stream<T>` results inside the required transaction and close them with try-with-resources; never return an open stream across the service boundary.
+- Add Javadoc only when locking, timeout, fetch, ordering, native-SQL, or consistency semantics are non-obvious.
+
+Read-projection rules:
+
+- Use projections for bounded read paths that need only selected columns.
+- A persistence projection is neither a TO nor a domain result; map it before leaving the aggregate service that loaded it.
+- Keep interface projections closed and top-level. Nested properties can materialize joins and more data than expected.
+- Avoid `Object[]`, raw `Tuple`, and `Map<String, Object>` as cross-layer contracts.
+- Cover native projections with integration tests against the supported database.
+
 Bound every collection result and make ordering deterministic:
+
+This is the single declaration of `UserRepository` for the whole skill set. `spring-boot-patterns`
+shows how an aggregate service calls it and where the entity stops; it does not declare its own
+version.
 
 ```java
 public interface UserRepository extends JpaRepository<UserEntity, Long>,
@@ -174,14 +337,21 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>,
 
     Optional<UserEntity> findByEmail(final String email);
 
-    @EntityGraph(attributePaths = {"roles"})
-    Optional<UserEntity> findWithRolesById(final Long id);
+    @EntityGraph(attributePaths = {"addresses"})
+    Optional<UserEntity> findWithAddressesById(final Long id);
+
+    Page<UserEntity> findByStatus(final UserStatus status, final Pageable pageable);
 
     Slice<UserEntity> findByStatusOrderByCreatedAtDescIdDesc(
             final UserStatus status,
             final Pageable pageable);
 }
 ```
+
+`findByStatus` takes its ordering from the caller's `Pageable` and returns a `Page`, so the caller
+must supply a deterministic `Sort` with a unique tie-breaker; `findByStatusOrderByCreatedAtDescIdDesc`
+carries the ordering in the method name and returns a `Slice`, so it costs no count query. Both are
+here because the choice between them is a real one, and neither is a default.
 
 Reject an unbounded collection query:
 
@@ -202,7 +372,18 @@ public interface UserSummaryProjection {
 }
 ```
 
-Create `repository.projection` with this first projection; do not create the subpackage in advance.
+```java
+public interface UserAddressCountProjection {
+
+    Long getId();
+
+    long getAddressCount();
+}
+```
+
+`UserAddressCountProjection` is the one the fetch-plan section uses to avoid loading a collection for
+a page of roots. Both live in `repository.projection`; create that subpackage with the first
+projection and not in advance.
 
 ```java
 @Query("""
@@ -221,22 +402,35 @@ Slice<UserSummaryProjection> findSummariesByStatus(
 
 ## Fetch plans
 
-The following loop can trigger N+1 queries:
+The following loop can trigger N+1 queries: each `getAddresses()` call resolves a lazy collection with
+its own query.
 
 ```java
-final List<OrderEntity> orders = this.orderRepository.findAll();
+final Slice<UserEntity> users = this.userRepository.findByStatusOrderByCreatedAtDescIdDesc(
+        UserStatus.ACTIVE, pageable);
 
-for (final OrderEntity order : orders) {
-    LOGGER.debug("Customer: {}", order.getCustomer().getName());
+for (final UserEntity user : users) {
+    LOGGER.debug("Address count: {}", user.getAddresses().size());
 }
 ```
 
-For a bounded slice that needs one to-one or many-to-one state, use an explicit fetch plan:
+When a single aggregate genuinely needs its children loaded, use an explicit fetch plan on a
+single-result method — `findWithAddressesById` above does exactly that.
+
+For a page of roots, do **not** attach a collection entity graph to a paginated method: the provider
+either paginates in memory or multiplies rows. Page the identifiers first and load the graph in a
+bounded second query, or return a projection that already carries the derived value:
 
 ```java
-@EntityGraph(attributePaths = {"customer"})
-Slice<OrderEntity> findByStatusOrderByCreatedAtDescIdDesc(
-        final OrderStatus status,
+@Query("""
+        select user.id as id, count(address.id) as addressCount
+        from UserEntity user
+            left join user.addresses address
+        where user.status = :status
+        group by user.id
+        """)
+Slice<UserAddressCountProjection> findAddressCountsByStatus(
+        @Param("status") final UserStatus status,
         final Pageable pageable);
 ```
 
@@ -248,6 +442,17 @@ spring.jpa.open-in-view=false
 
 ## Dynamic queries
 
+Sargability and dynamic-query rules:
+
+- Build only required predicates for optional filters.
+- Prefer the JPA static metamodel or Querydsl for non-trivial dynamic queries; raw attribute-name strings fail only at runtime after incompatible refactoring. The metamodel comes from an annotation processor whose artifact differs by generation — state the requirement to `build-and-dependencies`, which owns the processor path, rather than adding it to the build from here.
+- Normalize values according to the business contract before querying; do not apply functions to indexed columns by habit.
+- Functions, casts, arithmetic, and implicit type conversion on indexed columns can prevent normal index access.
+- Avoid leading-wildcard searches on large tables unless a suitable search/index feature is deliberately used.
+- Bound `IN` collections; use chunking or a measured database-specific bulk strategy for very large sets.
+- Never issue a repository query inside a per-row loop when one set-based query can retrieve the data.
+- Allowlist sort fields and directions; never pass user input to `JpaSort.unsafe`.
+
 Reject optional-filter queries that force every predicate into one `OR` expression on a hot path:
 
 ```java
@@ -258,11 +463,12 @@ Reject optional-filter queries that force every predicate into one `OR` expressi
           and (:status is null or user.status = :status)
         """)
 List<UserEntity> search(
-        @Param("email") final String email,
-        @Param("status") final UserStatus status);
+        @Param("email") final @Nullable String email,
+        @Param("status") final @Nullable UserStatus status);
 ```
 
-Build only the predicates required by the request:
+Build only the predicates required by the request, and address attributes through the generated static
+metamodel rather than by name:
 
 ```java
 public final class UserSpecifications {
@@ -271,17 +477,17 @@ public final class UserSpecifications {
     }
 
     public static Specification<UserEntity> withFilters(
-            final String email,
-            final UserStatus status) {
+            final @Nullable String email,
+            final @Nullable UserStatus status) {
 
         return (root, query, criteriaBuilder) -> {
             final List<Predicate> predicates = new ArrayList<>();
 
             if (email != null) {
-                predicates.add(criteriaBuilder.equal(root.get("email"), email));
+                predicates.add(criteriaBuilder.equal(root.get(UserEntity_.email), email));
             }
             if (status != null) {
-                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+                predicates.add(criteriaBuilder.equal(root.get(UserEntity_.status), status));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
@@ -290,10 +496,29 @@ public final class UserSpecifications {
 }
 ```
 
+`UserEntity_` is generated from `UserEntity` by the JPA static metamodel processor, which
+`build-and-dependencies` declares on the annotation processor path — the artifact differs by Spring
+Boot generation and is listed in
+[generation differences](../../build-and-dependencies/references/generation-differences.md). This is
+why `../SKILL.md` prefers the metamodel over raw attribute strings: rename `email` on the entity and
+`root.get(UserEntity_.email)` stops compiling, while `root.get("email")` keeps compiling and starts
+failing at runtime, on whichever request first reaches that filter.
+
 Place reusable Specification types in `repository.specification`. Keep a one-off predicate with the
 repository implementation or query that owns it instead of creating a reusable-looking type.
 
 ## Pagination
+
+Pagination and scrolling rules:
+
+- Enforce maximum page size at the REST boundary.
+- Always sort deterministically with a unique tie-breaker.
+- Use `Page` only when the caller needs a total and the count query is acceptably cheap.
+- Use `Slice` when only next-page information is needed.
+- Prefer keyset scrolling for deep or high-volume traversal when the API can represent a cursor.
+- Keyset sort columns must be non-null, deterministic, and supported by an effective index.
+- Never paginate or sort database-sized results in memory.
+- Supply an explicit `countQuery` when a complex or native paged query cannot be derived correctly or efficiently.
 
 Reject a collection fetch join combined with pagination:
 
@@ -311,6 +536,21 @@ Page root identifiers first and load the required graph with a bounded second qu
 
 ## SQL and indexes
 
+SQL and index-performance rules:
+
+- Inspect generated SQL for every complex or high-volume query.
+- Use the supported database's execution-plan tool with representative statistics and data volume.
+- Select only required columns for read-heavy paths; avoid loading full entities and LOBs for summaries.
+- Align composite index order with actual equality, range, join, and sort predicates.
+- Avoid redundant and speculative indexes because each index adds storage and write cost.
+- Index foreign-key and join columns when required by the database and access paths.
+- Prevent accidental cartesian products and duplicate rows from incorrect joins.
+- Use existence queries instead of counting all rows when only presence is required.
+- Apply the tenant scope through the project's one mechanism, per [applying the tenant scope](#applying-the-tenant-scope), and carry the predicate explicitly in every statement that mechanism does not compose — native, bulk, and any count query behind one of them. Soft-delete and status predicates have no such mechanism, so they are written on every derived, JPQL, native, bulk, and count query by hand.
+- Include the tenant key in the unique constraints and, as the leading column, in the indexes that serve tenant-scoped access paths.
+- Configure query or transaction timeouts for bounded operational work.
+- Use native SQL only for a concrete feature, portability, or measured performance reason.
+
 Avoid applying a function to an indexed column by habit:
 
 ```sql
@@ -326,3 +566,27 @@ SELECT id, username, status FROM users WHERE email = ?;
 ```sql
 CREATE UNIQUE INDEX uk_users_email ON users (email);
 ```
+
+## Read-side anti-patterns
+
+Reject. The write-behavior group is in [write behavior examples](write-behavior-examples.md) and the
+concurrency-policy group in [locking and retry examples](locking-and-retry-examples.md).
+
+**Entity shape.** Records used as entities; Lombok `@Data` on entities; lazy or mutable associations
+in `equals`, `hashCode`, or `toString`; `CascadeType.ALL` without aggregate lifecycle ownership;
+cascade remove from a child or shared reference to its parent.
+
+**Fetch plans.** Blanket `FetchType.EAGER`; Open EntityManager in View and
+`hibernate.enable_lazy_load_no_trans`; N+1 queries hidden in mappers, serializers, logging, loops, or
+accessors; collection fetch joins combined with pagination; multiple collection fetch joins causing
+cartesian multiplication; `distinct` used to hide an incorrect join or fetch plan.
+
+**Query shape.** Unbounded repository reads, streams, association traversal, or `IN` predicates;
+full-entity loading where a bounded projection suffices; query-per-row loops; optional-filter `OR`
+queries and functions on indexed columns on hot paths without verified plans; leading-wildcard
+searches on large tables without a search index; unsafe user-controlled sorting; missing,
+ineffective, redundant, or speculative indexes.
+
+**Schema and verification.** A mapping change merged without its migration; a mapping whose
+constraint or index names differ from the migration's; H2-only persistence verification for another
+production database.
