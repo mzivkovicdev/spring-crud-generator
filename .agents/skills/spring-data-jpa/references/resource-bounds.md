@@ -108,7 +108,7 @@ spring:
         # cancelled past statement_timeout; a transaction left open past
         # idle_in_transaction_session_timeout has its session terminated, which is what stops
         # an abandoned request from holding a connection indefinitely.
-        options: "-c statement_timeout=5000 -c lock_timeout=3000 -c idle_in_transaction_session_timeout=10000"
+        options: "-c statement_timeout=2000 -c lock_timeout=1000 -c idle_in_transaction_session_timeout=10000"
 ```
 
 MySQL, the same three decisions where the engine has them:
@@ -118,11 +118,11 @@ spring:
   datasource:
     hikari:
       data-source-properties:
-        sessionVariables: "max_execution_time=5000,innodb_lock_wait_timeout=3"
+        sessionVariables: "max_execution_time=2000,innodb_lock_wait_timeout=1"
 ```
 
 Note the unit change between the two: `innodb_lock_wait_timeout` is in **whole seconds**, while
-every PostgreSQL value above is in milliseconds. A lock timeout recorded as `3s` in the profile
+every PostgreSQL value above is in milliseconds. A lock timeout recorded as `1s` in the profile
 therefore renders differently per engine, which is one more reason the value is read from the
 profile and converted at the point of use rather than retyped.
 
@@ -151,7 +151,7 @@ what the transaction timeout is for, and Spring applies it declaratively.
 ```yaml
 spring:
   transaction:
-    default-timeout: 10s
+    default-timeout: 5s
 ```
 
 ```java
@@ -175,7 +175,7 @@ spring:
   datasource:
     hikari:
       maximum-pool-size: 10
-      connection-timeout: 2s
+      connection-timeout: 1s
       max-lifetime: 30m
 ```
 
@@ -207,7 +207,7 @@ integration suite, never against a substitute whose defaults differ.
 spring:
   datasource:
     hikari:
-      connection-init-sql: "set statement_timeout = '5000ms'"
+      connection-init-sql: "set statement_timeout = '2000ms'"
 ```
 
 ```yaml
@@ -216,9 +216,9 @@ spring:
 spring:
   datasource:
     hikari:
-      connection-init-sql: "set lock_timeout = '3000ms'"
+      connection-init-sql: "set lock_timeout = '1000ms'"
       data-source-properties:
-        options: "-c statement_timeout=5000"
+        options: "-c statement_timeout=2000"
 ```
 
 ```yaml
@@ -235,7 +235,7 @@ spring:
 // Wrong: the project's statement timeout expressed as a per-query hint. It reaches only queries
 // the application issues through the provider, it rounds to whole seconds, and on several drivers
 // it needs a spare connection to cancel - the one thing an exhausted pool does not have.
-@QueryHints(@QueryHint(name = "jakarta.persistence.query.timeout", value = "5000"))
+@QueryHints(@QueryHint(name = "jakarta.persistence.query.timeout", value = "2000"))
 List<OrderEntity> findByStatus(final OrderStatus status);
 ```
 

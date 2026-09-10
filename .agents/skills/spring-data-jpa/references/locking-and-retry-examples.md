@@ -249,7 +249,7 @@ declares no annotation.
         jitter = 25L,
         multiplier = 2.0d,
         maxDelay = 500L,
-        timeout = 2000L
+        timeout = 1500L
 )
 public @interface OptimisticLockingRetry {
 }
@@ -261,7 +261,7 @@ Five differences decide whether this is the same policy or a different one:
 - **`includes` replaces `retryFor`.** `excludes` is its counterpart, and a `predicate` handles anything the type list cannot express.
 - **`jitter` is a value, not a flag.** There is no `random = true`; jitter is a span added to each computed delay, so `25` means up to 25 ms of spread. Omitting it leaves the retry storm the Spring Boot 3 note warns about, and here the omission is easier to miss because nothing looks switched off.
 - **Backoff attributes sit directly on the annotation**, with no nested `@Backoff`.
-- **`timeout` is a real wall-clock deadline**, and Spring Retry has no equivalent. Set it to the retry budget the profile records — `2000` here for a 2 s budget — so the worst case is bounded by a number someone decided rather than by whatever `maxRetries` and `maxDelay` happen to multiply out to. It is the single most useful thing this annotation gained.
+- **`timeout` is a real wall-clock deadline**, and Spring Retry has no equivalent. Set it to the retry budget the profile records — `1500` here for a 1.5 s budget — so the worst case is bounded by a number someone decided rather than by whatever `maxRetries` and `maxDelay` happen to multiply out to. It is the single most useful thing this annotation gained.
 
 Every timing attribute is a `long` in the unit `timeUnit()` selects, milliseconds by default. Each also
 has a `…String` twin — `delayString`, `maxRetriesString`, `timeoutString` — that accepts a property
@@ -479,7 +479,7 @@ that is resolved. The alternative is to narrow the setting to the transactions t
 /**
  * Bounds how long the current transaction waits for a row lock.
  *
- * @param timeout PostgreSQL setting value, such as {@code 3000ms}
+ * @param timeout PostgreSQL setting value, such as {@code 1000ms}
  * @return the applied value, as PostgreSQL reports it
  */
 @Query(value = "select set_config('lock_timeout', :timeout, true)", nativeQuery = true)
@@ -500,7 +500,7 @@ bind parameter, so the literal it would need is the second copy of the number th
 remove. The third argument, `true`, scopes the setting to the current transaction, so it reverts on
 commit or rollback and cannot leak into the next caller that borrows the pooled connection — calling
 it outside a transaction sets nothing and protects nothing. And the value is formatted from the
-`Duration` explicitly: `Duration.toString()` yields ISO-8601 such as `PT3S`, which PostgreSQL
+`Duration` explicitly: `Duration.toString()` yields ISO-8601 such as `PT1S`, which PostgreSQL
 rejects.
 
 **A per-query `@QueryHints` override is the one shape that reintroduces a second number**, because

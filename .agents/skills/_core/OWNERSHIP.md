@@ -1,7 +1,7 @@
 # Ownership map
 
 This is the single canonical statement of which skill owns which topic. Every skill links here
-instead of restating the full map, so an ownership change is one edit rather than twelve.
+instead of restating the full map, so an ownership change is one edit rather than thirteen.
 
 Each skill keeps a short table of the owners it defers to most often. That table is a convenience
 pointer, never a redefinition: when a skill's local table and this file disagree, **this file wins**
@@ -17,7 +17,7 @@ and the skill's table is the defect to fix.
 | `spring-data-jpa` | Entities, repositories, queries, projections, fetch plans, locking, database performance, and **transaction behavior inside the boundary**: propagation, isolation, `readOnly`, flush timing |
 | `sql-database-migration` | Migration files, ordering, immutability, expand-and-contract, backfills, seed data, clean-install verification |
 | `rest-api-contract` | The public contract and its document: completeness, required-ness and nullability, breaking-change judgement, versioning, deprecation, drift |
-| `application-security` | Trust boundaries, authentication, authorization, tenant and object ownership, confidentiality and data classification, secrets, cryptography, dangerous sinks, abuse prevention, supply chain, and security verification scenarios |
+| `application-security` | Trust boundaries, authentication, authorization, **the tenancy model**, tenant and object ownership, confidentiality and data classification, secrets, cryptography, dangerous sinks, abuse prevention, supply chain, and security verification scenarios |
 | `spring-boot-testing` | Test levels and placement, scenario selection, fixtures, doubles, isolation, determinism, execution |
 | `observability-and-logging` | What must be instrumented and how: log levels and placement, correlation context, meters and tag cardinality, tracing, actuator endpoints, probes |
 | `build-and-dependencies` | Build files, dependency and plugin declarations, **all version selection**, compiler and annotation-processor configuration, test-phase separation, quality gates |
@@ -40,7 +40,8 @@ These are the boundaries that get misread. Each row is one topic with two owners
 | Migration wiring | `sql-database-migration` owns that a migration must exist | `build-and-dependencies` owns the dependency that runs it |
 | Security test scenarios | `application-security` owns which scenarios are required | `spring-boot-testing` owns the level each runs at |
 | Contract assertions | `rest-api-contract` owns what must be asserted | `spring-boot-testing` owns the level it runs at |
-| Idempotency | `application-security` owns the policy | `spring-boot-patterns` owns where it lives in the layers |
+| Tenancy | `application-security` owns the model, where the tenant is read from, and that every read, write, and cached value is scoped to it | `spring-data-jpa` owns the mapping and the mechanism that applies the scope, `sql-database-migration` owns the schema and running migrations per tenant, `application-caching` owns the tenant's place in the key, and `project-naming-conventions` owns what the column, the claim, and the key segment are called |
+| Idempotency | `application-security` owns the policy: when a key is required, what it is bound to, its format, retention, and abuse controls | `spring-boot-patterns` owns where it lives in the layers, the claim shape the profile records, and what a concurrent duplicate receives |
 | Authentication and authorization failures | `application-security` owns the `401` and `403` responses, which the filter chain produces | `spring-boot-patterns` owns the error catalog they are built from, and the two advice handlers that decline both denial families so the chain still sees them |
 | The pessimistic lock timeout | `spring-data-jpa` owns the value and how it reaches the database | `spring-boot-patterns` owns the `Retry-After` header, derived from that value and never retyped |
 | Nullability in Java code | `modern-java-21` owns the annotation convention and where it goes | `build-and-dependencies` owns the artifact, its version, and how hard the contract is checked |

@@ -27,9 +27,12 @@ and those numbers are sized against the decisions on this page rather than indep
 
 ## The request budget is a number nothing enforces in-process
 
-`docs/project-profile.md` records a request budget, and every outbound timeout and every database
-bound fits inside it. It is worth being exact about what that number is, because the usual
-assumption is wrong: **Spring MVC applies no timeout to a synchronous request.** A handler that
+`docs/project-profile.md` records the budget in its **Request budget** row under *Performance and
+capacity*, and every outbound timeout and every database bound fits inside it. The worked arithmetic
+under that table is the reference sum this section requires: four shapes, added up from the recorded
+numbers, redone whenever one of them changes.
+
+It is worth being exact about what that number is, because the usual assumption is wrong: **Spring MVC applies no timeout to a synchronous request.** A handler that
 blocks forever blocks forever. `spring.mvc.async.request-timeout` bounds only the asynchronous
 return types — a `Callable`, a `DeferredResult`, a `CompletableFuture`, a streaming body — and a
 project whose handlers return values directly is not covered by it at all.
@@ -42,8 +45,8 @@ So the budget is held in three places, none of which is a single switch:
 | The ingress | The wall-clock ceiling the platform enforces and the client actually experiences | The deployment, recorded in the profile |
 | The client | Its own timeout, which is the number the caller feels regardless of anything here | Outside this project |
 
-**Do the arithmetic and record the result.** A budget nobody added up is a number that agrees with
-nothing. When the parts do not fit, the fix is a smaller part, not a larger budget — and when the
+**Do the arithmetic and record the result**, in the worked table the profile template carries. A
+budget nobody added up is a number that agrees with nothing. When the parts do not fit, the fix is a smaller part, not a larger budget — and when the
 ingress ceiling is lower than the parts sum to, every request that reaches the ceiling leaves work
 still running behind it, which is the case the statement and transaction bounds exist to stop.
 

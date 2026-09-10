@@ -298,7 +298,7 @@ public record CatalogClientProperties(
 ```
 
 Validate required timeouts as strictly positive so invalid configuration fails during startup. The
-two names match the outbound timeout budget the project profile records, so a configuration key, a
+two names match the outbound timeouts the project profile records, so a configuration key, a
 property component, and a profile row all say the same word.
 
 ```java
@@ -398,12 +398,52 @@ class CustomerServiceImpl implements CustomerService {
 
 ## Idempotency placement
 
+`application-security` owns the policy — when a key is required, what it is bound to, its format,
+retention, and abuse controls. This skill owns where that policy lives in the layers, **which of the
+two claim shapes the project uses**, and what a concurrent duplicate receives.
+
+Placement is the same in both shapes:
+
 - Accept the idempotency key at the REST boundary as an explicit, validated, bounded header or field. Do not read it from arbitrary request state.
 - Pass it into the application service as an ordinary explicit parameter or as part of the focused service input. Never pass the request TO.
-- Claim the key, execute the effect, and record the outcome inside the use case's transaction, so the claim and the effect commit or roll back together.
 - Keep the claim store behind a repository or adapter like any other persistence concern. Do not put it in a controller, mapper, or entity callback.
 - Return the recorded original outcome for a repeated key through the same response mapping as the first call, so the public contract is identical.
-- Test simultaneous duplicates and retry-after-timeout at the integration boundary, per `spring-boot-testing`.
+- Uniqueness of the claim is a database unique constraint, never an application existence check. `spring-data-jpa` states why, and the race after the check is exactly the one this feature exists to close.
+
+### The two shapes, and which one the project uses
+
+`docs/project-profile.md` records **Idempotency claim shape**. The two are not preferences: one is
+the default and the other is required for a specific use-case shape, and a project uses one of them
+throughout, because a codebase with both has two answers for what a concurrent duplicate receives.
+
+| | `single-phase` — the default | `two-phase` |
+| --- | --- | --- |
+| When the claim commits | With the effect, in the use case's one transaction | Before the effect, in its own transaction, carrying a lease deadline |
+| Required when | The effect is a database write, which under this architecture is most of them — an external effect goes through the recorded reliable-delivery mechanism and commits with the business change | The use case makes a **synchronous** external call whose result the caller receives, so the effect cannot be deferred to an outbox and cannot be rolled back |
+| What a concurrent duplicate does | Blocks on the unique constraint, bounded by the recorded pessimistic lock timeout | Reads the in-progress claim immediately and does not block |
+| What it then observes | The recorded outcome, once the first caller commits — or nothing, if that caller rolled back, in which case this caller wins the claim and executes | An in-progress claim whose lease has not expired |
+| What the caller receives | The original outcome, replayed through the same mapping | `409` from the catalog's in-progress condition, with `Retry-After` derived from the lease as the lock-timeout header is derived from its timeout |
+| What a failure leaves behind | Nothing. The claim rolls back with the effect, so a genuine retry is a fresh attempt | A claim in progress until its lease expires, which is what makes the lease mandatory rather than a refinement |
+
+**`single-phase` is the default because it is the only shape in which the claim and the effect cannot
+disagree.** A claim that outlives a rolled-back use case blocks the caller from ever retrying
+successfully; a claim that never lands lets the effect happen twice. Committing them together removes
+both, and the cost is that a concurrent duplicate waits rather than being told to wait.
+
+**`two-phase` exists for the case `single-phase` cannot cover**, and its cost is the lease. A crash
+between the two commits leaves a claim nothing will complete, so:
+
+- **Every two-phase claim carries a lease deadline**, recorded as `Idempotency claim lease` in the profile like every other bound, and inside the request budget.
+- **An expired lease is reclaimable by the next caller**, which is the only thing that stops one crash from making a key permanently unusable. Reclaim by a conditional `UPDATE` on the claim row — the shape `spring-data-jpa` states for a claim exactly one worker may win — never by deleting the row and inserting a new one.
+- **Recording the outcome is its own transaction**, and its failure is logged and metered rather than swallowed: the effect has already happened, so a lost outcome means the next duplicate re-executes it.
+- **`Retry-After` on the in-progress `409` is a hint, not a contract.** RFC 9110 defines the field normatively for `503` and for `3xx`; sending it here keeps one mechanism for "come back later" and costs nothing, but the condition is identified by its `type` URI and a client that ignores the header is still correct. Derive it from the recorded lease exactly as the lock-timeout header is derived from the recorded timeout — read, never retyped.
+
+### Rules for both
+
+- **The claim is keyed by the key and the caller**, per `application-security`: the authenticated subject, the tenant where the recorded tenancy model has one, the operation, and the request fingerprint. A key scoped to nothing lets one caller replay another's outcome.
+- **The same key with a different payload is rejected**, and it is a distinct catalog condition from a replay — a client that changed the body and reused the key has a bug, and answering it with the first call's response hides it.
+- **Both conditions are declared in the error catalog** like every other caller-visible failure: the in-progress condition and the key-reuse-with-different-payload condition. Neither reaches the catch-all.
+- **Test simultaneous duplicates and retry-after-timeout at the integration boundary**, per `spring-boot-testing`, and assert the status the caller receives rather than only that the effect happened once. Under `two-phase`, add the expired-lease case: it is the only test that proves a crashed attempt does not block the key forever.
 
 ## Scheduled and asynchronous execution
 

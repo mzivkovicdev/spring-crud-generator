@@ -105,7 +105,7 @@ the topology can be local.
 **Every input that changes the result belongs in the key.** This is the rule whose failure is worst,
 because the symptom is not a stale value — it is one caller receiving another caller's data.
 
-- **The tenant belongs in the key** wherever the application is multi-tenant, without exception. `project-naming-conventions` owns the form the scope takes.
+- **The tenant belongs in the key** wherever `Tenancy model` in `docs/project-profile.md` records anything other than `single-tenant`, without exception — the Hibernate second-level cache regions included, where a shared region serves one tenant's entity to another. `application-security` owns that row and `project-naming-conventions` owns the form the scope takes.
 - **If the value was filtered by who asked, the authorizing subject belongs in the key.** A list a service trimmed to what this caller may see is not a property of the resource; it is a property of the resource *and the caller*. Caching it under the resource identifier alone serves the first caller's permitted set to everyone.
 - **Prefer caching the unfiltered value and applying authorization after the read.** It keys smaller, it shares better, and it removes the class of bug above entirely. Cache a per-subject result only when the filtering itself is the expensive part, and then say so in the register.
 - **A cache is never a source of truth for an authorization decision.** Cache the data an authorization check reads, with a budget that reflects how quickly a revocation must take effect; do not cache the decision and skip the check.

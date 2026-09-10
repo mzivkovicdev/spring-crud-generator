@@ -185,6 +185,9 @@ the reverse.
     (`spring-boot-patterns`)
 33. **Authorization is enforced in the service and persistence path**, not only at the controller.
     Identity, tenant, and ownership come from the authenticated context, never from a request field.
+    **The tenancy model is a recorded decision**: while the profile says `single-tenant`, no tenant
+    column, predicate, claim, or cache-key segment is introduced; while it says anything else, every
+    read, write, unique constraint, index, and cache key carries the tenant, with no exception.
     (`application-security`)
 34. **Never log or hardcode credentials, tokens, personal data, full request or response bodies, or
     SQL with parameters.** No secret in a build file, a migration, or a test fixture.

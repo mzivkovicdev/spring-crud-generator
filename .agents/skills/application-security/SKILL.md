@@ -24,6 +24,7 @@ order — read it there, not from a copy in this file. The seams crossed most of
 | Idempotency | the policy | `spring-boot-patterns` owns where it lives in the layers |
 | Caching | classification, what may never be cached, and abuse limits on cache growth | `application-caching` owns everything about the entry once the value is permitted — key identity, TTL, invalidation, and failure behavior |
 | Denial responses | the `401` and `403` the filter chain produces, and which component produces each | `spring-boot-patterns` owns the error catalog they are built from, and the two advice handlers that decline both denial families |
+| Tenancy | the model, where the tenant is read from, and that every path is scoped to it | `spring-data-jpa` owns the mapping and the mechanism that applies the scope, `sql-database-migration` the schema, `application-caching` the tenant's place in the key, and `project-naming-conventions` the names |
 
 Use the architecture and terminology from `spring-boot-patterns`; do not redefine an owner's rules.
 
@@ -57,6 +58,40 @@ Before applying a generic standard, inspect the repository for a security profil
 - Record ASVS requirements with versioned identifiers such as `v5.0.0-1.2.5`. [API security and abuse prevention](references/api-security-and-abuse-prevention.md) lists everything the profile has to contain; do not restate that list elsewhere.
 - Treat the current OWASP Top 10 and API Security Top 10 as awareness inputs, not complete checklists.
 - Apply GDPR, PCI DSS, health-data, contractual, or regional requirements only where actually applicable to the project.
+
+## The tenancy model is a recorded decision
+
+`docs/project-profile.md` records **Tenancy model** under *Application design*, and this skill owns
+what each value means. It is read before the first table, the first filter chain, and the first cache
+key, because it is the one decision on that page that cannot be added later as a setting: moving off
+`single-tenant` is an expand-and-contract migration of every table, a change to every unique
+constraint, and a cache key-namespace change.
+
+**While the row records `single-tenant`, do not introduce a tenant column, a tenant predicate, a
+tenant claim, or a tenant segment in a cache key.** A scope nothing populates is a filter that
+matches everything, and it reads in review as though isolation were implemented. **While it records
+anything else, every read, write, unique constraint, index, and cache key is scoped, with no
+exception** — including administrative endpoints, exports, batch operations, scheduled jobs, and
+message consumers, which are where the exception is usually taken.
+
+| Model | What it means here | What it costs |
+| --- | --- | --- |
+| `single-tenant` | One tenant per deployment. No tenant in the token, the schema, or the key | Isolation is a deployment property, so it is only as good as the deployment. Nothing in the application enforces it |
+| `discriminator column` | Every tenant-owned table carries the tenant, and every statement carries the predicate | One missed predicate is a cross-tenant read. The mechanism has to be the same everywhere, which is why `spring-data-jpa` owns applying it rather than each query doing so by hand |
+| `schema-per-tenant` | One schema per tenant, selected per connection | Isolation is stronger and the query is ordinary, but migrations run per schema and the connection's schema becomes part of the pool's state — `sql-database-migration` owns the first and `spring-data-jpa` the second |
+| `database-per-tenant` | One database per tenant | The strongest isolation and the heaviest operations: a pool, a migration run, and a monitoring target per tenant. Verify the connection count against the engine's limit before choosing it |
+
+Four rules hold whatever the model, and each is a control rather than a convention:
+
+- **The tenant comes from a verified claim, and only from there.** `Tenant identifier claim` under *Security* records which claim and its type. Never a header, a path segment, a query parameter, a request body field, or a value the caller can influence — a tenant read from the request is an authorization bypass with a friendly name.
+- **The tenant is an authorization input, not a filter.** A caller asking for another tenant's object gets the same answer as one asking for an object that does not exist; scoping the query is what produces that, and a post-load check that throws after reading the row has already read it.
+- **A cross-tenant operation is a named, separately authorized capability**, never an absent predicate. Where one genuinely exists — a support tool, a platform report — it carries its own authority, its own audit record, and its own tests, and it is listed in the security profile.
+- **The tenant is a structured log field, not a metric tag.** `observability-and-logging` owns the cardinality rule and permits a tenant tag only where the tenant set is small, fixed, and approved; read it there rather than assuming either answer, and do not widen it to satisfy a dashboard.
+
+**Verification is two paired integration tests per tenant-scoped operation**, at the level
+`spring-boot-testing` places them: the owning tenant succeeds, and a second tenant's valid credential
+receives the not-found contract rather than the object. A test suite whose fixtures all belong to one
+tenant proves nothing about isolation, which is the usual reason this defect ships.
 
 ## Two scope notes that apply throughout
 
@@ -127,7 +162,7 @@ Before implementing or approving a security-relevant change:
 
 ## Non-negotiable decisions
 
-- Derive subject, tenant, roles, and trusted ownership from authenticated context, never from request-supplied privileged fields.
+- Derive subject, tenant, roles, and trusted ownership from authenticated context, never from request-supplied privileged fields. The tenant comes from the claim the profile records, under the tenancy model it records.
 - Enforce function, object, property, and tenant authorization in the service and persistence path; controller or UI checks alone are insufficient.
 - Return explicit TOs or `ProblemDetail`, never entities, authentication objects, provider responses, or generic maps.
 - Validate untrusted input at the boundary, enforce business invariants in service and domain code, and apply sink-specific parameterization or encoding.
@@ -162,6 +197,7 @@ Reject authentication without object and tenant authorization; request-supplied 
 - [ ] Security profile, assets, data classification, actors, trust boundaries, and abuse cases identified.
 - [ ] Confidential material stayed inside approved boundaries; no root instruction file was modified as a side effect of this change.
 - [ ] Authentication, authorization, object and property ownership, and tenant isolation enforced at the correct layers, with `401` and `403` produced by the filter chain and proven by a paired no-credential / insufficient-authority integration test.
+- [ ] The change stayed inside the recorded tenancy model: nothing tenant-scoped was introduced under `single-tenant`, and under any other model every read, write, constraint, index, and cache key carries the tenant, proven by a paired two-tenant integration test.
 - [ ] API inventory, lifecycle, business abuse, input, output, files, URLs, serialization, messaging, jobs, and resource use safe where applicable.
 - [ ] Secrets, cryptography, TLS, errors, telemetry, storage, Redis, cloud, and supply-chain controls follow the relevant references.
 - [ ] Positive and negative tests prove the changed behavior.

@@ -41,8 +41,8 @@ Last updated: YYYY-MM-DD
 | Entity accessor style | `ASK` |  | fluent \| void | `spring-data-jpa` |
 | Identifier strategy | `ASK` |  |  | `spring-data-jpa` |
 | Stale-write protection | `ASK` | server retry only | server retry only \| version field in update TO \| ETag + If-Match | `spring-data-jpa` |
-| Optimistic retry policy | `ASK` | 3 attempts, 50 ms initial backoff, 2s budget | attempts, initial backoff, budget | `spring-data-jpa` |
-| Pessimistic lock timeout | `ASK` | 3s | one duration, bound as configuration and read by both the database mechanism and the `Retry-After` header rather than written down twice; stays below the statement timeout. The mechanism that applies it is engine-specific — the JPA hint works on few engines | `spring-data-jpa` |
+| Optimistic retry policy | `ASK` | 3 attempts, 50 ms initial backoff, 1.5s budget | attempts, initial backoff, budget | `spring-data-jpa` |
+| Pessimistic lock timeout | `ASK` | 1s | one duration, bound as configuration and read by both the database mechanism and the `Retry-After` header rather than written down twice; stays below the statement timeout. The mechanism that applies it is engine-specific — the JPA hint works on few engines | `spring-data-jpa` |
 
 ## Application design
 
@@ -51,12 +51,15 @@ Last updated: YYYY-MM-DD
 | Service interface convention | `ASK` | concrete classes | interface + `*Impl` \| concrete classes | `spring-boot-patterns` |
 | Aggregate roots and their tables | `ASK` |  | list, e.g. `User (users, user_address)`, `Organization (organization)` | `spring-boot-patterns` |
 | Reliable-delivery mechanism for external effects | `ASK` |  | after-commit listener only \| outbox table \| broker-native transaction | `spring-boot-patterns` |
+| Tenancy model | `ASK` |  | single-tenant \| discriminator column \| schema-per-tenant \| database-per-tenant. No fallback, for the same reason as the database engine: it gates every tenant rule in the set, nothing in a repository decides it, and moving off `single-tenant` later is an expand-and-contract migration of every table plus a cache key-namespace change | `application-security` |
 | Message broker | `ASK` | none | none \| UNDECIDED \| the broker and its major version | none yet |
 | Message ordering guarantee required | `ASK` | none | none \| per key \| global | none yet |
 | Resilience library | `ASK` | none | none \| Resilience4j \| other | `spring-boot-patterns` |
-| Outbound timeout budget | `ASK` | connect 2s, read 5s, request budget 10s | e.g. connect 2s, read 5s, request budget 10s | `spring-boot-patterns` |
+| Outbound timeouts | `ASK` | connect 1s, read 3s | one connect and one read timeout per outbound client, both inside the **Request budget** row under *Performance and capacity* | `spring-boot-patterns` |
 | API base path | `ASK` | /api/v1 | /api/v1 | `spring-boot-patterns` |
 | Error catalog type | `ASK` |  | `com.example.myapp.exception.ApplicationError` | `spring-boot-patterns` |
+| Idempotency claim shape | `ASK` | single-phase | single-phase \| two-phase — single-phase commits the claim with the effect; two-phase commits the claim first under a lease and is required where the use case makes a synchronous external call whose result the caller receives | `spring-boot-patterns` |
+| Idempotency claim lease | `ASK` |  | `n/a` while **Idempotency claim shape** is `single-phase`, where a claim has no in-progress state; otherwise one duration, inside the request budget, after which another caller may reclaim the claim | `spring-boot-patterns` |
 | Problem type base URI | `ASK` |  |  | `project-naming-conventions` |
 
 ## API contract
@@ -82,6 +85,7 @@ Last updated: YYYY-MM-DD
 | --- | --- | --- | --- | --- |
 | Token issuance profile | `ASK` |  | A: application-issued \| B: external IdP | `application-security` |
 | Token issuer identifier | `ASK` |  |  | `application-security` |
+| Tenant identifier claim | `ASK` |  | the verified claim the tenant is read from, and its type; `n/a` while **Tenancy model** is `single-tenant`. Never a header, a path segment, or a request field | `application-security` |
 | Self-registration exists | `ASK` |  | yes \| no | `application-security` |
 | Management port | `ASK` |  |  | `application-security` |
 | Management authority | `ASK` |  |  | `application-security` |
@@ -131,6 +135,15 @@ here does not exist.
 > listener, or a messaging dependency. `_core/README.md` lists exactly which parts are owned and by
 > whom, so an owned rule is not mistaken for a missing one.
 
+> **Tenancy model** under **Application design** carries a guard of the same shape, and it is the one
+> that is hardest to reverse — which is why it has no fallback and blocks instead. `single-tenant` is
+> a claim about the deployment that no repository can prove, so it is answered, never assumed from the
+> absence of a tenant column. While it records `single-tenant`, do not introduce a tenant column, a
+> tenant predicate, a tenant claim, or a tenant segment in a cache key: a scope nothing populates is a
+> filter that silently matches everything and reads in review as though isolation were implemented.
+> While it records any other value, every read, write, unique constraint, index, and cache key is
+> scoped, without exception. `application-security` owns that guard and states what each model changes.
+
 ## Performance and capacity
 
 These are the **bounds the code enforces**, not performance targets. Each one turns an unbounded
@@ -139,24 +152,44 @@ becoming a held connection and a held connection from becoming an outage.
 
 | Decision | Token | Fallback | Value | Owner skill |
 | --- | --- | --- | --- | --- |
+| Request budget | `ASK` | 10s | the wall-clock ceiling one synchronous request may consume. Every row below and the **Outbound timeouts** row fit inside it, and the arithmetic under this table has to come out | `spring-boot-patterns` |
 | Concurrency model | `ASK` | platform threads, pool recorded below | virtual threads \| platform threads — changing it moves the limit on concurrency rather than removing it, so the database pool, the per-caller limits, and the outbound client pools are re-derived with it | `spring-boot-patterns` |
 | Server thread pool size | `ASK` | the server default, recorded explicitly | maximum in-flight requests when the model is platform threads; `n/a` on virtual threads, where the database pool is the admission control instead | `spring-boot-patterns` |
-| Ingress request ceiling | `ASK` |  | the wall-clock timeout the platform enforces in front of the application. No fallback: nothing inside the application bounds a synchronous request, so this number and the parts arithmetic are the whole budget | `spring-boot-patterns` |
+| Ingress request ceiling | `ASK` |  | the wall-clock timeout the platform enforces in front of the application, at or above the request budget. No fallback: nothing inside the application ends a synchronous request, so this is the only hard deadline one has | `spring-boot-patterns` |
 | Response compression | `ASK` | at the ingress, not in the application | ingress \| application \| none | `spring-boot-patterns` |
 | Conditional reads on polled endpoints | `ASK` | no | yes \| no — validated before the representation is built, against a version the aggregate already keeps | `spring-boot-patterns` |
 | Shutdown grace period | `ASK` | 20s | above the request budget, and below the platform's own termination grace period | `spring-boot-patterns` |
 | Maximum page size | `ASK` | 100 | the value the shared bound constant declares, enforced at the REST boundary and on the service contract | `spring-data-jpa` |
-| Statement timeout | `ASK` | 5s | per-statement ceiling, applied at the connection level so it covers every statement the connection carries; stays below the request budget. Not every engine has one — record the gap where it does not | `spring-data-jpa` |
+| Statement timeout | `ASK` | 2s | per-statement ceiling, applied at the connection level so it covers every statement the connection carries; stays below the request budget. Not every engine has one — record the gap where it does not | `spring-data-jpa` |
 | Idle-in-transaction timeout | `ASK` | 10s | how long an open transaction may sit between statements before the engine terminates the session; `none` where the engine has no equivalent | `spring-data-jpa` |
 | Connection-level settings channel | `RESOLVE` |  | the one driver mechanism that carries the statement, lock, and idle-in-transaction settings together; follows the engine and driver, and there is exactly one per pool | `spring-data-jpa` |
-| Transaction timeout | `ASK` | the recorded request budget | project-wide ceiling for a whole transaction, tightened per use case where needed; never below the statement timeout, and required for reads as well as writes | `spring-data-jpa` |
+| Transaction timeout | `ASK` | 5s | project-wide ceiling for a whole transaction, tightened per use case where needed; at or below the request budget, never below the statement timeout, and required for reads as well as writes | `spring-data-jpa` |
 | Connection pool size | `ASK` |  | maximum pool size. No fallback: it depends on the engine's own connection limit and on how many instances share it, and a guessed value either starves the application or overloads the database | `spring-data-jpa` |
-| Maximum wait for a connection | `ASK` | 2s | how long a caller waits for a pooled connection before failing. Short on purpose — a long wait converts pool exhaustion into a stalled request nobody times out | `spring-data-jpa` |
+| Maximum wait for a connection | `ASK` | 1s | how long a caller waits for a pooled connection before failing. Short on purpose — a long wait converts pool exhaustion into a stalled request nobody times out | `spring-data-jpa` |
 | JDBC batch size | `ASK` | none | batching is enabled deliberately and verified against the generated SQL, never assumed from `saveAll` | `spring-data-jpa` |
 
-> The request budget these rows sit inside is the **Outbound timeout budget** row under
-> **Application design**, which `spring-boot-patterns` owns. Read it first: every value here has to
-> fit within it, and a bound larger than the budget is a bound the caller never waits for.
+**The arithmetic, worked.** `spring-boot-patterns` requires the parts of a request to sum below the
+budget, and a rule with no reference sum is a rule nobody applies. The table below adds the fallbacks
+up for four reference shapes, so a project that changes one number can see which shape it moved. Redo
+it with the project's own values whenever any row above changes, and record the result.
+
+| Reference shape | Parts | Sum | Budget |
+| --- | --- | --- | --- |
+| Read | connection wait 1s + statement 2s | 3s | 10s |
+| Write, no outbound call | connection wait 1s + statement 2s + statement 2s | 5s | 10s |
+| Write, one outbound call | the write above, 5s, then connect 1s + read 3s | 9s | 10s |
+| Write under `@OptimisticLockingRetry` | one attempt bounded by the transaction timeout, 5s, + retry budget 1.5s | 6.5s | 10s |
+
+Four things in that table are the rules behind it, not arithmetic:
+
+- **The outbound call sits outside the transaction**, so the outbound row adds to the request and not to the transaction. `spring-boot-patterns` prohibits holding a transaction across an outbound call, which is what keeps these two sums separate.
+- **The transaction timeout bounds the transactional part of every row**, so 5s is both the ceiling for the write shapes and the worst case one retry attempt can cost.
+- **The retry budget adds once, not per attempt.** A retry is not started once the budget has elapsed, so the worst case is one attempt plus the budget rather than attempts multiplied.
+- **The ingress request ceiling is the only hard stop**, and it is at or above the budget. Nothing inside the application ends a synchronous request, so a sum that fits proves the design and the ingress proves the deadline.
+
+Every number above is a fallback, and a project with slower dependencies or a report endpoint changes
+them deliberately: raise the budget, or lower a part, and redo the table. Raising a part without
+redoing it is how a budget stops describing anything.
 
 ## Testing and build commands
 
