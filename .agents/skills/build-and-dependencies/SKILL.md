@@ -44,6 +44,7 @@ into those tokens, and no other skill reclassifies one.
 | Spring Boot generation | `ASK` | 3 and 4 are both supported; the choice follows the platform, the team, and the upgrade appetite, not a lookup |
 | Support model for the chosen branch | `ASK` | Whether the project relies on open-source updates or on a commercial subscription. This is a procurement fact, not a lookup, and it is what makes a branch past its OSS end date a decision rather than an accident |
 | Uses Lombok | `ASK` | A project-wide style commitment, not a technical necessity |
+| Dependency version policy | `ASK` | How much the build says about versions beyond the BOM. The strict level fails on differences the BOM exists to resolve and costs a maintained resolution list from then on, so it is a decision rather than a default |
 | Java release | `RESOLVE` | A supported LTS at or above the floor is a correct answer that only needs looking up |
 | Spring Boot version within the chosen generation | `RESOLVE` | The current stable release of that branch |
 | Support end date of the chosen branch | `RESOLVE` | Published by the project; look it up rather than assuming the branch is current |
@@ -126,6 +127,7 @@ Additional rules:
 - Pin every plugin version explicitly. An unpinned plugin makes builds non-reproducible.
 - Keep version properties in one place, named for the artifact.
 - Declare `org.jspecify:jspecify` as a direct dependency on both generations, because `modern-java-21` requires its annotations in every main-source package. **Whether it carries a version depends on the generation**: the Spring Boot 4 BOM manages it, so declare it without one; the Spring Boot 3 BOM does not, so declare it with a `RESOLVE`d version recorded in the profile. On Spring Boot 4 it also arrives transitively through `spring-core`, which is not a reason to leave it undeclared — a direct dependency is declared directly. Declare it in the **default compile scope on both generations**, as a deliberate exception to the annotation-only-library rule above: the annotations have runtime retention, Spring already puts the artifact on the Spring Boot 4 runtime classpath, and narrowing it to `compileOnly` on Spring Boot 3 alone would make the two generations differ for no benefit.
+- The version-convergence level is the recorded `Dependency version policy`, not a default. Both build tools reach the same two levels; [version convergence](references/quality-gates.md#version-convergence) states which rule belongs to which level and why a failure is answered with an explicit resolution rather than by removing the rule.
 - Do not run a blanket "upgrade everything". `application-security` owns upgrade triage.
 
 ## Compiler configuration

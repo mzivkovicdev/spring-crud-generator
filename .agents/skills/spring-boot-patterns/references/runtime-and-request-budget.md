@@ -110,7 +110,7 @@ to whatever it needs. Three bounds then become load-bearing, and each belongs to
 | --- | --- | --- |
 | The database connection pool and the wait for a connection | `spring-data-jpa`, in [resource bounds](../../spring-data-jpa/references/resource-bounds.md#pool-size-and-the-wait-for-a-connection) | The pool is unchanged in size, but it is now the admission control. The short connection-acquisition wait is what turns excess arrivals into fast failures instead of a growing queue |
 | Per-caller rate limits and quotas | `application-security` | These were never a substitute for the thread pool and now have to stand on their own |
-| Outbound client connection pools | `spring-boot-patterns`, in [outbound call rules](outbound-call-rules.md) | A client pool sized against the old thread count becomes the new queue |
+| Outbound client connection pools | `spring-boot-patterns`, in [sizing the pool](outbound-call-rules.md#sizing-the-pool) | A pool sized against the old thread count becomes the new queue, and its per-destination default was never sized at all. Re-derive it per destination and in total, and shorten the acquisition wait so the excess fails rather than queues |
 
 State the re-derivation in the change. A model switch that leaves those three numbers untouched has
 not been made safely, however green the build is.

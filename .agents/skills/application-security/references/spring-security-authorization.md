@@ -247,13 +247,15 @@ a hand-assembled signing path.
 - Use the narrowest maintainable matchers and verify matcher ordering.
 - Do not rely only on URL rules. Enforce operation, object, field, and tenant authorization in the service and persistence path.
 - Derive subject and tenant from the authenticated principal, not from request TO values.
-- Prefer scoped lookup. The following declaration is intentionally a repository-method excerpt; the containing repository and imports are omitted:
+- **Prefer scoped lookup over load-then-check.** A query that cannot return another principal's row is the control; a check that runs after the row is loaded has already read it. Scope by the owning identity in the method itself. The following declaration is intentionally a repository-method excerpt; the containing repository and imports are omitted:
 
 ```java
-Optional<DocumentEntity> findByIdAndTenantId(
+Optional<DocumentEntity> findByIdAndOwnerId(
         final Long documentId,
-        final Long tenantId);
+        final Long ownerId);
 ```
+
+- **The tenant scope is not written this way.** Object ownership is a per-query predicate; the tenant is a project-wide one, applied by the single mechanism the recorded tenancy model selects, which reads the tenant from the resolver rather than from a parameter a caller could influence. `spring-data-jpa` owns that mechanism in [applying the tenant scope](../../spring-data-jpa/references/entity-and-query-examples.md#applying-the-tenant-scope) and lists the statements it does not reach, which are the only ones that carry the predicate by hand. A `…AndTenantId` method written everywhere is a predicate one method will forget, which is the failure the mechanism exists to remove.
 
 - Test horizontal access, vertical access, guessed IDs, bulk endpoints, exports, nested resources, and administrative actions.
 - Avoid role-name scattering. Use stable application authorities or authorization policies and map identity-provider claims deliberately.

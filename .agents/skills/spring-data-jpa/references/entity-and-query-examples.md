@@ -15,12 +15,13 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 1. [Entity mapping](#entity-mapping)
 2. [Association mapping](#association-mapping)
 3. [Applying the tenant scope](#applying-the-tenant-scope)
-4. [Repository and projection queries](#repository-and-projection-queries)
-5. [Fetch plans](#fetch-plans)
-6. [Dynamic queries](#dynamic-queries)
-7. [Pagination](#pagination)
-8. [SQL and indexes](#sql-and-indexes)
-9. [Read-side anti-patterns](#read-side-anti-patterns)
+4. [Soft delete](#soft-delete)
+5. [Repository and projection queries](#repository-and-projection-queries)
+6. [Fetch plans](#fetch-plans)
+7. [Dynamic queries](#dynamic-queries)
+8. [Pagination](#pagination)
+9. [SQL and indexes](#sql-and-indexes)
+10. [Read-side anti-patterns](#read-side-anti-patterns)
 
 ## Entity mapping
 
@@ -299,6 +300,21 @@ reach production.
 - The tenant field is mapped `nullable = false, updatable = false`. A row that can change tenant is a row that can be moved out of its isolation by an ordinary update.
 - Assert the mechanism, do not read it: one integration test per tenant-scoped access path in which a second tenant's credential receives the not-found contract, and one that inspects the generated SQL for the predicate on a bulk statement. `spring-boot-testing` owns the level both run at.
 - A query that must legitimately cross tenants is a named, separately authorized capability under `application-security`, written as an explicit native statement with its own test — never the ordinary path with the mechanism disabled.
+
+## Soft delete
+
+Read this section only when **Soft delete** in `docs/project-profile.md` records entities. While it
+records `none`, a deleted row is deleted, and adding the column "for later" produces a predicate
+every future query must remember for a feature nobody asked for.
+
+Where it is recorded, soft delete is a per-query predicate like ownership and unlike the tenant: the
+provider's own soft-delete support covers the queries it composes, and everything in
+[what the mechanism does not cover](#what-the-mechanism-does-not-cover) applies here too.
+
+- **A unique constraint over a business key must be partial.** A deleted row still occupies the key, so a plain unique index makes the key unusable forever — the user who deleted an account cannot register the same email again, and the failure arrives as a constraint violation nobody expects. Express it as a partial or filtered index over the not-deleted rows where the engine supports one; where it does not, the key includes the deletion marker and the design accepts that a second delete of the same key needs a distinct marker value. `sql-database-migration` owns the migration and `project-naming-conventions` the name.
+- **The marker is a timestamp, not a boolean.** `deleted_at` answers "when", which an audit needs and a boolean cannot; a null value means live, which is also what makes the partial index expressible.
+- **A soft delete is a write, so every rule for writes applies**: it takes the version check, it invalidates whatever `application-caching` holds, and it is a state transition worth logging under `observability-and-logging`. It is not a filter that happens to hide a row.
+- **Decide what actually removes the row and record it.** Soft delete alone is a retention policy of "forever", which `application-security` classifies and which most data-protection commitments do not allow. The archival or purge path is part of the design, not a follow-up.
 
 ## Repository and projection queries
 

@@ -17,6 +17,7 @@ Snippets are patterns to adapt, not files to copy. They follow the [worked examp
 7. [Layer 3: dependency and build guards](#layer-3-dependency-and-build-guards)
    - [Maven: enforcer rules](#maven-enforcer-rules)
    - [Gradle: the same four rules](#gradle-the-same-four-rules)
+   - [Version convergence](#version-convergence)
 8. [Nullability checking](#nullability-checking)
 9. [Wiring the gates into the build](#wiring-the-gates-into-the-build)
 10. [No baseline, no suppressions](#no-baseline-no-suppressions)
@@ -296,11 +297,17 @@ list that encodes the duplicated-capability rule. **Both build tools enforce all
 not enforce them the same way, and two of them Gradle handles structurally rather than with a check.
 Read the subsection for the tool the profile records; the other one does not apply.
 
+**Version convergence is the one of the four that is a recorded decision rather than a fixed rule**,
+because its strict form has an ongoing cost on both tools. `Dependency version policy` in
+`docs/project-profile.md` records which level applies, and [version convergence](#version-convergence)
+below states what each level means and which snippet to use. Do not read the two subsections as one
+tool having more rules than the other; they reach the same levels by different routes.
+
 | Rule | Maven | Gradle |
 | --- | --- | --- |
 | Java release | `requireJavaVersion`, checking the JDK that runs Maven | The toolchain, which *selects* the JDK rather than checking it — see below |
 | `docs/project-profile.md` exists | `requireFilesExist` | A verification task `check` depends on |
-| Version convergence | `dependencyConvergence` and `requireUpperBoundDeps` | `failOnVersionConflict()`, which is stricter and costs more — see below |
+| Version convergence | `requireUpperBoundDeps` always; `dependencyConvergence` only under the recorded policy | Highest-version resolution by default; `failOnVersionConflict()` only under the recorded policy — the two tools reach the same two levels by different routes, see below |
 | Banned artifacts | `bannedDependencies` | A resolution rule over every resolvable configuration |
 
 ### Maven: enforcer rules
@@ -332,8 +339,12 @@ half-applied.
                         <message>docs/project-profile.md is missing. Create it from the template
                                  before building; see the project README.</message>
                     </requireFilesExist>
-                    <dependencyConvergence/>
                     <requireUpperBoundDeps/>
+                    <!-- Only when Dependency version policy records "convergence enforced".
+                         See "Version convergence" below before adding it: it fails on
+                         differences the Spring Boot BOM exists to resolve, and the sanctioned
+                         answer to a failure is a dependencyManagement pin, never a suppression. -->
+                    <dependencyConvergence/>
                     <bannedDependencies>
                         <excludes>
                             <exclude>com.google.code.gson:gson</exclude>
@@ -359,6 +370,7 @@ Five decisions in that block are deliberate:
 - **`${java.version}` rather than a literal.** The Java release is recorded in the project profile and declared once as a property, per [Maven configuration](maven-configuration.md). A literal here would be a second source of truth that silently disagrees with the compiler setting. This rule checks the JDK **running Maven**, which is not the same thing as `maven.compiler.release`: `--release` pins the class-file version and the visible API whatever JDK compiles, so it is not bytecode drift this catches. What it catches is a JDK older than the release — which fails compilation with a message about the release flag rather than about the JDK — and the fact that **the tests run on the Maven JDK**, so a newer one can pass a suite that production will not.
 - **`${maven.multiModuleProjectDirectory}` rather than `${project.basedir}`.** The profile lives once at the repository root. `project.basedir` resolves per module, so in a multi-module build every submodule would look for its own copy and fail.
 - **The message names a path, not a skill.** A developer reading a build failure has no idea what `spring-boot-patterns` is; skills are agent-facing, build output is human-facing. Point at something a person can open.
+- **`dependencyConvergence` is present only under the recorded policy.** `requireUpperBoundDeps` is the always-on half and costs nothing — it catches a genuine downgrade, which Maven's nearest-wins resolution can produce and Gradle's cannot. Convergence is the opt-in half, and it fires on differences the BOM already resolved, so a project that enables it without deciding to will meet a failure whose only obvious fix is deleting the rule. That is the failure this whole file exists to prevent.
 - **The profile rule proves existence only**, not that the file is filled in correctly. That stays a review responsibility. It is still worth having, because a missing profile is exactly the case that silently produces an inconsistent codebase.
 
 The exclusion list encodes the duplicated-capability rule from
@@ -439,22 +451,40 @@ when that JDK cannot be provisioned. Declare the toolchain, per
 project that skips it and inherits the daemon's JDK has the question back, and no rule against it —
 that is the finding, not a missing enforcer.
 
-**Version convergence is the one place Gradle is genuinely harder, so decide it rather than copying
-it.** Maven's `requireUpperBoundDeps` demands that the resolved version be at least the highest
-requested one; Gradle already resolves that way by default, so that half is free. `dependencyConvergence`
-is stricter — it fails when two paths request *different* versions at all — and its Gradle equivalent,
-`resolutionStrategy.failOnVersionConflict()`, fails on conflicts the Spring Boot BOM is there to
-resolve, so a project that enables it maintains a `force` list from then on.
+### Version convergence
 
-| Option | What it costs | When it fits |
-| --- | --- | --- |
-| Nothing beyond the BOM | Free. Highest-version resolution is the default, matching `requireUpperBoundDeps` | The default for a project on the Spring Boot BOM |
-| `dependencyLocking` with committed lockfiles | One file per configuration, updated deliberately | Reproducibility matters more than convergence — a resolution change becomes a reviewable diff |
-| `failOnVersionConflict()` plus a `force` list | Ongoing maintenance, and a build that fails on somebody else's upgrade | A project that has been bitten by a silent version bump and accepts the cost |
+**Both tools reach the same two levels, and one of them is free on each.** The difference is which
+half arrives by default, and reading the two rule lists side by side is what makes one tool look
+stricter than the other when neither is.
 
-Record the choice in the profile beside the other build decisions. Do not enable
-`failOnVersionConflict()` because the Maven column has two rules and the Gradle column has one; the
-two tools do not divide this problem the same way, and matching rule counts is not the goal.
+`requireUpperBoundDeps` demands that the resolved version be at least the highest requested one. That
+catches a genuine downgrade, which Maven's nearest-wins resolution can produce; Gradle resolves
+highest-wins already, so on Gradle that level is structural and needs no rule at all. **This level is
+always on, on both tools.**
+
+`dependencyConvergence` is the strict level: it fails when two paths request *different* versions at
+all, whatever the build resolved. `resolutionStrategy.failOnVersionConflict()` is its Gradle
+equivalent, at the same strictness. Both fire on differences the Spring Boot BOM exists to resolve,
+so both mean maintaining a list of deliberate resolutions from then on.
+
+`Dependency version policy` in `docs/project-profile.md` records which level applies:
+
+| Policy | Maven | Gradle | What it costs |
+| --- | --- | --- | --- |
+| **BOM only** — the default | `requireUpperBoundDeps` | Nothing; highest-wins resolution is the default | Free |
+| **Convergence enforced** | Add `dependencyConvergence` | Add `failOnVersionConflict()` and a `force` list | A build that can fail on somebody else's upgrade, and a list to maintain |
+| **Dependency locking** | Not available natively | `dependencyLocking` with committed lockfiles | One file per configuration, updated deliberately — a resolution change becomes a reviewable diff |
+
+**Under the strict level, the sanctioned answer to a failure is an explicit resolution, never a
+suppression.** On Maven that is a `dependencyManagement` entry pinning the version, with the reason
+and the removal condition beside it; on Gradle it is a `force` entry or a locked version, with the
+same two comments. Removing the rule, excluding the artifact to make the message go away, or adding
+the difference to an ignore list are all the "suppression" this file prohibits everywhere else —
+and a convergence rule enabled by accident is the most likely reason a project reaches for one.
+
+Do not adopt the strict level because one tool's rule list looks shorter. Adopt it when the project
+has been bitten by a silent version bump and accepts the maintenance, and record that reason with
+the row.
 
 ### Metric tag cardinality
 

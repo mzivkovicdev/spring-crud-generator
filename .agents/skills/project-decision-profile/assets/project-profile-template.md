@@ -24,6 +24,7 @@ Last updated: YYYY-MM-DD
 | Support model | `ASK` |  | open source \| commercial subscription | `build-and-dependencies` |
 | Version support re-check date | `RESOLVE` |  | when the two rows above are looked up again | `build-and-dependencies` |
 | Build tool | `ASK` |  | Maven \| Gradle | `build-and-dependencies` |
+| Dependency version policy | `ASK` | BOM only | BOM only \| convergence enforced \| dependency locking — how much the build says about versions beyond what the Spring Boot BOM manages. Both tools support the first two; the third is Gradle only | `build-and-dependencies` |
 | Uses Lombok | `ASK` | no | yes \| no | `build-and-dependencies` |
 | Base package | `ASK` |  | com.example.myapp | `project-naming-conventions` |
 | Maximum line length | `ASK` | 120 | the value the committed Checkstyle configuration enforces | `build-and-dependencies` |
@@ -38,10 +39,13 @@ Last updated: YYYY-MM-DD
 | Migration identifier scheme | `ASK` | UTC timestamp | UTC timestamp \| sequential counter | `sql-database-migration` |
 | Migration user separate from application user | `ASK` | no | yes \| no | `sql-database-migration` |
 | Migration datasource separate from the application pool | `ASK` | yes | yes \| no — a shared pool makes migrations inherit the request-sized statement and idle-in-transaction bounds, which cancels a large schema change at deploy time | `spring-data-jpa` |
+| Timestamp and time-zone policy | `ASK` | UTC everywhere — `Instant` in Java, a with-time-zone column type where the engine has one, RFC 3339 with `Z` on the wire | the Java type, the column type, and the wire form, decided once. `rest-api-contract` documents the wire form | `spring-data-jpa` |
+| Soft delete | `ASK` | none | none \| the entities that carry it — gates every soft-delete predicate, partial unique index, and archival rule below | `spring-data-jpa` |
 | Entity accessor style | `ASK` |  | fluent \| void | `spring-data-jpa` |
 | Identifier strategy | `ASK` |  |  | `spring-data-jpa` |
 | Stale-write protection | `ASK` | server retry only | server retry only \| version field in update TO \| ETag + If-Match | `spring-data-jpa` |
 | Optimistic retry policy | `ASK` | 3 attempts, 50 ms initial backoff, 1.5s budget | attempts, initial backoff, budget | `spring-data-jpa` |
+| Retry exhaustion shape | `ASK` | advice | advice \| `@Recover` — one shape for the whole project, because a codebase with both has two conflict policies. `@Recover` exists only on Spring Boot 3 | `spring-data-jpa` |
 | Pessimistic lock timeout | `ASK` | 1s | one duration, bound as configuration and read by both the database mechanism and the `Retry-After` header rather than written down twice; stays below the statement timeout. The mechanism that applies it is engine-specific — the JPA hint works on few engines | `spring-data-jpa` |
 
 ## Application design
@@ -55,7 +59,7 @@ Last updated: YYYY-MM-DD
 | Message broker | `ASK` | none | none \| UNDECIDED \| the broker and its major version | none yet |
 | Message ordering guarantee required | `ASK` | none | none \| per key \| global | none yet |
 | Resilience library | `ASK` | none | none \| Resilience4j \| other | `spring-boot-patterns` |
-| Outbound timeouts | `ASK` | connect 1s, read 3s | one connect and one read timeout per outbound client, both inside the **Request budget** row under *Performance and capacity* | `spring-boot-patterns` |
+| Outbound HTTP client | `ASK` | RestClient over the auto-detected factory, recorded explicitly | the client type and the factory beneath it, e.g. `RestClient over Apache HttpClient 5`. One client for the project, per the duplicated-capability rule `build-and-dependencies` owns. `RestClient` needs Spring Boot 3.2 or later; below that the imperative client is `RestTemplate` | `spring-boot-patterns` |
 | API base path | `ASK` | /api/v1 | /api/v1 | `spring-boot-patterns` |
 | Error catalog type | `ASK` |  | `com.example.myapp.exception.ApplicationError` | `spring-boot-patterns` |
 | Idempotency claim shape | `ASK` | single-phase | single-phase \| two-phase — single-phase commits the claim with the effect; two-phase commits the claim first under a lease and is required where the use case makes a synchronous external call whose result the caller receives | `spring-boot-patterns` |
@@ -83,6 +87,7 @@ Last updated: YYYY-MM-DD
 
 | Decision | Token | Fallback | Value | Owner skill |
 | --- | --- | --- | --- | --- |
+| Security profile and ASVS baseline | `ASK` | none | the path to the security profile and the pinned ASVS version, e.g. `docs/security/security-profile.md`, ASVS 5.0.0; or `none`, which is a recorded decision and not a compliance claim | `application-security` |
 | Token issuance profile | `ASK` |  | A: application-issued \| B: external IdP | `application-security` |
 | Token issuer identifier | `ASK` |  |  | `application-security` |
 | Tenant identifier claim | `ASK` |  | the verified claim the tenant is read from, and its type; `n/a` while **Tenancy model** is `single-tenant`. Never a header, a path segment, or a request field | `application-security` |
@@ -152,19 +157,24 @@ becoming a held connection and a held connection from becoming an outage.
 
 | Decision | Token | Fallback | Value | Owner skill |
 | --- | --- | --- | --- | --- |
-| Request budget | `ASK` | 10s | the wall-clock ceiling one synchronous request may consume. Every row below and the **Outbound timeouts** row fit inside it, and the arithmetic under this table has to come out | `spring-boot-patterns` |
+| Request budget | `ASK` | 10s | the wall-clock ceiling one synchronous request may consume. Every wait and every bound in this table fits inside it, and the arithmetic beneath it has to come out | `spring-boot-patterns` |
 | Concurrency model | `ASK` | platform threads, pool recorded below | virtual threads \| platform threads — changing it moves the limit on concurrency rather than removing it, so the database pool, the per-caller limits, and the outbound client pools are re-derived with it | `spring-boot-patterns` |
+| Instance count | `ASK` |  | how many instances of this application run at once in the largest environment. No fallback: every pool below is sized as *pool × instances* against a limit somebody else owns — the database's connection limit, the callee's rate limit — so a guessed value sizes nothing | `spring-boot-patterns` |
 | Server thread pool size | `ASK` | the server default, recorded explicitly | maximum in-flight requests when the model is platform threads; `n/a` on virtual threads, where the database pool is the admission control instead | `spring-boot-patterns` |
 | Ingress request ceiling | `ASK` |  | the wall-clock timeout the platform enforces in front of the application, at or above the request budget. No fallback: nothing inside the application ends a synchronous request, so this is the only hard deadline one has | `spring-boot-patterns` |
 | Response compression | `ASK` | at the ingress, not in the application | ingress \| application \| none | `spring-boot-patterns` |
 | Conditional reads on polled endpoints | `ASK` | no | yes \| no — validated before the representation is built, against a version the aggregate already keeps | `spring-boot-patterns` |
 | Shutdown grace period | `ASK` | 20s | above the request budget, and below the platform's own termination grace period | `spring-boot-patterns` |
+| Outbound timeouts | `ASK` | connect 1s, read 3s | one connect and one read timeout per outbound client, both inside the request budget. Below Spring Boot 3.4 no property carries them and the request factory is built by hand | `spring-boot-patterns` |
+| Outbound client pool | `ASK` |  | maximum connections per destination and in total, sized from the concurrency model and the instance count against what the callee accepts. No fallback: the library defaults are far below what a blocking stack needs, and a guessed value queues callers instead of failing them | `spring-boot-patterns` |
+| Outbound connection acquisition wait | `ASK` | 1s | how long a caller waits for a pooled outbound connection before failing. Short on purpose, for the same reason as the database's — and the library defaults here are minutes, not seconds | `spring-boot-patterns` |
 | Maximum page size | `ASK` | 100 | the value the shared bound constant declares, enforced at the REST boundary and on the service contract | `spring-data-jpa` |
 | Statement timeout | `ASK` | 2s | per-statement ceiling, applied at the connection level so it covers every statement the connection carries; stays below the request budget. Not every engine has one — record the gap where it does not | `spring-data-jpa` |
 | Idle-in-transaction timeout | `ASK` | 10s | how long an open transaction may sit between statements before the engine terminates the session; `none` where the engine has no equivalent | `spring-data-jpa` |
 | Connection-level settings channel | `RESOLVE` |  | the one driver mechanism that carries the statement, lock, and idle-in-transaction settings together; follows the engine and driver, and there is exactly one per pool | `spring-data-jpa` |
 | Transaction timeout | `ASK` | 5s | project-wide ceiling for a whole transaction, tightened per use case where needed; at or below the request budget, never below the statement timeout, and required for reads as well as writes | `spring-data-jpa` |
 | Connection pool size | `ASK` |  | maximum pool size. No fallback: it depends on the engine's own connection limit and on how many instances share it, and a guessed value either starves the application or overloads the database | `spring-data-jpa` |
+| Connection maximum lifetime | `ASK` | 30m | how long a pooled database connection may live before the pool retires it. Set below the shortest idle timeout anywhere on the network path — the engine's, a proxy's, a firewall's — or the pool eventually hands out a connection the other end already closed | `spring-data-jpa` |
 | Maximum wait for a connection | `ASK` | 1s | how long a caller waits for a pooled connection before failing. Short on purpose — a long wait converts pool exhaustion into a stalled request nobody times out | `spring-data-jpa` |
 | JDBC batch size | `ASK` | none | batching is enabled deliberately and verified against the generated SQL, never assumed from `saveAll` | `spring-data-jpa` |
 
@@ -177,12 +187,13 @@ it with the project's own values whenever any row above changes, and record the 
 | --- | --- | --- | --- |
 | Read | connection wait 1s + statement 2s | 3s | 10s |
 | Write, no outbound call | connection wait 1s + statement 2s + statement 2s | 5s | 10s |
-| Write, one outbound call | the write above, 5s, then connect 1s + read 3s | 9s | 10s |
+| Write, one outbound call | acquisition wait 1s + connect 1s + read 3s, then connection wait 1s + statement 2s | 8s | 10s |
 | Write under `@OptimisticLockingRetry` | one attempt bounded by the transaction timeout, 5s, + retry budget 1.5s | 6.5s | 10s |
 
 Four things in that table are the rules behind it, not arithmetic:
 
 - **The outbound call sits outside the transaction**, so the outbound row adds to the request and not to the transaction. `spring-boot-patterns` prohibits holding a transaction across an outbound call, which is what keeps these two sums separate.
+- **An outbound call has three waits, not two.** The wait for a pooled connection is counted beside connect and read, because the worst case is a caller that queues for a connection and then opens a new one. In steady state one of the two is zero; the arithmetic does not get to assume that.
 - **The transaction timeout bounds the transactional part of every row**, so 5s is both the ceiling for the write shapes and the worst case one retry attempt can cost.
 - **The retry budget adds once, not per attempt.** A retry is not started once the budget has elapsed, so the worst case is one attempt plus the budget rather than attempts multiplied.
 - **The ingress request ceiling is the only hard stop**, and it is at or above the budget. Nothing inside the application ends a synchronous request, so a sum that fits proves the design and the ingress proves the deadline.

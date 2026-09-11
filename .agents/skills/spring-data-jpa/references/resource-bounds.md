@@ -174,14 +174,17 @@ Rules:
 spring:
   datasource:
     hikari:
+      # Hikari's own setters take milliseconds, so these are numbers rather than durations.
+      # The profile records 1s, 30m and a pool size; convert at the point of use, exactly as
+      # innodb_lock_wait_timeout above is converted to whole seconds.
       maximum-pool-size: 10
-      connection-timeout: 1s
-      max-lifetime: 30m
+      connection-timeout: 1000
+      max-lifetime: 1800000
 ```
 
-- **`maximum-pool-size` × instance count must fit inside what the engine accepts**, with headroom for migrations, operators, and whatever else connects. `../SKILL.md` states why a larger pool is not faster; this is where the number is applied.
+- **`maximum-pool-size` × the recorded instance count must fit inside what the engine accepts**, with headroom for migrations, operators, and whatever else connects. Both numbers are profile rows, so the multiplication is one a reviewer can actually perform. `../SKILL.md` states why a larger pool is not faster; this is where the number is applied.
 - **`connection-timeout` is the wait for a pooled connection, and it is short on purpose.** It is the property that turns pool exhaustion into a fast failure the caller and the metrics both see, instead of a stalled request nobody times out. Keep it well inside the request budget.
-- **`max-lifetime` retires a connection before something in the network path does.** Set it below the shortest idle timeout on the path — the engine's own, a proxy's, a firewall's — or the pool eventually hands out a connection the other end has already closed. This is the one setting here that is about the infrastructure rather than about the application's own budget.
+- **`max-lifetime` retires a connection before something in the network path does.** `Connection maximum lifetime` in the profile records it; set it below the shortest idle timeout on the path — the engine's own, a proxy's, a firewall's — or the pool eventually hands out a connection the other end has already closed. This is the one setting here that is about the infrastructure rather than about the application's own budget, which is why it is recorded rather than derived from the request budget.
 - **The concurrency model in front of the pool decides how much demand it sees.** `spring-boot-patterns` owns that decision in [runtime and request budget](../../spring-boot-patterns/references/runtime-and-request-budget.md); this skill owns only the pool that absorbs it. Re-derive the pool size whenever that model changes, because a model that removes the thread-count ceiling makes this pool the only limit left.
 - **`REQUIRES_NEW` doubles the demand** for the duration of the inner transaction, as `../SKILL.md` states. Account for it here or do not use it.
 

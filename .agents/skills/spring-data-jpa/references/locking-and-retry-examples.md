@@ -326,10 +326,11 @@ public OrderDomain recover(
 ```
 
 A `@Recover` method sits in the same bean, returns the same type, and takes the exception followed by
-the original parameters. **Choose one shape for the whole project and record it**, because a codebase
-where some use cases recover locally and others rely on the advice has two conflict policies and no
-way to tell which applied. Choosing the advice keeps the project portable across both generations,
-which is why it is the default here.
+the original parameters. **Choose one shape for the whole project**, because a codebase where some use
+cases recover locally and others rely on the advice has two conflict policies and no way to tell which
+applied. `Retry exhaustion shape` in `docs/project-profile.md` records it, and its fallback is the
+advice: that shape keeps the project portable across both generations, and `@Recover` exists on only
+one of them.
 
 ### Applying it
 

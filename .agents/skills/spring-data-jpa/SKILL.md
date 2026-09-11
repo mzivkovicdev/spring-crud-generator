@@ -96,7 +96,7 @@ still holds. On a new project, this is simply the behavior being designed agains
 - Database constraints enforce integrity; application validation does not replace them.
 - Use `@Version` when concurrent updates must not silently overwrite each other, and never assign the version value in Java: it is provider-owned, no setter is written for it, and it is never copied from a request. The one place a version is written deliberately is a bulk statement, which bypasses the provider's own increment and must therefore carry it — [write behavior examples](references/write-behavior-examples.md#bulk-dml) states how, and Jakarta Persistence requires it of a portable application.
 - Prefer `EnumType.STRING`; treat enum renames as data migrations.
-- Define timestamp/timezone policy explicitly, and use `BigDecimal` precision and scale for fixed-decimal columns.
+- Take the timestamp and time-zone policy from `Timestamp and time-zone policy` in the profile rather than deciding it per entity: the Java type, the column type, and the wire form are one decision, and a codebase that mixes `Instant` with `LocalDateTime` for the same instant has two. Use `BigDecimal` precision and scale for fixed-decimal columns.
 - Choose identifier generation for the actual database and verify its effect on batching and round trips.
 - Never use Lombok `@Data` on entities.
 - Keep entity listeners limited to persistence concerns; never perform repository or remote calls from callbacks.
@@ -140,6 +140,12 @@ Two consequences belong here because they change the rules above rather than the
 
 While the profile records `single-tenant`, none of this applies: do not add a tenant column, a
 resolver, or a predicate. `application-security` owns that guard.
+
+**Soft delete carries the same shape and its own row.** `Soft delete` in the profile gates it: while
+it records `none`, rows are deleted and no `deleted_at` column, provider soft-delete mapping, or
+"not deleted" predicate is introduced. Where it records entities, three rules follow, and the middle
+one is the one that ships broken — the complete rules sit with the queries they govern, in
+[soft delete](references/entity-and-query-examples.md#soft-delete).
 
 ## N+1 and fetch plans
 
@@ -231,7 +237,7 @@ are bounds rather than tuning.
 
 - **Set a statement timeout at the connection level**, so it covers every statement the connection carries and not only the queries the application issues itself. Keep it below the request budget `spring-boot-patterns` records: a statement still running after the caller gave up is pure cost.
 - **Set a transaction timeout**, project-wide by default and tighter where a use case needs it, at or below the request budget and never below the statement timeout. It bounds the whole unit, including the parts between statements — and a read needs one as much as a write does, because `readOnly` bounds nothing.
-- **Size the connection pool from the engine's limit and the instance count**, not from a guess. Pool size × instances must stay within what the database accepts, with headroom for migrations and operators. A larger pool is not faster: past the point the database can execute concurrently, it converts queuing in the application into queuing in the engine, where it is harder to see.
+- **Size the connection pool from the engine's limit and the recorded instance count**, not from a guess. Pool size × instances must stay within what the database accepts, with headroom for migrations and operators — and `Instance count` is a profile row precisely so that multiplication is checkable rather than assumed. A larger pool is not faster: past the point the database can execute concurrently, it converts queuing in the application into queuing in the engine, where it is harder to see.
 - **Bound the wait for a connection**, and keep it short. A long acquisition wait does not prevent exhaustion; it hides it, by turning a fast failure into a stalled request.
 - **Enable JDBC batching deliberately and verify it in the generated SQL.** `saveAll` is not batching, and the identifier strategy can silently disable it.
 - **Every read that can grow is already bounded** by the pagination rules above; the maximum page size is recorded with the rest of these numbers so it is one decision rather than a constant somebody re-picks.

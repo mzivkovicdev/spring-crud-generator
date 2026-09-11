@@ -180,8 +180,12 @@ the reverse.
     thread pool gone they are the only bounds left. No synchronous request has an in-process
     timeout, so the recorded request budget is held by the arithmetic of its parts and by the
     ingress. (`spring-boot-patterns`)
-32. **No outbound call without explicit connection and read timeouts**, inside the caller's budget.
-    Retry policy exists in exactly one layer. Provider exceptions are translated at the adapter.
+32. **An outbound call has three waits, and all three are bounded inside the caller's budget** —
+    the wait for a pooled connection, connect, and read. The library defaults for the first two are
+    minutes and none, and a client built by hand rather than from the auto-configured builder reads
+    none of the project's settings. The pool itself is sized from the recorded concurrency model and
+    instance count. Retry policy exists in exactly one layer. Provider exceptions are translated at
+    the adapter, and the three waits stay distinguishable through the translation.
     (`spring-boot-patterns`)
 33. **Authorization is enforced in the service and persistence path**, not only at the controller.
     Identity, tenant, and ownership come from the authenticated context, never from a request field.
@@ -197,8 +201,10 @@ the reverse.
 
 35. **A failure is logged once, at the boundary that handles it**, with the internal error code and
     the correlation identifier. Never catch, log, and rethrow. (`observability-and-logging`)
-36. **Metric tag values are bounded.** Never an identifier, email, tenant, raw URL, timestamp, or
-    exception message. (`observability-and-logging`)
+36. **Metric tag values are bounded.** Never an identifier, email, raw URL, timestamp, or exception
+    message — and never a tenant unless its set is small, fixed, and approved, which is the one
+    exception the owner allows and this card must not drop. A tenant belongs in a structured log
+    field regardless. (`observability-and-logging`)
 
 ## Tests
 

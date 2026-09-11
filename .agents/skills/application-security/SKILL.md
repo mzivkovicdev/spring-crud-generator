@@ -53,8 +53,8 @@ Treat non-public source code, prompts, architecture, schemas, API contracts, int
 
 Before applying a generic standard, inspect the repository for a security profile, threat model, data-classification policy, architecture decisions, incident procedure, and regulatory or contractual requirements.
 
-- Use the project-pinned OWASP ASVS version and applicable requirement set; do not silently change the baseline during a feature.
-- When no profile exists, recommend creating `docs/security/security-profile.md`; do not invent compliance claims.
+- Use the ASVS version `Security profile and ASVS baseline` records in `docs/project-profile.md`, and the applicable requirement set; do not silently change the baseline during a feature. That row also records where the profile lives, so a task can tell an absent baseline from an unread one.
+- When the row records `none`, recommend creating `docs/security/security-profile.md` and recording it; do not invent compliance claims. `none` is a legitimate recorded answer and is not a statement that the project is compliant with anything.
 - Record ASVS requirements with versioned identifiers such as `v5.0.0-1.2.5`. [API security and abuse prevention](references/api-security-and-abuse-prevention.md) lists everything the profile has to contain; do not restate that list elsewhere.
 - Treat the current OWASP Top 10 and API Security Top 10 as awareness inputs, not complete checklists.
 - Apply GDPR, PCI DSS, health-data, contractual, or regional requirements only where actually applicable to the project.

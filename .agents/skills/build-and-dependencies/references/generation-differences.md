@@ -115,6 +115,7 @@ must prove; this skill owns the declaration that makes them run.
 | Nullability annotation the **project** writes | `org.jspecify.annotations` | `org.jspecify.annotations` |
 | Declarative retry | Spring Retry's `@Retryable` plus `@EnableRetry`, version-managed by the BOM | `org.springframework.resilience.annotation.Retryable` plus `@EnableResilientMethods`, in the framework |
 | Programmatic retry | Spring Retry's `RetryTemplate` | `org.springframework.core.retry.RetryTemplate` and `RetryPolicy` — this package carries **no** annotation |
+| Request-factory settings type | `org.springframework.boot.http.client.ClientHttpRequestFactorySettings`, with `ClientHttpRequestFactoryBuilder` beside it, from 3.4 onward | `org.springframework.boot.http.client.HttpClientSettings` |
 | Spring Retry itself | version-managed by the BOM | still usable, but no longer version-managed; pin it explicitly if the project keeps it |
 | `EnvironmentPostProcessor` | `org.springframework.boot.env` | `org.springframework.boot` |
 | `BootstrapRegistry` | `org.springframework.boot` | `org.springframework.boot.bootstrap` |
@@ -160,6 +161,7 @@ change alters which requests a rule matches without breaking the compile.
 | Jackson parser features | `spring.jackson.parser.*` | `spring.jackson.json.read.*` where an equivalent read feature exists |
 | Module registration | well-known modules only | all classpath modules, unless `spring.jackson.find-and-add-modules=false` |
 | Health probes | opt in | enabled by default; disable with `management.endpoint.health.probes.enabled=false` |
+| Outbound HTTP client settings | `spring.http.client.*` for the imperative clients and `spring.http.reactiveclient.*` for the reactive one, **from Spring Boot 3.4 onward**; the 3.0–3.3 lines have no such properties at all | `spring.http.clients.*`, with the factory under `spring.http.clients.imperative.factory` and the connector under `spring.http.clients.reactive.connector`. `spring.http.serviceclient.<group>.*` additionally carries per-group settings |
 
 When upgrading an existing application, add `spring-boot-properties-migrator` at `runtime` scope for
 one cycle. It reports and temporarily remaps renamed properties at startup. Remove it once the

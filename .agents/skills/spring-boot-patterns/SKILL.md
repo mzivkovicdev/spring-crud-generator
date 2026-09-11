@@ -73,8 +73,8 @@ whenever a decision this skill's work depends on is not recorded.
 
 The rows this skill owns the *meaning* of are the architectural ones: service interface convention,
 aggregate roots and their tables, the reliable-delivery mechanism for external effects, the
-resilience library, the outbound timeouts, the request budget, the idempotency claim shape, the API
-base path, and the error catalog type. Each is decided here and recorded there.
+resilience library, the outbound client with its timeouts and pool, the request budget, the
+idempotency claim shape, the API base path, and the error catalog type. Each is decided here and recorded there.
 
 ## Rules before coding
 
@@ -239,14 +239,17 @@ Read [error handling examples](references/error-handling-examples.md) for the ca
 
 ## Outbound calls
 
-Every call to another system is bounded, translated, and retried in exactly one layer. The three
+Every call to another system is bounded, translated, and retried in exactly one layer. The four
 rules that matter most, because their defaults are unsafe:
 
-- **No outbound call without an explicit connection and read timeout.** Several widely used clients default to no read timeout at all, so one unresponsive dependency exhausts the thread pool and kills the application.
-- **Retry lives in one layer only.** A client library, an adapter, a gateway, and a scheduler each retrying three times is twenty-seven calls to a system that is already failing.
-- **Failure is translated at the adapter boundary.** No client library exception type, status object, or SDK response reaches a service or a controller.
+- **An outbound call has three waits, not two.** Connect and read are the obvious pair; the third is the wait for a connection from the client's own pool, and it is the one projects miss. Several widely used clients default to no read timeout at all and to a multi-minute pool acquisition wait, so one unresponsive dependency exhausts the pool and every caller queues behind it.
+- **The pool is a bound like the database's, and its per-destination default is a small single-digit number.** With the concurrency model recorded, that default decides how much of the application can talk to one dependency at once; re-derive it whenever the model or the instance count changes.
+- **Retry lives in one layer only.** A client library, an adapter, a gateway, and a scheduler each retrying three times is twenty-seven calls to a system that is already failing — and the retried worst case is part of the request budget's arithmetic.
+- **Failure is translated at the adapter boundary**, and the three waits stay distinguishable through it. No client library exception type, status object, or SDK response reaches a service or a controller.
 
-Read [outbound call rules](references/outbound-call-rules.md) before adding or changing any client.
+Read [outbound call rules](references/outbound-call-rules.md) before adding or changing any client:
+it carries the three waits, where the settings are applied on each generation, the pool defaults per
+client, how the pool is sized, and the tests that prove each bound.
 `observability-and-logging` owns what an outbound call must emit, and `application-security` owns
 credentials, destination validation, and response-size limits.
 
@@ -330,7 +333,7 @@ and survives review** unless it is recognised by name:
 - a repository injected into an application service, or one aggregate service depending on another;
 - a JPA association crossing an aggregate boundary;
 - an external effect fired inside the transaction rather than after commit, or after commit where the profile records that losing it is unacceptable;
-- an outbound client with no read timeout, or a provider exception reaching a service or controller;
+- an outbound client with no read timeout or no pool acquisition wait, a client constructed by hand so the recorded settings never reach it, or a provider exception reaching a service or controller;
 - a second machine-readable error identifier beside the RFC 9457 `type`;
 - an idempotency claim committed separately from the effect under `single-phase`, or a `two-phase` claim with no lease — the first breaks the rollback guarantee, the second blocks its key forever the first time the process dies mid-use-case;
 - an exception advice that handles only project exception types, so contention arrives from the framework and the catch-all reports a routine `409` or `503` condition as a `500`;
@@ -348,7 +351,7 @@ suspicious existing code.
 - [ ] The transaction boundary is the highest service the use case enters, and no aggregate service overrides propagation or isolation to escape it.
 - [ ] No application service holds a repository or a pass-through method; no aggregate service holds another service.
 - [ ] Each external effect uses the delivery mechanism the profile records, and failed delivery is logged rather than dropped.
-- [ ] Every outbound client sets both timeouts, and retry exists in exactly one layer.
+- [ ] Every outbound client bounds all three waits — acquisition, connect, and read — through the auto-configured builder rather than a hand-built client, its pool is sized from the recorded concurrency model and instance count, and retry exists in exactly one layer.
 - [ ] The concurrency model is the one the profile records, and any change to it re-derived the database pool, the per-caller limits, and the outbound client pools in the same change.
 - [ ] The request budget's parts add up to less than the budget, and no path relies on a synchronous request timeout that does not exist.
 - [ ] TOs are explicit, validated, controller-owned, and separate from domain models and entities.

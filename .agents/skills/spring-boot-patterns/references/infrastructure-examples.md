@@ -293,13 +293,21 @@ this file.
 public record CatalogClientProperties(
         @NotNull URI baseUrl,
         @NotNull @DurationMin(millis = 1) Duration connectTimeout,
-        @NotNull @DurationMin(millis = 1) Duration readTimeout) {
+        @NotNull @DurationMin(millis = 1) Duration readTimeout,
+        @NotNull @DurationMin(millis = 1) Duration acquisitionWait) {
 }
 ```
 
 Validate required timeouts as strictly positive so invalid configuration fails during startup. The
-two names match the outbound timeouts the project profile records, so a configuration key, a
-property component, and a profile row all say the same word.
+three names match the three waits the project profile records, so a configuration key, a property
+component, and a profile row all say the same word — and the third one is present because
+[outbound call rules](outbound-call-rules.md#three-waits-not-two) requires it, not because a client
+usually shows it.
+
+**A per-destination properties type is the exception, not the default.** Where every destination
+shares the project's recorded budget, there is nothing to bind: the settings reach every client
+through the auto-configured builder, and a type like this one adds a second place to look. Declare it
+only where one dependency genuinely needs different numbers, and record why.
 
 ```java
 @Configuration(proxyBeanMethods = false)
@@ -318,13 +326,20 @@ class CatalogClientConfiguration {
 }
 ```
 
-**This bean is incomplete as written, deliberately.** The connection and read timeouts are applied to
-the request factory the builder uses, and the type that carries them differs by Spring Boot
-generation; `build-and-dependencies` owns that coordinate in
-[generation differences](../../build-and-dependencies/references/generation-differences.md). Read it
-and configure both timeouts from `properties` before this client goes anywhere near a running system
-— [outbound call rules](outbound-call-rules.md) states why a client without a read timeout takes the
-application down rather than the dependency.
+**Note which builder this injects.** `RestClient.Builder` is the auto-configured one, so the
+project-wide settings already reach the client built from it. That is the whole reason the bean takes
+a builder rather than calling `RestClient.create()`, which would produce a client carrying the
+underlying library's defaults — an unset read timeout among them.
+
+**This bean is incomplete as written, deliberately.** It applies none of the per-destination values in
+`properties`, and the settings type that carries them differs by Spring Boot generation, as does
+whether a property can carry them at all;
+`build-and-dependencies` owns those coordinates in
+[generation differences](../../build-and-dependencies/references/generation-differences.md). Read that
+row, then apply the three waits from `properties` to this client's own request factory before it goes
+anywhere near a running system — [outbound call rules](outbound-call-rules.md#where-the-settings-are-applied)
+states where each one is applied, and why the pool acquisition wait is the one that is usually
+missing.
 
 A configuration class is named for what it constructs. Unrelated infrastructure beans get their own
 class rather than a spare `@Bean` method in the nearest existing one:
@@ -449,6 +464,19 @@ between the two commits leaves a claim nothing will complete, so:
 
 - Use a distributed lock or database claim pattern when a job must run once across the cluster.
 - Bound batches and memory usage; persist progress or checkpoints for large work.
-- Configure executors explicitly where concurrency matters.
 - Propagate context intentionally and handle failures; never fire-and-forget critical work silently.
 - The application's concurrency model, virtual threads included, is decided in [runtime and request budget](runtime-and-request-budget.md#choose-the-concurrency-model), not here. Scheduled and asynchronous work inherits that decision; it does not make its own.
+
+### Every executor is declared, named, and bounded
+
+An executor the project did not declare is one whose bounds nobody chose, and asynchronous work is
+the one place where the request budget does not apply — nothing downstream is waiting, so nothing
+fails when it grows. Declare one `@Bean` per purpose, name it, and set every bound on it.
+
+- **Name every executor and its threads.** A thread dump is the first thing anyone reads during an incident, and `task-1` says nothing about which work is stuck. The name follows `project-naming-conventions`.
+- **Never share one executor across unrelated purposes.** Two kinds of work in one pool means the slow one starves the fast one, and the bulkhead that would have contained it does not exist.
+- **On platform threads, `ThreadPoolTaskExecutor` grows only after the queue is full.** Core threads are created first, then the queue fills, and only then does the pool grow toward its maximum. With an unbounded queue the maximum is unreachable and the pool is permanently its core size — which is why the queue capacity is set deliberately, never left at its default.
+- **Set the rejection policy deliberately.** The default aborts with an exception, which is the correct behavior for work that has a caller and the wrong one for work that must not be dropped. Choose per executor, and where rejection is not acceptable, the answer is a persistent queue rather than an unbounded in-memory one.
+- **On virtual threads, the executor is unbounded by construction**, so the bound moves to an explicit concurrency limit on the work itself. Removing the thread count does not remove the need for a limit — it is the same rule the concurrency model states for the request path, applied to asynchronous work.
+- **Tie shutdown to the recorded grace period.** An executor that is not asked to finish its work on shutdown drops whatever is in flight, and one asked to wait longer than the platform's termination grace period is killed mid-task anyway. Both numbers come from the profile.
+- **An executor is a queue, so it is metered like one.** `observability-and-logging` owns what: queue depth, active threads, rejections. A rejection counter that stays at zero is the evidence the bounds are right; one that moves is the evidence they are not.
