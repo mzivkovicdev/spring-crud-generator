@@ -5,8 +5,8 @@ connection may last, and how the pool is sized. Apply every rule from `../SKILL.
 
 **This file carries rules, not only examples.** The three levels a bound can be applied at, the
 delivery channel each engine offers, the rule that one channel carries every connection-level
-setting, the migration exception, and the tests that prove a bound is real are stated here in full
-and nowhere else. `../SKILL.md#resource-budgets` states the decisions and routes here for the
+setting, the per-statement cost settings that travel over the same channel, the migration exception,
+and the tests that prove a bound is real are stated here in full and nowhere else. `../SKILL.md#resource-budgets` states the decisions and routes here for the
 mechanism.
 
 Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
@@ -20,11 +20,12 @@ project.
 1. [Three levels, and which one is the bound](#three-levels-and-which-one-is-the-bound)
 2. [One connection, several settings](#one-connection-several-settings)
 3. [Delivering the settings, by engine](#delivering-the-settings-by-engine)
-4. [Migrations must not inherit the application's bounds](#migrations-must-not-inherit-the-applications-bounds)
-5. [Transaction timeout](#transaction-timeout)
-6. [Pool size and the wait for a connection](#pool-size-and-the-wait-for-a-connection)
-7. [Proving a bound is real](#proving-a-bound-is-real)
-8. [Rejected shapes](#rejected-shapes)
+4. [Per-statement cost, by engine](#per-statement-cost-by-engine)
+5. [Migrations must not inherit the application's bounds](#migrations-must-not-inherit-the-applications-bounds)
+6. [Transaction timeout](#transaction-timeout)
+7. [Pool size and the wait for a connection](#pool-size-and-the-wait-for-a-connection)
+8. [Proving a bound is real](#proving-a-bound-is-real)
+9. [Rejected shapes](#rejected-shapes)
 
 ## Three levels, and which one is the bound
 
@@ -109,6 +110,10 @@ spring:
         # idle_in_transaction_session_timeout has its session terminated, which is what stops
         # an abandoned request from holding a connection indefinitely.
         options: "-c statement_timeout=2000 -c lock_timeout=1000 -c idle_in_transaction_session_timeout=10000"
+        # The statement-cache sizes travel over this same channel, per "Per-statement cost".
+        # Sized from the distinct statements this application issues, not from a round number.
+        preparedStatementCacheQueries: 512
+        preparedStatementCacheSizeMiB: 10
 ```
 
 MySQL, the same three decisions where the engine has them:
@@ -119,12 +124,76 @@ spring:
     hikari:
       data-source-properties:
         sessionVariables: "max_execution_time=2000,innodb_lock_wait_timeout=1"
+        # Both flags are off by default, and the length limit excludes most generated SQL until
+        # it is raised. Per "Per-statement cost"; the sizes come from the profile.
+        cachePrepStmts: true
+        useServerPrepStmts: true
+        prepStmtCacheSize: 500
+        prepStmtCacheSqlLimit: 2048
 ```
 
 Note the unit change between the two: `innodb_lock_wait_timeout` is in **whole seconds**, while
 every PostgreSQL value above is in milliseconds. A lock timeout recorded as `1s` in the profile
 therefore renders differently per engine, which is one more reason the value is read from the
 profile and converted at the point of use rather than retyped.
+
+## Per-statement cost, by engine
+
+Everything above bounds **how long** a statement may take. This section is about what one costs when
+it is *not* slow — the parse, the plan, and the round trips — because on a hot path that is most of
+the CPU the application spends on persistence, and none of it appears as a slow query. A profiler
+shows it as time inside the driver; a slow-query log shows nothing at all. Read "the profile"
+everywhere else on this page as `docs/project-profile.md`, which is the only thing that word means in
+this skill set.
+
+**These are not tuning knobs with safe defaults.** On the drivers this set supports, statement caching
+is off on one and partially warm on the other, batching is off, and the size limits that do exist were
+chosen for hand-written SQL rather than for what an ORM generates. They are connection properties like
+every other, so [one connection, several settings](#one-connection-several-settings) applies here
+without exception: they travel over the channel the profile records, beside the timeouts, not through
+a second mechanism.
+
+Confirm every value below against the driver version the build resolves. These are written-down
+values like any coordinate, and a driver that ignores a property reports nothing.
+
+### Prepared statement caching
+
+| Engine | What the driver does when nothing is set | What that costs |
+| --- | --- | --- |
+| PostgreSQL | `prepareThreshold` is `5`, so a statement is re-parsed server-side for its first four executions before the driver promotes it to a named one. The client-side cache then holds `preparedStatementCacheQueries` = `256` statements and `preparedStatementCacheSizeMiB` = `5` MB **per connection** | The promotion is automatic, so the steady state is good and the cost is bounded to warm-up — unless the application issues more distinct statements than the cache holds, in which case it evicts and re-parses forever |
+| MySQL | `cachePrepStmts` is `false` and `useServerPrepStmts` is `false`, so nothing is cached and every statement is prepared client-side. With caching switched on, `prepStmtCacheSize` is `25` statements and `prepStmtCacheSqlLimit` is `256` characters | Off by default, and **the size limit silently excludes most generated SQL**: a provider-generated `insert` or a join over a few columns passes 256 characters easily, so it is never cached even after the flag is on |
+
+Four rules follow, and the middle two are the ones that ship wrong:
+
+- **Enable caching deliberately and record it.** `Statement cache` in `docs/project-profile.md` carries the decision and the per-engine properties that implement it. A project that leaves it unrecorded has not chosen the driver's default; it has not noticed it.
+- **Size the cache against the number of distinct statements the application issues, not against a round number.** Count them — a provider logs the SQL it prepares — and leave headroom. A cache one statement too small on a hot loop is worse than no cache, because it pays the eviction as well as the parse.
+- **Raise the SQL length limit where the engine has one.** A limit below the length of the statements the application actually issues is a cache that is enabled, reports nothing, and holds nothing.
+- **A connection pooler in front of the engine can make server-side prepared statements a deployment question.** A pooler that multiplexes transactions across server connections cannot see a statement prepared on another one. Confirm that the pooler in the path supports them; where it does not, disable them explicitly — on PostgreSQL `prepareThreshold=0` — and record why, rather than discovering it as errors under load.
+
+### Fetch size
+
+`hibernate.jdbc.fetch_size` sets how many rows the driver retrieves per round trip. It is not a bound
+and it does not replace pagination: every read is already bounded by the page-size rule this skill
+owns, and fetch size matters only for the bounded reads that are nonetheless large — a report, a
+scheduled export, a batch job.
+
+- **The driver decides whether the setting does anything.** On PostgreSQL the fetch size is honoured only when autocommit is off, which inside the transaction this skill requires for every read is already true. On MySQL the driver's `defaultFetchSize` is `0` and `useCursorFetch` is `false`, so it materialises the whole result set and setting a fetch size alone changes nothing.
+- **Record it or record its absence.** `JDBC fetch size` carries the number; `none` is a valid answer that says the driver default applies and somebody looked.
+
+### Batching needs ordering, or it is not batching
+
+`hibernate.jdbc.batch_size` defaults to `0`, so batching is off until the profile's `JDBC batch size`
+row turns it on. Two settings decide whether turning it on produces batches:
+
+- **`hibernate.order_inserts` and `hibernate.order_updates` both default to `false`.** A batch holds one statement, so an interleaved sequence of writes against different tables ends and restarts the batch at every switch. Ordering groups them, which is the whole reason the provider offers it. Turning on `batch_size` without these two produces batches of one on any use case that writes more than a single entity type — a green configuration and no batching.
+- **`hibernate.jdbc.batch_versioned_data` is generally on**, so an optimistic version check survives batching. Confirm it on the provider version rather than assuming, because a batch that does not check versions is the silent overwrite [locking and retry examples](locking-and-retry-examples.md) exists to prevent.
+- **Batching and the identifier strategy interact.** An identifier the provider must fetch per row disables batching regardless of these settings; `../SKILL.md` states that the identifier strategy is verified against its effect on batching, and this is where that verification lands.
+
+### What this does not fix, and one setting that works against it
+
+- **A statement cache does not make a bad statement good.** An N+1, a missing index, and an unbounded read are cheaper to fix than to cache, and the rules for all three are elsewhere in this skill. Caching a statement the application should not be issuing is the same error `application-caching` rejects one layer up.
+- **`@DynamicUpdate` works against the cache it sits beside.** It emits an `update` naming only the changed columns, so one entity produces a different statement per combination of changed fields — and a cache keyed by SQL text holds each of them separately, or holds none of them. It earns its place on a wide table whose updates touch few columns, and it is recorded as deliberate; applied by habit it trades a cache hit for a shorter statement nobody measured.
+- **A varying `in` list defeats both caches at once.** Each list length is a distinct statement, so it misses the provider's query-plan cache and the driver's statement cache together — a list that ranges from one to fifty elements is fifty statements where the application issues one. `hibernate.query.in_clause_parameter_padding` pads the list up to the next power of two and collapses that into six; it is off by default and worth turning on wherever a query takes a collection. Confirm the property name against the provider line the build resolves, as with every value on this page.
 
 ## Migrations must not inherit the application's bounds
 
@@ -197,6 +266,7 @@ by reading the configuration.
 - **Idle-in-transaction bound, where the engine has one:** open a transaction, do nothing for longer than the bound, and assert the next statement fails.
 - **Transaction timeout:** drive a transaction past the bound and assert the caller receives the failure rather than the result.
 - **Connection wait:** hold every pooled connection, request one more, and assert it fails within `connection-timeout` rather than blocking until the test framework gives up.
+- **Statement caching and batching:** count round trips, not configuration. Execute the hot path twice and assert that the second run issues no additional prepares; execute a multi-entity write and assert the batch count the `JDBC batch size` row implies rather than one statement per row. Both read as configured and do nothing when the ordering settings or the cache limits are wrong, and neither shows up as a slow query.
 - **Migration separation:** the clean-install run `sql-database-migration` requires must apply the full history without hitting the application's statement timeout. A history that only passes on an empty database is not evidence.
 
 Each of these belongs at the level `spring-boot-testing` places it: against the real engine, in the
@@ -249,4 +319,16 @@ List<OrderEntity> findByStatus(final OrderStatus status);
 public List<ReportRowDomain> buildAnnualReport() {
     return this.reportRepository.everything();
 }
+```
+
+```yaml
+# Wrong: batching switched on and nothing ordered. Every write that touches a second table ends
+# the batch, so a use case writing two entity types produces batches of one - a configuration
+# that reads as batching and issues a round trip per row.
+spring:
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
 ```

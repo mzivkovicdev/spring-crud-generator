@@ -176,7 +176,9 @@ becoming a held connection and a held connection from becoming an outage.
 | Connection pool size | `ASK` |  | maximum pool size. No fallback: it depends on the engine's own connection limit and on how many instances share it, and a guessed value either starves the application or overloads the database | `spring-data-jpa` |
 | Connection maximum lifetime | `ASK` | 30m | how long a pooled database connection may live before the pool retires it. Set below the shortest idle timeout anywhere on the network path — the engine's, a proxy's, a firewall's — or the pool eventually hands out a connection the other end already closed | `spring-data-jpa` |
 | Maximum wait for a connection | `ASK` | 1s | how long a caller waits for a pooled connection before failing. Short on purpose — a long wait converts pool exhaustion into a stalled request nobody times out | `spring-data-jpa` |
-| JDBC batch size | `ASK` | none | batching is enabled deliberately and verified against the generated SQL, never assumed from `saveAll` | `spring-data-jpa` |
+| Statement cache | `ASK` | enabled | the driver properties that enable and size prepared-statement caching, per engine. `disabled` only where a connection pooler in the path cannot carry server-side prepared statements, and then record which pooler | `spring-data-jpa` |
+| JDBC fetch size | `ASK` | none | rows per round trip for the bounded reads that are still large — a report, an export, a batch job. `none` leaves the driver default, which differs by engine and on one of them does nothing until a second property is set | `spring-data-jpa` |
+| JDBC batch size | `ASK` | none | batching is enabled deliberately and verified against the generated SQL, never assumed from `saveAll` — and it needs insert and update ordering with it, or an interleaved write ends the batch at every table switch | `spring-data-jpa` |
 
 **The arithmetic, worked.** `spring-boot-patterns` requires the parts of a request to sum below the
 budget, and a rule with no reference sum is a rule nobody applies. The table below adds the fallbacks

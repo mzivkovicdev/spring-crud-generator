@@ -38,7 +38,7 @@ only there. Read the one the change touches, and only that one:
 - [Locking and retry examples](references/locking-and-retry-examples.md) for optimistic and pessimistic locking, the atomic conditional `UPDATE` that is the third strategy, the composed retry annotation for both generations, lock timeouts and ordering, and the concurrency anti-patterns.
 - [Write behavior examples](references/write-behavior-examples.md) for flush timing, bulk DML, large batches, and the write-side anti-patterns.
 - [Applying the tenant scope](references/entity-and-query-examples.md#applying-the-tenant-scope) *(rules)* whenever the profile records a tenancy model other than `single-tenant`: the mechanism per model, and the statements it does not reach.
-- [Resource bounds](references/resource-bounds.md) *(rules)* for how a statement, transaction, connection-acquisition, or pool bound is actually applied: the three levels a bound can sit at, the delivery channel each engine offers and why they all share one, the migration exception, and the tests that prove a bound is real.
+- [Resource bounds](references/resource-bounds.md) *(rules)* for how a statement, transaction, connection-acquisition, or pool bound is actually applied: the three levels a bound can sit at, the delivery channel each engine offers and why they all share one, the per-statement cost settings that share that channel, the migration exception, and the tests that prove a bound is real.
 
 ## Before changing persistence
 
@@ -239,14 +239,16 @@ are bounds rather than tuning.
 - **Set a transaction timeout**, project-wide by default and tighter where a use case needs it, at or below the request budget and never below the statement timeout. It bounds the whole unit, including the parts between statements — and a read needs one as much as a write does, because `readOnly` bounds nothing.
 - **Size the connection pool from the engine's limit and the recorded instance count**, not from a guess. Pool size × instances must stay within what the database accepts, with headroom for migrations and operators — and `Instance count` is a profile row precisely so that multiplication is checkable rather than assumed. A larger pool is not faster: past the point the database can execute concurrently, it converts queuing in the application into queuing in the engine, where it is harder to see.
 - **Bound the wait for a connection**, and keep it short. A long acquisition wait does not prevent exhaustion; it hides it, by turning a fast failure into a stalled request.
-- **Enable JDBC batching deliberately and verify it in the generated SQL.** `saveAll` is not batching, and the identifier strategy can silently disable it.
+- **Enable JDBC batching deliberately and verify it in the generated SQL.** `saveAll` is not batching, the identifier strategy can silently disable it, and batching without insert and update ordering produces batches of one on any use case that writes more than a single entity type.
+- **Bound how long a statement may take, then decide what one costs.** Prepared-statement caching, fetch size, and batch ordering are what a statement costs when it is *not* slow, and they are off or unhelpfully sized by default on the drivers this skill supports. That cost never appears in a slow-query log, so it is decided and recorded rather than discovered.
 - **Every read that can grow is already bounded** by the pagination rules above; the maximum page size is recorded with the rest of these numbers so it is one decision rather than a constant somebody re-picks.
 
 **How each of those is applied is stated once, in
 [resource bounds](references/resource-bounds.md)** — the three levels a bound can sit at and which
 one is the real one, the delivery channel each engine offers, the rule that every connection-level
-setting shares one channel, why migrations must not inherit the application's bounds, and the test
-that proves each bound rather than reading it. Read it before configuring or reviewing any of these
+setting shares one channel, the [per-statement cost](references/resource-bounds.md#per-statement-cost-by-engine)
+settings that travel over that same channel, why migrations must not inherit the application's
+bounds, and the test that proves each bound rather than reading it. Read it before configuring or reviewing any of these
 numbers; a bound the engine ignores looks exactly like a bound that works.
 
 Two consequences worth stating, because they are where these bounds actually get lost:
@@ -308,4 +310,5 @@ survive review:
 - [ ] Any operation that overwrites rather than recomputes uses the stale-write protection the profile records.
 - [ ] Tests run against the supported database and cover changed persistence behavior.
 - [ ] Statement, transaction, connection-wait, pool, and pessimistic-lock bounds come from the profile, fit inside the request budget, and no path was left with an unbounded default.
+- [ ] Statement caching, fetch size, and batch ordering come from the profile rather than the driver's defaults, and the hot path was proven by counting round trips rather than by reading the configuration.
 - [ ] The lock timeout is applied through a mechanism the configured engine actually honours, proven by a test that a blocked lock fails within the bound rather than waiting.
