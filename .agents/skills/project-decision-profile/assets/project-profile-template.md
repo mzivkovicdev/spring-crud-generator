@@ -117,7 +117,7 @@ Last updated: YYYY-MM-DD
 | Cache operation timeout | `ASK` | 50ms | the bound on one cache read, write, or evict; well inside the request budget, because a hanging cache costs the wait *and* the work it was meant to avoid | `application-caching` |
 | Cached value serialization | `ASK` |  | the format and its configuration; never Java serialization. Changes here move the key namespace version | `application-caching` |
 | Cache key namespace | `ASK` |  | the prefix and version segment every key carries | `project-naming-conventions` |
-| Invalidation shape | `ASK` | after-commit listener | after-commit listener \| transaction-aware cache manager — one for the whole project, because a codebase with both has no rule | `application-caching` |
+| Invalidation shape | `ASK` | after-commit listener | after-commit listener \| transaction-aware cache manager — one for the whole project, because a codebase with both has no rule. The second needs a manager that supports `setTransactionAware`, so answer it after **Cache technology** | `application-caching` |
 | Source survives a cold cache | `ASK` |  | yes \| no. `no` makes the cache part of the availability design, not an optimization, and changes how a deploy is sequenced | `application-caching` |
 | Hibernate second-level cache | `ASK` | no | no \| the entities cached and the concurrency strategy per region. It is a cache and every row above applies to it | `application-caching` |
 | Hibernate query cache | `ASK` | no | no \| the queries cached, with the measurement that justified each | `application-caching` |

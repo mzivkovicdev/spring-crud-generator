@@ -111,9 +111,10 @@ A feature that introduces any of these elements is instrumented before it is con
 HTTP server metrics, datasource pool metrics, and JVM metrics come from auto-configuration. Do not
 reimplement them.
 
-**Tag cardinality is a hard limit.** Never use an identifier, email address, tenant, raw URL, free
-text, timestamp, or exception message as a tag value. Every distinct value creates a time series;
-an unbounded tag will exhaust the metrics backend, and it is the fastest way to take down a
+**Tag cardinality is a hard limit.** Never use an identifier, email address, raw URL, free text,
+timestamp, or exception message as a tag value, and never a tenant unless its set is small, fixed,
+and approved — a tenant is a structured log field either way. Every distinct value creates a time
+series; an unbounded tag will exhaust the metrics backend, and it is the fastest way to take down a
 monitoring stack. Use a templated route, a bounded outcome, and a bounded error category.
 
 Because cardinality is a runtime property that no static check and no build gate can see, back the
@@ -142,7 +143,7 @@ Reject:
 - catch, log, and rethrow;
 - MDC written without a `finally` cleanup, or a correlation filter ordered after the security filter chain;
 - logging a full request or response body, full SQL with parameters, credentials, tokens, or personal data;
-- an unbounded metric tag such as an identifier, email, tenant, or raw URL;
+- an unbounded metric tag such as an identifier, email, raw URL, or an unapproved tenant;
 - a logger field with an inconsistent name, a non-`static` logger, or a logger declared on the wrong class;
 - tracing enabled inside the service but not propagated to outbound calls;
 - an external dependency check in the liveness probe;

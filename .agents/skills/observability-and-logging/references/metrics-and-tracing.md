@@ -68,7 +68,7 @@ Never use as a tag value:
 
 - an identifier of any kind: user, order, request, correlation, session;
 - an email address, username, or any personal data;
-- a tenant, unless the tenant set is small, fixed, and approved;
+- a tenant, unless the tenant set is small, fixed, and approved — and a structured log field either way;
 - a raw URL containing path variables or query parameters;
 - an exception message, a free-text reason, or a timestamp;
 - an unbounded enumeration such as a country plus city plus device combination.

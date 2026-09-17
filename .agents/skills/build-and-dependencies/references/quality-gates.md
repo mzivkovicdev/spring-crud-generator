@@ -36,7 +36,7 @@ compliance.
 | Logger field named `LOGGER` | `observability-and-logging` | Checkstyle regex |
 | Qualify instance access with `this.` | `modern-java-21` | Checkstyle `RequireThis` |
 | No `var` | `modern-java-21` | Checkstyle regex |
-| `final` parameters and single-assignment locals | `modern-java-21` | Checkstyle `FinalParameters`, `FinalLocalVariable` |
+| `final` parameters, `catch` included, and single-assignment locals | `modern-java-21` | Checkstyle `FinalParameters`, `FinalLocalVariable` |
 | At most seven parameters | `modern-java-21` | Checkstyle `ParameterNumber` |
 | Method over 100 lines, class over 1000 lines | `modern-java-21` | Checkstyle `MethodLength`, `FileLength` |
 | No `System.out`, `System.err`, `printStackTrace` | `observability-and-logging` | Checkstyle regex |

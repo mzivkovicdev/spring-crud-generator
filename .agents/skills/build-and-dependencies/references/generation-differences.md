@@ -106,6 +106,7 @@ must prove; this skill owns the declaration that makes them run.
 | JPA static metamodel processor | `org.hibernate.orm:hibernate-jpamodelgen` (Hibernate 6) | `org.hibernate.orm:hibernate-processor` (Hibernate 7) |
 | `TestRestTemplate` | `org.springframework.boot.test.web.client`, auto-configured | `org.springframework.boot.resttestclient`, and `@AutoConfigureTestRestTemplate` is required |
 | Real-HTTP test client for a random-port test | `TestRestTemplate`. `RestTestClient` **does not exist** on this generation | `RestTestClient`, `org.springframework.test.web.servlet.client`, with `@AutoConfigureRestTestClient` — new in Spring Framework 7 and the preferred client for a new test |
+| Cache manager customization | `org.springframework.boot.autoconfigure.cache.CacheManagerCustomizer` | `org.springframework.boot.cache.autoconfigure.CacheManagerCustomizer` |
 | Jackson component | `@JsonComponent` | `@JacksonComponent` |
 | Jackson mixin | `@JsonMixin` | `@JacksonMixin` |
 | Mapper builder customizer | `Jackson2ObjectMapperBuilderCustomizer` | `JsonMapperBuilderCustomizer` |

@@ -52,8 +52,10 @@
             <property name="checkMethods" value="true"/>
             <property name="validateOnlyOverlapping" value="false"/>
         </module>
+        <!-- FOR_EACH_CLAUSE is deliberately absent: FinalLocalVariable below already checks
+             the enhanced-for variable, and adding it here reports the violation twice. -->
         <module name="FinalParameters">
-            <property name="tokens" value="METHOD_DEF,CTOR_DEF"/>
+            <property name="tokens" value="METHOD_DEF,CTOR_DEF,LITERAL_CATCH"/>
         </module>
         <module name="FinalLocalVariable">
             <property name="validateEnhancedForLoopVariable" value="true"/>

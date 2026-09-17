@@ -10,7 +10,9 @@ annotations, the `CacheManager`, `CachingConfigurer`, and the transaction-aware 
 same on both. What differs is the JSON library that serializes values on a store that serializes —
 `build-and-dependencies` records that it changes major version between generations, and
 [invalidation and consistency](invalidation-and-consistency.md#changing-the-shape-of-a-cached-value)
-states what that means for entries written before the upgrade.
+states what that means for entries written before the upgrade — and the package
+`CacheManagerCustomizer` is imported from, in
+[generation differences](../../build-and-dependencies/references/generation-differences.md#annotations-and-types-that-moved).
 
 ## Contents
 
@@ -191,26 +193,34 @@ Why it is written this way:
 
 ### The transaction-aware cache manager
 
+Available only where the selected manager supports `setTransactionAware`, which `RedisCacheManager`
+and `JCacheCacheManager` inherit from `AbstractTransactionSupportingCacheManager` and
+`CaffeineCacheManager` does not. Where it does not, the listener above is the only shape;
+[technology and topology](technology-and-topology.md#the-property-checklist) carries the row.
+
 ```java
 @Configuration(proxyBeanMethods = false)
 class CacheConfiguration {
 
     /**
-     * Wraps the provider's cache manager so writes and evictions are deferred until the
-     * surrounding transaction commits.
+     * Defers every cache put and eviction until the surrounding transaction commits.
      *
-     * <p>Without this decorator, {@code @CacheEvict} on a transactional method evicts before the
-     * commit, and a concurrent reader repopulates the cache from the pre-write row.
+     * <p>Without it, {@code @CacheEvict} on a transactional method evicts before the commit, and
+     * a concurrent reader repopulates the cache from the pre-write row.
      *
-     * @param delegate the provider's cache manager
-     * @return the transaction-aware cache manager
+     * @return the customizer applied to the auto-configured cache manager
      */
     @Bean
-    CacheManager cacheManager(final CacheManager delegate) {
-        return new TransactionAwareCacheManagerProxy(delegate);
+    CacheManagerCustomizer<AbstractTransactionSupportingCacheManager> transactionAwareCacheManager() {
+        return cacheManager -> cacheManager.setTransactionAware(true);
     }
 }
 ```
+
+Customize the auto-configured manager rather than declaring a `CacheManager` bean, which backs the
+auto-configuration off and takes every `spring.cache.*` property with it. The customizer's generic
+type selects the manager it applies to, so one typed to a manager the project does not have is
+skipped without failing.
 
 Less code, applied everywhere at once. The cost is that **nothing at the call site says the ordering
 is handled**, so this bean becomes configuration nobody may delete — which is precisely the reason
@@ -318,6 +328,16 @@ Two rules hold whatever the provider:
 // does nothing looks exactly like a cache that is working.
 public ProductDomain getOrLoad(final Long tenantId, final String sku) {
     return this.getBySku(tenantId, sku);
+}
+```
+
+```java
+// Wrong: declaring a CacheManager instead of customizing the auto-configured one. Auto-configuration
+// backs off as soon as a CacheManager bean exists, so the bean this method asks for is the one its
+// own existence prevented.
+@Bean
+CacheManager cacheManager(final CacheManager delegate) {
+    return new TransactionAwareCacheManagerProxy(delegate);
 }
 ```
 

@@ -174,7 +174,8 @@ govern. Read that file before writing or reviewing any of them; none of it is de
 `spring-boot-patterns` owns where the boundary sits: which method carries `@Transactional`, proxy
 semantics, and how long a transaction may stay open. This section owns what happens inside it.
 
-- Use `readOnly = true` for read operations as an optimization hint, not as an authorization guarantee.
+- Use `readOnly = true` for read operations as an optimization hint, not as an authorization guarantee and not as a bound. It drops the provider's flush mode to manual, so no dirty-check pass runs before each query or at commit, and it marks the JDBC connection read-only under the default connection handling. On a read that loads many entities, that flush is real CPU.
+- It leaves the loaded entities writable, so the persistence context still keeps a loaded-state snapshot per entity. A projection is what removes that cost.
 - `readOnly` takes effect only where the transaction actually starts. On a method that joins an existing write transaction the attribute is ignored, so declaring it there proves nothing and reads as a guarantee the code does not have.
 - Use `REQUIRES_NEW` only for a documented consistency reason, and account for the extra connection demand.
 - Follow the complete explicit update-and-save structure owned by `spring-boot-patterns`; do not replace it with a dirty-checking-only implementation.

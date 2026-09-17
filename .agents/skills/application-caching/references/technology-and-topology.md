@@ -60,6 +60,7 @@ governs. An unanswered row is a rule applied on an assumption.
 | Is there atomic compute-if-absent across instances? | Decides whether cross-instance single-flight is available without a separate lock | [Stampede](cache-design.md#stampede) |
 | What is thrown when the store is unreachable, and after how long? | Decides what the error handler catches and what timeout bounds it | The fail-open rules in `../SKILL.md` |
 | What serializes the value, and is it configurable? | Decides the compatibility contract and whether Java serialization is even reachable | [Changing the shape](invalidation-and-consistency.md#changing-the-shape-of-a-cached-value) |
+| Does the cache manager support `setTransactionAware`? | Decides whether the transaction-aware invalidation shape is available at all | [Invalidating after commit](spring-cache-examples.md#invalidating-after-commit) |
 
 **The reference-versus-copy row is the one that silently changes correctness**, so it earns its own
 rule: **cache immutable values only.** A record with no mutable components, or a defensive copy on

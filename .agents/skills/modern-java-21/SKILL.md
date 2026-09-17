@@ -98,9 +98,9 @@ Do not reorganize imports across untouched files as part of an unrelated feature
 ### Prefer immutable data
 
 - Make dependencies and fields `final` unless mutation is part of the object's responsibility.
-- Declare method and constructor parameters `final`.
-- Declare local variables `final` when they are assigned once. Omit `final` only when reassignment is
-  intentional and clearer than introducing another value.
+- Declare method, constructor, and `catch` parameters `final`.
+- Declare local variables `final` when they are assigned once, the enhanced-`for` variable included.
+  Omit `final` only when reassignment is intentional and clearer than introducing another value.
 - Return immutable snapshots or unmodifiable views at boundaries; never leak a mutable internal collection.
 - Use records for immutable data carriers such as project TOs, domain values, query results, events, and value objects when their semantics fit. Whether a record may be a JPA entity or an embeddable is `spring-data-jpa`'s decision, not this skill's.
 - Validate record invariants in a compact constructor when they are intrinsic to the value, and copy a collection component defensively there — without the copy the record is immutable in name only.

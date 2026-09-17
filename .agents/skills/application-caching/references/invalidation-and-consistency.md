@@ -37,7 +37,7 @@ Two shapes fix it. Choose one for the project and use it consistently, because a
 evictions are transaction-aware and others are not has no rule anyone can apply.
 
 - **An after-commit listener.** The write publishes an event, and a listener bound to the after-commit phase performs the eviction. This is the mechanism `spring-boot-patterns` already owns for external effects, it makes the ordering visible at both ends, and it is the shape to prefer where a write invalidates several caches or where the eviction is not a simple key removal.
-- **A transaction-aware cache manager.** The cache manager is decorated so writes and evictions are deferred to after commit automatically. It is less code and it applies everywhere at once, which is its strength and its weakness: nothing at the call site says the ordering is handled, so the decorator itself becomes a piece of configuration nobody may remove.
+- **A transaction-aware cache manager.** The cache manager is decorated so writes and evictions are deferred to after commit automatically. It is less code and it applies everywhere at once, which is its strength and its weakness: nothing at the call site says the ordering is handled, so the decorator itself becomes a piece of configuration nobody may remove. Only a manager that supports `setTransactionAware` can be decorated this way, so decide this after **Cache technology**.
 
 [Spring cache examples](spring-cache-examples.md#invalidating-after-commit) carries both.
 
