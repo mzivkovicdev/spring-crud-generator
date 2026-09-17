@@ -4,17 +4,34 @@ Use these lenses to trace the changed behavior. Apply only the sections relevant
 
 ## Contents
 
-1. [Change design and blast radius](#change-design-and-blast-radius)
-2. [REST contract and boundary](#rest-contract-and-boundary)
-3. [Service, domain, and mapping](#service-domain-and-mapping)
-4. [Spring proxies and advice](#spring-proxies-and-advice)
-5. [Transactions and concurrency](#transactions-and-concurrency)
-6. [Persistence and database behavior](#persistence-and-database-behavior)
-7. [Security and confidentiality](#security-and-confidentiality)
-8. [External systems, Redis, messaging, and jobs](#external-systems-redis-messaging-and-jobs)
-9. [Configuration, observability, and operations](#configuration-observability-and-operations)
-10. [Build, dependencies, and delivery](#build-dependencies-and-delivery)
-11. [Tests and review completeness](#tests-and-review-completeness)
+1. [Generation mismatch](#generation-mismatch)
+2. [Change design and blast radius](#change-design-and-blast-radius)
+3. [REST contract and boundary](#rest-contract-and-boundary)
+4. [Service, domain, and mapping](#service-domain-and-mapping)
+5. [Spring proxies and advice](#spring-proxies-and-advice)
+6. [Transactions and concurrency](#transactions-and-concurrency)
+7. [Persistence and database behavior](#persistence-and-database-behavior)
+8. [Security and confidentiality](#security-and-confidentiality)
+9. [External systems, Redis, messaging, and jobs](#external-systems-redis-messaging-and-jobs)
+10. [Configuration, observability, and operations](#configuration-observability-and-operations)
+11. [Build, dependencies, and delivery](#build-dependencies-and-delivery)
+12. [Tests and review completeness](#tests-and-review-completeness)
+
+## Generation mismatch
+
+Read the Spring Boot generation from `docs/project-profile.md` before applying any other lens, and
+carry it through the whole review. Most generation defects compile, start, and pass the build, so
+they are invisible to everything except a reviewer who knows which generation applies.
+
+The owning skill states the rule; this lens only says where to look. Route each finding to that
+owner rather than restating the rule in the review.
+
+- Code written against the wrong generation's API: `@MockBean` on Spring Boot 4, `.and()` chaining or a removed request matcher under Spring Security 7, `@JsonComponent` where Jackson 3 expects `@JacksonComponent`.
+- A nullability annotation from outside the vocabulary `modern-java-21` requires — the check applies on both generations, not only where the alternative is deprecated.
+- A third-party library declared without its Spring Boot module on Spring Boot 4. The feature is silently inert. Treat any Boot 4 change that adds a technology as requiring proof that the technology actually ran, not proof that it resolved.
+- A configuration property that was renamed between generations, still present under its old name. It binds to nothing and reports nothing.
+- A generation upgrade mixed into a feature change. That is two changes with different risk profiles in one diff; ask for the split rather than reviewing them together.
+- A `spring-boot-starter-classic` dependency with no recorded removal condition.
 
 ## Change design and blast radius
 
@@ -53,14 +70,20 @@ Do not flag a controller merely for being `public` or lacking Javadoc. Apply the
 Apply `spring-boot-patterns` for the normative TO–Domain–Entity architecture.
 
 - Verify that the controller delegates and maps rather than implementing business or persistence logic.
+- Verify that each service sits at the level `spring-boot-patterns` assigns it: an aggregate service holding only its own aggregate's repositories, an application service holding only services. A repository in an application service, or a service in an aggregate service, is a blocking finding.
+- Verify that every controller handler calls one service and that the level matches the operation: single-aggregate operations reach the aggregate service directly, multi-aggregate ones go through an application service. A handler calling two services, or an application service method that only forwards, is a blocking finding — the first puts coordination in the controller, the second grows a facade.
+- Verify that the use case's transaction boundary is the highest service the use case enters — the application service when one exists, otherwise the aggregate service — and that no aggregate service widens or escapes it with `REQUIRES_NEW`, `NOT_SUPPORTED`, or a custom isolation level without a recorded reason. An application service introduced only to relocate a transaction is itself a finding. An aggregate service that writes several repositories and carries no `@Transactional` at all is a blocking finding: called without a caller-supplied transaction, each write commits separately.
+- Verify that an aggregate's own rule is enforced in that aggregate's service rather than in its callers, and that the same rule is not enforced at both levels.
 - Verify that the service accepts explicit parameters by default and uses a focused parameter object only when justified by the service signature policy.
-- Verify that the service returns a domain result such as `UserDomain`, not a REST TO, JPA entity, persistence projection, SDK response, or generic map.
+- Verify that a service at either level returns a domain result such as `UserDomain`, not a REST TO, JPA entity, persistence projection, SDK response, or generic map.
 - Verify that the domain object remains independent of REST, serialization, JPA, repositories, and Spring infrastructure.
 - Check whether `UserDomainMapper`-style mapping runs while all required persistence state is valid and available.
 - Check every mapper for omitted fields, wrong direction, privilege-bearing fields, mutable collection leakage, accidental lazy loading, and silent normalization.
+- Verify that every package the change adds to main sources carries its `package-info.java`. Where the project does not gate this, review is the only thing that catches it, and an unmarked package silently opts out of the nullability contract rather than failing.
 - Verify mapper technology and update structure against the complete rules in `spring-boot-patterns`;
   do not restate or weaken those rules in review guidance.
 - Check partial-update semantics carefully. Distinguish absent, clear, and set operations and ensure unchanged server-owned fields survive.
+- Check nullability annotations against `modern-java-21`, including its exception for provider-assigned fields. No checker reports the case that matters here — an annotation added to silence a warning rather than to state what the value can hold — because the code and the annotations then agree with each other and disagree with reality.
 - Check exception translation at the owning boundary and verify that causes, stable error semantics, and rollback behavior remain correct.
 
 Do not impose a different mapper construction strategy from `spring-boot-patterns`. Do not rename Domain objects to View, DTO, command, or query terminology.
@@ -87,9 +110,15 @@ Apply `spring-boot-patterns` and `spring-data-jpa`.
 - Check whether remote calls, message publication, large loops, blocking waits, or expensive computation hold a database transaction open.
 - Identify read-modify-write races, lost updates, check-then-act uniqueness races, inconsistent lock ordering, and stale state after bulk operations.
 - Check idempotency across retries, duplicate HTTP requests, redelivered messages, scheduled overlaps, and process restarts.
+- For an idempotency key, check the change against the recorded **Idempotency claim shape**. Under `single-phase`, the claim must be written inside the use case's transaction and the concurrent duplicate must reach the recorded outcome or win the claim — a claim committed separately breaks the rollback guarantee. Under `two-phase`, check that the claim carries a lease and that an expired one is reclaimable; a two-phase claim with no lease blocks its key permanently the first time the process dies between the two commits. Report a synchronous external call inside a `single-phase` use case: that is the case the other shape exists for.
 - Verify that retry scope includes the complete safe operation and does not repeat a non-idempotent side effect.
+- For an optimistic-conflict retry, verify four things the compiler cannot: that the retry advice wraps the transaction advice rather than the reverse — evidenced by the attempt-counting test `spring-data-jpa` requires, since both generations get this right by default and an explicit order in the configuration proves nothing — that the backoff has jitter and a maximum delay, that no `catch` below the annotated method swallows the failure the retry exists to observe, and that the retried operation recomputes from re-read state rather than overwriting with values the caller computed earlier. The last is the silent one — the retry succeeds, nothing throws, and a concurrent edit is lost.
+- Verify that an exhausted retry and a lock timeout each reach the caller as the contract `spring-boot-patterns` declares for them, rather than through the catch-all. Trace which exception type actually arrives at the advice: an advice covering only project exception types reads as complete and returns `500` under load, and no test that asserts "an exception was thrown" will show it.
+- Report a routine conflict returned to the caller as `409` without any attempt to absorb it, and report a hand-written retry loop where the project's composed annotation applies.
 - Check commit-time failures, rollback rules, after-commit actions, outbox or equivalent consistency mechanisms when applicable.
-- Require pessimistic locking, stronger isolation, or a new consistency mechanism only when a concrete invariant and concurrency scenario justify it.
+- Verify that every external effect uses the delivery mechanism `docs/project-profile.md` records for it. An effect the business cannot afford to lose, delivered only from an after-commit listener, is a blocking finding: the commit has already succeeded, so the loss leaves no trace and no retry.
+- Require pessimistic locking, stronger isolation, or a new consistency mechanism only when a concrete invariant and concurrency scenario justify it. Conversely, report an allocation, claim, or cross-row invariant left to optimistic retry alone: `spring-data-jpa` states which mechanism each of those needs, and none of them waits on a measurement. Report the missing mechanism rather than a missing lock specifically — for a rule that fits one row and one predicate, a conditional `UPDATE` is one of the answers it allows.
+- Report a pessimistic failure type added to the optimistic retry policy, and a lock taken without a timeout, with one expressed through a mechanism the configured engine ignores, or without a consistent ordering when more than one row is locked. `spring-data-jpa` carries the per-engine table; a `@QueryHint` timeout on PostgreSQL is the case that reads as bounded and is not.
 
 ## Persistence and database behavior
 
@@ -104,7 +133,9 @@ Apply `spring-data-jpa`; do not substitute database-specific folklore for its da
 - Check sargability and index fit only against a credible high-volume access path. Account for equality, range, join, and sort order rather than requesting indexes by intuition.
 - For performance claims, capture the expected data volume, generated SQL, query count, and representative plan when the environment permits.
 - Check flush timing, stale managed entities after bulk DML, batch size, persistence-context growth, lock waits, and connection-pool demand.
-- Verify rolling-deployment compatibility and migration recovery for schema changes.
+- Verify that the resource bounds `docs/project-profile.md` records — statement and transaction timeouts, pool size, connection wait, page size — are actually configured, and that a change adding a new access path did not step outside them. An unbounded default is the finding here, and it is invisible in the diff: nothing is written down, which is precisely the problem.
+- Verify rolling-deployment compatibility for schema changes against `sql-database-migration`: a mapping change with no migration, an edited applied migration, or a breaking change not split into expand, migrate, and contract phases is a blocking finding.
+- On Spring Boot 4, verify that the migration tool arrives through its Spring Boot starter. The raw library alone leaves the build green and no migration executed, so this failure is invisible in every other check.
 
 Treat absent representative plans as a verification gap unless the code itself proves an unbounded query, per-row query, invalid mapping, or other deterministic defect.
 
@@ -114,6 +145,8 @@ Apply `application-security` and load only its references relevant to the change
 
 - Classify affected data and identify actors, subject identity, tenant, ownership, privileges, dangerous sinks, and external destinations.
 - Trace function, object, property, and tenant authorization through service and persistence paths rather than stopping at controller annotations.
+- Read the recorded **Tenancy model** before judging any tenant finding. Under `single-tenant`, a tenant column, predicate, claim, or cache-key segment introduced by the change is itself the finding — a scope nothing populates reads as isolation and is a filter that matches everything. Under any other model, report an unscoped read, write, unique constraint, index, or cache key, and check the statements the provider did not compose first: native SQL, bulk DML, routines and views are where the mechanism does not reach. A test suite whose fixtures all belong to one tenant is not evidence of isolation; the paired two-tenant test is.
+- Check that the REST advice declines **both** security denial families rather than answering either. An advice that handles `AccessDeniedException` and not `AuthenticationException` — or a catch-all with neither — reports an unauthenticated caller as `500` instead of `401` with its challenge. The defect is invisible in a suite whose security tests always send a token, and invisible in a controller slice, where filters are disabled.
 - Check server-owned fields, mass assignment, identifier substitution, replay, duplicate delivery, and administrative bypasses.
 - Check data exposure through response TOs, errors, logs, metrics, traces, caches, events, files, exports, test fixtures, and provider payloads.
 - Check injection and resource-exhaustion paths for SQL, URLs, redirects, files, archives, parsers, deserialization, expressions, headers, and regular expressions as applicable.
@@ -133,11 +166,16 @@ For WebClient or another outbound client:
 - Check whether an event-loop thread blocks, a servlet request waits without a bound, or an async error is discarded.
 - Verify failure translation and whether downstream 4xx, 429, 5xx, malformed responses, timeouts, and partial responses produce intended behavior.
 
-For Redis:
+For a cache, whichever technology the profile records:
 
-- Trace key construction, tenant scope, serializer/schema compatibility, TTL, missing values, invalidation, stampede behavior, and unavailable behavior.
-- Verify that cached representation and invalidation match the architecture established by the other project skills.
-- Check whether sensitive data, authorization decisions, mutable values, or stale negative results are cached beyond their safe lifetime.
+- Read `application-caching` before writing a finding, and read the profile's cache register. A cache that is not in the register is itself the finding.
+- Check the key against the value it holds. Every input that varies the result must be in it — tenant always, and the authorizing subject whenever the value was filtered by who asked. A key missing one of those is a cross-caller data leak, not a staleness bug, and it is the highest-severity thing in this lens.
+- Check the ordering of every invalidation. `@CacheEvict` on a `@Transactional` method evicts **before** the commit, so a concurrent reader repopulates from the pre-write row and the entry is permanently stale. Verify the project's recorded shape — an after-commit listener or a transaction-aware cache manager — is actually the one in use.
+- Check that the write invalidates **every** cache holding a value derived from what it changed, not only the one named in the annotation. Derived counts, lists, and flags are what get missed.
+- Check that entries have a TTL even where invalidation is explicit, that a local cache has a size bound, and that the cached value is an immutable project-owned type rather than an entity, a library type, or a mutable collection.
+- Check the failure path: an error handler so a cache outage does not become an application outage, and a timeout so a hanging cache does not cost the wait *and* the work.
+- Treat the Hibernate second-level and query caches as caches under every point above, and report either one enabled while the profile records no cache.
+- Check whether sensitive data, authorization decisions, or stale negative results are cached beyond their safe lifetime; `application-security` owns that judgement.
 
 For AWS or another cloud provider:
 
@@ -146,6 +184,7 @@ For AWS or another cloud provider:
 
 For messages and jobs:
 
+- Know which half you are reviewing. Security, layering, naming, and testing of messaging have owners, and a finding about them is routed normally. The delivery and consumer *mechanism* — the outbox relay, listener and dead-letter wiring, the deduplication store, partitioning — has **no owner skill**, so a defect there is reported as a coverage gap naming the missing standard, never as a violation of a rule invented during the review. [`_core/README.md`](../../_core/README.md) carries the exact split.
 - Trace schema compatibility, producer and consumer deployment order, duplicate and out-of-order delivery, poison messages, retry and dead-letter policy, acknowledgement timing, idempotency, and tenant context.
 - Verify scheduler overlap, distributed execution, clock behavior, bounded batches, progress checkpoints, cancellation, and restart safety.
 - Check executor ownership, concurrency and queue bounds, rejection policy, error handling, shutdown behavior, and saturation impact.
@@ -153,6 +192,8 @@ For messages and jobs:
 
 ## Configuration, observability, and operations
 
+- Verify that a change to the concurrency model re-derived what it moved. Enabling virtual threads removes the server thread pool as admission control, so the database pool, the per-caller limits, and the outbound client pools become the only bounds left; a diff that flips the property and touches none of them is a blocking finding, and it passes every test.
+- Verify that no path relies on a synchronous request timeout. `spring.mvc.async.request-timeout` bounds asynchronous return types only, so a project whose handlers return values directly is bounded by the arithmetic of its parts and by the ingress, and that arithmetic is a review responsibility rather than a gated one.
 - Verify that new behavior is configurable only where variability is real and that defaults are safe for production.
 - Check typed configuration binding, validation, profile behavior, environment overrides, and missing or malformed configuration.
 - Check startup ordering and fail-fast behavior for required dependencies. Do not require startup failure for an intentionally optional dependency.

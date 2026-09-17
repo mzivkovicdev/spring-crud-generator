@@ -114,7 +114,7 @@ Use this format:
 ```text
 [High] Cross-tenant lookup is not scoped by tenant
 
-Location: src/main/java/com/acme/user/UserService.java — getById
+Location: src/main/java/com/example/myapp/service/UserService.java — getById
 Evidence: The authenticated tenant reaches getById, but the service calls findById(id) and no
           ownership or tenant predicate is enforced before UserDomain is returned.
 Scenario: A caller submits an identifier belonging to another tenant.
