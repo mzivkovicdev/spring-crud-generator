@@ -4,7 +4,7 @@ Use this reference when exposing actuator endpoints, writing a health indicator,
 liveness and readiness probes. Apply every rule from `../SKILL.md` and `application-security`;
 imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -34,6 +34,11 @@ management:
         enabled: true
 ```
 
+`prometheus` belongs in the list only when the platform scrapes metrics and the project declares a
+Prometheus registry. With a push export over OTLP the endpoint does not exist, and listing it
+publishes nothing while implying a scrape target that is not there. Expose what the chosen export
+model actually needs and nothing else.
+
 Rules:
 
 - Never expose `*`. It publishes environment, configprops, beans, mappings, heapdump, and threaddump, several of which leak secrets or allow a denial of service.
@@ -45,6 +50,18 @@ Rules:
 - The Prometheus endpoint is exposed only when the project uses a scraped registry. With a pushed registry, it is unnecessary.
 
 ## Health groups and probes
+
+`probes.enabled: true` above is explicit on purpose, but its effect differs by generation: on
+Spring Boot 3 the probes are opt-in, while **on Spring Boot 4 they are enabled by default**, so the
+health endpoint publishes the `liveness` and `readiness` groups whether or not the property appears.
+Keep the property written down anyway — it documents the intent and it makes the behavior identical
+across both generations. Where the probes are genuinely unwanted, set
+`management.endpoint.health.probes.enabled: false` deliberately rather than relying on a Boot 3
+default that no longer holds.
+
+Because Spring Boot 4 exposes a set the project may not have chosen, an upgrade changes the reachable
+management surface without any configuration change. `application-security` owns confirming that the
+management filter chain still authorizes the resulting set.
 
 The single most consequential rule here: **an external dependency belongs in readiness, never in
 liveness.**
@@ -117,14 +134,86 @@ Rules:
 
 ## Testing operational endpoints
 
+**A separate management port changes how these tests are written, and it is easy to miss.** With
+`management.server.port` set, the actuator endpoints are served by their own context on their own
+connector — so `MockMvc`, which dispatches into the main application's servlet context, never reaches
+them and every assertion fails with a `404` that looks like a broken exposure list. These tests need
+a real client against the real management port.
+
+**The client differs by generation, so read the generation from the profile before writing this
+test.** `RestTestClient` arrived with Spring Framework 7 and does not exist on Spring Boot 3, where
+the client is `TestRestTemplate`. `build-and-dependencies` carries both coordinates in
+[generation differences](../../build-and-dependencies/references/generation-differences.md).
+Everything around the client — the two properties, the injected port, what is asserted — is identical
+on both.
+
+**Spring Boot 4:**
+
 ```java
-@Test
-void healthReadiness_whenApplicationIsRunning_returnsUp() throws Exception {
-    this.mockMvc.perform(get("/actuator/health/readiness"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("UP"));
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "management.server.port=0")
+class ManagementEndpointIntegrationTest {
+
+    private final RestTestClient managementClient;
+
+    ManagementEndpointIntegrationTest(
+            @Value("${local.management.port}") final int managementPort) {
+
+        this.managementClient = RestTestClient.bindToServer()
+                .baseUrl("http://localhost:%d".formatted(managementPort))
+                .build();
+    }
+
+    @Test
+    void healthReadiness_whenApplicationIsRunning_returnsUp() {
+        this.managementClient.get()
+                .uri("/actuator/health/readiness")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("UP");
+    }
 }
 ```
+
+**Spring Boot 3**, same test through `TestRestTemplate`. The auto-configured instance is bound to the
+application port, not the management one, so this test builds its own and carries the base URL
+itself:
+
+```java
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "management.server.port=0")
+class ManagementEndpointIntegrationTest {
+
+    private final String managementBaseUrl;
+    private final TestRestTemplate managementClient;
+
+    ManagementEndpointIntegrationTest(
+            @Value("${local.management.port}") final int managementPort) {
+
+        this.managementBaseUrl = "http://localhost:%d".formatted(managementPort);
+        this.managementClient = new TestRestTemplate();
+    }
+
+    @Test
+    void healthReadiness_whenApplicationIsRunning_returnsUp() {
+        final ResponseEntity<JsonNode> response = this.managementClient.getForEntity(
+                this.managementBaseUrl + "/actuator/health/readiness", JsonNode.class);
+        final JsonNode body = Objects.requireNonNull(response.getBody());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(body.path("status").asText()).isEqualTo("UP");
+    }
+}
+```
+
+`management.server.port=0` gives the management connector a random free port for the test, and
+Spring Boot publishes the assigned one as `local.management.port` — so the test never hardcodes the
+production port and two suites can run at once. `spring-boot-testing` owns the client choice; where a
+project has not adopted a separate management port, `MockMvc` reaches the actuator like any other
+endpoint and this ceremony is unnecessary on either generation.
 
 - Assert the probe groups return the expected status through the real endpoint, at the integration level.
 - Assert that a disabled or unexposed endpoint is not reachable, and that an authenticated-only endpoint returns `401` without a credential. Those tests are what stop an accidental `include: *` or a dropped management chain from merging.

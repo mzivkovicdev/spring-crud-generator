@@ -11,11 +11,12 @@ release notes, direct notification of known consumers, and tests.
 ## Contents
 
 1. [The asymmetry that catches people](#the-asymmetry-that-catches-people)
-2. [Breaking change reference](#breaking-change-reference)
-3. [Avoiding a breaking change](#avoiding-a-breaking-change)
-4. [Versioning](#versioning)
-5. [Deprecation and sunset](#deprecation-and-sunset)
-6. [Reviewing a contract change](#reviewing-a-contract-change)
+2. [A platform upgrade is a contract event](#a-platform-upgrade-is-a-contract-event)
+3. [Breaking change reference](#breaking-change-reference)
+4. [Avoiding a breaking change](#avoiding-a-breaking-change)
+5. [Versioning](#versioning)
+6. [Deprecation and sunset](#deprecation-and-sunset)
+7. [Reviewing a contract change](#reviewing-a-contract-change)
 
 ## The asymmetry that catches people
 
@@ -23,6 +24,25 @@ The same edit is safe in one direction and breaking in the other, because the ro
 
 - In a **request**, the consumer produces and the service consumes. Loosening what the service accepts is safe; tightening it breaks callers.
 - In a **response**, the service produces and the consumer consumes. Adding is usually safe; removing or narrowing breaks callers.
+
+## A platform upgrade is a contract event
+
+A breaking change does not require an edit to a controller or a TO. The serializer decides the wire
+format, so changing the serializer can change the contract while every source file stays untouched.
+The clearest case is the Spring Boot 3 to 4 move, which brings Jackson 3 and, by default, registers
+every Jackson module found on the classpath rather than only well-known ones. A date, an optional, or
+a domain type can begin serializing differently because a transitive dependency arrived, and nothing
+in the diff shows it.
+
+Treat any framework, serializer, or Spring Boot generation upgrade as a change requiring contract
+verification:
+
+- Regenerate or re-derive the contract document and diff it against the committed one. An upgrade that changes the document is a contract change, and the breaking-change rules below apply to it exactly as they would to a hand-written edit.
+- Where the project records `none` for the contract document, compare serialized responses before and after against the tests that assert the wire shape. Without a document these tests are the only artefact that can show the drift.
+- Report the result to known consumers even when the diff is empty. "We upgraded and the contract is unchanged" is information they need; silence is indistinguishable from not having checked.
+
+`spring-boot-patterns` owns how serialization is configured, and `build-and-dependencies` owns the
+upgrade itself. This rule owns only the judgement that the upgrade has to be checked here at all.
 
 So adding an optional request field is safe, adding a required one is breaking. Adding a response
 field is safe, removing one is breaking. Accepting a new enum value in a request is safe, returning
@@ -75,19 +95,22 @@ Most breaking changes are avoidable at design time:
 
 ## Versioning
 
-- The API version lives in the URI base path, declared once as `ApiPaths.API_V1` and reflected in `servers`. `spring-boot-patterns` owns that declaration.
+- One version applies to the whole API. Pick one strategy — URI base path, request header, query parameter, or media type — and use it for every endpoint. Mixing strategies confuses consumers, proxies, and caches.
+- The default is the URI base path, declared once as `ApiPaths.API_V1` and reflected in `servers`. `spring-boot-patterns` owns that declaration. Record the chosen strategy in the project profile.
+- **On Spring Framework 7 and Spring Boot 4**, the framework routes versions natively: mappings take a `version` attribute, and one `ApiVersionConfigurer` declares where the version is read from. Use it instead of hand-rolled filters, custom header checks, or duplicate controller trees. A missing version raises `MissingApiVersionException` and a 400 by default, so decide deliberately whether the version is required, optional, or defaulted.
+- **On Spring Boot 3**, no such mechanism exists. The project implements the chosen strategy itself, and the rules in this section apply unchanged.
 - Raise the major version only for a breaking change that could not be avoided. Do not raise it for cleanup, renaming, refactoring, or aesthetics.
 - Bundle breaking changes: a new version is expensive for consumers, so ship the accumulated set together rather than raising the version repeatedly.
 - Run the old and new versions in parallel for a stated period. State the length before releasing the new version, not after consumers complain.
 - Record in the project profile which versions are live, when each was released, and when each retires.
-- Do not version individual endpoints. Per-endpoint versions are cheap to introduce and impossible to reason about afterwards.
+- Do not give individual endpoints their own version numbers. Consumers must track one version for the API, not one per route. This is a rule about the surface, not about the routing mechanism: on Framework 7 the per-mapping `version` attribute is how a whole-API version is routed, and a baseline value such as `1.1+` keeps an unchanged endpoint serving every later version without inventing a version of its own.
 
 ## Deprecation and sunset
 
 Deprecation without a date is a wish, not a plan.
 
 - With a document, mark the operation or field `deprecated: true` and say in its `description` what replaces it and when it retires. Without one, record the same three facts — what is deprecated, what replaces it, and the retirement date — in the release notes and in the project profile.
-- Send the `Deprecation` header on responses from a deprecated endpoint, and `Sunset` with the retirement date.
+- Send the `Deprecation` header on responses from a deprecated endpoint, and `Sunset` with the retirement date, as defined by RFC 9745 and RFC 8594. On Framework 7, configure the built-in deprecation handler on the version strategy rather than writing an interceptor; on Spring Boot 3, set the headers explicitly.
 - Announce to known consumers directly. A flag in a document nobody re-reads is not an announcement.
 - Do not remove anything before its sunset date, and do not extend the date silently.
 - Before removal, confirm from access logs or metrics that the endpoint or field is actually unused, and keep that evidence with the change.

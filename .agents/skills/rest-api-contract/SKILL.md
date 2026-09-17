@@ -16,18 +16,20 @@ or verify against.
 
 ## Coordination with other skills
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `project-naming-conventions` | The names themselves: paths, fields, enum values, `operationId`, schema names, problem type URIs |
-| `spring-boot-patterns` | TO shape, thin controllers, `ProblemDetail`, validation, pagination, the error catalog |
-| `application-security` | The authentication and authorization model the contract describes |
-| `build-and-dependencies` | The springdoc or generator dependency, plugin, and build wiring |
-| `spring-boot-testing` | Test levels; this skill owns what about the contract must be asserted |
-| `spring-boot-code-review` | Review scope, evidence, severity, and reporting |
+This skill owns the contract, its document, its quality, and its evolution. It does not rename
+anything, redesign a TO, or change an error contract; it decides how those appear in the contract and
+whether a change to them is safe to ship.
 
-This skill owns the document, its quality, and its evolution. It does not rename anything, redesign
-a TO, or change an error contract; it decides how those appear in the contract and whether a change
-to them is safe to ship.
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
+
+| Seam | This skill owns | The other owner owns |
+| --- | --- | --- |
+| Payload shape | how a TO appears in the contract | `spring-boot-patterns` owns the TO itself and the error catalog |
+| Names in the document | nothing | `project-naming-conventions` owns paths, fields, `operationId`, schema and problem-type names |
+| Interactive documentation | whether it is exposed | `application-security` owns how it is protected |
+| Contract tests | what must be asserted | `spring-boot-testing` owns the level it runs at |
 
 ## Decide whether the contract has a document
 
@@ -40,7 +42,8 @@ machine-readable contract document at all.
 | Contract document | none | Compatibility, versioning, deprecation, and ownership only |
 
 **Record it in `docs/project-profile.md`. When it is not recorded, ask the user before writing the
-first endpoint.** Do not assume a document exists because springdoc is on the classpath, and do not
+first endpoint.** This and the authoring direction below are `ASK` decisions in the token vocabulary
+`project-decision-profile` defines, so both block until answered. Do not assume a document exists because springdoc is on the classpath, and do not
 add one because an example shows it.
 
 The rules that hold in both cases are the majority of this skill: what makes a change breaking, the
@@ -72,23 +75,25 @@ interchangeable, and a project uses exactly one per deployable service.
 writing the first endpoint.** Do not infer it from a dependency, and do not switch direction as a
 side effect of another task; switching is its own project.
 
-If the user has no preference, present the trade-off rather than choosing silently: code-first is
-the lower-friction default for a single service whose consumers are in the same organization;
+If the user has no preference, present the trade-off rather than choosing silently: code-first is the
+lower-friction default for a single service whose consumers are in the same organization;
 contract-first earns its cost when a second service, an external consumer, or a separate frontend
 team needs the contract before the implementation exists.
 
-The direction has two consequences that must be settled at the same time, not discovered later.
+**Code-first needs a document producer declared; contract-first needs a generator.** Neither arrives
+by accident, and neither is this skill's to declare: state the requirement to
+`build-and-dependencies`, which owns the coordinate, the version, and the per-generation difference
+in [generation differences](../build-and-dependencies/references/generation-differences.md). The
+common failure is a code-first project that records `OpenAPI` in the profile, never declares
+springdoc, and discovers at the drift gate that there is no document endpoint to compare against.
 
-**Generated type names.** Under contract-first the generator produces model types whose names will
-not match this project's `TO` suffix and `transferobject` package unless it is configured to.
-[Contract-first generation](references/contract-first-generation.md) covers the configuration and
-the alternatives.
-
-**Where route constants live.** Under contract-first the generated interface carries the routes, so
-a controller declares none, and the constants that tests and security matchers reference live in
-`ApiPaths` and equal the document's Path Items. Under code-first the direction is reversed and each
-controller owns its own route constant. `spring-boot-patterns` owns that rule; follow whichever the
-project profile records, and never mix the two.
+**Two consequences are settled with the direction, not discovered later.** Under contract-first the
+generator's model type names collide with this project's `TO` suffix and `transferobject` package
+unless configured, and the generated interface carries the routes so a controller declares none —
+route constants then live in `ApiPaths` and equal the document's Path Items, while under code-first
+each controller owns its own. `spring-boot-patterns` owns the route-constant rule and
+[contract-first generation](references/contract-first-generation.md) owns the naming resolution.
+Never mix the two.
 
 ## Reference routing
 
@@ -132,25 +137,16 @@ Rules:
 
 ## Keep the contract honest
 
-A document that has drifted from the implementation is worse than no document, because consumers
-trust it. This section applies when the profile records a document; with `none`, the equivalent
-protection is the test suite and the review, and there is no automated gate.
+**A document that has drifted from the implementation is worse than no document, because consumers
+trust it.** With a document, the build proves they agree: generate and compare under code-first,
+validate the implementation against the committed document under contract-first, and commit the
+document either way — one that exists only at runtime cannot be diffed in a pull request, and a
+contract change nobody can see in review will not be reviewed. Treat a diff in the document as the
+most important diff in the change; it is the only part a consumer sees.
 
-- **Code-first:** generate the document in the build, compare it against the committed copy, and fail the build on an unexplained difference. A regenerated document that differs is either an intended contract change to be reviewed, or a bug.
-- **Contract-first:** validate that the implementation satisfies the committed document, and never hand-edit generated code.
-- Commit the document either way. A document that exists only at runtime cannot be diffed in a pull request, and a contract change that cannot be seen in review will not be reviewed.
-- Treat a diff in the document as the most important diff in the change. It is the only part a consumer sees.
-
-## Document quality
-
-This section applies when the profile records a document. Consumers read it, not the controller, and
-the optional-looking fields are what make it usable:
-
-- Every operation has a `summary` written for a caller, not restating the method name.
-- Every non-obvious field has a `description` that says what it means, not what type it is.
-- Every request body and every non-trivial response has at least one realistic example. Examples carry no real data, no production identifiers, and no personal data.
-- Constraints that exist in code — lengths, ranges, patterns, allowed values — appear in the schema too, or callers discover them through `400` responses.
-- Pagination, sorting, and filtering parameters are documented with their defaults and bounds.
+With `none`, the equivalent protection is the test suite and the review, and **there is no automated
+gate at all**. [OpenAPI document](references/openapi-document.md) carries the drift-gate mechanics
+and the document-quality rules that make a document usable.
 
 ## Contract ownership
 
@@ -158,7 +154,7 @@ the optional-looking fields are what make it usable:
 - A breaking change requires confirmation from known consumers before it merges, not after.
 - Maintain a list of known consumers in the project profile. With no document, that list is the only mechanism by which a breaking change reaches the people it affects.
 - With a document, publish it where consumers can reach it and record that location in the project profile.
-- Interactive documentation such as Swagger UI is a development and internal tool. Record in the project profile which environments expose it, if any; `never` is a valid answer and the safe default. Wherever it is exposed, `application-security` owns how it is protected, exactly as it does for actuator endpoints.
+- Interactive documentation such as Swagger UI is a development and internal tool. Record in the project profile which environments expose it, if any, applying the fallback the template records for that row when the answer is not yet given. Wherever it is exposed, `application-security` owns how it is protected, exactly as it does for actuator endpoints.
 
 ## Anti-patterns
 

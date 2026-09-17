@@ -4,21 +4,22 @@ Read this only when `docs/project-profile.md` records an OpenAPI contract docume
 every rule from `../SKILL.md`, `project-naming-conventions` for every name, and `spring-boot-patterns`
 for the shapes being described.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is
-declared in that snippet or attributed to the example that declares it.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
-1. [Which OpenAPI version](#which-openapi-version)
+1. [Which OpenAPI version and serialization format](#which-openapi-version-and-serialization-format)
 2. [Document structure](#document-structure)
 3. [Describing an operation](#describing-an-operation)
 4. [Describing errors](#describing-errors)
 5. [Code-first production and the drift gate](#code-first-production-and-the-drift-gate)
-6. [Exposure](#exposure)
+6. [Drift, and why the gate exists](#drift-and-why-the-gate-exists)
+7. [Document quality](#document-quality)
+8. [Exposure](#exposure)
 
-## Which OpenAPI version
+## Which OpenAPI version and serialization format
 
-Record the version in `docs/project-profile.md` and keep one throughout the document.
+Record both in `docs/project-profile.md` and keep one of each throughout the document.
 
 | | OpenAPI 3.0 | OpenAPI 3.1 |
 | --- | --- | --- |
@@ -30,6 +31,16 @@ springdoc 2.x emits 3.0 by default and 3.1 on request. Choose 3.1 only after con
 consumer's tooling reads it; a document a consumer's generator cannot parse is worse than an older
 dialect. Whichever is chosen, express nullability that one way everywhere — a document mixing both
 styles will be read inconsistently.
+
+**The serialization format is JSON or YAML, and the extension of the committed document path in the
+profile is what selects it.** Both are valid OpenAPI and no rule here prefers one; what matters is
+that the repository holds exactly one document in exactly one format, because two copies drift and
+a reviewer cannot tell which one a consumer reads.
+
+- YAML diffs better in a pull request and is easier to hand-author, which usually makes it the fit for a contract-first document a person maintains.
+- JSON is what a generator emits without extra configuration, which usually makes it the fit for a code-first document nobody edits by hand.
+- The examples in this reference are YAML for readability and the drift gate below is JSON for brevity. **Neither choice is a recommendation.** Follow the extension recorded in the profile, and make the endpoint the gate reads match it: springdoc serves the document at `/v3/api-docs` as JSON and `/v3/api-docs.yaml` as YAML, so a YAML project reads the second and parses it with a YAML mapper.
+- Do not commit both formats, and do not convert between them as a side effect of another change. A format change is a change to the artifact every consumer diffs.
 
 ## Document structure
 
@@ -115,7 +126,7 @@ components:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
           example:
-            type: https://api.acme.example/problems/resource-not-found
+            type: https://api.example.com/problems/resource-not-found
             title: Resource not found
             status: 404
             detail: The requested resource does not exist.
@@ -127,6 +138,7 @@ Rules:
 - The schema is named `ProblemDetail` after the type the application actually serializes, Spring's `ProblemDetail`. It is the one schema in the document with no `TO` suffix, because there is no project-owned transfer object behind it; naming it `ProblemTO` would invent a Java type that does not exist. `project-naming-conventions` owns schema naming, and this is its single documented exception.
 - The media type is `application/problem+json`, not `application/json`.
 - `type` is documented as the value consumers branch on, and `title` and `detail` as text that may change. Saying so in the contract is what stops a consumer from matching on the message.
+- **A write operation that takes a pessimistic lock can return `503`, and it belongs in the contract like any other status.** It comes from the shared advice rather than the controller, which is exactly the case the completeness rule in `../SKILL.md` exists for. Document its `Retry-After` header too: a consumer that does not know the header is there will either retry immediately or not at all. The read operation shown above cannot produce it, which is why it is absent there.
 - The body carries no second error identifier. `correlationId` identifies the request, not the failure; `spring-boot-patterns` owns that decision.
 - Never document `traceId`, `spanId`, a stack trace, an exception class name, or an internal hostname.
 - The example uses a synthetic correlation identifier. Examples never carry real data.
@@ -138,23 +150,41 @@ visible in the pull request diff. The gate that keeps it honest is a test that r
 compares.
 
 ```java
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest
+@AutoConfigureMockMvc
 class OpenApiContractIntegrationTest {
 
     private static final Path COMMITTED_DOCUMENT = Path.of("src/main/resources/openapi/openapi.json");
 
-    private final TestRestTemplate testRestTemplate;
+    private final AccessTokenTestClient accessTokenTestClient;
+    private final MockMvc mockMvc;
+    private final ObjectMapper objectMapper;
 
-    OpenApiContractIntegrationTest(final TestRestTemplate testRestTemplate) {
-        this.testRestTemplate = testRestTemplate;
+    OpenApiContractIntegrationTest(
+            @Autowired final AccessTokenTestClient accessTokenTestClient,
+            @Autowired final MockMvc mockMvc,
+            @Autowired final ObjectMapper objectMapper) {
+
+        this.accessTokenTestClient = accessTokenTestClient;
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
     }
 
     @Test
     void apiDocs_whenGenerated_matchesCommittedDocument() throws Exception {
-        final String generated = this.testRestTemplate.getForObject("/v3/api-docs", String.class);
-        final ObjectMapper objectMapper = new ObjectMapper();
-        final JsonNode generatedTree = objectMapper.readTree(generated);
-        final JsonNode committedTree = objectMapper.readTree(Files.readString(COMMITTED_DOCUMENT));
+        final String accessToken = this.accessTokenTestClient.obtainAccessTokenFor(
+                AuthenticationTestData.identityWithUsersReadScope());
+
+        final String generated = this.mockMvc.perform(get("/v3/api-docs")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer %s".formatted(accessToken)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        final JsonNode generatedTree = this.objectMapper.readTree(generated);
+        final JsonNode committedTree = this.objectMapper.readTree(
+                Files.readString(COMMITTED_DOCUMENT));
 
         assertThat(generatedTree)
                 .as("The API contract changed. Review the diff, then update %s deliberately.",
@@ -166,7 +196,11 @@ class OpenApiContractIntegrationTest {
 
 Notes:
 
-- Comparing parsed trees rather than text avoids failures from key ordering and formatting.
+- **The example uses a JSON path only to keep it short.** Replace the constant, the endpoint, and the parser with the `.json`, `.yaml`, or `.yml` document recorded in `docs/project-profile.md`; the example never selects the format for the repository.
+- **It uses `MockMvc`, not `TestRestTemplate`.** `spring-boot-testing` records that `@SpringBootTest` no longer contributes either client on Spring Boot 4, and `TestRestTemplate` also changed package there. `MockMvc` behind an explicit `@AutoConfigureMockMvc` is the one shape written identically on both generations, which is what a gate every project runs ought to be.
+- **The `ObjectMapper` is injected, not constructed.** A locally built mapper parses with different settings from the one that produced the document, so a difference in the tree can come from the parser instead of the contract. On Spring Boot 4 the declared type stays `ObjectMapper` — Spring Boot auto-configures a `JsonMapper`, which extends it — but the **import changes**, from `com.fasterxml.jackson.databind` to `tools.jackson.databind`, and `JsonNode` moves with it. Verify the import resolves to the mapper the application actually configures rather than to a Jackson 2 type left on the classpath by a transitive dependency.
+- `AccessTokenTestClient` and `AuthenticationTestData` are the shared fixtures `spring-boot-testing` defines. This test uses a read-scoped identity because the document endpoint is a read.
+- Comparing parsed trees rather than text avoids failures from key ordering and formatting, and it is what makes the format substitution above a one-line change: a YAML mapper produces the same tree type, so only the mapper and the endpoint differ.
 - The failure message tells the reader what to do. A contract gate that fails with a wall of JSON teaches people to regenerate without looking, which defeats the gate.
 - Provide a documented command that rewrites the committed document, so updating it is deliberate and one step.
 - The test needs the application context, so it is an integration test and follows the naming and phase rules in `spring-boot-testing`.
@@ -177,9 +211,31 @@ Notes:
   Do not disable the filter chain for this test. A drift gate that runs outside the real configuration proves less than it appears to, and it hides the case where the document endpoint is unintentionally public.
 - Annotate controllers and TOs enough that the generated document is useful. Summaries, descriptions, and examples come from annotations in code-first; without them the generated document is a type dump.
 
+## Drift, and why the gate exists
+
+A document that has drifted from the implementation is worse than no document, because consumers
+trust it. This section applies when the profile records a document; with `none`, the equivalent
+protection is the test suite and the review, and there is no automated gate.
+
+- **Code-first:** generate the document in the build, compare it against the committed copy, and fail the build on an unexplained difference. A regenerated document that differs is either an intended contract change to be reviewed, or a bug.
+- **Contract-first:** validate that the implementation satisfies the committed document, and never hand-edit generated code.
+- Commit the document either way. A document that exists only at runtime cannot be diffed in a pull request, and a contract change that cannot be seen in review will not be reviewed.
+- Treat a diff in the document as the most important diff in the change. It is the only part a consumer sees.
+
+## Document quality
+
+With a document, consumers read it and not the controller, and the optional-looking fields are what
+make it usable. Every operation carries a `summary` written for a caller rather than restating the
+method name; every non-obvious field a `description` saying what it means, not what type it is; every
+request body and non-trivial response at least one realistic example, carrying **no real data, no
+production identifiers, and no personal data**. Constraints that exist in code — lengths, ranges,
+patterns, allowed values — appear in the schema too, or callers discover them through `400`
+responses. Pagination, sorting, and filtering parameters are documented with their defaults and
+bounds.
+
 ## Exposure
 
 - The document endpoint and any interactive UI are exposed deliberately, never by default. Decide per environment and record it.
 - Swagger UI in production is an `application-security` decision. Absent an explicit decision, it is off.
-- Publish the committed document where consumers can reach it, and record that location in the project profile.
+- Publication follows `../SKILL.md`; what follows is the document itself.
 - The document describes only what the service actually serves. Do not publish internal, management, or debug endpoints in a consumer-facing contract.

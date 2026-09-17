@@ -9,37 +9,33 @@ Choose names that preserve business meaning, architectural boundaries, compatibi
 
 ## Coordination with other skills
 
-Treat this skill as the owner of naming vocabulary, identifier form, cross-boundary consistency, and rename safety. Let the specialized skills own behavior:
+This skill owns naming vocabulary, identifier form, cross-boundary consistency, and rename safety.
+Let the specialized skills own behavior.
 
-| Skill | Treat as owner of |
-| --- | --- |
-| `modern-java-21` | Java language use, source structure, imports, Javadoc, nullability, and exception handling; this skill owns exception names |
-| `spring-boot-patterns` | REST-only architecture, TO–Domain–Entity boundaries, service contracts, mapper responsibilities, configuration design, and package responsibilities |
-| `spring-data-jpa` | Persistence semantics, mappings, queries, transaction behavior inside the boundary, migrations, indexes, constraints, and database behavior |
-| `application-security` | Confidentiality, sensitive data, identity and tenant safety, secrets, dangerous disclosure, and cloud or messaging security |
-| `spring-boot-testing` | Test scope, scenarios, fixtures, doubles, isolation, and execution; this skill still owns test names |
-| `build-and-dependencies` | Build files, dependency and plugin declarations, and version management; this skill owns module and artifact names |
-| `rest-api-contract` | The OpenAPI document, compatibility judgement, versioning, and deprecation; this skill owns the names that appear in it and how they may be migrated |
-| `observability-and-logging` | What must be instrumented, log levels and placement, correlation propagation, and endpoint exposure; this skill owns meter, tag, span, and structured-log field names |
-| `spring-boot-code-review` | Review scope, evidence, severity, reporting, and merge-readiness decisions |
+[The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and
+it carries the precedence order for a genuine conflict. Read it there rather than from a copy in
+this file. The seams this skill crosses most often:
 
-Apply every relevant owner skill before choosing a name. Do not use naming to introduce a new architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric, feature flag, or infrastructure resource that the design does not require.
+**This skill owns the name; another skill owns the thing.** That split holds for Java types
+(`modern-java-21` owns type design, `spring-boot-patterns` the architectural role), exceptions
+(`spring-boot-patterns` owns the handling contract that decides which exception exists), database
+objects (`spring-data-jpa` the mapping, `sql-database-migration` the migration), meters, spans and
+log fields (`observability-and-logging` owns which must exist), contract names (`rest-api-contract`
+owns compatibility, versioning, deprecation) and tests (`spring-boot-testing` owns scope and
+execution). For contract names this skill additionally owns how one may be migrated.
 
-Preserve the established project terminology:
+Apply every relevant owner skill before choosing a name. **Never use naming to introduce** a new
+architectural layer, CQRS terminology, interface, abstraction, database object, message type, metric,
+feature flag, or infrastructure resource the design does not require.
 
-| Name | Meaning |
-| --- | --- |
-| `UserCreateTO`, `UserUpdateTO`, `UserTO` | REST/controller contract |
-| `UserDomain` | Project-owned domain data type |
-| `UserEntity` | JPA persistence model |
-| `UserSummaryProjection` | Repository read projection |
-| `UserRestMapper` | Domain → response TO; request TO → focused domain/service input only when `spring-boot-patterns` permits that input |
-| `UserDomainMapper` | Entity/projection → domain; explicit creation values → new entity |
-
-Do not replace these terms with DTO, View, Model, Command, Query, or similarly overlapping terminology unless the project explicitly adopts a different architecture and migration.
-
-Use `<Concept>Domain` for project-owned domain data types. Apply its exact scope and exceptions from
-the Java naming reference; do not redefine this convention in another skill.
+Preserve the established terminology — `UserCreateTO`/`UserTO` for the REST contract, `UserDomain`
+for a project-owned domain type, `UserEntity` for the JPA model, `UserSummaryProjection` for a
+repository read projection, `UserRestMapper` and `UserDomainMapper` for the two mapping directions.
+Never replace them with DTO, View, Model, Command, Query, or similarly overlapping terminology
+unless the project explicitly adopts a different architecture and migrates to it. Apply the exact
+scope and exceptions of the `<Concept>Domain` convention from
+[Java, Spring, and test names](references/java-spring-and-test-names.md); do not redefine it
+elsewhere.
 
 ## Keep application and platform naming separate
 
@@ -90,7 +86,7 @@ Do not convert subjective readability advice into a blocking rule when multiple 
 
 Before naming:
 
-1. Inspect `docs/project-profile.md`, the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code. The profile records decisions that change names, such as the JPA accessor style, the application-service interface convention, and whether a cache exists.
+1. Inspect `docs/project-profile.md`, the glossary, API and event schemas, database migrations, configuration metadata, observability conventions, and nearby sound code. The profile records decisions that change names, such as the JPA accessor style, the service interface convention, and whether a cache exists.
 2. Identify the business concept, its owner, lifecycle, scope, and whether the name is internal, public, persisted, externally provisioned, or operationally queried.
 3. Reuse the approved domain term for the same concept across layers. Use different names only when the concepts or contracts genuinely differ.
 4. Resolve synonyms and overloaded words with the domain owner. Do not guess between materially different business meanings.
@@ -100,25 +96,21 @@ Prefer domain language over framework language in business-facing types and oper
 
 ## Create intention-revealing names
 
-Use Robert C. Martin's *Clean Code* naming guidance as readability heuristics: reveal intent, avoid disinformation and encodings, make meaningful distinctions, use pronounceable and searchable words, and keep one word per concept. Apply those heuristics through the project's domain language and the rule hierarchy above; do not let a subjective example override a real contract or platform constraint.
+These are readability **heuristics** — *Clean Code*'s naming guidance applied through the project's
+domain language and the rule hierarchy above. A subjective example never overrides a real contract or
+platform constraint, and the review rules below say when a heuristic becomes a finding.
 
-Apply these readability principles:
+- Name the concept or behavior, not its representation or temporary implementation, and keep the name accurate after behavior changes. A name that has outlived its behavior is disinformation, and it is worse than a vague one because it is trusted.
+- **One word per concept, one concept per word.** Do not alternate between `customer`, `client`, and `user` unless they are genuinely different, and do not reuse one word for different concepts in the same bounded context.
+- Make meaningful distinctions: reject numeric suffixes and noise words — `data`, `info`, `object`, `item`, `value`, `manager`, `processor`, `helper` — when they do not narrow meaning.
+- Prefer pronounceable, searchable names, and only approved domain, protocol, vendor, and technical abbreviations. Avoid encodings: Hungarian notation, member or interface prefixes, unexplained implementation suffixes, embedded type names.
+- Match length to scope — concise loop indices only in tiny conventional scopes, explicit names once a value lives longer or crosses a boundary. Plural nouns for collections, singular for one value.
+- Name booleans as positive predicates (`active`, `hasPermission`, `canRetry`); avoid double negatives.
+- Include units only when a stronger type cannot express them, such as an unavoidable primitive `timeoutMillis`. Prefer `Duration timeout` where the owning skill permits it.
+- Name symmetric concepts symmetrically, and lifecycle states from one coherent vocabulary.
 
-- Name the concept or behavior, not its representation or temporary implementation.
-- Use one word consistently for one concept. Do not alternate between `customer`, `client`, and `user` unless they are different concepts.
-- Do not reuse one word for different concepts in the same bounded context.
-- Make meaningful distinctions. Reject numeric suffixes and noise words such as `data`, `info`, `object`, `item`, `value`, `manager`, `processor`, or `helper` when they do not narrow meaning.
-- Prefer pronounceable and searchable names. Use only approved domain, protocol, vendor, and technical abbreviations.
-- Avoid encodings such as Hungarian notation, member prefixes, interface prefixes, unexplained
-  implementation suffixes, or embedded type names that add no semantic information.
-- Match length to scope. Use concise loop indices only in tiny conventional scopes; use explicit names when values live longer or cross boundaries.
-- Name collections with plural nouns and individual values with singular nouns.
-- Name booleans as positive predicates such as `active`, `hasPermission`, `canRetry`, or `isExpired`. Avoid double negatives.
-- Include units or representation in a name only when a stronger type cannot express them, such as an unavoidable primitive `timeoutMillis`. Prefer `Duration timeout` when the owning skill permits it.
-- Name symmetric concepts symmetrically and lifecycle states from one coherent vocabulary.
-- Keep names accurate after behavior changes. Rename misleading identifiers within the authorized scope, subject to compatibility rules.
-
-Use comments or Javadoc to explain a non-obvious contract, not to compensate for a vague name. Follow the selective Javadoc policy from `modern-java-21`.
+Use Javadoc to explain a non-obvious contract, never to compensate for a vague name; follow the
+selective Javadoc policy `modern-java-21` owns.
 
 ## Handle acronyms consistently
 
@@ -155,15 +147,15 @@ Use a role suffix only when the type performs that role. Prefer the specific res
 | `UserRestMapper` | `UserConverterUtil` |
 | `CatalogClient` | `CatalogHelper` |
 | `ExpiredReservationCleanupJob` | `ReservationProcessor` |
+| `ResourceNotFoundException` | `OrderException` |
 
 Exception names follow the handling contract, not the resource. An order is a resource, so a missing
 order is a `ResourceNotFoundException`; introduce `OrderNotFoundException` only when that condition
 needs a different status, problem type, or recovery from every other missing resource. See
 [Name exceptions](references/java-spring-and-test-names.md#name-exceptions).
-| `ResourceNotFoundException` | `OrderException` |
 
-Follow the application-service naming decision owned by `spring-boot-patterns`. Use
-`<Capability>ServiceImpl` when the user selected that convention or the repository already applies it
+Follow the service-interface decision recorded in the project profile and owned by `spring-boot-patterns`. Use
+`<Name>Impl` when the user selected that convention or the repository already applies it
 coherently; otherwise, `Impl` is not required. Do not create an interface only to produce an `Impl`
 class. When multiple implementations differ by stable behavior or mechanism, prefer names such as
 `HttpCatalogClient` and `InMemoryCatalogClient`.
@@ -186,25 +178,18 @@ Use automated formatters, compiler checks, schema validators, migration validato
 
 ## Rename safely
 
-Treat a rename as a migration when the name can escape the local compilation unit.
+**Treat a rename as a migration whenever the name can escape the local compilation unit**, and assume
+consumers cannot upgrade atomically unless deployment evidence proves otherwise. A direct rename is
+correct only for a fully internal, atomically deployable name.
 
-1. Inventory definitions and consumers with exact searches, generated-code inspection, schema or infrastructure references, and runtime configuration.
-2. Classify the name as internal source, public API, serialized data, persisted schema, configuration, message contract, cache namespace, or observability contract.
-3. Determine whether consumers can upgrade atomically. Assume they cannot unless deployment evidence proves otherwise.
-4. Choose direct rename only for fully internal, atomically deployable names.
-5. For contracts, use an approved compatibility mechanism: additive alias, deprecation, expand-and-contract migration, dual read/write, versioned schema, or resource replacement plan.
-6. Define removal criteria and an owner for every temporary alias. Do not leave compatibility names indefinitely.
-7. Update code, tests, schemas, documentation, generated clients, migrations, dashboards, alerts, configuration, and consumers in the required order. Coordinate platform-owned changes instead of editing them implicitly.
-8. Verify old, mixed-version, rollback, and new-only states when rolling deployment is possible.
+Everything else — the inventory-and-classify procedure, the compatibility mechanisms, alias removal
+criteria, the update order, the mixed-version verification, and the list of names that are never
+renamed for aesthetics alone — is in
+[Migrate escaped names](references/api-data-and-configuration-names.md#migrate-escaped-names). Read
+it before renaming anything that leaves the file it is declared in.
 
-Avoid mixing an otherwise mechanical rename with unrelated behavior changes. If separation is impractical, make the behavioral delta explicit and test it independently.
-
-Do not rename:
-
-- a public field, endpoint, problem type URI, event type, logical destination, configuration key, or metric merely for aesthetic consistency;
-- a table, column, constraint, or index outside a migration;
-- a physical infrastructure resource under this skill alone; use the approved platform standard and replacement plan;
-- a security-sensitive identifier without applying `application-security`.
+Do not mix an otherwise mechanical rename with unrelated behavior changes. Where separation is
+impractical, make the behavioral delta explicit and test it independently.
 
 ## Review naming changes
 

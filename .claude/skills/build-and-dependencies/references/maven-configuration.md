@@ -3,7 +3,7 @@
 Use this reference when the project profile records Maven. Apply every rule from `../SKILL.md`.
 The snippets are excerpts of a `pom.xml`, not a complete file.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier or build property a snippet uses is declared in that snippet or attributed to the file that declares it, and an excerpt names any omitted element that the configuration depends on.
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -23,41 +23,66 @@ resource filtering are configured consistently.
 <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>CHOOSE</version>
+    <version>RESOLVE</version>
     <relativePath/>
 </parent>
 
 <properties>
-    <java.version>21</java.version>
-    <checkstyle.version>CHOOSE</checkstyle.version>
-    <mapstruct.version>CHOOSE</mapstruct.version>
-    <spotless.version>CHOOSE</spotless.version>
+    <java.version>RESOLVE</java.version>
+
+    <!-- Build plugins the Spring Boot parent does not manage. -->
+    <checkstyle-plugin.version>RESOLVE</checkstyle-plugin.version>
+    <enforcer-plugin.version>RESOLVE</enforcer-plugin.version>
+    <spotless-plugin.version>RESOLVE</spotless-plugin.version>
+    <surefire-plugin.version>RESOLVE</surefire-plugin.version>
+
+    <!-- Tools and libraries the Spring Boot BOM does not manage. -->
+    <checkstyle.version>RESOLVE</checkstyle.version>
+    <mapstruct.version>RESOLVE</mapstruct.version>
+
     <!-- Only when docs/project-profile.md records contract-first. -->
-    <openapi-generator.version>CHOOSE</openapi-generator.version>
+    <openapi-generator.version>RESOLVE</openapi-generator.version>
     <!-- Only when docs/project-profile.md records that the project uses Lombok. -->
-    <lombok-mapstruct-binding.version>CHOOSE</lombok-mapstruct-binding.version>
+    <lombok-mapstruct-binding.version>RESOLVE</lombok-mapstruct-binding.version>
 </properties>
+```
 
-Every version property referenced anywhere in this skill's references is declared here. The Spring
-Boot BOM manages none of these tools, so each is pinned explicitly.
+Every version property referenced anywhere in this skill's references is declared here.
 
-`CHOOSE` means exactly that: resolve the current release at setup time and record it in
-`docs/project-profile.md`. This reference deliberately does not carry a pinned number, because a
-number written into documentation is stale the month after it is written and is then copied into
-projects for years. Respect these minimums when choosing:
+**Check what the parent actually manages before omitting a `<version>`.** The Spring Boot parent's
+`pluginManagement` is a short list, and several plugins this skill set uses are not on it — Surefire,
+Enforcer, Checkstyle, and Spotless among them. A plugin the parent does not manage and the project
+does not pin resolves to whatever Maven's own defaults supply, which is neither reproducible nor
+visible in the build file. That is why the four plugin properties above exist, and why
+`maven-failsafe-plugin` and `maven-compiler-plugin` have none: the parent manages those two.
+
+Confirm the current list with `./mvnw help:effective-pom` rather than trusting this paragraph — the
+set of managed plugins is a written-down value like any other and changes between generations.
+
+**`checkstyle.version` and `checkstyle-plugin.version` are two different things.** The first is the
+Checkstyle tool, the second is the Maven plugin that runs it. Pinning only the plugin leaves the tool
+version to the plugin's own default, which is usually well behind and is the usual reason a
+configuration that uses newer module behaviour fails on one machine and passes on another.
+
+`RESOLVE` is the decision token defined in `project-decision-profile`: look the current release up at
+setup time, write it into the build file, and record it with its resolution date in the
+resolved-versions table of `docs/project-profile.md`. This reference deliberately carries no pinned
+number, because a number written into documentation is stale the month after it is written and is
+then copied into projects for years. If the lookup is impossible, record `UNDECIDED` with the reason
+rather than a remembered number, and say so in the handoff.
+
+Respect these minimums when resolving:
 
 | Property | Minimum | Reason |
 | --- | --- | --- |
+| `java.version` | 21 | The floor this skill set is written against; `../SKILL.md` governs choosing the release |
 | `maven-compiler-plugin` (from the parent) | 3.12.0 | Below it, `annotationProcessorPaths` ignores `dependencyManagement`, so every processor entry needs an explicit version |
 | `checkstyle.version` | 10.12.x | Earlier versions handle `record` constructs inconsistently |
-| `spotless.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
+| `spotless-plugin.version` | 2.30.x | Earlier versions do not support the catch-all group in `importOrder` |
 | `mapstruct.version` | 1.5.x | Constructor-based mapping and `unmappedTargetPolicy` behave as this skill set assumes |
-| `lombok-mapstruct-binding.version` | 0.2.0 | Required for Java 17+ toolchains |
+| `lombok-mapstruct-binding.version` | 0.2.0 | Required alongside Lombok on the toolchains this skill set supports |
 
 Verify the choice by running the build once, not by trusting the table.
-```
-
-Resolve each `CHOOSE` at setup time and record the result in `docs/project-profile.md`.
 
 Rules:
 
@@ -72,9 +97,9 @@ not listed does not run, even if it is a normal dependency. Order inside the lis
 order.
 
 Since `maven-compiler-plugin` 3.12.0, entries in `annotationProcessorPaths` resolve their versions
-from `dependencyManagement`, so a BOM-managed processor needs no `<version>`. Spring Boot 3.x ships
-a newer plugin than that through the parent, so the default form below omits versions for managed
-artifacts and declares a property only for artifacts the BOM does not manage. Verify the effective
+from `dependencyManagement`, so a BOM-managed processor needs no `<version>`. Every supported Spring
+Boot generation ships a newer plugin than that through the parent, so the default form below omits
+versions for managed artifacts and declares a property only for artifacts the BOM does not manage. Verify the effective
 plugin version with `./mvnw help:effective-pom`; on an older plugin, every entry needs an explicit
 version, and `${project.parent.version}` is the correct value for Spring Boot's own artifacts when
 the project inherits the Spring Boot parent.
@@ -109,6 +134,26 @@ the project inherits the Spring Boot parent.
 
 `mapstruct-processor` carries a version because the Spring Boot BOM does not manage MapStruct.
 `spring-boot-configuration-processor` does not, because the BOM manages it.
+
+### When the project uses the JPA static metamodel
+
+`spring-data-jpa` prefers the generated static metamodel over raw attribute-name strings in
+Specifications and Criteria queries. That metamodel comes from a processor, and **the artifact
+differs by Spring Boot generation** — [generation differences](generation-differences.md) carries
+both coordinates. Add it to the same path, after the MapStruct entry:
+
+```xml
+<path>
+    <groupId>org.hibernate.orm</groupId>
+    <artifactId>ARTIFACT-FROM-GENERATION-DIFFERENCES</artifactId>
+</path>
+```
+
+It carries no version because the Spring Boot BOM manages Hibernate. Add it only when the project
+actually uses the metamodel; a processor that generates classes nobody references is build time spent
+for nothing. Once it is on the path, verify that `<EntityName>_` classes appear under
+`target/generated-sources/annotations` — a missing metamodel fails compilation loudly, which is the
+good case, but a *stale* one compiles against an attribute the entity no longer has.
 
 ### When the project uses Lombok
 
@@ -169,6 +214,8 @@ container-backed test runs in the `test` phase.
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-surefire-plugin</artifactId>
+    <!-- Not managed by the Spring Boot parent; pin it. -->
+    <version>${surefire-plugin.version}</version>
     <configuration>
         <excludes>
             <exclude>**/*IntegrationTest.java</exclude>
@@ -179,6 +226,7 @@ container-backed test runs in the `test` phase.
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-failsafe-plugin</artifactId>
+    <!-- Managed by the Spring Boot parent; no version here. -->
     <configuration>
         <includes>
             <include>**/*IntegrationTest.java</include>
@@ -234,6 +282,13 @@ weakening the build.
 </dependency>
 ```
 
+**The web starter is one of the coordinates that differs by generation.** The declaration above
+names the Spring Boot 3 artifact; on Spring Boot 4 it is `spring-boot-starter-webmvc`, and the old
+name still resolves as a deprecated alias — so a Spring Boot 4 project that copies this block builds
+green while sitting on a name it is supposed to have left behind. The same applies to several other
+starters. [Generation differences](generation-differences.md) is the catalogue; read the column for
+the generation the profile records before copying any dependency block, here or anywhere else.
+
 - No `<version>` appears for a BOM-managed artifact.
 - The JDBC driver is `runtime`. It is loaded by name and never imported, so every analyzer calls it unused.
 - `spring-boot-starter-test` already provides JUnit Jupiter, AssertJ, Hamcrest, Mockito, JSONassert, JsonPath, and the Spring test module. Declaring any of those separately duplicates a managed capability.
@@ -242,7 +297,7 @@ weakening the build.
 ## Packaging and wrapper
 
 - Keep `spring-boot-maven-plugin` for repackaging, and configure layers when the artifact is containerized.
-- Commit `mvnw`, `mvnw.cmd`, and `.mvn/wrapper/`, including the distribution URL and checksum. Review any change to them as executable code.
+- The wrapper is `mvnw`, `mvnw.cmd`, and `.mvn/wrapper/`, including the distribution URL and checksum.
 - Declare repositories only when an artifact genuinely is not on the default one, and only over authenticated TLS.
 - Keep credentials in `settings.xml` supplied by the platform, never in `pom.xml`.
 

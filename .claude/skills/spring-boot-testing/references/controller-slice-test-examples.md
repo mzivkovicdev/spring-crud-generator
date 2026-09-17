@@ -3,7 +3,12 @@
 Use these examples for focused Spring MVC controller tests. Apply every rule from `../SKILL.md`,
 `spring-boot-patterns`, `modern-java-21`, and `project-naming-conventions`. Imports are omitted.
 
-Snippets here follow the worked-example rules in `modern-java-21`: every identifier a snippet uses is declared in that snippet or attributed to the example that declares it, and an excerpt names any omitted member that the code depends on.
+**This file carries rules, not only examples.** What `addFilters = false` excludes, what therefore
+never belongs in a slice, which contracts move to focused filter tests and full integration tests,
+and what a slice may not be used as evidence for are stated here in full and nowhere else. Treat
+those sections as binding.
+
+Snippets are patterns to adapt, not files to copy. They follow the [worked example rules](../../modern-java-21/references/worked-example-rules.md) that `modern-java-21` owns.
 
 ## Contents
 
@@ -13,19 +18,31 @@ Snippets here follow the worked-example rules in `modern-java-21`: every identif
 
 ## Controller MVC slice excerpt
 
-Use the mock-bean mechanism supported by the inspected Spring version. This example uses
-`@MockitoBean`; preserve the established equivalent on an older supported project instead of
-changing framework versions solely for the test. It is an excerpt, not the complete required test
-set for `UserController`.
+This example uses `@MockitoBean`, which is correct on both supported generations: it is available
+from Spring Boot 3.4 onward and is the only option on Spring Boot 4, where `@MockBean` is removed.
+On a Spring Boot 3 branch below 3.4 the established equivalent is `@MockBean`; preserve what the
+project already uses rather than changing framework versions solely for a test. It is an excerpt,
+not the complete required test set for `UserController`.
+
+The slice annotations themselves are unchanged between generations. What changes around them is the
+test dependency: on Spring Boot 4 the MVC slice arrives through `spring-boot-starter-webmvc-test`
+rather than the single core test starter.
+
+Every constructor dependency of the controller needs a mock bean, including one no shown test
+exercises: without it the slice context fails to start. The two handlers below both go through the
+application service, so `userService` is declared and left unstubbed; the handlers that call it
+directly are covered by tests not shown here.
 
 ```java
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(ApiExceptionHandler.class)
 class UserControllerTest {
 
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
+
+    @MockitoBean
+    private UserManagementApplicationService userManagement;
 
     @MockitoBean
     private UserService userService;
@@ -42,8 +59,8 @@ class UserControllerTest {
     void usersPost_whenRequestIsValid_returnsCreatedUser() throws Exception {
         final UserCreateTO request = UserTestData.validUserCreateTO();
         final UserDomain createdUser = UserTestData.createdUserDomain(request);
-        when(this.userService.create(
-                request.username(), request.email(), request.password()))
+        when(this.userManagement.register(
+                request.organizationId(), request.username(), request.email(), request.password()))
                 .thenReturn(createdUser);
 
         this.mockMvc.perform(post(UserController.USERS_PATH)
@@ -58,8 +75,8 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.username").value(createdUser.username()))
                 .andExpect(jsonPath("$.email").value(createdUser.email()));
 
-        verify(this.userService).create(
-                request.username(), request.email(), request.password());
+        verify(this.userManagement).register(
+                request.organizationId(), request.username(), request.email(), request.password());
     }
 
     @Test
@@ -75,13 +92,13 @@ class UserControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value(ApplicationError.VALIDATION_FAILED.type().toString()));
 
-        verifyNoInteractions(this.userService);
+        verifyNoInteractions(this.userManagement);
     }
 
     @Test
     void usersUserIdGet_whenUserDoesNotExist_returnsNotFoundProblem() throws Exception {
         final Long userId = UserTestData.userId();
-        when(this.userService.getById(userId))
+        when(this.userManagement.getProfile(userId))
                 .thenThrow(new ResourceNotFoundException("User", userId));
 
         this.mockMvc.perform(get("%s/{userId}".formatted(UserController.USERS_PATH), userId))
@@ -89,7 +106,7 @@ class UserControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value(ApplicationError.RESOURCE_NOT_FOUND.type().toString()));
 
-        verify(this.userService).getById(userId);
+        verify(this.userManagement).getProfile(userId);
     }
 }
 ```
@@ -103,11 +120,22 @@ exception in `modern-java-21`; `MockMvc` and `ObjectMapper` remain `final` and c
 
 Focused MVC slice tests do not exercise or verify the Spring Security filter chain. The project's
 `addFilters = false` convention excludes every servlet filter from this `MockMvc` slice, so use it to
-prove the controller and MVC contract only. Do not use `@WithMockUser`, mock tokens, authority values,
-or CSRF here. Full application integration tests own security verification; test another filter
-separately when it owns a public contract. Ensure the project's `@RestControllerAdvice`, JSON
-customization, converters, and argument resolvers required by the public contract are included.
-Import only focused MVC configuration that the slice does not discover automatically.
+prove the controller and MVC contract only: mock users, mock tokens, authority values, and CSRF
+request post-processors have no place in one. Full application integration tests own security
+verification; test another filter separately when it owns a public contract, and keep validation,
+error-handler, serialization, and delegation coverage in the slice.
+
+Do not use an MVC slice as evidence for transaction, database, or other full-application behavior
+excluded from it.
+
+**There is no `@Import(ApiExceptionHandler.class)`, and adding one is a mistake worth naming.**
+`@WebMvcTest` already includes `@ControllerAdvice` beans in the slice, along with JSON
+customization, converters, and argument resolvers — that is what makes the error-contract assertions
+above work. Importing the advice explicitly is not merely redundant: it teaches that the slice does
+not pick up the advice on its own, and the next person writes a test that imports it and passes for
+the wrong reason, or omits it from a slice where it was genuinely needed. Import only focused MVC
+configuration the slice does **not** discover automatically, and confirm that a given class is in
+that category before importing it.
 
 ## Coverage expectations
 
