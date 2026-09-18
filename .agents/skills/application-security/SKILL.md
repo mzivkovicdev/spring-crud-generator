@@ -34,8 +34,9 @@ Skill activation is conditional; confidentiality is not. These rules apply to ev
 reaches this skill.
 
 Installing the repository-root confidentiality instruction is a **one-time project setup task, not
-part of any coding change**: do not create or modify `CLAUDE.md`, `AGENTS.md`, or another root
-instruction file while implementing a feature, fixing a bug, or reviewing code. If the block is
+part of any coding change**: do not create or modify a root instruction file — `AGENTS.md`,
+`CLAUDE.md`, `.github/copilot-instructions.md`, a file under `.github/instructions/`, or any other —
+while implementing a feature, fixing a bug, or reviewing code. If the block is
 missing, say so once in the handoff, offer it as its own change, and perform the setup only when the
 user asks, following
 [data protection and confidentiality](references/data-protection-and-confidentiality.md#one-time-repository-setup).

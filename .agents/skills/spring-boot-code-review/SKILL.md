@@ -38,8 +38,8 @@ This skill never wins a precedence contest, because it states no rule of its own
 as a finding and name both rules.
 
 Resolve every applicable owner skill before evaluating compliance: use the active skill catalog, or
-find an exact matching frontmatter `name` in repository-controlled locations such as
-`.claude/skills/<name>/SKILL.md`. Read the owner completely and load only the references it routes.
+open the owner in the folder next to this skill, `../<name>/SKILL.md`, and confirm that its
+frontmatter `name` matches exactly. Read the owner completely and load only the references it routes.
 
 - **Never substitute remembered guidance, a similarly named public skill, or an internet result for a missing owner skill.** Continue a general defect review when useful, but list the missing owner as a coverage gap and do not claim compliance with its rules. If the requested decision materially depends on that unavailable standard, stop that part of the review and ask for the approved source.
 - **Never invent a rule an owner skill would have stated** — an alternative import order, type-inference rule, Javadoc policy, mapper architecture, signature policy, entity update pattern, naming convention, association default, or security baseline. When a build-enforced project rule and a skill rule conflict, follow the owning skill's conflict handling and report the discrepancy accurately.
