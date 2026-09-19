@@ -1,6 +1,6 @@
 ---
 name: spring-boot-code-review
-description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits, working-tree changes, re-reviews, refactors, bug fixes, and pre-merge readiness. Produces revision-scoped, evidence-backed, severity-ranked findings for correctness, contracts, data integrity, security, concurrency, performance, resilience, tests, operability, and maintainability. Use for review-only requests and review-before-fix workflows.
+description: Code review for Java 21+ Spring Boot REST APIs. Use when asked to review a pull request, diff, commit, or working-tree change, to re-review, or to judge whether a change is ready to merge, review-before-fix requests included. Produces evidence-backed, severity-ranked findings on correctness, contracts, data integrity, security, concurrency, performance, tests, and operability.
 ---
 
 # Spring Boot Code Review
@@ -8,6 +8,8 @@ description: Review Java 21+ Spring Boot REST API pull requests, diffs, commits,
 Review the change for concrete production risk. Prefer a small number of verified findings over a large checklist of hypothetical concerns. Evaluate the code, not the author.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 Treat this skill as the owner of review scope, investigation, evidence, prioritization, and reporting.
 Do not use it as a second coding standard.
@@ -17,22 +19,9 @@ because a copy of it in the review skill is the fastest way to get a review that
 nobody owns. Read the rule in the owning skill before writing a finding, and never resolve a
 disagreement from a table in this file.
 
-Which skills a review loads follows from what the change touches:
-
-| Skill | Apply when |
-| --- | --- |
-| `modern-java-21` | Every review containing Java source |
-| `project-decision-profile` | The change depends on a recorded decision, or `docs/project-profile.md` is missing, stale, or still holds a bare token |
-| `spring-boot-patterns` | Every Spring Boot change |
-| `spring-data-jpa` | Persistence, entities, repositories, queries, locking, or database performance is affected |
-| `sql-database-migration` | A schema object is added, altered, or removed, or a migration file is created or edited |
-| `application-security` | A trust boundary, identity, authorization, confidential data, dangerous sink, external system, dependency, deployment, or security control is affected |
-| `spring-boot-testing` | Production behavior or tests are changed or reviewed |
-| `project-naming-conventions` | A developer-owned name or escaped contract is created, changed, or reviewed |
-| `build-and-dependencies` | A build file, dependency, plugin, version, compiler setting, annotation processor, test selection, or quality gate is affected |
-| `observability-and-logging` | Logging, correlation context, MDC, metrics, tracing, actuator endpoints, or health indicators are affected |
-| `rest-api-contract` | A public endpoint, payload shape, status, header, enum value, or error condition is created or changed |
-| `application-caching` | A cache is added, configured, read from, invalidated, or removed — including the Hibernate second-level and query caches — or a write touches data another cache holds |
+Which skills a review loads follows from what the change touches, and is decided by
+[the routing table](../_core/ROUTING.md), which implementation work uses too. Load every row that
+matches; a review containing Java source always matches `modern-java-21`.
 
 This skill never wins a precedence contest, because it states no rule of its own: report the conflict
 as a finding and name both rules.

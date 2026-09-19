@@ -1,6 +1,6 @@
 ---
 name: observability-and-logging
-description: Logging, metrics, tracing, and operational endpoints for Java 21+ Spring Boot REST applications. Use when adding or changing log statements, log configuration, correlation context, MDC, Micrometer meters, tracing, actuator endpoints, health indicators, or probes, and when verifying that a feature is operable in production. Backend-neutral.
+description: Logging, metrics, tracing, and operational endpoints for Java 21+ Spring Boot REST applications. Use when adding or changing log statements, log levels or log configuration, correlation IDs and MDC, Micrometer meters and their tags, tracing, actuator endpoints, health indicators, or probes, and when verifying that a feature is operable in production.
 ---
 
 # Observability and Logging
@@ -20,6 +20,8 @@ over the network from inside the application, no log format assembled by hand fo
 Write to standard output and let the platform collect it.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns what must be instrumented and how: log levels and placement, correlation context,
 meters and tag cardinality, tracing, actuator endpoints, and probes.

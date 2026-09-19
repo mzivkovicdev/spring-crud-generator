@@ -1,6 +1,6 @@
 ---
 name: spring-boot-patterns
-description: Application architecture for Java 21+ Spring Boot backend REST APIs — REST controllers and transport objects (TOs), the two service levels, domain models, mappers, validation, the RFC 9457 error contract and its catalog, configuration design, package responsibilities, outbound-call structure, where the transaction boundary sits, and the runtime shape above the database (concurrency model, request budget, conditional reads, compression, shutdown). Also decides only where persistence, security, caching, idempotency and observability sit in the layers; those topics themselves belong to spring-data-jpa, application-security, application-caching and observability-and-logging. Excludes server-side page rendering and UI views. Use for every new Spring Boot REST feature and for every change to a controller, service, mapper, error condition, configuration class, scheduled job, or listener.
+description: Application architecture and layering for Java 21+ Spring Boot REST APIs. Use for every new REST endpoint or feature and every change to a controller, transport object (TO), service, mapper, validation, error condition, configuration class, scheduled job, or listener. Covers the two service levels, domain models, the RFC 9457 error catalog, the transaction boundary, outbound calls, idempotency, and runtime shape (concurrency, request budget, shutdown). Not for server-side pages or UI views.
 ---
 
 # Spring Boot Patterns Skill
@@ -8,6 +8,8 @@ description: Application architecture for Java 21+ Spring Boot backend REST APIs
 Implement vertical, tested features using the project's supported Spring Boot version. Preserve existing contracts, but do not copy legacy architecture or anti-patterns into new code.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns the Spring Boot boundaries: controllers, TOs, services and their two levels, domain
 models, mappers, validation, the error contract, configuration design, package responsibilities, and

@@ -1,6 +1,6 @@
 ---
 name: modern-java-21
-description: Modern Java 21+ coding standard for every creation, edit, refactor, bug fix, or review of a .java file. Use whenever Java source is touched. Enforces import cleanup and ordering, readability, immutability, Javadoc, exception handling, method and class size, null safety, and modern language features without copying legacy anti-patterns.
+description: Modern Java 21+ coding standard. Use whenever a .java file is created, edited, refactored, fixed, or reviewed, production and test code alike. Enforces import cleanup and ordering, readability, immutability, Javadoc, exception handling, method and class size, null safety, and modern language features without copying legacy anti-patterns.
 ---
 
 # Modern Java 21+ Coding Skill
@@ -8,6 +8,8 @@ description: Modern Java 21+ coding standard for every creation, edit, refactor,
 Write production-grade Java that is easy to understand, test, change, and operate. Existing code is context for behavior, not automatic permission to repeat its design mistakes.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill is authoritative for Java source rules in every file, production and test.
 

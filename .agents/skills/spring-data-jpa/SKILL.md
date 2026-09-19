@@ -1,6 +1,6 @@
 ---
 name: spring-data-jpa
-description: Spring Data JPA and Hibernate patterns for Java 21+ applications on any supported relational database. Use whenever code touches JPA entities, repositories, Specifications, EntityManager, database reads or writes, or transactional behavior. Covers mapping, associations, fetch plans, queries, transaction behavior, pagination, locking, and persistence tests. Schema migration files belong to sql-database-migration.
+description: Spring Data JPA and Hibernate patterns for Java 21+ on any relational database. Use whenever code touches JPA entities, repositories, queries, Specifications, EntityManager, database reads or writes, or transactional behavior, including N+1 queries, pagination, optimistic or pessimistic locking, lost updates, and slow queries. Covers mapping, associations, fetch plans, and persistence tests. Not for schema migration files or NoSQL stores.
 ---
 
 # Spring Data JPA Skill
@@ -8,6 +8,8 @@ description: Spring Data JPA and Hibernate patterns for Java 21+ applications on
 Design persistence for correctness, predictable SQL, and verified performance. JPA does not remove the need to understand relational modeling, indexes, query plans, transactions, and locking.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns JPA and database behavior beneath the service boundary. Use the architecture,
 terminology, mapper directions, and package responsibilities from `spring-boot-patterns`.

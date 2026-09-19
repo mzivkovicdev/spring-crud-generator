@@ -1,6 +1,6 @@
 ---
 name: application-security
-description: Secure-by-design rules for Java 21+ Spring Boot REST applications. Use when a change crosses a trust boundary or affects authentication, authorization, tenant or object ownership, sensitive operations, confidential or personal data, secrets, cryptography, logs, errors, outbound calls, caches, messaging, cloud resources, configuration, deployment, or vulnerability remediation.
+description: Security rules for Java 21+ Spring Boot REST applications. Use when a change crosses a trust boundary or affects authentication, authorization and access control, tenant or object ownership, sensitive operations, confidential or personal data and its export, secrets and API keys, cryptography, logs, errors, outbound or partner calls, caches, messaging, cloud resources, configuration, deployment, or vulnerability remediation, and before project material is sent to an external site.
 ---
 
 # Application Security Skill
@@ -8,6 +8,8 @@ description: Secure-by-design rules for Java 21+ Spring Boot REST applications. 
 Build security into every affected boundary. Protect confidentiality, integrity, availability, tenant isolation, and auditability. A framework default, annotation, scanner, or OWASP list is not proof that a control works; verify the configured behavior.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns threat analysis, confidentiality, authentication, authorization, API abuse
 prevention, secrets, cryptography, dangerous trust boundaries, cloud and messaging security,

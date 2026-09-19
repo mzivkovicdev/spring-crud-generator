@@ -1,6 +1,6 @@
 ---
 name: rest-api-contract
-description: Public API contract ownership and evolution for Java 21+ Spring Boot REST APIs. Use when creating or changing a public endpoint, request or response shape, status code, header, enum value, or error contract; when deciding whether a change is breaking; when versioning, deprecating, or retiring an API; and when producing, reviewing, or publishing an OpenAPI document. Covers projects with an OpenAPI document, code-first or contract-first, and projects with none. Excludes GraphQL, gRPC, asynchronous event contracts, and gateway configuration.
+description: Public REST API contract and its evolution for Java 21+ Spring Boot. Use when creating or changing a public endpoint, request or response field, query parameter, status code, header, enum value, or error contract; when deciding whether a change is breaking; when versioning, deprecating, or retiring an API; and when producing or reviewing an OpenAPI document, code-first or contract-first. Not for GraphQL, gRPC, event contracts, or gateway configuration.
 ---
 
 # REST API Contract
@@ -15,6 +15,8 @@ one, in the form of what consumers observe and rely on; it simply has no artefac
 or verify against.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns the contract, its document, its quality, and its evolution. It does not rename
 anything, redesign a TO, or change an error contract; it decides how those appear in the contract and

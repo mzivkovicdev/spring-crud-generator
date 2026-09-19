@@ -1,6 +1,6 @@
 ---
 name: application-caching
-description: Server-side caching design for Java 21+ Spring Boot applications, independent of the cache technology. Use when adding, changing, or reviewing a cache — the Spring cache abstraction and @Cacheable, cache keys, TTL and staleness, invalidation and its ordering against a transaction, eviction and sizing, serialization of cached values, stampede and negative caching, behavior when the cache is unavailable, and the Hibernate second-level cache. Covers local, distributed, and near-cache topologies and any store, chosen or not yet chosen. Excludes HTTP response caching, CDN behavior, and the database's own buffer cache.
+description: Server-side cache design for Java 21+ Spring Boot, local or distributed. Use when adding, changing, reviewing, or removing a cache, including @Cacheable, cache keys, TTL and staleness, invalidation and its ordering against a transaction, eviction, serialization, stampede, negative caching, cache outages, and the Hibernate second-level and query caches. Not for HTTP response caching, CDN behavior, or the database buffer cache.
 ---
 
 # Application Caching
@@ -30,6 +30,8 @@ So the shape of the work is fixed and the answers are not:
 - **Never infer the technology from a dependency or an example.** `docs/project-profile.md` records it, and `application-security` and `project-naming-conventions` both say the same thing where they mention a store by name.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 [The ownership map](../_core/OWNERSHIP.md) is the canonical statement of who owns what, and it
 carries the precedence order for a genuine conflict. Read it there rather than from a copy in this

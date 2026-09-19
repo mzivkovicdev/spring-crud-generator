@@ -1,6 +1,6 @@
 ---
 name: project-decision-profile
-description: Owns docs/project-profile.md and the ASK / RESOLVE / UNDECIDED decision tokens that every other skill in this set reads instead of guessing. Use before writing production code on any task; when creating the profile on a new or empty repository; when a change makes a recorded decision obsolete; and whenever a build, version, database, migration, contract, security, observability, or test decision must be recorded or is missing from the profile. Covers which decisions block and which are looked up, how fallbacks work, and how the profile is filled and kept correct. Not Spring profiles, and not the token-issuance or security profiles those skills name; naming belongs to project-naming-conventions.
+description: Owns docs/project-profile.md and the ASK / RESOLVE / UNDECIDED decision tokens other skills read instead of guessing. Use before writing or changing production code on any task, a new repository included; when creating or updating the profile; and whenever a build, version, database, migration, contract, security, observability, or test decision is missing, must be recorded, or became obsolete. Not for comment-only edits, Spring profiles, security profiles, or naming.
 ---
 
 # Project Decision Profile Skill
@@ -9,6 +9,8 @@ One file records what a project decided, so no task has to guess and no two task
 differently. This skill owns that file and the vocabulary it is written in — nothing else.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns **the mechanism**: the profile file, the three decision tokens, the fallback rule,
 and the order of work for filling a row. It does **not** own the meaning of any individual entry.

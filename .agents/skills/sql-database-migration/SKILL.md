@@ -1,6 +1,6 @@
 ---
 name: sql-database-migration
-description: Relational schema migration ownership for Spring Boot applications using Flyway or Liquibase. Use whenever a change adds, alters, or removes a table, column, constraint, index, sequence, view, or routine; whenever a migration file is created, edited, ordered, or reviewed; when backfilling data, seeding reference data, resolving a migration conflict between branches, or verifying migrations in CI. Covers both tools and both Spring Boot generations. Excludes NoSQL data stores.
+description: Relational schema migrations for Spring Boot with Flyway or Liquibase. Use whenever a change adds, alters, or removes a table, column, constraint, index, sequence, view, or routine; whenever a migration file is created, edited, ordered, or reviewed; and when backfilling data, seeding reference data, resolving a migration version conflict between branches, or verifying migrations in CI. Not for NoSQL data stores.
 ---
 
 # SQL database migration
@@ -12,6 +12,8 @@ Relational databases only. A NoSQL store has no linear version history, no check
 script, and a different expand-and-contract shape; do not stretch these rules to cover one.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill states what a migration must contain and when it must exist. It does not name files,
 declare dependencies, or define test levels.
