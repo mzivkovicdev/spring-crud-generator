@@ -1,6 +1,6 @@
 ---
 name: build-and-dependencies
-description: Maven and Gradle build configuration and dependency governance for Java 21+ Spring Boot projects. Use when changing build files, dependencies, plugins, versions, compiler settings, annotation processors, test selection, or packaging; when adding or upgrading a dependency; when auditing for unnecessary or duplicated dependencies; and when configuring quality gates such as Checkstyle or Spotless.
+description: Maven and Gradle build configuration and dependency governance for Java 21+ Spring Boot projects. Use when adding, upgrading, or auditing dependencies, plugins, and their versions; when changing pom.xml, build.gradle, or other build files; when upgrading Spring Boot; and when changing compiler settings, annotation processors, test selection and phases, packaging, or quality gates such as Checkstyle or Spotless.
 ---
 
 # Build and Dependencies
@@ -13,6 +13,8 @@ This skill is build-tool neutral. Maven and Gradle are both fully supported, and
 applies to whichever one the project uses.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns the build files, every dependency and plugin declaration, **all version selection**,
 compiler and annotation-processor configuration, test-phase separation, and quality gates.

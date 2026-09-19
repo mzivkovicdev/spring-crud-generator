@@ -1,0 +1,6 @@
+{
+  "name": "backend-standards",
+  "description": "Java 21+ Spring Boot engineering standards shared by Claude Code, Codex, and GitHub Copilot.",
+  "version": "0.2.0",
+  "author": { "name": "Backend team" }
+}

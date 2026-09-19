@@ -1,6 +1,6 @@
 ---
 name: project-naming-conventions
-description: Naming and safe renaming of developer-owned names in Java 21+ Spring Boot REST projects. Use when creating or renaming Java identifiers, packages, tests, REST paths and fields, OpenAPI components, database objects, configuration, cache keys, jobs, metrics, spans, or structured-log fields, and when resolving inconsistent terminology. Excludes infrastructure-resource naming.
+description: Naming and safe renaming in Java 21+ Spring Boot REST projects. Use when choosing, creating, or renaming Java identifiers, packages, tests, REST paths and fields, OpenAPI components, database objects such as tables and columns, configuration keys, cache keys, jobs, metrics, spans, or structured-log fields, and when resolving inconsistent terminology. Not for infrastructure-resource names such as cloud buckets.
 ---
 
 # Project Naming Conventions
@@ -8,6 +8,8 @@ description: Naming and safe renaming of developer-owned names in Java 21+ Sprin
 Choose names that preserve business meaning, architectural boundaries, compatibility, security, and operational clarity. Treat naming as part of the contract whenever another component, deployment, database, dashboard, or team consumes the name.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns naming vocabulary, identifier form, cross-boundary consistency, and rename safety.
 Let the specialized skills own behavior.

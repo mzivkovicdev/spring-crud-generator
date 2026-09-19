@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "backend-standards@backend-standards-local": true
+  },
+  "extraKnownMarketplaces": {
+    "backend-standards-local": {
+      "source": {
+        "source": "directory",
+        "path": "./.agents"
+      }
+    }
+  }
+}

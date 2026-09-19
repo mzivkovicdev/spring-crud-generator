@@ -1,6 +1,6 @@
 ---
 name: spring-boot-testing
-description: Testing standard for Java 21+ Spring Boot REST applications. Use whenever production behavior is created or changed, and when writing or updating unit tests, Spring test slices, database-backed integration tests, fixtures, mocks, containers, or scheduler tests. Covers scenario selection, test scope, test data, isolation, and execution. Excludes end-to-end and UI testing.
+description: Testing standard for Java 21+ Spring Boot REST applications. Use whenever production behavior is created or changed, and when writing, fixing, or updating unit tests, Spring test slices, database-backed integration tests, fixtures, mocks, Testcontainers, or scheduler tests, flaky tests included. Covers scenario selection, scope, test data, isolation, and execution. Not for end-to-end or UI testing.
 ---
 
 # Spring Boot Testing
@@ -9,6 +9,8 @@ Prove production behavior with deterministic, maintainable tests. Test reachable
 publicly observable outcomes, not framework internals or invented edge cases.
 
 ## Coordination with other skills
+
+Before implementing or reviewing, load every other skill the change touches, using [the routing table](../_core/ROUTING.md); if your tool did not load one automatically, open `../<name>/SKILL.md` directly.
 
 This skill owns test scope, scenario filtering, test-level placement, doubles, fixtures, isolation,
 and execution; apply the specialized skills for the behavior being verified.
