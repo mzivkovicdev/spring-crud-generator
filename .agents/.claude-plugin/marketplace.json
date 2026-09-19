@@ -1,0 +1,12 @@
+{
+  "name": "backend-standards-local",
+  "description": "The engineering-standard skills in this repository's .agents folder, for Claude Code.",
+  "owner": { "name": "Backend team" },
+  "plugins": [
+    {
+      "name": "backend-standards",
+      "source": "./",
+      "description": "Java 21+ Spring Boot engineering standards"
+    }
+  ]
+}
